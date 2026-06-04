@@ -33,6 +33,16 @@
     get(name, envir = ns, inherits = FALSE)
 }
 
+.geosmooth.create.rknn.graph <- function(...) {
+    if (requireNamespace("dgraphs", quietly = TRUE)) {
+        return(dgraphs::create.rknn.graph(...))
+    }
+    .geosmooth.gflow.bridge(
+        "create.rknn.graph",
+        feature = "adaptive-radius graph construction"
+    )(...)
+}
+
 if (!exists(".validate.metric.graph.lowpass.graph", mode = "function")) {
     .validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
         .geosmooth.gflow.bridge(
@@ -67,18 +77,22 @@ shortest.path <- function(graph, edge.lengths, vertices) {
     )(graph, edge.lengths, vertices)
 }
 
-.pttf.geometry.edge.table <- function(adj.list, weight.list) {
-    .geosmooth.gflow.bridge(
-        ".pttf.geometry.edge.table",
-        feature = "graph-geodesic support conversion"
-    )(adj.list, weight.list)
+if (!exists(".pttf.geometry.edge.table", mode = "function")) {
+    .pttf.geometry.edge.table <- function(adj.list, weight.list) {
+        .geosmooth.gflow.bridge(
+            ".pttf.geometry.edge.table",
+            feature = "graph-geodesic support conversion"
+        )(adj.list, weight.list)
+    }
 }
 
-.pttf.geometry.all.source.distances <- function(adj, weights) {
-    .geosmooth.gflow.bridge(
-        ".pttf.geometry.all.source.distances",
-        feature = "graph-geodesic all-source distance support"
-    )(adj, weights)
+if (!exists(".pttf.geometry.all.source.distances", mode = "function")) {
+    .pttf.geometry.all.source.distances <- function(adj, weights) {
+        .geosmooth.gflow.bridge(
+            ".pttf.geometry.all.source.distances",
+            feature = "graph-geodesic all-source distance support"
+        )(adj, weights)
+    }
 }
 
 .exact.knn.index <- function(X, k) {
