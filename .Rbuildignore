@@ -1,0 +1,10 @@
+^\.git$
+^\.gitignore$
+^\.Rproj\.user$
+^\.claude$
+^geosmooth\.Rproj$
+^Makefile$
+^AGENTS\.md$
+^split_handoffs$
+^.*\.tar\.gz$
+^.*\.Rcheck$
