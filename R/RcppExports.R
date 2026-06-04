@@ -37,3 +37,12 @@ rcpp_local_pca_chart <- function(X_support, center, chart_dim, center_mode = "an
     .Call(`_geosmooth_rcpp_local_pca_chart`, X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis)
 }
 
+#' SSRHE Hessian operator native backend
+#'
+#' Internal native backend for `ssrhe.hessian.operator()`.
+#'
+#' @keywords internal
+rcpp_ssrhe_hessian_operator <- function(s_X, s_k, s_tangent_dim, s_nn_index, s_support_index, s_tangent_dim_rule, s_eigen_tolerance, s_derivative_order, s_stabilizer, s_pinv_tol, s_local_solver, s_normal_equations_max_condition, s_verbose) {
+    .Call(`_geosmooth_rcpp_ssrhe_hessian_operator`, s_X, s_k, s_tangent_dim, s_nn_index, s_support_index, s_tangent_dim_rule, s_eigen_tolerance, s_derivative_order, s_stabilizer, s_pinv_tol, s_local_solver, s_normal_equations_max_condition, s_verbose)
+}
+

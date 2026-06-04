@@ -48,3 +48,14 @@ shortest.path <- function(graph, edge.lengths, vertices) {
 .pttf.geometry.all.source.distances <- function(adj, weights) {
     .geosmooth.gflow.bridge(".pttf.geometry.all.source.distances")(adj, weights)
 }
+
+.exact.knn.index <- function(X, k) {
+    n <- nrow(X)
+    out <- matrix(NA_integer_, nrow = n, ncol = k)
+    for (i in seq_len(n)) {
+        d <- rowSums((t(t(X) - X[i, ]))^2)
+        d[[i]] <- Inf
+        out[i, ] <- order(d, seq_len(n))[seq_len(k)]
+    }
+    out
+}

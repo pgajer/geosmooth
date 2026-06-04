@@ -1,5 +1,5 @@
-# GE0 native scaffold. This intentionally vendors ANN and Eigen support but does
-# not yet move smoother entry points from gflow.
+# Native support for geosmooth methods.  ANN and Eigen remain vendored while
+# the split from gflow is in progress.
 
 PKG_CPPFLAGS = -I. -IANN
 PKG_CPPFLAGS += -I../inst/include -DR_NO_REMAP
