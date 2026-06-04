@@ -1,4 +1,4 @@
-#include "local_pca_charts.h"
+#include <geosmooth/local_pca_charts.h>
 
 #include <Rcpp.h>
 
