@@ -420,7 +420,7 @@ print.kernel.local.polynomial.cv <- function(x, ...) {
             coordinate.method = coordinate.method,
             chart.dim = chart.dim
         )
-        design <- .malps.design.matrix(z, degree)
+        design <- .local.polynomial.design.matrix(z, degree)
         ok <- is.finite(y.train[idx]) & is.finite(weights) & weights > 0
         if (sum(ok) < ncol(design)) {
             out[[i]] <- stats::weighted.mean(y.train[idx], weights,
@@ -551,7 +551,7 @@ print.kernel.local.polynomial.cv <- function(x, ...) {
 .klp.get.local.design <- function(z, degree, chart.dim, design.cache) {
     key <- .klp.design.cache.key(degree, chart.dim)
     if (!exists(key, envir = design.cache, inherits = FALSE)) {
-        design <- .malps.design.matrix(
+        design <- .local.polynomial.design.matrix(
             z[, seq_len(chart.dim), drop = FALSE],
             degree
         )
