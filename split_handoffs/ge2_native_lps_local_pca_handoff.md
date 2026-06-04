@@ -18,13 +18,15 @@ This phase replaces the GE1 deferred-native guards for:
 
 - `src/kernel_local_polynomial_cv_rcpp.cpp`
 - `src/local_pca_charts.cpp`
-- `src/local_pca_charts.h`
 - `src/local_pca_charts_rcpp.cpp`
+- `inst/include/geosmooth/local_pca_charts.h`
 - generated `src/RcppExports.cpp`
 - generated `R/RcppExports.R`
 
 The local-PCA backend namespace and include guard were renamed from `gflow` to
 `geosmooth`.  Generated native symbols use the `_geosmooth_*` prefix.
+Geosmooth-owned reusable headers live under `inst/include/geosmooth/`; `src/`
+contains implementation `.cpp` files and vendored compiled ANN sources only.
 
 ## Native Registration
 
