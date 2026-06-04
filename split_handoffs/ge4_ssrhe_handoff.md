@@ -78,8 +78,9 @@ suggested package.
 
 GE4 deliberately leaves the following work for later phases:
 
-- Move graph construction and graph-distance infrastructure out of the
-  temporary `gflow` bridge.
+- Resolve the graph construction and graph-distance ownership boundary. GE5
+  later formalized `gflow` ownership for those utilities and retained the
+  deliberate bridge for graph-dependent geosmooth paths.
 - Decide whether SSRHE-related graph/adaptive-radius examples should remain in
   `geosmooth` or live in downstream workflow packages.
 - API cleanup, including possible post-split renaming of `.cv` functions.
@@ -87,5 +88,6 @@ GE4 deliberately leaves the following work for later phases:
 
 ## Recommended Next Step
 
-Run `make check-fast`.  If it passes, GE5 should focus on graph infrastructure
-and bridge retirement, or on API naming cleanup if graph movement is deferred.
+Run `make check-fast`.  If it passes, GE5 should formalize graph infrastructure
+ownership and bridge semantics, or focus on API naming cleanup if that boundary
+is already settled.

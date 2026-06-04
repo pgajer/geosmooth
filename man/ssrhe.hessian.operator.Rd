@@ -54,7 +54,7 @@ vertex. If \code{NULL}, Euclidean k-NN including self is computed in C++.}
 
 \item{neighborhood.type}{Local support rule. \code{"knn"} uses the original
 rectangular self-including kNN neighborhoods. \code{"adaptive.radius"}
-builds variable-size supports from the temporary bridged
+builds variable-size supports from the deliberately bridged
 \code{gflow::create.rknn.graph()} helper.
 \code{"supplied"} uses \code{support.index} directly.}
 
@@ -213,6 +213,11 @@ coefficient rows. The \eqn{\ell_2} SSRHE penalty is
 }
 Exposing \eqn{A} is useful for auditability and for future
 \eqn{\ell_1}-style variants based on \eqn{\|Af\|_1}.
+
+In the geosmooth split, graph construction remains owned by \pkg{gflow}.
+Thus \code{neighborhood.type = "adaptive.radius"} requires a compatible
+\pkg{gflow} installation, while \code{neighborhood.type = "knn"} and
+\code{"supplied"} are package-local geosmooth paths.
 }
 \references{
 Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression

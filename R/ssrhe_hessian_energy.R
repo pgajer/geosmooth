@@ -22,7 +22,7 @@
 #'   vertex. If \code{NULL}, Euclidean k-NN including self is computed in C++.
 #' @param neighborhood.type Local support rule. \code{"knn"} uses the original
 #'   rectangular self-including kNN neighborhoods. \code{"adaptive.radius"}
-#'   builds variable-size supports from the temporary bridged
+#'   builds variable-size supports from the deliberately bridged
 #'   \code{gflow::create.rknn.graph()} helper.
 #'   \code{"supplied"} uses \code{support.index} directly.
 #' @param support.index Optional list of integer vectors, one per row of
@@ -129,6 +129,11 @@
 #' }
 #' Exposing \eqn{A} is useful for auditability and for future
 #' \eqn{\ell_1}-style variants based on \eqn{\|Af\|_1}.
+#'
+#' In the geosmooth split, graph construction remains owned by \pkg{gflow}.
+#' Thus \code{neighborhood.type = "adaptive.radius"} requires a compatible
+#' \pkg{gflow} installation, while \code{neighborhood.type = "knn"} and
+#' \code{"supplied"} are package-local geosmooth paths.
 #'
 #' @return A list of class \code{"ssrhe.hessian.operator"} containing:
 #'   \itemize{
@@ -885,7 +890,10 @@ ssrhe.support.grid <- function(n,
     }
     add.timing("validation")
 
-    graph <- .geosmooth.gflow.bridge("create.rknn.graph")(
+    graph <- .geosmooth.gflow.bridge(
+        "create.rknn.graph",
+        feature = "adaptive-radius SSRHE support construction"
+    )(
         X = X,
         type = "adaptive.radius",
         k.scale = adaptive.k.scale,

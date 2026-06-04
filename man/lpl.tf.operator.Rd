@@ -40,8 +40,9 @@ lpl.tf.operator(
 \item{adj.list, weight.list}{Optional supplied undirected graph adjacency and
 positive edge-length lists using 1-based vertex indices.}
 
-\item{graph}{Optional graph object returned by \code{create.rknn.graph}.
-or a list containing \code{adj.list}/\code{weight.list} or
+\item{graph}{Optional graph object returned by
+\code{gflow::create.rknn.graph()} or a list containing
+\code{adj.list}/\code{weight.list} or
 \code{adj_list}/\code{weight_list}.}
 
 \item{graph.stage}{Graph stage to extract from \code{graph}: \code{"final"},
@@ -139,6 +140,11 @@ predictor support, and drops requested-degree rank-deficient rows with
 explicit metadata. There is no silent degree downgrade. Graph support
 distances affect support selection and kernel bandwidths only; local
 polynomial coordinates are controlled separately by \code{coordinate.method}.
+In the geosmooth split, graph construction and graph-geodesic helper
+utilities remain owned by \pkg{gflow}. Coordinate support paths are
+package-local; \code{support.metric = "graph.geodesic"} requires supplied
+graph inputs and a compatible \pkg{gflow} installation for graph validation
+and shortest-path helper routines.
 
 If \eqn{a_i} is the complete assembled residual row, then
 \code{row.normalize = "l2"} uses \eqn{a_i / \|a_i\|_2}, and

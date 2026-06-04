@@ -59,8 +59,9 @@ information.
 GE3 deliberately leaves the following work for later phases:
 
 - GE4: move the SSRHE public/native backend into `geosmooth`.
-- Graph infrastructure: move or replace graph construction and graph-distance
-  helpers currently bridged through `gflow`.
+- Graph infrastructure: resolve the ownership boundary for graph construction
+  and graph-distance helpers bridged through `gflow`. GE5 later formalized
+  `gflow` ownership for those utilities.
 - API cleanup: rename `.cv` public functions only after the split is stable.
 - Broader numerical parity: expand beyond small deterministic smoke fixtures
   after GE4 and graph infrastructure decisions are in place.

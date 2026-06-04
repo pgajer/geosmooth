@@ -45,8 +45,9 @@ The following paths intentionally fail with clear GE1/GE2 messages:
 - LPS local-PCA prediction charts
 - LPL-TF local-PCA charts
 
-Graph-geodesic modes are temporarily bridged to `gflow` through private helper
-wrappers.  Coordinate-support paths are package-local.
+Graph-geodesic modes are bridged to `gflow` through private helper wrappers.
+Coordinate-support paths are package-local. GE5 later formalized this as the
+intended graph dependency boundary rather than as a graph-migration placeholder.
 
 ## Documentation/Namespace
 
