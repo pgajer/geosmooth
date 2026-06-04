@@ -63,6 +63,7 @@ load_ssrhe_all_labeled_validation_definitions <- function() {
   if (!requireNamespace("pkgload", quietly = TRUE)) {
     skip("Package 'pkgload' is required for SSRHE validation regression cases.")
   }
+  skip_if_not_installed("dgraphs")
   env <- new.env(parent = globalenv())
   exprs <- parse(runner, keep.source = FALSE)
   for (expr in exprs) {
@@ -71,7 +72,7 @@ load_ssrhe_all_labeled_validation_definitions <- function() {
     if (grepl("pkgload::load_all\\(gflow.dir", txt, fixed = FALSE)) next
     eval(expr, envir = env)
   }
-  env$create.rknn.graph <- .geosmooth.create.rknn.graph
+  env$create.rknn.graph <- dgraphs::create.rknn.graph
   if (requireNamespace("gflow", quietly = TRUE)) {
     env$quadform.embed <- gflow::quadform.embed
     env$quadform.edge.lengths <- gflow::quadform.edge.lengths
@@ -160,7 +161,8 @@ make_ssrhe_like_graph_trend_case <- function(kind = c("flat", "quadform")) {
   truth <- ssrhe_like_truth_function(U)
   set.seed(seed + 900000L)
   y <- truth + stats::rnorm(length(truth), sd = 0.08)
-  graph <- .geosmooth.create.rknn.graph(
+  skip_if_not_installed("dgraphs")
+  graph <- dgraphs::create.rknn.graph(
     X, type = "adaptive.radius",
     k.scale = 12L,
     radius.factor = 1.25,

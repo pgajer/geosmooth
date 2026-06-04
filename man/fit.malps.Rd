@@ -53,8 +53,8 @@ fit.malps(
 
 \item{y}{Numeric response vector with length \code{nrow(X)}.}
 
-\item{graph}{Optional supported \pkg{gflow} graph object, for example from
-\code{gflow::create.rknn.graph()}.  When \code{support.metric =
+\item{graph}{Optional supported \pkg{dgraphs} graph object, for example from
+\code{dgraphs::create.rknn.graph()}.  When \code{support.metric =
   "graph.geodesic"} or \code{"auto"} with a graph supplied, weighted
 shortest-path distances from this graph are used for support construction.}
 

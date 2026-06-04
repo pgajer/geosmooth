@@ -33,16 +33,6 @@
     get(name, envir = ns, inherits = FALSE)
 }
 
-.geosmooth.create.rknn.graph <- function(...) {
-    if (requireNamespace("dgraphs", quietly = TRUE)) {
-        return(dgraphs::create.rknn.graph(...))
-    }
-    .geosmooth.gflow.bridge(
-        "create.rknn.graph",
-        feature = "adaptive-radius graph construction"
-    )(...)
-}
-
 if (!exists(".validate.metric.graph.lowpass.graph", mode = "function")) {
     .validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
         .geosmooth.gflow.bridge(

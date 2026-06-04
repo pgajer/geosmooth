@@ -25,6 +25,7 @@ LinkingTo:
 Depends:
     R (>= 3.5.0)
 Imports:
+    dgraphs,
     Matrix,
     methods,
     Rcpp,
@@ -36,6 +37,5 @@ Suggests:
     testthat (>= 3.0.0),
     genlasso,
     igraph,
-    gflow,
-    dgraphs
+    gflow
 Config/testthat/edition: 3

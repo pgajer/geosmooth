@@ -237,7 +237,7 @@ pttf.geometry <- function(
     }
 
     graph.radius.rule <- match.arg(graph.radius.rule, c("max", "min", "geomean"))
-    built <- .geosmooth.create.rknn.graph(
+    built <- dgraphs::create.rknn.graph(
         X,
         type = "adaptive.radius",
         k.scale = graph.k.scale,

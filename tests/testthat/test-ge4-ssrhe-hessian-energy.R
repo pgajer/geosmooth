@@ -93,7 +93,8 @@ test_that("SSRHE fit paths can skip local geometry diagnostics", {
                       "neighborhood.truncate.reorder",
                       "neighborhood.final.validation") %in%
                         op.adaptive$neighborhoods$timing$phase))
-    graph <- .geosmooth.gflow.bridge("create.rknn.graph")(
+    skip_if_not_installed("dgraphs")
+    graph <- dgraphs::create.rknn.graph(
         X = X,
         type = "adaptive.radius",
         k.scale = 4L,

@@ -55,15 +55,9 @@ test_that("GE5 gflow bridge gives explicit graph-boundary errors", {
     )
 })
 
-test_that("GE5 adaptive-radius support construction is deliberately bridged", {
+test_that("GE5 adaptive-radius support construction uses dgraphs", {
     skip_if_not_installed("Matrix")
-    skip_if_not_installed("gflow")
-
-    create.graph <- .geosmooth.gflow.bridge(
-        "create.rknn.graph",
-        feature = "adaptive-radius SSRHE support construction"
-    )
-    expect_true(is.function(create.graph))
+    skip_if_not_installed("dgraphs")
 
     X <- cbind(seq(0, 1, length.out = 20),
                0.1 * sin(seq(0, 2 * pi, length.out = 20)))
