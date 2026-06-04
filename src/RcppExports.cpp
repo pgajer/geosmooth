@@ -20,6 +20,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_perform_harmonic_smoothing
+List rcpp_perform_harmonic_smoothing(const List& adj_list, const List& weight_list, const NumericVector& values, const IntegerVector& region_vertices, const int max_iterations, const double tolerance);
+RcppExport SEXP _geosmooth_rcpp_perform_harmonic_smoothing(SEXP adj_listSEXP, SEXP weight_listSEXP, SEXP valuesSEXP, SEXP region_verticesSEXP, SEXP max_iterationsSEXP, SEXP toleranceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type adj_list(adj_listSEXP);
+    Rcpp::traits::input_parameter< const List& >::type weight_list(weight_listSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type region_vertices(region_verticesSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_iterations(max_iterationsSEXP);
+    Rcpp::traits::input_parameter< const double >::type tolerance(toleranceSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_perform_harmonic_smoothing(adj_list, weight_list, values, region_vertices, max_iterations, tolerance));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_kernel_local_polynomial_cv_coordinates
 NumericVector rcpp_kernel_local_polynomial_cv_coordinates(const NumericMatrix& X, const NumericVector& y, const IntegerVector& foldid, const IntegerVector& support_size, const IntegerVector& degree, const CharacterVector& kernel);
 RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_cv_coordinates(SEXP XSEXP, SEXP ySEXP, SEXP foldidSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP) {
@@ -143,6 +159,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_geosmooth_native_stub", (DL_FUNC) &_geosmooth_rcpp_geosmooth_native_stub, 0},
+    {"_geosmooth_rcpp_perform_harmonic_smoothing", (DL_FUNC) &_geosmooth_rcpp_perform_harmonic_smoothing, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates, 6},
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},

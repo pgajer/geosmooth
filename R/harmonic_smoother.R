@@ -74,11 +74,6 @@ perform.harmonic.smoothing <- function(adj.list,
                                        region.vertices,
                                        max.iterations = 100,
                                        tolerance = 1e-6) {
-    if (!requireNamespace("gflow", quietly = TRUE)) {
-        stop("perform.harmonic.smoothing() currently requires gflow for its ",
-             "native harmonic-smoothing backend.", call. = FALSE)
-    }
-
     ## Input validation
     if (!is.list(adj.list)) {
         stop("'adj.list' must be a list")
@@ -156,14 +151,14 @@ perform.harmonic.smoothing <- function(adj.list,
     ## Convert to 0-based indices for C++
     adj.list.0based <- lapply(adj.list, function(x) as.integer(x - 1))
 
-    result <- .Call("S_perform_harmonic_smoothing",
-                    adj.list.0based,
-                    weight.list,
-                    as.numeric(values),
-                    as.integer(region.vertices),
-                    as.integer(max.iterations),
-                    as.numeric(tolerance),
-                    PACKAGE = "gflow")
+    result <- rcpp_perform_harmonic_smoothing(
+        adj.list.0based,
+        weight.list,
+        as.numeric(values),
+        as.integer(region.vertices),
+        as.integer(max.iterations),
+        as.numeric(tolerance)
+    )
 
     return(result)
 }
