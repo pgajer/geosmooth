@@ -290,7 +290,7 @@ NumericVector predict_coordinates_cpp(const NumericMatrix& X_train,
 
 //' Kernel local polynomial CV RMSE for ambient coordinates
 //'
-//' Internal C++ backend for `kernel.local.polynomial.cv()`.
+//' Internal C++ backend for `fit.lps()`.
 //'
 //' @keywords internal
 // [[Rcpp::export]]
@@ -393,7 +393,7 @@ NumericVector rcpp_kernel_local_polynomial_cv_coordinates(
 
 //' Kernel local polynomial predictions for ambient coordinates
 //'
-//' Internal C++ backend for `kernel.local.polynomial.cv()`.
+//' Internal C++ backend for `fit.lps()`.
 //'
 //' @keywords internal
 // [[Rcpp::export]]

@@ -3,7 +3,7 @@ test_that("GE1 LPS coordinate R backend fits and predicts", {
     X <- matrix(seq(0, 1, length.out = 24), ncol = 1)
     y <- sin(2 * pi * X[, 1]) + stats::rnorm(nrow(X), sd = 0.02)
 
-    fit <- kernel.local.polynomial.cv(
+    fit <- fit.lps(
         X, y,
         support.grid = c(6L, 8L),
         degree.grid = 0:1,
@@ -12,7 +12,7 @@ test_that("GE1 LPS coordinate R backend fits and predicts", {
         backend = "R"
     )
 
-    expect_s3_class(fit, "kernel.local.polynomial.cv")
+    expect_s3_class(fit, "lps")
     expect_equal(length(fit$fitted.values), nrow(X))
     expect_true(all(is.finite(fit$fitted.values)))
     expect_equal(length(predict(fit, X[1:3, , drop = FALSE])), 3L)
@@ -23,7 +23,7 @@ test_that("GE2 LPS coordinate C++ backend fits and predicts", {
     X <- matrix(seq(0, 1, length.out = 24), ncol = 1)
     y <- cos(2 * pi * X[, 1]) + stats::rnorm(nrow(X), sd = 0.02)
 
-    fit <- kernel.local.polynomial.cv(
+    fit <- fit.lps(
         X, y,
         support.grid = c(6L, 8L),
         degree.grid = 0:1,
@@ -32,7 +32,7 @@ test_that("GE2 LPS coordinate C++ backend fits and predicts", {
         backend = "cpp"
     )
 
-    expect_s3_class(fit, "kernel.local.polynomial.cv")
+    expect_s3_class(fit, "lps")
     expect_identical(fit$backend.used, "cpp")
     expect_equal(length(fit$fitted.values), nrow(X))
     expect_true(all(is.finite(fit$fitted.values)))
@@ -43,7 +43,7 @@ test_that("GE2 local PCA chart backend supports LPS and LPL-TF", {
     X <- cbind(seq(0, 1, length.out = 18), seq(0, 1, length.out = 18)^2)
     y <- sin(2 * pi * X[, 1])
 
-    fit <- kernel.local.polynomial.cv(
+    fit <- fit.lps(
         X, y,
         support.grid = 8L,
         degree.grid = 1L,
@@ -63,7 +63,7 @@ test_that("GE2 local PCA chart backend supports LPS and LPL-TF", {
         chart.dim = 1L
     )
 
-    expect_s3_class(fit, "kernel.local.polynomial.cv")
+    expect_s3_class(fit, "lps")
     expect_identical(fit$coordinate.method, "local.pca")
     expect_s3_class(lpl, "lpl_tf_operator")
     expect_equal(ncol(lpl$A), nrow(X))
@@ -119,7 +119,7 @@ test_that("GE2 unsupported native combinations fail informatively", {
     y <- X[, 1]
 
     expect_error(
-        kernel.local.polynomial.cv(
+        fit.lps(
             X, y,
             support.grid = 5L,
             degree.grid = 1L,
