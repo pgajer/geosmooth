@@ -10,7 +10,7 @@ Current split status:
 
 - GE0 created the package skeleton and native support scaffold.
 - GE1 moved the R-level LPS, MALPS, LPL-TF, and SLPLiFT APIs.
-- GE2 will move the C++ LPS and local-PCA chart backends.
+- GE2 moved the C++ LPS and local-PCA chart backends.
 - GE4 will move the SSRHE public/native backend.
 
 Current public payload:
@@ -19,6 +19,11 @@ Current public payload:
 - MALPS
 - LPL-TF
 - SLPLiFT / S-LPL-TF
+
+Native support currently includes:
+
+- C++ coordinate backend for LPS CV and prediction
+- C++ shared local-PCA chart backend
 
 Focused validation:
 

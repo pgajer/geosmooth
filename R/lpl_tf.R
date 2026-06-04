@@ -1603,9 +1603,6 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
             singular.values = NA_real_
         ))
     }
-    .geosmooth.ge1.missing.native(
-        "coordinate.method = 'local.pca' for lpl.tf.operator()"
-    )
     rcpp_local_pca_chart(
         X_support = X[candidate, , drop = FALSE],
         center = X[target, , drop = TRUE],

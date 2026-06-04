@@ -1,4 +1,4 @@
-.PHONY: clean build check check-fast install document test
+.PHONY: clean build check check-fast install document attrs test
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
@@ -16,7 +16,13 @@ clean:
 	rm -f $(TARBALL)
 	rm -f $(LOGDIR)/*.log
 
-document:
+attrs:
+	@mkdir -p $(LOGDIR)
+	@echo "Running Rcpp::compileAttributes()..."
+	@R -q -e "Rcpp::compileAttributes()" > $(LOGDIR)/$(PKGNAME)_rcppattrs.log 2>&1
+	@echo "RcppExports regenerated (log: $(LOGDIR)/$(PKGNAME)_rcppattrs.log)"
+
+document: attrs
 	@mkdir -p $(LOGDIR)
 	@echo "Running roxygen2::roxygenise(load = 'source')..."
 	@PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R -q -e "roxygen2::roxygenise(load = 'source')" > $(LOGDIR)/$(PKGNAME)_document.log 2>&1

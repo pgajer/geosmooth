@@ -340,12 +340,13 @@ print.kernel.local.polynomial.cv <- function(x, ...) {
 
 .klp.resolve.backend <- function(coordinate.method, backend) {
     if (identical(backend, "auto")) {
-        return("R")
+        return(if (identical(coordinate.method, "coordinates")) "cpp" else "R")
     }
     if (identical(backend, "cpp")) {
-        .geosmooth.ge1.missing.native(
-            "backend = 'cpp' for kernel.local.polynomial.cv()"
-        )
+        if (!identical(coordinate.method, "coordinates")) {
+            stop("'backend = \"cpp\"' currently supports only ",
+                 "coordinate.method = 'coordinates'.", call. = FALSE)
+        }
     }
     backend
 }
@@ -574,9 +575,6 @@ print.kernel.local.polynomial.cv <- function(x, ...) {
                                    chart.dim) {
     centered <- sweep(X.support, 2L, center, "-")
     if (identical(coordinate.method, "coordinates")) return(centered)
-    .geosmooth.ge1.missing.native(
-        "coordinate.method = 'local.pca' for kernel.local.polynomial.cv()"
-    )
     chart <- rcpp_local_pca_chart(
         X_support = X.support,
         center = center,

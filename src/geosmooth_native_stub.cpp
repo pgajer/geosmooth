@@ -1,6 +1,11 @@
-#include <R.h>
-#include <Rinternals.h>
+#include <Rcpp.h>
 
-extern "C" SEXP S_geosmooth_native_stub() {
-    return Rf_ScalarLogical(1);
+//' GE0 native scaffold stub
+//'
+//' Internal native scaffold check.
+//'
+//' @keywords internal
+// [[Rcpp::export]]
+bool rcpp_geosmooth_native_stub() {
+    return true;
 }
