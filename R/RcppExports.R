@@ -10,6 +10,15 @@ rcpp_geosmooth_native_stub <- function() {
     .Call(`_geosmooth_rcpp_geosmooth_native_stub`)
 }
 
+#' Native graph harmonic smoothing backend
+#'
+#' Internal C++ backend for `perform.harmonic.smoothing()`.
+#'
+#' @keywords internal
+rcpp_perform_harmonic_smoothing <- function(adj_list, weight_list, values, region_vertices, max_iterations, tolerance) {
+    .Call(`_geosmooth_rcpp_perform_harmonic_smoothing`, adj_list, weight_list, values, region_vertices, max_iterations, tolerance)
+}
+
 #' Kernel local polynomial CV RMSE for ambient coordinates
 #'
 #' Internal C++ backend for `fit.lps()`.
