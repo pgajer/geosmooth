@@ -72,7 +72,7 @@ vertex. If \code{NULL}, Euclidean k-NN including self is computed in C++.}
 
 \item{neighborhood.type}{Local support rule. \code{"knn"} uses the original
 rectangular self-including kNN neighborhoods. \code{"adaptive.radius"}
-builds variable-size supports from the temporary bridged
+builds variable-size supports from the deliberately bridged
 \code{gflow::create.rknn.graph()} helper.
 \code{"supplied"} uses \code{support.index} directly.}
 

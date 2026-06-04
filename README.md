@@ -13,6 +13,8 @@ Current split status:
 - GE2 moved the C++ LPS and local-PCA chart backends.
 - GE3 added source-level parity and smoke coverage against split-era `gflow`.
 - GE4 moved the SSRHE public/native backend.
+- GE5 formalized the graph dependency boundary: graph construction and
+  graph-geodesic helper utilities remain owned by `gflow`.
 
 Current public payload:
 
@@ -27,6 +29,15 @@ Native support currently includes:
 - C++ coordinate backend for LPS CV and prediction
 - C++ shared local-PCA chart backend
 - C++ SSRHE Hessian-energy operator backend
+
+Graph dependency boundary:
+
+- `geosmooth` owns smoother APIs and package-local coordinate/fixed-k paths.
+- `gflow` remains the owner of graph construction and graph-geodesic utilities,
+  including rKNN graph construction.
+- Graph-dependent paths in `geosmooth`, such as graph-geodesic MALPS/LPL-TF
+  supports and SSRHE adaptive-radius neighborhoods, deliberately bridge to
+  `gflow` at runtime.
 
 Focused validation:
 

@@ -53,10 +53,10 @@ fit.malps(
 
 \item{y}{Numeric response vector with length \code{nrow(X)}.}
 
-\item{graph}{Optional supported gflow graph object.  When
-\code{support.metric = "graph.geodesic"} or \code{"auto"} with a graph
-supplied, weighted shortest-path distances from this graph are used for
-support construction.}
+\item{graph}{Optional supported \pkg{gflow} graph object, for example from
+\code{gflow::create.rknn.graph()}.  When \code{support.metric =
+  "graph.geodesic"} or \code{"auto"} with a graph supplied, weighted
+shortest-path distances from this graph are used for support construction.}
 
 \item{adj.list}{Optional 1-based undirected adjacency list.  Must be supplied
 together with \code{weight.list} when using a supplied graph payload.}
@@ -249,4 +249,10 @@ are treated as numeric conditional-expectation targets; fitted values are not
 clipped inside the smoother.  Grid anchors, empirical-Bayes shrinkage, robust
 local residual reweighting, and conservative/smoothed GCV selection remain
 experimental controls rather than default recommendations.
+
+In the geosmooth split, graph construction and graph-geodesic helper
+utilities remain owned by \pkg{gflow}. Coordinate MALPS paths are
+package-local; graph-geodesic support construction requires supplied graph
+inputs and a compatible \pkg{gflow} installation for graph validation and
+shortest-path helper routines.
 }
