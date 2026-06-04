@@ -24,7 +24,7 @@
 #'   vertex is always retained and remaining vertices are selected by graph
 #'   metric distance, with vertex-index tie breaking.
 #' @param graph.k.scale,graph.radius.factor,graph.radius.rule Adaptive-radius
-#'   graph controls passed to \code{\link{create.rknn.graph}} when
+#'   graph controls passed to \code{dgraphs::create.rknn.graph()} when
 #'   \code{graph = "rknn"}.
 #' @param transport.rule Edge transport rule. Phase 1 implements
 #'   \code{"procrustes"}.
