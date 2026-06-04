@@ -21,22 +21,6 @@
     get(name, envir = asNamespace("gflow"), inherits = FALSE)
 }
 
-rcpp_kernel_local_polynomial_cv_coordinates <- function(...) {
-    .geosmooth.ge1.missing.native(
-        "The C++ LPS CV backend rcpp_kernel_local_polynomial_cv_coordinates()"
-    )
-}
-
-rcpp_kernel_local_polynomial_predict_coordinates <- function(...) {
-    .geosmooth.ge1.missing.native(
-        "The C++ LPS prediction backend rcpp_kernel_local_polynomial_predict_coordinates()"
-    )
-}
-
-rcpp_local_pca_chart <- function(...) {
-    .geosmooth.ge1.missing.native("The local PCA chart C++ backend")
-}
-
 .validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
     .geosmooth.gflow.bridge(".validate.metric.graph.lowpass.graph")(
         adj.list, weight.list
