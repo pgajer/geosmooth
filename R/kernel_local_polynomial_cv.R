@@ -1,6 +1,6 @@
-#' Kernel Local Polynomial Regression with CV-Selected Neighborhoods
+#' Fit a Local Polynomial Smoother
 #'
-#' Fits a kernel local polynomial smoother and selects its support size,
+#' Fits a local polynomial smoother (LPS) and selects its support size,
 #' polynomial degree, and kernel by cross-validation.  By default, the smoother
 #' works in the observed ambient coordinates: each prediction point uses its
 #' nearest training points in Euclidean distance, centers the support at the
@@ -12,6 +12,10 @@
 #' PCA chart centered at each prediction point.  With \code{chart.dim = "auto"},
 #' the chart dimension is estimated from observed \code{X} only, using the same
 #' shared local-PCA dimension helper used by LPL-TF and S-LPL-TF.
+#'
+#' \code{kernel.local.polynomial.cv()} is retained as a compatibility alias for
+#' earlier split-era scripts. New code should call \code{fit.lps()} and refer to
+#' the method as local polynomial smoothing (LPS).
 #'
 #' @param X Numeric design/coordinate matrix with one observation per row.
 #' @param y Numeric response vector with length \code{nrow(X)}.
@@ -41,11 +45,15 @@
 #'   \code{coordinate.method = "coordinates"} and the R reference backend for
 #'   \code{coordinate.method = "local.pca"}. \code{"R"} always uses the
 #'   reference implementation. \code{"cpp"} requires ambient coordinates.
+#' @param ... Arguments passed from the compatibility alias
+#'   \code{kernel.local.polynomial.cv()} to \code{fit.lps()}.
 #'
-#' @return A list of class \code{"kernel.local.polynomial.cv"} with fitted
-#'   values, selected parameters, and a candidate CV table.
+#' @return A list of class \code{"lps"} with fitted values, selected
+#'   parameters, and a candidate CV table. For compatibility during the
+#'   geosmooth split, returned objects also inherit from
+#'   \code{"kernel.local.polynomial.cv"}.
 #' @export
-kernel.local.polynomial.cv <- function(
+fit.lps <- function(
     X, y, foldid = NULL,
     support.grid = c(10L, 15L, 20L),
     degree.grid = 0:2,
@@ -130,8 +138,9 @@ kernel.local.polynomial.cv <- function(
         backend = backend.used
     )
     out <- list(
-        method.id = "kernel_local_polynomial_cv",
-        method.family = "kernel_local_polynomial",
+        method.id = "lps",
+        method.family = "local_polynomial_smoother",
+        method.label = "LPS",
         X = X,
         y = y,
         X.eval = X.eval,
@@ -150,12 +159,19 @@ kernel.local.polynomial.cv <- function(
         backend.used = backend.used,
         call = match.call()
     )
-    class(out) <- c("kernel.local.polynomial.cv", "list")
+    class(out) <- c("lps", "kernel.local.polynomial.cv", "list")
     out
 }
 
+#' @rdname fit.lps
 #' @export
-predict.kernel.local.polynomial.cv <- function(object, newdata = NULL, ...) {
+kernel.local.polynomial.cv <- function(...) {
+    fit.lps(...)
+}
+
+#' @method predict lps
+#' @export
+predict.lps <- function(object, newdata = NULL, ...) {
     dots <- list(...)
     if (length(dots)) {
         stop("Unused arguments: ", paste(names(dots), collapse = ", "),
@@ -175,10 +191,16 @@ predict.kernel.local.polynomial.cv <- function(object, newdata = NULL, ...) {
     )
 }
 
-#' @method print kernel.local.polynomial.cv
+#' @method predict kernel.local.polynomial.cv
 #' @export
-print.kernel.local.polynomial.cv <- function(x, ...) {
-    cat("Kernel local polynomial CV fit\n")
+predict.kernel.local.polynomial.cv <- function(object, newdata = NULL, ...) {
+    predict.lps(object, newdata = newdata, ...)
+}
+
+#' @method print lps
+#' @export
+print.lps <- function(x, ...) {
+    cat("Local polynomial smoother (LPS) fit\n")
     cat("  observations:", nrow(x$X), "\n")
     cat("  coordinate method:", x$coordinate.method, "\n")
     cat("  backend:", if (is.null(x$backend.used)) "R" else x$backend.used, "\n")
@@ -188,6 +210,12 @@ print.kernel.local.polynomial.cv <- function(x, ...) {
     cat("  selected CV RMSE:",
         signif(x$selected$cv.rmse.observed[[1L]], 5), "\n")
     invisible(x)
+}
+
+#' @method print kernel.local.polynomial.cv
+#' @export
+print.kernel.local.polynomial.cv <- function(x, ...) {
+    print.lps(x, ...)
 }
 
 .klp.rmse <- function(x, y) {
