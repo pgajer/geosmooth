@@ -33,8 +33,8 @@
 #'
 #' @param X Numeric coordinate matrix with one row per observation.
 #' @param y Numeric response vector with length \code{nrow(X)}.
-#' @param graph Optional supported \pkg{gflow} graph object, for example from
-#'   \code{gflow::create.rknn.graph()}.  When \code{support.metric =
+#' @param graph Optional supported \pkg{dgraphs} graph object, for example from
+#'   \code{dgraphs::create.rknn.graph()}.  When \code{support.metric =
 #'   "graph.geodesic"} or \code{"auto"} with a graph supplied, weighted
 #'   shortest-path distances from this graph are used for support construction.
 #' @param adj.list Optional 1-based undirected adjacency list.  Must be supplied

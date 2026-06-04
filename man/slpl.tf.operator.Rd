@@ -42,7 +42,7 @@ slpl.tf.operator(
 positive edge-length lists using 1-based vertex indices.}
 
 \item{graph}{Optional graph object returned by
-\code{gflow::create.rknn.graph()} or a list containing
+\code{dgraphs::create.rknn.graph()} or a list containing
 \code{adj.list}/\code{weight.list} or
 \code{adj_list}/\code{weight_list}.}
 

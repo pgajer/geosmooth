@@ -22,17 +22,17 @@
 #'   vertex. If \code{NULL}, Euclidean k-NN including self is computed in C++.
 #' @param neighborhood.type Local support rule. \code{"knn"} uses the original
 #'   rectangular self-including kNN neighborhoods. \code{"adaptive.radius"}
-#'   builds variable-size supports from the deliberately bridged
-#'   \code{gflow::create.rknn.graph()} helper.
+#'   builds variable-size supports from
+#'   \code{dgraphs::create.rknn.graph()}.
 #'   \code{"supplied"} uses \code{support.index} directly.
 #' @param support.index Optional list of integer vectors, one per row of
 #'   \code{X}. Each element gives a variable-size local support and must contain
 #'   its center vertex.
 #' @param adaptive.k.scale Integer local-scale k used by
-#'   \code{gflow::create.rknn.graph()} when
+#'   \code{dgraphs::create.rknn.graph()} when
 #'   \code{neighborhood.type = "adaptive.radius"}.
 #' @param radius.rule,radius.factor Adaptive-radius graph parameters passed to
-#'   \code{gflow::create.rknn.graph()}.
+#'   \code{dgraphs::create.rknn.graph()}.
 #' @param min.support Optional minimum local support size for adaptive-radius
 #'   supports. Defaults to the local quadratic design size plus
 #'   \code{support.buffer}, clamped to \code{nrow(X)}.
@@ -890,10 +890,7 @@ ssrhe.support.grid <- function(n,
     }
     add.timing("validation")
 
-    graph <- .geosmooth.gflow.bridge(
-        "create.rknn.graph",
-        feature = "adaptive-radius SSRHE support construction"
-    )(
+    graph <- dgraphs::create.rknn.graph(
         X = X,
         type = "adaptive.radius",
         k.scale = adaptive.k.scale,

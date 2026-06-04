@@ -78,8 +78,8 @@ vertex. If \code{NULL}, Euclidean k-NN including self is computed in C++.}
 
 \item{neighborhood.type}{Local support rule. \code{"knn"} uses the original
 rectangular self-including kNN neighborhoods. \code{"adaptive.radius"}
-builds variable-size supports from the deliberately bridged
-\code{gflow::create.rknn.graph()} helper.
+builds variable-size supports from
+\code{dgraphs::create.rknn.graph()}.
 \code{"supplied"} uses \code{support.index} directly.}
 
 \item{support.index}{Optional list of integer vectors, one per row of
@@ -87,11 +87,11 @@ builds variable-size supports from the deliberately bridged
 its center vertex.}
 
 \item{adaptive.k.scale}{Integer local-scale k used by
-\code{gflow::create.rknn.graph()} when
+\code{dgraphs::create.rknn.graph()} when
 \code{neighborhood.type = "adaptive.radius"}.}
 
 \item{radius.rule, radius.factor}{Adaptive-radius graph parameters passed to
-\code{gflow::create.rknn.graph()}.}
+\code{dgraphs::create.rknn.graph()}.}
 
 \item{min.support}{Optional minimum local support size for adaptive-radius
 supports. Defaults to the local quadratic design size plus
