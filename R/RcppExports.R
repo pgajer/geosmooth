@@ -12,7 +12,7 @@ rcpp_geosmooth_native_stub <- function() {
 
 #' Kernel local polynomial CV RMSE for ambient coordinates
 #'
-#' Internal C++ backend for `kernel.local.polynomial.cv()`.
+#' Internal C++ backend for `fit.lps()`.
 #'
 #' @keywords internal
 rcpp_kernel_local_polynomial_cv_coordinates <- function(X, y, foldid, support_size, degree, kernel) {
@@ -21,7 +21,7 @@ rcpp_kernel_local_polynomial_cv_coordinates <- function(X, y, foldid, support_si
 
 #' Kernel local polynomial predictions for ambient coordinates
 #'
-#' Internal C++ backend for `kernel.local.polynomial.cv()`.
+#' Internal C++ backend for `fit.lps()`.
 #'
 #' @keywords internal
 rcpp_kernel_local_polynomial_predict_coordinates <- function(X_train, y_train, X_eval, support_size, degree, kernel) {

@@ -23,7 +23,7 @@ and contract phase.
 
 Package-local `geosmooth` paths include:
 
-- LPS / `kernel.local.polynomial.cv()` in coordinate and local-PCA modes.
+- LPS / `fit.lps()` in coordinate and local-PCA modes.
 - MALPS coordinate-support paths.
 - LPL-TF and SLPLiFT coordinate-support paths.
 - SSRHE fixed-k neighborhoods.

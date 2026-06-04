@@ -40,7 +40,7 @@ downstream development scripts during the split.
 
 - No public function renaming in GE6.
 - No class renaming in GE6.
-- No change from `kernel.local.polynomial.cv()` to `fit.lps()` yet.
+- No public LPS API cleanup yet; GE7/GE8 handle the `fit.lps()` transition.
 - No LPL-TF/SLPLiFT operator helper rewrite; those paths use a separate
   monomial-power helper and should be evaluated separately if we want a broader
   polynomial-design abstraction.
@@ -73,6 +73,6 @@ GE7 should introduce the public naming layer if we are ready:
 
 - `fit.lps()` as the canonical LPS entry point;
 - object class `"lps"`;
-- `kernel.local.polynomial.cv()` retained as a compatibility alias;
+- no long-lived legacy alias for the old LPS name;
 - report label `LPS`;
 - no forced rename of SLPLiFT until the model name is settled.

@@ -14,6 +14,6 @@ rcpp_kernel_local_polynomial_cv_coordinates(
 )
 }
 \description{
-Internal C++ backend for \code{kernel.local.polynomial.cv()}.
+Internal C++ backend for \code{fit.lps()}.
 }
 \keyword{internal}

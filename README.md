@@ -18,12 +18,13 @@ Current split status:
 - GE6 started private helper cleanup by giving the shared local-polynomial
   design helper a MALPS-independent name while retaining compatibility shims.
 - GE7 introduced the public LPS naming layer: `fit.lps()` returns `"lps"`
-  objects, while `kernel.local.polynomial.cv()` remains a compatibility alias.
+  objects.
+- GE8 removed the short-lived `kernel.local.polynomial.cv()` compatibility
+  alias so downstream scripts migrate to the new LPS name immediately.
 
 Current public payload:
 
 - LPS / local polynomial smoother, with canonical entry point `fit.lps()`
-  and compatibility alias `kernel.local.polynomial.cv()`
 - MALPS
 - LPL-TF
 - SLPLiFT / S-LPL-TF

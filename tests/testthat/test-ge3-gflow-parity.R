@@ -13,7 +13,7 @@ test_that("GE3 LPS R backend matches gflow reference", {
         backend = "R"
     )
 
-    gs <- do.call(.geosmooth.ref("kernel.local.polynomial.cv"), args)
+    gs <- do.call(.geosmooth.ref("fit.lps"), args)
     gf <- do.call(.gflow.ref("kernel.local.polynomial.cv"), args)
 
     .expect.numeric.close(gs$fitted.values, gf$fitted.values)
@@ -36,7 +36,7 @@ test_that("GE3 LPS C++ backend matches gflow reference", {
         backend = "cpp"
     )
 
-    gs <- do.call(.geosmooth.ref("kernel.local.polynomial.cv"), args)
+    gs <- do.call(.geosmooth.ref("fit.lps"), args)
     gf <- do.call(.gflow.ref("kernel.local.polynomial.cv"), args)
 
     .expect.numeric.close(gs$fitted.values, gf$fitted.values, tol = 1e-9)

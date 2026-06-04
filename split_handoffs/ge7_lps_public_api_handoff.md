@@ -11,25 +11,21 @@ The canonical LPS entry point is now:
 
 - `fit.lps()`
 
-The compatibility entry point remains:
-
-- `kernel.local.polynomial.cv()`
+GE8 supersedes the original GE7 compatibility-alias plan: the short-lived
+`kernel.local.polynomial.cv()` alias was removed before downstream use spread.
 
 ## Public API Contract
 
 New code should call `fit.lps()` and refer to the method as local polynomial
 smoothing (LPS).
 
-For split-era compatibility, `kernel.local.polynomial.cv()` remains exported as
-a thin alias to `fit.lps()`. Returned objects inherit from both classes:
+Returned objects inherit from:
 
 ```r
-c("lps", "kernel.local.polynomial.cv", "list")
+c("lps", "list")
 ```
 
-This lets new code dispatch through `predict.lps()` and `print.lps()`, while
-older code that checks `inherits(object, "kernel.local.polynomial.cv")` still
-works.
+New code dispatches through `predict.lps()` and `print.lps()`.
 
 The object metadata now records:
 
@@ -39,21 +35,18 @@ The object metadata now records:
 
 ## Changes Made
 
-- Renamed the implementation function from `kernel.local.polynomial.cv()` to
-  `fit.lps()`.
-- Kept `kernel.local.polynomial.cv()` as an exported compatibility alias.
+- Renamed the implementation function to `fit.lps()`.
+- GE8 removed the short-lived `kernel.local.polynomial.cv()` compatibility
+  alias.
 - Added `predict.lps()` and `print.lps()` as canonical S3 methods.
-- Kept `predict.kernel.local.polynomial.cv()` and
-  `print.kernel.local.polynomial.cv()` as compatibility S3 methods that
-  delegate to the LPS methods.
+- GE8 removed the short-lived compatibility S3 methods for the old LPS class.
 - Updated README split status and public payload wording.
 - Added GE7 tests for the canonical entry point, class order, method metadata,
   prediction, printing, and alias equivalence.
 
 ## Explicit Non-Goals
 
-- No soft-deprecation warning yet; old scripts should remain quiet while the
-  package split stabilizes.
+- No soft-deprecation warning because the old alias was removed immediately.
 - No `fit.slplift()` alias yet; SLPLiFT naming should wait until the model name
   is stable across reports and project paths.
 - No public rename of `fit.lpl.tf()`, `fit.slpl.tf()`, or `fit.malps()`.
@@ -85,5 +78,4 @@ package.
 After GE7 passes package checks, the next useful API phase is either:
 
 - GE8 examples/docs polish for the new public surface; or
-- a deliberate soft-deprecation plan for `kernel.local.polynomial.cv()` once
-  downstream scripts have moved to `fit.lps()`.
+- migration of downstream experiment scripts to `fit.lps()`.

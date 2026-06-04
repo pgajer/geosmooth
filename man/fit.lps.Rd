@@ -2,7 +2,6 @@
 % Please edit documentation in R/kernel_local_polynomial_cv.R
 \name{fit.lps}
 \alias{fit.lps}
-\alias{kernel.local.polynomial.cv}
 \title{Fit a Local Polynomial Smoother}
 \usage{
 fit.lps(
@@ -21,8 +20,6 @@ fit.lps(
   auto.chart.selection.metric = c("coordinates", "operator"),
   backend = c("auto", "R", "cpp")
 )
-
-kernel.local.polynomial.cv(...)
 }
 \arguments{
 \item{X}{Numeric design/coordinate matrix with one observation per row.}
@@ -66,15 +63,10 @@ select when both diagnostics are requested.}
 \code{coordinate.method = "coordinates"} and the R reference backend for
 \code{coordinate.method = "local.pca"}. \code{"R"} always uses the
 reference implementation. \code{"cpp"} requires ambient coordinates.}
-
-\item{...}{Arguments passed from the compatibility alias
-\code{kernel.local.polynomial.cv()} to \code{fit.lps()}.}
 }
 \value{
 A list of class \code{"lps"} with fitted values, selected
-parameters, and a candidate CV table. For compatibility during the
-geosmooth split, returned objects also inherit from
-\code{"kernel.local.polynomial.cv"}.
+parameters, and a candidate CV table.
 }
 \description{
 Fits a local polynomial smoother (LPS) and selects its support size,
@@ -90,8 +82,4 @@ support and kernel weighting rule, but builds the local polynomial in a local
 PCA chart centered at each prediction point.  With \code{chart.dim = "auto"},
 the chart dimension is estimated from observed \code{X} only, using the same
 shared local-PCA dimension helper used by LPL-TF and S-LPL-TF.
-
-\code{kernel.local.polynomial.cv()} is retained as a compatibility alias for
-earlier split-era scripts. New code should call \code{fit.lps()} and refer to
-the method as local polynomial smoothing (LPS).
 }
