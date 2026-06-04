@@ -19,21 +19,6 @@ test_that("GE0 vendored support assets are present", {
                                       "eigen_config.hpp")))
 })
 
-test_that("GE0 intentionally has no exported user-facing API", {
-    root <- normalizePath(getwd(), mustWork = TRUE)
-    while (!file.exists(file.path(root, "DESCRIPTION"))) {
-        parent <- dirname(root)
-        if (identical(parent, root)) {
-            stop("Could not find package root")
-        }
-        root <- parent
-    }
-    namespace <- readLines(file.path(root, "NAMESPACE"), warn = FALSE)
-    export.lines <- grep("^export\\(", namespace, value = TRUE)
-
-    expect_identical(export.lines, character())
-})
-
 test_that("GE0 native scaffold is registered", {
     status <- geosmooth:::.geosmooth.ge0.status()
 

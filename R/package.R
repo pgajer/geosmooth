@@ -1,7 +1,12 @@
-# geosmooth package skeleton.
-#
-# GE0 intentionally exports no user-facing functions. Public smoother APIs are
-# moved in later phases after the native support skeleton is loadable.
+#' geosmooth package
+#'
+#' Geometric smoothing and conditional expectation methods split from gflow.
+#'
+#' @keywords internal
+#' @useDynLib geosmooth, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @importFrom utils head modifyList
+"_PACKAGE"
 
 .geosmooth.ge0.status <- function() {
     list(

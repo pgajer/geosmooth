@@ -25,13 +25,13 @@ LinkingTo:
 Depends:
     R (>= 3.5.0)
 Imports:
-    Rcpp
-Suggests:
     Matrix,
-    stats,
     methods,
-    graphics,
-    grDevices,
+    Rcpp,
+    stats,
+    utils
+Suggests:
+    roxygen2,
     pkgload,
     testthat (>= 3.0.0),
     genlasso,
