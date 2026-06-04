@@ -64,11 +64,11 @@ and optionally a sparse Laplacian matrix.
 \description{
 Builds a weighted graph Laplacian by transforming metric edge lengths into
 conductances. This operator is a direct metric-conductance comparator to
-\code{\link{fit.rdgraph.regression}}, not a replacement for the
+the legacy rdgraph regression smoother, not a replacement for the
 Riemannian-complex/overlap-density smoother.
 }
 \details{
-The current \code{fit.rdgraph.regression()} precomputed-graph path uses
+The legacy rdgraph regression precomputed-graph path uses
 supplied \code{weight.list} values as edge lengths for neighborhood ordering.
 The spectral conductance in that smoother is overlap-density based:
 \deqn{c_e^\rho = 1 / \max(\rho_1(e), 10^{-10}),}
