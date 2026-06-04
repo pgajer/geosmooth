@@ -71,6 +71,52 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_metric_graph_lowpass_operator
+SEXP rcpp_metric_graph_lowpass_operator(SEXP s_adj_list, SEXP s_weight_list, SEXP s_conductance_rule, SEXP s_conductance_epsilon, SEXP s_conductance_alpha, SEXP s_conductance_sigma, SEXP s_sigma_rule, SEXP s_sigma_quantile, SEXP s_local_k, SEXP s_laplacian_type);
+RcppExport SEXP _geosmooth_rcpp_metric_graph_lowpass_operator(SEXP s_adj_listSEXP, SEXP s_weight_listSEXP, SEXP s_conductance_ruleSEXP, SEXP s_conductance_epsilonSEXP, SEXP s_conductance_alphaSEXP, SEXP s_conductance_sigmaSEXP, SEXP s_sigma_ruleSEXP, SEXP s_sigma_quantileSEXP, SEXP s_local_kSEXP, SEXP s_laplacian_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type s_adj_list(s_adj_listSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_weight_list(s_weight_listSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_rule(s_conductance_ruleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_epsilon(s_conductance_epsilonSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_alpha(s_conductance_alphaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_sigma(s_conductance_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_sigma_rule(s_sigma_ruleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_sigma_quantile(s_sigma_quantileSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_local_k(s_local_kSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_laplacian_type(s_laplacian_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_metric_graph_lowpass_operator(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_metric_graph_lowpass_spectrum
+SEXP rcpp_metric_graph_lowpass_spectrum(SEXP s_adj_list, SEXP s_weight_list, SEXP s_conductance_rule, SEXP s_conductance_epsilon, SEXP s_conductance_alpha, SEXP s_conductance_sigma, SEXP s_sigma_rule, SEXP s_sigma_quantile, SEXP s_local_k, SEXP s_laplacian_type, SEXP s_n_eigenpairs, SEXP s_eigen_solver, SEXP s_dense_eigen_threshold, SEXP s_dense_fallback_threshold, SEXP s_dense_fallback, SEXP s_verbose);
+RcppExport SEXP _geosmooth_rcpp_metric_graph_lowpass_spectrum(SEXP s_adj_listSEXP, SEXP s_weight_listSEXP, SEXP s_conductance_ruleSEXP, SEXP s_conductance_epsilonSEXP, SEXP s_conductance_alphaSEXP, SEXP s_conductance_sigmaSEXP, SEXP s_sigma_ruleSEXP, SEXP s_sigma_quantileSEXP, SEXP s_local_kSEXP, SEXP s_laplacian_typeSEXP, SEXP s_n_eigenpairsSEXP, SEXP s_eigen_solverSEXP, SEXP s_dense_eigen_thresholdSEXP, SEXP s_dense_fallback_thresholdSEXP, SEXP s_dense_fallbackSEXP, SEXP s_verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type s_adj_list(s_adj_listSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_weight_list(s_weight_listSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_rule(s_conductance_ruleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_epsilon(s_conductance_epsilonSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_alpha(s_conductance_alphaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_conductance_sigma(s_conductance_sigmaSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_sigma_rule(s_sigma_ruleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_sigma_quantile(s_sigma_quantileSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_local_k(s_local_kSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_laplacian_type(s_laplacian_typeSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_n_eigenpairs(s_n_eigenpairsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_eigen_solver(s_eigen_solverSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_dense_eigen_threshold(s_dense_eigen_thresholdSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_dense_fallback_threshold(s_dense_fallback_thresholdSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_dense_fallback(s_dense_fallbackSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_verbose(s_verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_metric_graph_lowpass_spectrum(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_ssrhe_hessian_operator
 SEXP rcpp_ssrhe_hessian_operator(SEXP s_X, SEXP s_k, SEXP s_tangent_dim, SEXP s_nn_index, SEXP s_support_index, SEXP s_tangent_dim_rule, SEXP s_eigen_tolerance, SEXP s_derivative_order, SEXP s_stabilizer, SEXP s_pinv_tol, SEXP s_local_solver, SEXP s_normal_equations_max_condition, SEXP s_verbose);
 RcppExport SEXP _geosmooth_rcpp_ssrhe_hessian_operator(SEXP s_XSEXP, SEXP s_kSEXP, SEXP s_tangent_dimSEXP, SEXP s_nn_indexSEXP, SEXP s_support_indexSEXP, SEXP s_tangent_dim_ruleSEXP, SEXP s_eigen_toleranceSEXP, SEXP s_derivative_orderSEXP, SEXP s_stabilizerSEXP, SEXP s_pinv_tolSEXP, SEXP s_local_solverSEXP, SEXP s_normal_equations_max_conditionSEXP, SEXP s_verboseSEXP) {
@@ -100,6 +146,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates, 6},
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
+    {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
+    {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},
     {NULL, NULL, 0}
 };

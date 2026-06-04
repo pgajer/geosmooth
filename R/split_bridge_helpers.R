@@ -33,13 +33,15 @@
     get(name, envir = ns, inherits = FALSE)
 }
 
-.validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
-    .geosmooth.gflow.bridge(
-        ".validate.metric.graph.lowpass.graph",
-        feature = "graph-geodesic support validation"
-    )(
-        adj.list, weight.list
-    )
+if (!exists(".validate.metric.graph.lowpass.graph", mode = "function")) {
+    .validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
+        .geosmooth.gflow.bridge(
+            ".validate.metric.graph.lowpass.graph",
+            feature = "graph-geodesic support validation"
+        )(
+            adj.list, weight.list
+        )
+    }
 }
 
 .graph.geodesic.fields <- function(graph, stage = "final") {

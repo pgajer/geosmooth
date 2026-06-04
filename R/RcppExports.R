@@ -37,6 +37,14 @@ rcpp_local_pca_chart <- function(X_support, center, chart_dim, center_mode = "an
     .Call(`_geosmooth_rcpp_local_pca_chart`, X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis)
 }
 
+rcpp_metric_graph_lowpass_operator <- function(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type) {
+    .Call(`_geosmooth_rcpp_metric_graph_lowpass_operator`, s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type)
+}
+
+rcpp_metric_graph_lowpass_spectrum <- function(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose) {
+    .Call(`_geosmooth_rcpp_metric_graph_lowpass_spectrum`, s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose)
+}
+
 #' SSRHE Hessian operator native backend
 #'
 #' Internal native backend for `ssrhe.hessian.operator()`.
