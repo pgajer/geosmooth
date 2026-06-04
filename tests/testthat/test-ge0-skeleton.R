@@ -1,0 +1,41 @@
+test_that("GE0 vendored support assets are present", {
+    root <- normalizePath(getwd(), mustWork = TRUE)
+    while (!file.exists(file.path(root, "DESCRIPTION"))) {
+        parent <- dirname(root)
+        if (identical(parent, root)) {
+            stop("Could not find package root")
+        }
+        root <- parent
+    }
+
+    expect_true(file.exists(file.path(root, "src", "ANN", "ANN.cpp")))
+    expect_true(file.exists(file.path(root, "src", "ANN", "ANN.h")))
+    expect_true(file.exists(file.path(root, "inst", "licenses",
+                                      "ANN-Copyright-Notice.txt")))
+    expect_true(file.exists(file.path(root, "inst", "licenses", "LGPL-2.1.txt")))
+    expect_true(file.exists(file.path(root, "inst", "licenses", "MPL-2.0.txt")))
+    expect_true(file.exists(file.path(root, "inst", "include", "Eigen", "Core")))
+    expect_true(file.exists(file.path(root, "inst", "include", "geosmooth",
+                                      "eigen_config.hpp")))
+})
+
+test_that("GE0 intentionally has no exported user-facing API", {
+    root <- normalizePath(getwd(), mustWork = TRUE)
+    while (!file.exists(file.path(root, "DESCRIPTION"))) {
+        parent <- dirname(root)
+        if (identical(parent, root)) {
+            stop("Could not find package root")
+        }
+        root <- parent
+    }
+    namespace <- readLines(file.path(root, "NAMESPACE"), warn = FALSE)
+    export.lines <- grep("^export\\(", namespace, value = TRUE)
+
+    expect_identical(export.lines, character())
+})
+
+test_that("GE0 native scaffold is registered", {
+    status <- geosmooth:::.geosmooth.ge0.status()
+
+    expect_identical(status$native.stub, TRUE)
+})

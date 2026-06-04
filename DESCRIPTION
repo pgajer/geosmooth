@@ -1,0 +1,40 @@
+Package: geosmooth
+Title: Geometric Smoothing and Conditional Expectation Methods
+Version: 0.0.0.9000
+Authors@R:
+    person(given = "Pawel",
+           family = "Gajer",
+           email = "pgajer@gmail.com",
+           role = c("aut", "cre"))
+Author: Pawel Gajer [aut, cre]
+Maintainer: Pawel Gajer <pgajer@gmail.com>
+Description: Provides geometric smoothing and conditional expectation
+    estimation methods split from the gflow package. The initial development
+    focus is local polynomial smoothing, model-averaged local polynomial
+    smoothing, local polynomial lifting trend filtering, synchronized local
+    polynomial lifting trend filtering, and SSRHE.
+Copyright: file inst/COPYRIGHTS
+License: GPL (>= 3)
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+SystemRequirements: C++17, GNU make
+LinkingTo:
+    Rcpp
+Depends:
+    R (>= 3.5.0)
+Imports:
+    Rcpp
+Suggests:
+    Matrix,
+    stats,
+    methods,
+    graphics,
+    grDevices,
+    pkgload,
+    testthat (>= 3.0.0),
+    genlasso,
+    igraph,
+    gflow
+Config/testthat/edition: 3
