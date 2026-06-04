@@ -71,12 +71,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_ssrhe_hessian_operator
+SEXP rcpp_ssrhe_hessian_operator(SEXP s_X, SEXP s_k, SEXP s_tangent_dim, SEXP s_nn_index, SEXP s_support_index, SEXP s_tangent_dim_rule, SEXP s_eigen_tolerance, SEXP s_derivative_order, SEXP s_stabilizer, SEXP s_pinv_tol, SEXP s_local_solver, SEXP s_normal_equations_max_condition, SEXP s_verbose);
+RcppExport SEXP _geosmooth_rcpp_ssrhe_hessian_operator(SEXP s_XSEXP, SEXP s_kSEXP, SEXP s_tangent_dimSEXP, SEXP s_nn_indexSEXP, SEXP s_support_indexSEXP, SEXP s_tangent_dim_ruleSEXP, SEXP s_eigen_toleranceSEXP, SEXP s_derivative_orderSEXP, SEXP s_stabilizerSEXP, SEXP s_pinv_tolSEXP, SEXP s_local_solverSEXP, SEXP s_normal_equations_max_conditionSEXP, SEXP s_verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type s_X(s_XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_k(s_kSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_tangent_dim(s_tangent_dimSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_nn_index(s_nn_indexSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_support_index(s_support_indexSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_tangent_dim_rule(s_tangent_dim_ruleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_eigen_tolerance(s_eigen_toleranceSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_derivative_order(s_derivative_orderSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_stabilizer(s_stabilizerSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_pinv_tol(s_pinv_tolSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_local_solver(s_local_solverSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_normal_equations_max_condition(s_normal_equations_max_conditionSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type s_verbose(s_verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ssrhe_hessian_operator(s_X, s_k, s_tangent_dim, s_nn_index, s_support_index, s_tangent_dim_rule, s_eigen_tolerance, s_derivative_order, s_stabilizer, s_pinv_tol, s_local_solver, s_normal_equations_max_condition, s_verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_geosmooth_native_stub", (DL_FUNC) &_geosmooth_rcpp_geosmooth_native_stub, 0},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates, 6},
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
+    {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},
     {NULL, NULL, 0}
 };
 

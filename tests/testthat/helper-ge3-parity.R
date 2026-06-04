@@ -27,7 +27,10 @@
         "kernel.local.polynomial.cv",
         "fit.malps",
         "lpl.tf.operator",
-        "slpl.tf.operator"
+        "slpl.tf.operator",
+        "ssrhe.hessian.operator",
+        "fit.ssrhe.hessian.regression",
+        "fit.ssrhe.hessian.l1.regression"
     )
     missing <- needed[!vapply(
         needed,
