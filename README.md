@@ -4,16 +4,21 @@
 package split from `gflow`.
 
 The initial package skeleton vendors ANN and Eigen support so local-neighborhood
-smoothers can become self-contained.  Public smoother APIs are not moved in GE0;
-they will be migrated in later phases while keeping names and behavior stable.
+smoothers can become self-contained.
 
-Planned first payload:
+Current split status:
 
-- LPS, currently `kernel.local.polynomial.cv`;
-- MALPS;
-- LPL-TF;
-- SLPLiFT / S-LPL-TF;
-- SSRHE.
+- GE0 created the package skeleton and native support scaffold.
+- GE1 moved the R-level LPS, MALPS, LPL-TF, and SLPLiFT APIs.
+- GE2 will move the C++ LPS and local-PCA chart backends.
+- GE4 will move the SSRHE public/native backend.
+
+Current public payload:
+
+- LPS, currently `kernel.local.polynomial.cv`
+- MALPS
+- LPL-TF
+- SLPLiFT / S-LPL-TF
 
 Focused validation:
 
