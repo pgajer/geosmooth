@@ -11,6 +11,7 @@ Current split status:
 - GE0 created the package skeleton and native support scaffold.
 - GE1 moved the R-level LPS, MALPS, LPL-TF, and SLPLiFT APIs.
 - GE2 moved the C++ LPS and local-PCA chart backends.
+- GE3 added source-level parity and smoke coverage against split-era `gflow`.
 - GE4 will move the SSRHE public/native backend.
 
 Current public payload:
