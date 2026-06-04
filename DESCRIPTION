@@ -26,6 +26,7 @@ Depends:
     R (>= 3.5.0)
 Imports:
     dgraphs,
+    MASS,
     Matrix,
     methods,
     Rcpp,
@@ -36,6 +37,7 @@ Suggests:
     pkgload,
     testthat (>= 3.0.0),
     genlasso,
+    grip,
     igraph,
     gflow
 Config/testthat/edition: 3

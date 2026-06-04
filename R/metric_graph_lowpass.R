@@ -2,7 +2,7 @@
 #'
 #' Builds a weighted graph Laplacian by transforming metric edge lengths into
 #' conductances. This operator is a direct metric-conductance comparator to
-#' \code{\link{fit.rdgraph.regression}}, not a replacement for the
+#' the legacy rdgraph regression smoother, not a replacement for the
 #' Riemannian-complex/overlap-density smoother.
 #'
 #' @param adj.list List of integer neighbor vectors using 1-based vertex indices.
@@ -30,7 +30,7 @@
 #' @param verbose Logical. Reserved for future diagnostic messages.
 #'
 #' @details
-#' The current \code{fit.rdgraph.regression()} precomputed-graph path uses
+#' The legacy rdgraph regression precomputed-graph path uses
 #' supplied \code{weight.list} values as edge lengths for neighborhood ordering.
 #' The spectral conductance in that smoother is overlap-density based:
 #' \deqn{c_e^\rho = 1 / \max(\rho_1(e), 10^{-10}),}
@@ -218,7 +218,7 @@ fit.metric.graph.lowpass <- function(
     .require.metric.graph.lowpass.finite(filter.weights.matrix, "filter weights")
     y.spectral <- as.vector(crossprod(V, y))
     .require.metric.graph.lowpass.finite(y.spectral, "spectral response coefficients")
-    gcv.result <- select.eta.gcv.single(y, y.spectral, V, filter.weights.matrix, eta.grid)
+    gcv.result <- .select.eta.gcv.single(y, y.spectral, V, filter.weights.matrix, eta.grid)
     .validate.metric.graph.lowpass.gcv.result(
         gcv.result = gcv.result,
         n = length(y),
@@ -344,7 +344,7 @@ refit.metric.graph.lowpass <- function(fitted.model,
             message(sprintf("Selecting eta via GCV for %d response(s).", n.responses))
         }
         for (j in seq_len(n.responses)) {
-            gcv.result <- select.eta.gcv.single(
+            gcv.result <- .select.eta.gcv.single(
                 Y[, j], Vt.Y[, j], V, filter.weights.matrix, eta.grid
             )
             .validate.metric.graph.lowpass.gcv.result(
@@ -702,7 +702,7 @@ compute.filter.weights.matrix <- function(eigenvalues, eta.grid, filter.type) {
     weights
 }
 
-select.eta.gcv.single <- function(y.obs, y.spectral, V,
+.select.eta.gcv.single <- function(y.obs, y.spectral, V,
                                   filter.weights.matrix, eta.grid) {
     n <- length(y.obs)
     filtered.spectral <- y.spectral * filter.weights.matrix
