@@ -15,6 +15,8 @@ Current split status:
 - GE4 moved the SSRHE public/native backend.
 - GE5 formalized the graph dependency boundary: graph construction and
   graph-geodesic helper utilities remain owned by `gflow`.
+- GE6 started private helper cleanup by giving the shared local-polynomial
+  design helper a MALPS-independent name while retaining compatibility shims.
 
 Current public payload:
 

@@ -709,7 +709,7 @@ malps.smoother.matrix <- function(object, max.n = 1000L,
             object$X[fit.index, , drop = FALSE],
             object$charts[[a]]
         )
-        D.fit <- .malps.design.matrix(Z.fit, object$degree)
+        D.fit <- .local.polynomial.design.matrix(Z.fit, object$degree)
         coef.map <- .malps.wls.coefficient.map(D.fit, fit.weights)
 
         pred.index <- pred.support$index
@@ -717,7 +717,7 @@ malps.smoother.matrix <- function(object, max.n = 1000L,
             object$X[pred.index, , drop = FALSE],
             object$charts[[a]]
         )
-        D.pred <- .malps.design.matrix(Z.pred, object$degree)
+        D.pred <- .local.polynomial.design.matrix(Z.pred, object$degree)
         local.map <- D.pred %*% coef.map
         alpha <- object$averaging.weights[pred.index, a]
         for (r in seq_along(pred.index)) {
@@ -1234,8 +1234,10 @@ print.malps_bootstrap <- function(x, ...) {
         case.weights = NULL,
         averaging.weights = averaged$averaging.weights,
         local.coefficients = fits$coefficients,
-        design.columns = .malps.design.column.names(params$chart.dim,
-                                                    params$degree),
+        design.columns = .local.polynomial.design.column.names(
+            params$chart.dim,
+            params$degree
+        ),
         diagnostics = diagnostics,
         selection = selection,
         cv = if (identical(selection$method, "cv")) selection else NULL,
@@ -2405,7 +2407,7 @@ print.malps_bootstrap <- function(x, ...) {
     eligible$candidate.id[ord[1L]]
 }
 
-.malps.design.column.names <- function(m, degree) {
+.local.polynomial.design.column.names <- function(m, degree) {
     names <- "1"
     if (degree >= 1L) {
         names <- c(names, paste0("z", seq_len(m)))
@@ -2420,7 +2422,11 @@ print.malps_bootstrap <- function(x, ...) {
     names
 }
 
-.malps.design.matrix <- function(Z, degree) {
+.malps.design.column.names <- function(m, degree) {
+    .local.polynomial.design.column.names(m, degree)
+}
+
+.local.polynomial.design.matrix <- function(Z, degree) {
     Z <- as.matrix(Z)
     n <- nrow(Z)
     m <- ncol(Z)
@@ -2440,6 +2446,10 @@ print.malps_bootstrap <- function(x, ...) {
         out <- cbind(out, do.call(cbind, quad))
     }
     out
+}
+
+.malps.design.matrix <- function(Z, degree) {
+    .local.polynomial.design.matrix(Z, degree)
 }
 
 .malps.distance.matrix <- function(X, anchors) {
@@ -2676,7 +2686,7 @@ print.malps_bootstrap <- function(x, ...) {
             ), call. = FALSE)
         }
         Z <- .malps.chart.coordinates(X[s$index, , drop = FALSE], charts[[a]])
-        D <- .malps.design.matrix(Z, degree)
+        D <- .local.polynomial.design.matrix(Z, degree)
         y.local <- y[s$index]
         current.robust.weights <- rep(1, length(s$index))
         effective.weights <- base.weights
@@ -2734,7 +2744,8 @@ print.malps_bootstrap <- function(x, ...) {
         robust.weight.min[a] <- min(current.robust.weights[positive])
         robust.weight.max[a] <- max(current.robust.weights[positive])
     }
-    colnames(coefficients) <- .malps.design.column.names(chart.dim, degree)
+    colnames(coefficients) <-
+        .local.polynomial.design.column.names(chart.dim, degree)
     list(
         coefficients = coefficients,
         rank = rank,
@@ -2850,7 +2861,7 @@ print.malps_bootstrap <- function(x, ...) {
     for (a in seq_len(n.anchors)) {
         s <- supports[[a]]
         Z <- .malps.chart.coordinates(X[s$index, , drop = FALSE], charts[[a]])
-        D <- .malps.design.matrix(Z, degree)
+        D <- .local.polynomial.design.matrix(Z, degree)
         pred <- as.numeric(D %*% coefficients[a, ])
         w <- s$weights
         numerator[s$index] <- numerator[s$index] + w * pred
