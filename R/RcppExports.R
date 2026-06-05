@@ -28,6 +28,27 @@ rcpp_kernel_local_polynomial_cv_coordinates <- function(X, y, foldid, support_si
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates`, X, y, foldid, support_size, degree, kernel)
 }
 
+#' Kernel local polynomial CV RMSE for local-PCA coordinates
+#'
+#' Internal C++ prototype backend for `fit.lps()`.
+#'
+#' @keywords internal
+rcpp_kernel_local_polynomial_cv_local_pca <- function(X, y, foldid, support_size, degree, kernel, chart_dim) {
+    .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca`, X, y, foldid, support_size, degree, kernel, chart_dim)
+}
+
+#' Profile kernel local polynomial CV RMSE for local-PCA coordinates
+#'
+#' Internal diagnostic backend for `fit.lps()`. It mirrors
+#' `rcpp_kernel_local_polynomial_cv_local_pca()` and returns timing/count
+#' diagnostics for the native loop. It is intended for engineering reports,
+#' not as a user-facing API.
+#'
+#' @keywords internal
+rcpp_kernel_local_polynomial_cv_local_pca_profile <- function(X, y, foldid, support_size, degree, kernel, chart_dim) {
+    .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile`, X, y, foldid, support_size, degree, kernel, chart_dim)
+}
+
 #' Kernel local polynomial predictions for ambient coordinates
 #'
 #' Internal C++ backend for `fit.lps()`.
@@ -37,6 +58,25 @@ rcpp_kernel_local_polynomial_predict_coordinates <- function(X_train, y_train, X
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates`, X_train, y_train, X_eval, support_size, degree, kernel)
 }
 
+#' Kernel local polynomial predictions for local-PCA coordinates
+#'
+#' Internal C++ prototype backend for `fit.lps()`.
+#'
+#' @keywords internal
+rcpp_kernel_local_polynomial_predict_local_pca <- function(X_train, y_train, X_eval, support_size, degree, kernel, chart_dim) {
+    .Call(`_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca`, X_train, y_train, X_eval, support_size, degree, kernel, chart_dim)
+}
+
+#' Inspect raw ANN and tie-complete neighbor order
+#'
+#' Internal diagnostic backend for tests. It exposes the raw ANN order and the
+#' geosmooth tie-complete support order for one query point.
+#'
+#' @keywords internal
+rcpp_kernel_local_polynomial_neighbor_probe <- function(X, center, k) {
+    .Call(`_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe`, X, center, k)
+}
+
 #' Local PCA chart
 #'
 #' Internal C++ backend for shared local-PCA chart construction.
@@ -44,6 +84,17 @@ rcpp_kernel_local_polynomial_predict_coordinates <- function(X_train, y_train, X
 #' @keywords internal
 rcpp_local_pca_chart <- function(X_support, center, chart_dim, center_mode = "anchor", dim_rule = "fixed", eigen_tolerance = 0.9, weights = NULL, rebase_to_anchor = TRUE, orient_basis = FALSE) {
     .Call(`_geosmooth_rcpp_local_pca_chart`, X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis)
+}
+
+#' Second-order local SVD chart
+#'
+#' Internal experimental C++ backend for Harlim-style second-order local SVD
+#' chart construction.  This primitive is intentionally separate from the
+#' shared plain local-PCA chart backend.
+#'
+#' @keywords internal
+rcpp_local_second_order_svd_chart <- function(X_support, center, chart_dim, center_mode = "anchor", weights = NULL, rank_tolerance = 1.4901161193847656e-8, rank_absolute_tolerance = 0.0, curvature_condition_max = 1e8, curvature_ridge = 0.0, min_curvature_support = 0L, rebase_to_anchor = TRUE, orient_basis = FALSE) {
+    .Call(`_geosmooth_rcpp_local_second_order_svd_chart`, X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis)
 }
 
 rcpp_metric_graph_lowpass_operator <- function(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type) {

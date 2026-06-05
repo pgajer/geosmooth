@@ -16,9 +16,10 @@ fit.lps(
   X.eval = NULL,
   coordinate.method = c("coordinates", "local.pca"),
   chart.dim = NULL,
+  local.chart.method = c("pca", "second.order.svd"),
   auto.chart.support.metric = c("coordinates", "operator", "both"),
   auto.chart.selection.metric = c("coordinates", "operator"),
-  backend = c("auto", "R", "cpp")
+  backend = c("auto", "R", "cpp", "cpp.local.pca")
 )
 }
 \arguments{
@@ -51,6 +52,13 @@ centered ambient coordinates. \code{"local.pca"} uses a local PCA chart.}
 If \code{NULL}, defaults to \code{ncol(X)}. The special value
 \code{"auto"} estimates chart dimension from observed \code{X} only.}
 
+\item{local.chart.method}{Local chart constructor used when
+\code{coordinate.method = "local.pca"}. \code{"pca"} preserves the ordinary
+local-PCA chart path. \code{"second.order.svd"} uses an experimental
+curvature-corrected second-order local SVD chart and records compact chart
+fallback diagnostics. This option is opt-in and does not affect ambient
+coordinate fits.}
+
 \item{auto.chart.support.metric}{Support system used when
 \code{chart.dim = "auto"}. Included for consistency with LPL-TF and
 S-LPL-TF; because this smoother uses coordinate supports,
@@ -62,11 +70,16 @@ select when both diagnostics are requested.}
 \item{backend}{Computation backend. \code{"auto"} uses the C++ backend for
 \code{coordinate.method = "coordinates"} and the R reference backend for
 \code{coordinate.method = "local.pca"}. \code{"R"} always uses the
-reference implementation. \code{"cpp"} requires ambient coordinates.}
+reference implementation. \code{"cpp"} requires ambient coordinates.
+\code{"cpp.local.pca"} is an opt-in prototype backend for
+\code{coordinate.method = "local.pca"} with
+\code{local.chart.method = "pca"}.}
 }
 \value{
 A list of class \code{"lps"} with fitted values, selected
-parameters, and a candidate CV table.
+parameters, a candidate CV table, the requested
+\code{local.chart.method}, and the effective chart method used for
+reporting.
 }
 \description{
 Fits a local polynomial smoother (LPS) and selects its support size,
