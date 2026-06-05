@@ -1,0 +1,3 @@
+"case.id","support.size","degree","kernel","chart.dim","r.cv.rmse","cpp.cv.rmse","abs.diff","rel.diff","exceeds.strict.abs.tol"
+"exact_plane_2d",10,1,"gaussian",2,0.170126274843505,0.171445514025803,0.00131923918229768,0.00775447051615756,TRUE
+"exact_plane_2d",14,1,"gaussian",2,0.230030077584136,0.228937757444165,0.00109232013997068,0.00474859701584526,TRUE

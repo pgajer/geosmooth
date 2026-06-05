@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>H5 Expanded LPS Chart Comparison</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;line-height:1.45;color:#1f2933}
+h1,h2{color:#111827} table{border-collapse:collapse;font-size:13px} th,td{border:1px solid #d1d5db;padding:5px 7px;text-align:left} th{background:#f3f4f6} img{max-width:100%;height:auto;border:1px solid #e5e7eb} .note{background:#fff7ed;border-left:4px solid #dd6b20;padding:10px 12px}
+</style></head><body>
+<h1>H5 Expanded dim &gt; 1 LPS Chart Comparison</h1>
+<p>Generated 2026-06-04 15:15:06 EDT.</p>
+<div class='note'><strong>Scope.</strong> H4 was only a smoke and wiring phase. This revised H5 report excludes flat geometries and uses a curved/singular paired suite comparing ordinary local-PCA LPS with opt-in second-order-local-SVD LPS. It does not change defaults and does not claim statistical significance.</div>
+<h2>Summary</h2>
+<p>Paired cases: 27. Outcomes by truth RMSE delta: pca: 18; second.order.svd: 7; tied: 2.</p>
+<p>Flat datasets are intentionally excluded because they primarily exercise the known second-order fallback/identity behavior rather than curved-chart differences.</p>
+<p>Median delta (second.order.svd - pca): 0.00038881. Negative values favor second-order charts. Best case: torus_patch_2d. Worst case: highdim_curved_hypersurface_3d.</p>
+<p>VALENCIA-derived case included: yes.</p>
+<h2>Truth RMSE Pairing</h2>
+<img src='report_files/h5_truth_rmse_paired_segments.png' alt='Paired truth RMSE plot'>
+<h2>Truth RMSE Delta</h2>
+<img src='report_files/h5_delta_truth_rmse.png' alt='Delta truth RMSE plot'>
+<h2>Runtime Ratio</h2>
+<img src='report_files/h5_runtime_ratio.png' alt='Runtime ratio plot'>
+<h2>Fallback Diagnostics</h2>
+<img src='report_files/h5_second_order_fallback_rate.png' alt='Fallback plot'>
+<p>Second-order fallback rates were recorded from final fitted-chart diagnostics. Ordinary PCA fits report no effective fallback diagnostics.</p>
+<h2>Paired Results</h2>
+<table><tr><th>case.id</th><th>geometry.family</th><th>n</th><th>ambient.dimension</th><th>pca.truth.rmse</th><th>second.truth.rmse</th><th>delta.truth.rmse</th><th>outcome</th><th>runtime.ratio.second_over_pca</th><th>second.fallback.rate</th></tr><tr><td>curved_2d_paraboloid</td><td>controlled_2d_curved</td><td> 80</td><td>  3</td><td>0.1385</td><td>0.136</td><td>-0.002507</td><td>second.order.svd</td><td> 3.28</td><td>0</td></tr>
+<tr><td>curved_2d_saddle_registry</td><td>controlled_2d_curved</td><td> 80</td><td>  3</td><td>0.1499</td><td>0.1501</td><td>0.0001703</td><td>pca</td><td>4.081</td><td>0</td></tr>
+<tr><td>highdim_embedded_2d</td><td>controlled_highdim</td><td> 80</td><td>100</td><td>0.2455</td><td>0.2459</td><td>0.0004347</td><td>pca</td><td>4.667</td><td>0</td></tr>
+<tr><td>highdim_embedded_3d</td><td>controlled_highdim</td><td> 80</td><td> 99</td><td>0.5783</td><td>0.5781</td><td>-0.0001752</td><td>second.order.svd</td><td>5.159</td><td>0</td></tr>
+<tr><td>paraboloid_mild_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.1419</td><td>0.1419</td><td>0.000003363</td><td>pca</td><td>3.898</td><td>0</td></tr>
+<tr><td>paraboloid_sharp_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.2266</td><td>0.2266</td><td>-0.00000000000000005551</td><td>tied</td><td>3.691</td><td>    1</td></tr>
+<tr><td>anisotropic_bowl_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.119</td><td>0.1191</td><td>0.00009143</td><td>pca</td><td>4.272</td><td>0</td></tr>
+<tr><td>saddle_cross_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.2337</td><td>0.2347</td><td>0.001017</td><td>pca</td><td>4.277</td><td>0</td></tr>
+<tr><td>saddle_quadratic_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.3671</td><td>0.3675</td><td>0.0003888</td><td>pca</td><td>4.287</td><td>0</td></tr>
+<tr><td>monkey_saddle_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.3614</td><td>0.356</td><td>-0.005376</td><td>second.order.svd</td><td>3.853</td><td>0</td></tr>
+<tr><td>corrugated_sheet_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.1602</td><td>0.1608</td><td>0.0005816</td><td>pca</td><td>4.179</td><td>0</td></tr>
+<tr><td>sphere_patch_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.1052</td><td>0.1061</td><td>0.0009389</td><td>pca</td><td>4.497</td><td>0</td></tr>
+<tr><td>torus_patch_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.481</td><td>0.3723</td><td>-0.1087</td><td>second.order.svd</td><td>4.418</td><td>0</td></tr>
+<tr><td>swiss_roll_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.3338</td><td>0.3382</td><td>0.004422</td><td>pca</td><td>3.724</td><td>0</td></tr>
+<tr><td>helicoid_2d</td><td>custom_curved_2d</td><td> 80</td><td>  3</td><td>0.5247</td><td>0.5248</td><td>0.0001272</td><td>pca</td><td>4.627</td><td>0</td></tr>
+<tr><td>cone_tip_singular_2d</td><td>custom_singular_2d</td><td> 80</td><td>  3</td><td>0.1275</td><td>0.2228</td><td>0.09521</td><td>pca</td><td>4.289</td><td>0</td></tr>
+<tr><td>cusp_ridge_singular_2d</td><td>custom_singular_2d</td><td> 80</td><td>  3</td><td>0.119</td><td>0.1184</td><td>-0.0005799</td><td>second.order.svd</td><td>4.054</td><td>0</td></tr>
+<tr><td>folded_sheet_singular_2d</td><td>custom_singular_2d</td><td> 80</td><td>  3</td><td>0.2693</td><td>0.2693</td><td>0</td><td>tied</td><td>3.503</td><td>    1</td></tr>
+<tr><td>nearline_paraboloid_singular_2d</td><td>custom_singular_2d</td><td> 80</td><td>  3</td><td>0.886</td><td>0.8866</td><td>0.000634</td><td>pca</td><td>4.048</td><td>0</td></tr>
+<tr><td>nearline_saddle_singular_2d</td><td>custom_singular_2d</td><td> 80</td><td>  3</td><td>0.7749</td><td>0.7736</td><td>-0.001285</td><td>second.order.svd</td><td>4.152</td><td>0</td></tr>
+<tr><td>curved_hypersurface_3d</td><td>custom_curved_3d</td><td> 80</td><td>  4</td><td>0.4159</td><td>0.4176</td><td>0.001693</td><td>pca</td><td>5.016</td><td>0</td></tr>
+<tr><td>saddle_hypersurface_3d</td><td>custom_curved_3d</td><td> 80</td><td>  4</td><td>0.3707</td><td>0.3718</td><td>0.001072</td><td>pca</td><td> 4.66</td><td>0</td></tr>
+<tr><td>cusp_hypersurface_singular_3d</td><td>custom_singular_3d</td><td> 80</td><td>  4</td><td>0.333</td><td>0.2407</td><td>-0.09235</td><td>second.order.svd</td><td>4.584</td><td>0</td></tr>
+<tr><td>highdim_curved_paraboloid_2d</td><td>custom_highdim_curved_2d</td><td> 80</td><td> 30</td><td>0.2322</td><td>0.2355</td><td>0.003255</td><td>pca</td><td>4.425</td><td>0</td></tr>
+<tr><td>highdim_curved_saddle_2d</td><td>custom_highdim_curved_2d</td><td> 80</td><td> 30</td><td>0.2087</td><td>0.2126</td><td>0.003931</td><td>pca</td><td>4.374</td><td>0</td></tr>
+<tr><td>highdim_curved_hypersurface_3d</td><td>custom_highdim_curved_3d</td><td> 80</td><td> 36</td><td>0.3815</td><td>0.5516</td><td>0.1701</td><td>pca</td><td>5.021</td><td>0</td></tr>
+<tr><td>valencia_rel4_linf_4d</td><td>valencia_derived_4d</td><td>120</td><td>  4</td><td>0.07171</td><td>0.07909</td><td>0.007386</td><td>pca</td><td>5.068</td><td>0.008333</td></tr></table>
+<h2>Interpretation</h2>
+<p>This revised H5 pass separates implementation readiness from accuracy evidence. The implementation is ready as an opt-in experimental chart method when tests pass. The accuracy evidence is paired across curved and singular cases, so it should guide whether to run a larger study rather than justify changing defaults.</p>
+<p>Positive deltas favor ordinary PCA charts; negative deltas favor second-order charts. Mixed results or runtime costs should be interpreted conservatively.</p>
+<h2>Artifacts</h2>
+<ul>
+<li>tables/h5_lps_chart_paired_results.csv</li>
+<li>tables/h5_lps_chart_fit_results.csv</li>
+<li>tables/h5_lps_chart_second_order_diagnostics.csv</li>
+<li>h5_lps_chart_expanded_eval_bundle.rds</li>
+</ul>
+</body></html>

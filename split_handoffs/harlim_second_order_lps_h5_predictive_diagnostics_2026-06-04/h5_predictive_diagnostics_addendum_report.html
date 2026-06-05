@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>H5.1 Predictive Diagnostics Addendum</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;line-height:1.45;color:#1f2933}
+h1,h2{color:#111827}.note{background:#eef6ff;border-left:4px solid #2b6cb0;padding:10px 12px}.warn{background:#fff7ed;border-left:4px solid #dd6b20;padding:10px 12px}img{max-width:100%;height:auto;border:1px solid #e5e7eb;margin:8px 0 22px 0}ul{max-width:950px}
+</style></head><body>
+<h1>H5.1 Predictive Diagnostics Addendum</h1>
+<p>Generated 2026-06-04 17:50:29 EDT.</p>
+<div class='note'>No models were refit. This addendum uses the existing H5 paired, fit, and second-order diagnostic CSV artifacts.</div>
+<h2>Materiality Rule</h2>
+<p>Absolute Delta uses second-order Truth RMSE minus PCA Truth RMSE. Relative Delta divides by PCA Truth RMSE. Practical ties are cases inside both the +/-0.005 absolute band and the +/-2% relative band. Full fallback cases are labeled non-informative for second-order accuracy.</p>
+<h2>Headline</h2>
+<p>Cases: 27; effective second-order cases: 25; full fallback cases: 2.</p>
+<p>Practical outcomes: full_fallback_noninformative=2; material_pca_win=3; material_second_order_win=3; practical_tie=19.</p>
+<p>Strongest available rank-correlation signals are modest: degree.delta (rho~0.34); ambient.dimension (rho~0.338); runtime.ratio.second_over_pca (rho~0.335); support.delta (rho~0.333); high.dim.flag (rho~0.319); first.rank.median (rho~0.298); second.rank.median (rho~0.288); fit.residual.median (rho~0.285).</p>
+<div class='warn'>This 27-case single-replicate suite is useful for choosing H6 diagnostics, not for claiming predictive success.</div>
+<h2>1. Absolute Delta and Practical Band</h2>
+<img src='report_files/h5_1_delta_practical_band.png' alt='Delta practical band'>
+<h2>2. Relative Delta by Geometry Bucket</h2>
+<img src='report_files/h5_1_relative_delta_by_family.png' alt='Relative delta by family'>
+<h2>3. Delta Versus Condition</h2>
+<img src='report_files/h5_1_delta_vs_condition.png' alt='Delta versus condition'>
+<h2>4. Delta Versus Curvature and Residual Ratios</h2>
+<img src='report_files/h5_1_delta_vs_curvature_ratios.png' alt='Delta versus ratios'>
+<h2>5. Delta by Fallback Category</h2>
+<img src='report_files/h5_1_delta_by_fallback_category.png' alt='Delta by fallback'>
+<h2>6. Top Win/Loss Diagnostic Panel</h2>
+<img src='report_files/h5_1_top_win_loss_panel.png' alt='Top win loss panel'>
+<h2>7. VALENCIA Probe</h2>
+<img src='report_files/h5_1_valencia_probe.png' alt='VALENCIA probe'>
+<h2>CSV Artifacts</h2>
+<ul>
+<li>tables/h5_1_case_level_predictive_diagnostics.csv</li>
+<li>tables/h5_1_predictor_rank_correlations.csv</li>
+<li>tables/h5_1_geometry_bucket_summary.csv</li>
+<li>tables/h5_1_practical_outcome_counts.csv</li>
+</ul>
+</body></html>

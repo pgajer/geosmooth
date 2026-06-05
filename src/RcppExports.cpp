@@ -52,6 +52,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_kernel_local_polynomial_cv_local_pca
+NumericVector rcpp_kernel_local_polynomial_cv_local_pca(const NumericMatrix& X, const NumericVector& y, const IntegerVector& foldid, const IntegerVector& support_size, const IntegerVector& degree, const CharacterVector& kernel, const IntegerVector& chart_dim);
+RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_cv_local_pca(SEXP XSEXP, SEXP ySEXP, SEXP foldidSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP, SEXP chart_dimSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type foldid(foldidSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type support_size(support_sizeSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type degree(degreeSEXP);
+    Rcpp::traits::input_parameter< const CharacterVector& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type chart_dim(chart_dimSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_kernel_local_polynomial_cv_local_pca(X, y, foldid, support_size, degree, kernel, chart_dim));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_kernel_local_polynomial_cv_local_pca_profile
+List rcpp_kernel_local_polynomial_cv_local_pca_profile(const NumericMatrix& X, const NumericVector& y, const IntegerVector& foldid, const IntegerVector& support_size, const IntegerVector& degree, const CharacterVector& kernel, const IntegerVector& chart_dim);
+RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile(SEXP XSEXP, SEXP ySEXP, SEXP foldidSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP, SEXP chart_dimSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type foldid(foldidSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type support_size(support_sizeSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type degree(degreeSEXP);
+    Rcpp::traits::input_parameter< const CharacterVector& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type chart_dim(chart_dimSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_kernel_local_polynomial_cv_local_pca_profile(X, y, foldid, support_size, degree, kernel, chart_dim));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_kernel_local_polynomial_predict_coordinates
 NumericVector rcpp_kernel_local_polynomial_predict_coordinates(const NumericMatrix& X_train, const NumericVector& y_train, const NumericMatrix& X_eval, const int support_size, const int degree, const std::string& kernel);
 RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_predict_coordinates(SEXP X_trainSEXP, SEXP y_trainSEXP, SEXP X_evalSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP) {
@@ -65,6 +99,36 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type degree(degreeSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
     rcpp_result_gen = Rcpp::wrap(rcpp_kernel_local_polynomial_predict_coordinates(X_train, y_train, X_eval, support_size, degree, kernel));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_kernel_local_polynomial_predict_local_pca
+NumericVector rcpp_kernel_local_polynomial_predict_local_pca(const NumericMatrix& X_train, const NumericVector& y_train, const NumericMatrix& X_eval, const int support_size, const int degree, const std::string& kernel, const int chart_dim);
+RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_predict_local_pca(SEXP X_trainSEXP, SEXP y_trainSEXP, SEXP X_evalSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP, SEXP chart_dimSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_train(X_trainSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y_train(y_trainSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_eval(X_evalSEXP);
+    Rcpp::traits::input_parameter< const int >::type support_size(support_sizeSEXP);
+    Rcpp::traits::input_parameter< const int >::type degree(degreeSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_kernel_local_polynomial_predict_local_pca(X_train, y_train, X_eval, support_size, degree, kernel, chart_dim));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_kernel_local_polynomial_neighbor_probe
+List rcpp_kernel_local_polynomial_neighbor_probe(const NumericMatrix& X, const NumericVector& center, const int k);
+RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_neighbor_probe(SEXP XSEXP, SEXP centerSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_kernel_local_polynomial_neighbor_probe(X, center, k));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -84,6 +148,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
     Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
     rcpp_result_gen = Rcpp::wrap(rcpp_local_pca_chart(X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_local_second_order_svd_chart
+List rcpp_local_second_order_svd_chart(const NumericMatrix& X_support, const NumericVector& center, const int chart_dim, const std::string& center_mode, Nullable<NumericVector> weights, const double rank_tolerance, const double rank_absolute_tolerance, const double curvature_condition_max, const double curvature_ridge, const int min_curvature_support, const bool rebase_to_anchor, const bool orient_basis);
+RcppExport SEXP _geosmooth_rcpp_local_second_order_svd_chart(SEXP X_supportSEXP, SEXP centerSEXP, SEXP chart_dimSEXP, SEXP center_modeSEXP, SEXP weightsSEXP, SEXP rank_toleranceSEXP, SEXP rank_absolute_toleranceSEXP, SEXP curvature_condition_maxSEXP, SEXP curvature_ridgeSEXP, SEXP min_curvature_supportSEXP, SEXP rebase_to_anchorSEXP, SEXP orient_basisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_support(X_supportSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type center_mode(center_modeSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const double >::type rank_tolerance(rank_toleranceSEXP);
+    Rcpp::traits::input_parameter< const double >::type rank_absolute_tolerance(rank_absolute_toleranceSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvature_condition_max(curvature_condition_maxSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvature_ridge(curvature_ridgeSEXP);
+    Rcpp::traits::input_parameter< const int >::type min_curvature_support(min_curvature_supportSEXP);
+    Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
+    Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_local_second_order_svd_chart(X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -161,8 +247,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_geosmooth_native_stub", (DL_FUNC) &_geosmooth_rcpp_geosmooth_native_stub, 0},
     {"_geosmooth_rcpp_perform_harmonic_smoothing", (DL_FUNC) &_geosmooth_rcpp_perform_harmonic_smoothing, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
+    {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca, 7},
+    {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates, 6},
+    {"_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca, 7},
+    {"_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe, 3},
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
+    {"_geosmooth_rcpp_local_second_order_svd_chart", (DL_FUNC) &_geosmooth_rcpp_local_second_order_svd_chart, 12},
     {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
     {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},

@@ -1,0 +1,6 @@
+"dataset","n","counter","count"
+"depth3_top",250,"chart_dim_resolutions",6
+"depth3_top",250,"neighbor_orderings",120
+"depth3_top",250,"local_charts",360
+"depth3_top",250,"kernel_weight_vectors",720
+"depth3_top",250,"weighted_fits",1440

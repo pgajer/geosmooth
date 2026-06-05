@@ -40,3 +40,236 @@ test_that("GE8 removes the old kernel.local.polynomial.cv API", {
         inherits = FALSE
     ))
 })
+
+test_that("K4 local-PCA LPS C++ backend matches R reference path", {
+    set.seed(41)
+    t <- seq(0, 1, length.out = 36)
+    X <- cbind(t, t^2, sin(2 * pi * t))
+    y <- sin(3 * pi * t) + 0.15 * cos(7 * pi * t)
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    common.args <- list(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(12L, 14L),
+        degree.grid = 0:2,
+        kernel.grid = c("gaussian", "tricube"),
+        coordinate.method = "local.pca",
+        local.chart.method = "pca",
+        chart.dim = 2L
+    )
+
+    fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))
+    fit.cpp <- do.call(fit.lps, c(common.args, list(backend = "cpp.local.pca")))
+
+    expect_equal(fit.cpp$backend.used, "cpp.local.pca")
+    expect_equal(
+        fit.cpp$cv.table$cv.rmse.observed,
+        fit.r$cv.table$cv.rmse.observed,
+        tolerance = 1e-8
+    )
+    expect_equal(fit.cpp$selected, fit.r$selected, tolerance = 1e-8)
+    expect_equal(fit.cpp$fitted.values, fit.r$fitted.values, tolerance = 1e-8)
+
+    newdata <- X[c(3L, 11L, 23L), , drop = FALSE]
+    expect_equal(
+        predict(fit.cpp, newdata),
+        predict(fit.r, newdata),
+        tolerance = 1e-8
+    )
+})
+
+test_that("K4 local-PCA C++ backend is explicit and narrow", {
+    X <- matrix(seq(0, 1, length.out = 20), ncol = 1L)
+    y <- X[, 1]^2
+    foldid <- rep(1:2, length.out = nrow(X))
+
+    expect_error(
+        fit.lps(
+            X,
+            y,
+            foldid = foldid,
+            coordinate.method = "coordinates",
+            backend = "cpp.local.pca"
+        ),
+        "requires coordinate.method = 'local.pca'"
+    )
+    expect_error(
+        fit.lps(
+            X,
+            y,
+            foldid = foldid,
+            coordinate.method = "local.pca",
+            local.chart.method = "second.order.svd",
+            chart.dim = 1L,
+            backend = "cpp.local.pca"
+        ),
+        "requires coordinate.method = 'local.pca'"
+    )
+
+    fit.auto <- fit.lps(
+        X,
+        y,
+        foldid = foldid,
+        coordinate.method = "local.pca",
+        chart.dim = 1L,
+        backend = "auto"
+    )
+    expect_equal(fit.auto$backend.used, "R")
+})
+
+test_that("K4 local-PCA C++ backend uses R-compatible tie-stable supports", {
+    compare.backends <- function(X, y, foldid, support.grid,
+                                 degree.grid, kernel.grid) {
+        common.args <- list(
+            X = X,
+            y = y,
+            foldid = foldid,
+            support.grid = support.grid,
+            degree.grid = degree.grid,
+            kernel.grid = kernel.grid,
+            coordinate.method = "local.pca",
+            local.chart.method = "pca",
+            chart.dim = 2L
+        )
+        fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))
+        fit.cpp <- do.call(
+            fit.lps,
+            c(common.args, list(backend = "cpp.local.pca"))
+        )
+        expect_equal(
+            fit.cpp$cv.table$cv.rmse.observed,
+            fit.r$cv.table$cv.rmse.observed,
+            tolerance = 1e-8
+        )
+        expect_equal(fit.cpp$selected, fit.r$selected, tolerance = 1e-8)
+        expect_equal(fit.cpp$fitted.values, fit.r$fitted.values,
+                     tolerance = 1e-8)
+    }
+
+    uv <- as.matrix(expand.grid(
+        u = seq(-1, 1, length.out = 5),
+        v = seq(-1, 1, length.out = 5)
+    ))
+    X.grid <- cbind(uv[, 1], uv[, 2], uv[, 1] + 2 * uv[, 2])
+    y.grid <- uv[, 1]^2 - uv[, 2] + 0.25 * uv[, 1] * uv[, 2]
+    compare.backends(
+        X = X.grid,
+        y = y.grid,
+        foldid = rep(1:5, length.out = nrow(X.grid)),
+        support.grid = c(10L, 12L),
+        degree.grid = 2L,
+        kernel.grid = c("gaussian", "tricube")
+    )
+
+    base <- as.matrix(expand.grid(u = 0:2, v = 0:1))
+    uv.dup <- base[rep(seq_len(nrow(base)), each = 2L), , drop = FALSE]
+    X.dup <- cbind(uv.dup[, 1], uv.dup[, 2], uv.dup[, 1] - uv.dup[, 2])
+    y.dup <- 0.2 * seq_len(nrow(X.dup)) + uv.dup[, 1] - 0.5 * uv.dup[, 2]
+    compare.backends(
+        X = X.dup,
+        y = y.dup,
+        foldid = rep(1:3, length.out = nrow(X.dup)),
+        support.grid = c(6L, 8L),
+        degree.grid = 1:2,
+        kernel.grid = c("gaussian", "tricube")
+    )
+})
+
+test_that("K4 native neighbor probe repairs raw ANN tie order", {
+    check.probe <- function(X, center, k) {
+        probe <- geosmooth:::rcpp_kernel_local_polynomial_neighbor_probe(
+            X = X,
+            center = center,
+            k = k
+        )
+        d <- rowSums((X - matrix(center, nrow(X), ncol(X), byrow = TRUE))^2)
+        reference <- order(d, seq_along(d))[seq_len(k)]
+
+        expect_equal(probe$reference.row, reference)
+        expect_equal(probe$tie.complete.row, reference)
+        expect_equal(probe$tie.complete.squared.distance, d[reference])
+        expect_length(probe$raw.row, k)
+        expect_length(probe$raw.squared.distance, k)
+    }
+
+    cardinal <- matrix(c(
+        -1, 0,
+         1, 0,
+         0, -1,
+         0, 1
+    ), ncol = 2, byrow = TRUE)
+    check.probe(cardinal, center = c(0, 0), k = 2L)
+
+    duplicated <- rbind(
+        c(0, 0), c(0, 0),
+        c(1, 0), c(1, 0),
+        c(2, 0), c(2, 0)
+    )
+    check.probe(duplicated, center = c(1, 0), k = 3L)
+
+    grid <- as.matrix(expand.grid(u = -1:1, v = -1:1))
+    check.probe(grid, center = c(0, 0), k = 4L)
+})
+
+test_that("K10 row-Gram local PCA chart matches the SVD subspace", {
+    set.seed(104)
+    X <- matrix(rnorm(8L * 60L), nrow = 8L)
+    center <- X[1L, ]
+    chart <- geosmooth:::rcpp_local_pca_chart(
+        X_support = X,
+        center = center,
+        chart_dim = 3L,
+        center_mode = "anchor",
+        dim_rule = "fixed",
+        rebase_to_anchor = TRUE,
+        orient_basis = FALSE
+    )
+
+    centered <- sweep(X, 2L, center)
+    ref <- svd(centered, nu = 0L, nv = 3L)
+    expect_equal(
+        chart$singular.values[1:3],
+        ref$d[1:3],
+        tolerance = 1e-8
+    )
+    chart.projector <- chart$basis %*% t(chart$basis)
+    ref.projector <- ref$v[, 1:3, drop = FALSE] %*%
+        t(ref$v[, 1:3, drop = FALSE])
+    expect_equal(chart.projector, ref.projector, tolerance = 1e-8)
+})
+
+test_that("K10 high-dimensional local-PCA LPS retains R/native parity", {
+    set.seed(105)
+    latent <- cbind(
+        seq(-1, 1, length.out = 45L),
+        sin(seq(-1, 1, length.out = 45L) * pi)
+    )
+    noise <- matrix(rnorm(45L * 58L, sd = 0.02), nrow = 45L)
+    X <- cbind(latent, noise)
+    y <- latent[, 1]^2 + 0.5 * latent[, 2]
+    foldid <- rep(1:5, length.out = nrow(X))
+    common.args <- list(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(12L, 15L),
+        degree.grid = 1:2,
+        kernel.grid = c("gaussian", "tricube"),
+        coordinate.method = "local.pca",
+        local.chart.method = "pca",
+        chart.dim = 3L
+    )
+
+    fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))
+    fit.cpp <- do.call(fit.lps, c(common.args, list(backend = "cpp.local.pca")))
+
+    expect_equal(
+        fit.cpp$cv.table$cv.rmse.observed,
+        fit.r$cv.table$cv.rmse.observed,
+        tolerance = 1e-8
+    )
+    expect_equal(fit.cpp$selected, fit.r$selected, tolerance = 1e-8)
+    expect_equal(fit.cpp$fitted.values, fit.r$fitted.values, tolerance = 1e-8)
+})

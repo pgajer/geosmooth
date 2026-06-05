@@ -1,0 +1,7 @@
+"dataset","n","phase","seconds","share.of.total"
+"depth3_top",250,"chart_dim_resolution",0.109999999999999,0.328358208955224
+"depth3_top",250,"neighbor_ordering",0.00199999999999978,0.00597014925373072
+"depth3_top",250,"local_chart",0.162999999999999,0.486567164179105
+"depth3_top",250,"kernel_weighting",0.00399999999999956,0.0119402985074614
+"depth3_top",250,"weighted_fit",0.056,0.167164179104479
+"depth3_top",250,"cv_rmse",0,0

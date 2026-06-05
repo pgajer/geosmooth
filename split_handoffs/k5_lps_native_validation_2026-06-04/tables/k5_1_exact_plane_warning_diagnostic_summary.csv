@@ -1,0 +1,3 @@
+"case.id","support.size","degree","kernel","chart.dim","n.targets","n.support.mismatch","max.abs.pred.diff","median.abs.pred.diff","cv.rmse.r","cv.rmse.cpp","max.weighted.design.condition","median.weighted.design.condition","min.weighted.design.min.sv"
+"exact_plane_2d",10,1,"gaussian",2,49,0,0.0793421448594436,2.22044604925031e-16,0.170126274843505,0.171445514025803,5.27674861239084,2.85511260272107,0.731536707978039
+"exact_plane_2d",14,1,"gaussian",2,49,0,0.040903025015659,1.11022302462516e-16,0.230030077584136,0.228937757444165,5.33875083472792,2.43979971060826,1.07943146902095

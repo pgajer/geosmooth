@@ -1,0 +1,21 @@
+"dataset","n","mode","feature.count","source","success","runtime.sec","truth.rmse","observed.rmse","cv.rmse","support.size","degree","kernel","chart.dim","error"
+"rel4",250,"ambient_cpp",4,"bundled Li/Lc/Gv/Bv 4D composition",TRUE,0.0609999999999999,0.0271402781100319,0.0376550250640682,0.0522096881806014,15,2,"tricube",4,NA
+"rel4",250,"local_pca_auto",4,"bundled Li/Lc/Gv/Bv 4D composition",TRUE,0.503,0.0308999143180432,0.0417479363750626,0.0585359779393444,35,1,"tricube",2,NA
+"rel4",500,"ambient_cpp",4,"bundled Li/Lc/Gv/Bv 4D composition",TRUE,0.118,0.0222704230258225,0.0349763934620368,0.0503992258873018,15,2,"tricube",4,NA
+"rel4",500,"local_pca_auto",4,"bundled Li/Lc/Gv/Bv 4D composition",TRUE,0.652,0.0207526347661153,0.0376297485182114,0.050376593921222,25,1,"gaussian",2,NA
+"hypercube_Li",250,"ambient_cpp",3,"hypercube embedding of rel4 with Li reference",TRUE,0.036,0.0752544728751073,0.0934708428831954,0.214824005894788,25,1,"gaussian",3,NA
+"hypercube_Li",250,"local_pca_auto",3,"hypercube embedding of rel4 with Li reference",TRUE,0.348,0.0671750495513371,0.101642862503461,0.175203805760731,35,1,"tricube",1,NA
+"hypercube_Li",500,"ambient_cpp",3,"hypercube embedding of rel4 with Li reference",TRUE,0.0769999999999995,0.0726005564308534,0.100607346038211,0.287835242603618,25,1,"gaussian",3,NA
+"hypercube_Li",500,"local_pca_auto",3,"hypercube embedding of rel4 with Li reference",TRUE,0.585999999999999,0.0803159842949585,0.112106329563482,0.190600799130532,35,1,"gaussian",2,NA
+"hypercube_Gv",250,"ambient_cpp",3,"hypercube embedding of rel4 with Gv reference",TRUE,0.0359999999999996,0.143495916447701,0.159079162489878,0.22282928695532,25,1,"gaussian",3,NA
+"hypercube_Gv",250,"local_pca_auto",3,"hypercube embedding of rel4 with Gv reference",TRUE,0.346,0.04863908694345,0.0540160214530732,0.136237459233165,25,1,"tricube",2,NA
+"hypercube_Gv",500,"ambient_cpp",3,"hypercube embedding of rel4 with Gv reference",TRUE,0.0700000000000003,0.0337794504309775,0.0527671004422742,0.120546068281587,35,1,"tricube",3,NA
+"hypercube_Gv",500,"local_pca_auto",3,"hypercube embedding of rel4 with Gv reference",TRUE,0.594,0.0730405167992041,0.0836871407083688,0.106272743062875,35,1,"tricube",1,NA
+"depth2_top",250,"ambient_cpp",7,"top 8 depth-2 merged DCST labels",TRUE,0.0210000000000008,0.0738668653084208,0.0794722397339832,0.124028106998124,15,2,"tricube",7,NA
+"depth2_top",250,"local_pca_auto",7,"top 8 depth-2 merged DCST labels",TRUE,0.471,0.0467034017461414,0.0493627540391985,0.113326107712569,15,1,"tricube",2,NA
+"depth2_top",500,"ambient_cpp",7,"top 8 depth-2 merged DCST labels",TRUE,0.0439999999999996,0.0270917850539631,0.0326655591545035,0.0611067733215313,15,2,"tricube",7,NA
+"depth2_top",500,"local_pca_auto",7,"top 8 depth-2 merged DCST labels",TRUE,0.919,0.0306235826944028,0.0390980555948798,0.0792254015267967,35,1,"tricube",3,NA
+"depth3_top",250,"ambient_cpp",11,"top 10 depth-3 merged DCST labels",TRUE,0.0369999999999999,0.0983184842879047,0.0997102388945525,0.14960520387981,15,2,"tricube",11,NA
+"depth3_top",250,"local_pca_auto",11,"top 10 depth-3 merged DCST labels",TRUE,0.706999999999999,0.0410106914475462,0.0453097529934794,0.281001827578959,25,1,"tricube",3,NA
+"depth3_top",500,"ambient_cpp",11,"top 10 depth-3 merged DCST labels",TRUE,0.0730000000000004,0.0387194623793026,0.0404227695556798,0.0670533817746492,15,2,"tricube",11,NA
+"depth3_top",500,"local_pca_auto",11,"top 10 depth-3 merged DCST labels",TRUE,1.341,0.0718270583260105,0.0755628578613426,0.137499354437567,35,1,"gaussian",4,NA

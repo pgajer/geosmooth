@@ -1,0 +1,6 @@
+"truth.id","sample.policy","sample.n"
+"p7d_hd1_latent_two_gaussian_v1","full_dataset",NA
+"p7d_hd2_latent_three_gaussian_v1","full_dataset",NA
+"p7d_hd3_latent_four_gaussian_v1","full_dataset",NA
+"p7d_16s_graph_gaussian_farthest3_v1","deterministic_16s_subset_n250",250
+"p7d_16s_graph_gaussian_farthest3_v1","deterministic_16s_subset_n500",500

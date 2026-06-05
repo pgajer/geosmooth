@@ -31,6 +31,12 @@
 #' @param chart.dim Chart dimension for \code{coordinate.method = "local.pca"}.
 #'   If \code{NULL}, defaults to \code{ncol(X)}. The special value
 #'   \code{"auto"} estimates chart dimension from observed \code{X} only.
+#' @param local.chart.method Local chart constructor used when
+#'   \code{coordinate.method = "local.pca"}. \code{"pca"} preserves the ordinary
+#'   local-PCA chart path. \code{"second.order.svd"} uses an experimental
+#'   curvature-corrected second-order local SVD chart and records compact chart
+#'   fallback diagnostics. This option is opt-in and does not affect ambient
+#'   coordinate fits.
 #' @param auto.chart.support.metric Support system used when
 #'   \code{chart.dim = "auto"}. Included for consistency with LPL-TF and
 #'   S-LPL-TF; because this smoother uses coordinate supports,
@@ -41,8 +47,13 @@
 #'   \code{coordinate.method = "coordinates"} and the R reference backend for
 #'   \code{coordinate.method = "local.pca"}. \code{"R"} always uses the
 #'   reference implementation. \code{"cpp"} requires ambient coordinates.
+#'   \code{"cpp.local.pca"} is an opt-in prototype backend for
+#'   \code{coordinate.method = "local.pca"} with
+#'   \code{local.chart.method = "pca"}.
 #' @return A list of class \code{"lps"} with fitted values, selected
-#'   parameters, and a candidate CV table.
+#'   parameters, a candidate CV table, the requested
+#'   \code{local.chart.method}, and the effective chart method used for
+#'   reporting.
 #' @export
 fit.lps <- function(
     X, y, foldid = NULL,
@@ -54,9 +65,10 @@ fit.lps <- function(
     X.eval = NULL,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    local.chart.method = c("pca", "second.order.svd"),
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
-    backend = c("auto", "R", "cpp")) {
+    backend = c("auto", "R", "cpp", "cpp.local.pca")) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
@@ -73,10 +85,26 @@ fit.lps <- function(
              call. = FALSE)
     }
     coordinate.method <- match.arg(coordinate.method)
+    local.chart.method <- match.arg(local.chart.method)
+    if (identical(coordinate.method, "coordinates") &&
+        identical(local.chart.method, "second.order.svd")) {
+        stop("'local.chart.method = \"second.order.svd\"' requires ",
+             "coordinate.method = 'local.pca'.", call. = FALSE)
+    }
+    local.chart.method.effective <- if (identical(coordinate.method,
+                                                  "coordinates")) {
+        "none"
+    } else {
+        local.chart.method
+    }
     backend <- match.arg(backend)
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
-    backend.used <- .klp.resolve.backend(coordinate.method, backend)
+    backend.used <- .klp.resolve.backend(
+        coordinate.method,
+        backend,
+        local.chart.method.effective
+    )
     support.grid <- .klp.clean.support.grid(support.grid, nrow(X))
     degree.grid <- .klp.clean.degree.grid(degree.grid)
     kernel.grid <- .klp.clean.kernel.grid(kernel.grid)
@@ -96,17 +124,13 @@ fit.lps <- function(
         cand = cand,
         coordinate.method = coordinate.method,
         chart.dim = chart.dim,
+        local.chart.method = local.chart.method.effective,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
         backend = backend.used
     )
     cv.table <- cv.result$cv.table
-    best.idx <- order(
-        cv.table$cv.rmse.observed,
-        cv.table$support.size,
-        cv.table$degree,
-        cv.table$kernel
-    )[[1L]]
+    best.idx <- .klp.select.best.idx(cv.table)
     selected <- cv.table[best.idx, , drop = FALSE]
     selected.dim <- .klp.resolve.chart.dim(
         X = X,
@@ -117,7 +141,7 @@ fit.lps <- function(
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric
     )
-    fitted <- .klp.predict.local.polynomial(
+    fitted.result <- .klp.predict.local.polynomial(
         X.train = X,
         y.train = y,
         X.eval = X.eval,
@@ -126,8 +150,30 @@ fit.lps <- function(
         kernel = selected$kernel[[1L]],
         coordinate.method = coordinate.method,
         chart.dim = selected.dim$chart.dim,
-        backend = backend.used
+        local.chart.method = local.chart.method.effective,
+        backend = backend.used,
+        return.chart.diagnostics = identical(local.chart.method.effective,
+                                             "second.order.svd")
     )
+    fitted <- if (is.list(fitted.result) &&
+                  !is.null(fitted.result$predictions)) {
+        fitted.result$predictions
+    } else {
+        fitted.result
+    }
+    chart.diagnostics <- if (is.list(fitted.result)) {
+        fitted.result$chart.diagnostics
+    } else {
+        NULL
+    }
+    chart.diagnostics.summary <- if (is.list(fitted.result)) {
+        fitted.result$chart.diagnostics.summary
+    } else {
+        .klp.local.chart.diagnostics.summary(
+            NULL,
+            local.chart.method.effective
+        )
+    }
     out <- list(
         method.id = "lps",
         method.family = "local_polynomial_smoother",
@@ -140,8 +186,12 @@ fit.lps <- function(
         cv.table = cv.table,
         foldid = foldid,
         coordinate.method = coordinate.method,
+        local.chart.method = local.chart.method,
+        local.chart.method.effective = local.chart.method.effective,
         requested.chart.dim = chart.dim,
         chart.dim = selected.dim$chart.dim,
+        local.chart.diagnostics = chart.diagnostics,
+        local.chart.diagnostics.summary = chart.diagnostics.summary,
         auto.chart.dim = identical(chart.dim, "auto"),
         auto.chart.dim.diagnostics = selected.dim$diagnostics,
         auto.chart.support.metric = auto.chart.support.metric,
@@ -163,6 +213,17 @@ predict.lps <- function(object, newdata = NULL, ...) {
              call. = FALSE)
     }
     X.eval <- if (is.null(newdata)) object$X.eval else as.matrix(newdata)
+    local.chart.method.effective <- if (!is.null(
+        object$local.chart.method.effective
+    )) {
+        object$local.chart.method.effective
+    } else if (identical(object$coordinate.method, "coordinates")) {
+        "none"
+    } else if (is.null(object$local.chart.method)) {
+        "pca"
+    } else {
+        object$local.chart.method
+    }
     .klp.predict.local.polynomial(
         X.train = object$X,
         y.train = object$y,
@@ -172,6 +233,7 @@ predict.lps <- function(object, newdata = NULL, ...) {
         kernel = object$selected$kernel[[1L]],
         coordinate.method = object$coordinate.method,
         chart.dim = object$chart.dim,
+        local.chart.method = local.chart.method.effective,
         backend = if (is.null(object$backend.used)) "R" else object$backend.used
     )
 }
@@ -182,6 +244,15 @@ print.lps <- function(x, ...) {
     cat("Local polynomial smoother (LPS) fit\n")
     cat("  observations:", nrow(x$X), "\n")
     cat("  coordinate method:", x$coordinate.method, "\n")
+    if (identical(x$coordinate.method, "local.pca")) {
+        cat("  local chart method:",
+            if (is.null(x$local.chart.method.effective)) {
+                if (is.null(x$local.chart.method)) "pca" else x$local.chart.method
+            } else {
+                x$local.chart.method.effective
+            },
+            "\n")
+    }
     cat("  backend:", if (is.null(x$backend.used)) "R" else x$backend.used, "\n")
     cat("  selected support.size:", x$selected$support.size[[1L]], "\n")
     cat("  selected degree:", x$selected$degree[[1L]], "\n")
@@ -195,7 +266,32 @@ print.lps <- function(x, ...) {
     sqrt(mean((as.numeric(x) - as.numeric(y))^2, na.rm = TRUE))
 }
 
+.klp.select.best.idx <- function(cv.table, tolerance = 1e-12) {
+    finite <- is.finite(cv.table$cv.rmse.observed)
+    if (!any(finite)) {
+        return(order(
+            cv.table$cv.rmse.observed,
+            cv.table$support.size,
+            cv.table$degree,
+            cv.table$kernel
+        )[[1L]])
+    }
+    best <- min(cv.table$cv.rmse.observed[finite])
+    eligible <- which(
+        finite &
+            cv.table$cv.rmse.observed <=
+                best + max(tolerance, tolerance * abs(best))
+    )
+    eligible[order(
+        cv.table$support.size[eligible],
+        cv.table$degree[eligible],
+        cv.table$kernel[eligible],
+        cv.table$cv.rmse.observed[eligible]
+    )[[1L]]]
+}
+
 .klp.cv.table <- function(X, y, foldid, cand, coordinate.method, chart.dim,
+                          local.chart.method = "pca",
                           auto.chart.support.metric,
                           auto.chart.selection.metric,
                           backend = "R") {
@@ -232,6 +328,20 @@ print.lps <- function(x, ...) {
         key <- paste(cand$support.size[[rr]], cand$degree[[rr]], sep = "_")
         cand$chart.dim[[rr]] <- dim.lookup[[key]]
     }
+    if (identical(coordinate.method, "local.pca") &&
+        identical(local.chart.method, "pca") &&
+        identical(backend, "cpp.local.pca")) {
+        cand$cv.rmse.observed <- rcpp_kernel_local_polynomial_cv_local_pca(
+            X = X,
+            y = y,
+            foldid = foldid,
+            support_size = cand$support.size,
+            degree = cand$degree,
+            kernel = cand$kernel,
+            chart_dim = cand$chart.dim
+        )
+        return(list(cv.table = cand, predictions = NULL))
+    }
     pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
     support.sizes <- sort(unique(cand$support.size))
     max.support.size <- max(support.sizes)
@@ -250,34 +360,68 @@ print.lps <- function(x, ...) {
                 support.size = fold.max.support
             )
             for (support.size in support.sizes) {
+                effective.support <- min(as.integer(support.size),
+                                         length(ordered$distances))
                 support.rows <- which(cand$support.size == support.size)
                 max.chart.dim <- max(cand$chart.dim[support.rows],
                                      na.rm = TRUE)
-                local <- .klp.local.neighborhood.from.order(
-                    X.train = X.train,
-                    y.train = y.train,
-                    center = center,
-                    ordered = ordered,
-                    support.size = support.size,
-                    coordinate.method = coordinate.method,
-                    chart.dim = max.chart.dim
-                )
-                kernel.weights <- lapply(
-                    unique(cand$kernel[support.rows]),
-                    function(kernel) .klp.kernel.weights(local$distances, kernel)
-                )
-                names(kernel.weights) <- unique(cand$kernel[support.rows])
-                design.cache <- new.env(parent = emptyenv())
-                for (rr in support.rows) {
-                    w <- kernel.weights[[cand$kernel[[rr]]]]
-                    pred[target, rr] <- .klp.fit.intercept.lazy(
-                        z = local$z,
-                        y = local$y,
-                        weights = w,
-                        degree = cand$degree[[rr]],
-                        chart.dim = cand$chart.dim[[rr]],
-                        design.cache = design.cache
+                kernel.names <- unique(cand$kernel[support.rows])
+                if (!identical(local.chart.method, "second.order.svd")) {
+                    local <- .klp.local.neighborhood.from.order(
+                        X.train = X.train,
+                        y.train = y.train,
+                        center = center,
+                        ordered = ordered,
+                        support.size = support.size,
+                        coordinate.method = coordinate.method,
+                        chart.dim = max.chart.dim,
+                        local.chart.method = local.chart.method
                     )
+                }
+                kernel.weights <- lapply(
+                    kernel.names,
+                    function(kernel) .klp.kernel.weights(
+                        ordered$distances[seq_len(effective.support)],
+                        kernel
+                    )
+                )
+                names(kernel.weights) <- kernel.names
+                if (!identical(local.chart.method, "second.order.svd")) {
+                    design.cache <- new.env(parent = emptyenv())
+                    for (rr in support.rows) {
+                        w <- kernel.weights[[cand$kernel[[rr]]]]
+                        pred[target, rr] <- .klp.fit.intercept.lazy(
+                            z = local$z,
+                            y = local$y,
+                            weights = w,
+                            degree = cand$degree[[rr]],
+                            chart.dim = cand$chart.dim[[rr]],
+                            design.cache = design.cache
+                        )
+                    }
+                } else {
+                    for (rr in support.rows) {
+                        w <- kernel.weights[[cand$kernel[[rr]]]]
+                        local <- .klp.local.neighborhood.from.order(
+                            X.train = X.train,
+                            y.train = y.train,
+                            center = center,
+                            ordered = ordered,
+                            support.size = support.size,
+                            coordinate.method = coordinate.method,
+                            chart.dim = cand$chart.dim[[rr]],
+                            local.chart.method = local.chart.method,
+                            chart.weights = w
+                        )
+                        pred[target, rr] <- .klp.fit.intercept.lazy(
+                            z = local$z,
+                            y = local$y,
+                            weights = w,
+                            degree = cand$degree[[rr]],
+                            chart.dim = cand$chart.dim[[rr]],
+                            design.cache = new.env(parent = emptyenv())
+                        )
+                    }
                 }
             }
         }
@@ -339,7 +483,8 @@ print.lps <- function(x, ...) {
     sample(rep(seq_len(cv.folds), length.out = n))
 }
 
-.klp.resolve.backend <- function(coordinate.method, backend) {
+.klp.resolve.backend <- function(coordinate.method, backend,
+                                 local.chart.method = "none") {
     if (identical(backend, "auto")) {
         return(if (identical(coordinate.method, "coordinates")) "cpp" else "R")
     }
@@ -347,6 +492,14 @@ print.lps <- function(x, ...) {
         if (!identical(coordinate.method, "coordinates")) {
             stop("'backend = \"cpp\"' currently supports only ",
                  "coordinate.method = 'coordinates'.", call. = FALSE)
+        }
+    }
+    if (identical(backend, "cpp.local.pca")) {
+        if (!identical(coordinate.method, "local.pca") ||
+            !identical(local.chart.method, "pca")) {
+            stop("'backend = \"cpp.local.pca\"' requires ",
+                 "coordinate.method = 'local.pca' and ",
+                 "local.chart.method = 'pca'.", call. = FALSE)
         }
     }
     backend
@@ -390,7 +543,9 @@ print.lps <- function(x, ...) {
 .klp.predict.local.polynomial <- function(X.train, y.train, X.eval,
                                           support.size, degree, kernel,
                                           coordinate.method, chart.dim,
-                                          backend = "R") {
+                                          local.chart.method = "pca",
+                                          backend = "R",
+                                          return.chart.diagnostics = FALSE) {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
@@ -406,7 +561,22 @@ print.lps <- function(x, ...) {
             kernel = kernel
         ))
     }
+    if (identical(coordinate.method, "local.pca") &&
+        identical(local.chart.method, "pca") &&
+        identical(backend, "cpp.local.pca") &&
+        !return.chart.diagnostics) {
+        return(rcpp_kernel_local_polynomial_predict_local_pca(
+            X_train = X.train,
+            y_train = y.train,
+            X_eval = X.eval,
+            support_size = support.size,
+            degree = as.integer(degree),
+            kernel = kernel,
+            chart_dim = as.integer(chart.dim)
+        ))
+    }
     out <- rep(NA_real_, nrow(X.eval))
+    diagnostics <- vector("list", nrow(X.eval))
     for (i in seq_len(nrow(X.eval))) {
         center <- X.eval[i, , drop = TRUE]
         d <- sqrt(rowSums((X.train -
@@ -415,14 +585,29 @@ print.lps <- function(x, ...) {
         local.d <- d[idx]
         weights <- .klp.kernel.weights(local.d, kernel)
         if (!any(weights > 0)) weights[] <- 1
-        z <- .klp.local.coordinates(
+        local.coords <- .klp.local.coordinates(
             X.support = X.train[idx, , drop = FALSE],
             center = center,
             coordinate.method = coordinate.method,
-            chart.dim = chart.dim
+            chart.dim = chart.dim,
+            local.chart.method = local.chart.method,
+            weights = weights,
+            return.chart = return.chart.diagnostics
         )
+        if (is.list(local.coords) &&
+            !is.null(local.coords$coordinates)) {
+            z <- local.coords$coordinates
+            diagnostics[[i]] <- .klp.local.chart.diagnostics.row(
+                eval.index = i,
+                chart = local.coords$chart
+            )
+        } else {
+            z <- local.coords
+        }
         design <- .local.polynomial.design.matrix(z, degree)
-        ok <- is.finite(y.train[idx]) & is.finite(weights) & weights > 0
+        design.ok <- rowSums(is.finite(design)) == ncol(design)
+        ok <- is.finite(y.train[idx]) & is.finite(weights) &
+            weights > 0 & design.ok
         if (sum(ok) < ncol(design)) {
             out[[i]] <- stats::weighted.mean(y.train[idx], weights,
                                              na.rm = TRUE)
@@ -440,11 +625,23 @@ print.lps <- function(x, ...) {
             fit$coefficients[[1L]]
         }
     }
-    out
+    if (!return.chart.diagnostics) return(out)
+    diagnostics <- do.call(rbind, diagnostics)
+    list(
+        predictions = out,
+        chart.diagnostics = diagnostics,
+        chart.diagnostics.summary = .klp.local.chart.diagnostics.summary(
+            diagnostics,
+            local.chart.method
+        )
+    )
 }
 
 .klp.local.neighborhood <- function(X.train, y.train, center, support.size,
-                                    coordinate.method, chart.dim) {
+                                    coordinate.method, chart.dim,
+                                    local.chart.method = "pca",
+                                    chart.weights = NULL,
+                                    return.chart = FALSE) {
     ordered <- .klp.local.order(
         X.train = X.train,
         center = center,
@@ -457,7 +654,10 @@ print.lps <- function(x, ...) {
         ordered = ordered,
         support.size = support.size,
         coordinate.method = coordinate.method,
-        chart.dim = chart.dim
+        chart.dim = chart.dim,
+        local.chart.method = local.chart.method,
+        chart.weights = chart.weights,
+        return.chart = return.chart
     )
 }
 
@@ -471,21 +671,33 @@ print.lps <- function(x, ...) {
 
 .klp.local.neighborhood.from.order <- function(X.train, y.train, center,
                                                ordered, support.size,
-                                               coordinate.method, chart.dim) {
+                                               coordinate.method, chart.dim,
+                                               local.chart.method = "pca",
+                                               chart.weights = NULL,
+                                               return.chart = FALSE) {
     support.size <- min(as.integer(support.size), length(ordered$index))
     idx <- ordered$index[seq_len(support.size)]
     distances <- ordered$distances[seq_len(support.size)]
-    z <- .klp.local.coordinates(
+    coords <- .klp.local.coordinates(
         X.support = X.train[idx, , drop = FALSE],
         center = center,
         coordinate.method = coordinate.method,
-        chart.dim = chart.dim
+        chart.dim = chart.dim,
+        local.chart.method = local.chart.method,
+        weights = chart.weights,
+        return.chart = return.chart
     )
+    z <- if (is.list(coords) && !is.null(coords$coordinates)) {
+        coords$coordinates
+    } else {
+        coords
+    }
     list(
         index = idx,
         distances = distances,
         y = y.train[idx],
-        z = z
+        z = z,
+        chart = if (is.list(coords)) coords$chart else NULL
     )
 }
 
@@ -516,10 +728,11 @@ print.lps <- function(x, ...) {
 }
 
 .klp.fit.intercept.design <- function(design, y, weights) {
-    ok <- is.finite(y) & is.finite(weights) & weights > 0
+    design.ok <- rowSums(is.finite(design)) == ncol(design)
+    ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     if (!any(weights > 0)) {
         weights[] <- 1
-        ok <- is.finite(y) & is.finite(weights) & weights > 0
+        ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     }
     if (sum(ok) < ncol(design)) {
         return(stats::weighted.mean(y, weights, na.rm = TRUE))
@@ -573,19 +786,193 @@ print.lps <- function(x, ...) {
 }
 
 .klp.local.coordinates <- function(X.support, center, coordinate.method,
-                                   chart.dim) {
+                                   chart.dim, local.chart.method = "pca",
+                                   weights = NULL,
+                                   return.chart = FALSE) {
     centered <- sweep(X.support, 2L, center, "-")
-    if (identical(coordinate.method, "coordinates")) return(centered)
-    chart <- rcpp_local_pca_chart(
-        X_support = X.support,
-        center = center,
-        chart_dim = as.integer(chart.dim),
-        center_mode = "anchor",
-        dim_rule = "fixed",
-        rebase_to_anchor = TRUE,
-        orient_basis = FALSE
-    )
+    if (identical(coordinate.method, "coordinates")) {
+        if (return.chart) {
+            return(list(coordinates = centered, chart = NULL))
+        }
+        return(centered)
+    }
+    if (identical(local.chart.method, "second.order.svd")) {
+        chart <- rcpp_local_second_order_svd_chart(
+            X_support = X.support,
+            center = center,
+            chart_dim = as.integer(chart.dim),
+            center_mode = "anchor",
+            weights = weights,
+            rebase_to_anchor = TRUE,
+            orient_basis = FALSE
+        )
+    } else {
+        chart <- rcpp_local_pca_chart(
+            X_support = X.support,
+            center = center,
+            chart_dim = as.integer(chart.dim),
+            center_mode = "anchor",
+            dim_rule = "fixed",
+            rebase_to_anchor = TRUE,
+            orient_basis = FALSE
+        )
+    }
+    if (return.chart) {
+        return(list(coordinates = chart$coordinates, chart = chart))
+    }
     chart$coordinates
+}
+
+.klp.local.chart.scalar <- function(x, name, default) {
+    if (is.null(x) || is.null(x[[name]]) || !length(x[[name]])) {
+        return(default)
+    }
+    x[[name]][[1L]]
+}
+
+.klp.local.chart.diagnostics.row <- function(eval.index, chart) {
+    if (is.null(chart)) return(NULL)
+    diag <- chart$curvature.diagnostics
+    data.frame(
+        eval.index = as.integer(eval.index),
+        local.chart.method = "second.order.svd",
+        fallback.used = as.logical(.klp.local.chart.scalar(
+            chart, "fallback.used", NA
+        )),
+        fallback.reason = as.character(.klp.local.chart.scalar(
+            chart, "fallback.reason", NA_character_
+        )),
+        primary.failure.reason = as.character(.klp.local.chart.scalar(
+            chart, "primary.failure.reason", NA_character_
+        )),
+        effective.support = as.integer(.klp.local.chart.scalar(
+            diag, "effective.support", NA_integer_
+        )),
+        quadratic.ncol = as.integer(.klp.local.chart.scalar(
+            diag, "quadratic.ncol", NA_integer_
+        )),
+        design.rank = as.integer(.klp.local.chart.scalar(
+            diag, "design.rank", NA_integer_
+        )),
+        design.condition = as.numeric(.klp.local.chart.scalar(
+            diag, "design.condition", NA_real_
+        )),
+        fit.method = as.character(.klp.local.chart.scalar(
+            diag, "fit.method", NA_character_
+        )),
+        ridge.lambda = as.numeric(.klp.local.chart.scalar(
+            diag, "ridge.lambda", NA_real_
+        )),
+        fit.residual.frobenius = as.numeric(.klp.local.chart.scalar(
+            diag, "fit.residual.frobenius", NA_real_
+        )),
+        curvature.fitted.frobenius = as.numeric(.klp.local.chart.scalar(
+            diag, "curvature.fitted.frobenius", NA_real_
+        )),
+        corrected.residual.frobenius = as.numeric(.klp.local.chart.scalar(
+            diag, "corrected.residual.frobenius", NA_real_
+        )),
+        first.rank = as.integer(.klp.local.chart.scalar(
+            diag, "first.rank", NA_integer_
+        )),
+        second.rank = as.integer(.klp.local.chart.scalar(
+            diag, "second.rank", NA_integer_
+        )),
+        plain.pca.fallback.feasible = as.logical(.klp.local.chart.scalar(
+            diag, "plain.pca.fallback.feasible", NA
+        )),
+        status = as.character(.klp.local.chart.scalar(
+            diag, "status", NA_character_
+        )),
+        stringsAsFactors = FALSE
+    )
+}
+
+.klp.local.chart.diagnostics.summary <- function(diagnostics,
+                                                 local.chart.method) {
+    empty.reasons <- data.frame(
+        fallback.reason = character(0),
+        count = integer(0),
+        stringsAsFactors = FALSE
+    )
+    if (is.null(diagnostics) || !nrow(diagnostics)) {
+        return(list(
+            local.chart.method = local.chart.method,
+            n.charts = 0L,
+            fallback.count = 0L,
+            fallback.rate = 0,
+            fallback.reasons = empty.reasons,
+            any.fallback.used = FALSE,
+            any.pca.fallback.used = FALSE,
+            any.structured.failure = FALSE,
+            min.design.rank = NA_integer_,
+            median.design.rank = NA_real_,
+            max.design.rank = NA_integer_,
+            median.design.condition = NA_real_,
+            max.design.condition = NA_real_
+        ))
+    }
+    fallback.used <- as.logical(diagnostics$fallback.used)
+    fallback.used[is.na(fallback.used)] <- FALSE
+    fallback.count <- sum(fallback.used)
+    reasons <- diagnostics$fallback.reason[fallback.used]
+    reasons <- reasons[!is.na(reasons) & nzchar(reasons)]
+    fallback.reasons <- if (length(reasons)) {
+        tab <- sort(table(reasons), decreasing = TRUE)
+        data.frame(
+            fallback.reason = names(tab),
+            count = as.integer(tab),
+            stringsAsFactors = FALSE
+        )
+    } else {
+        empty.reasons
+    }
+    condition <- as.numeric(diagnostics$design.condition)
+    condition <- condition[is.finite(condition)]
+    design.rank <- as.numeric(diagnostics$design.rank)
+    design.rank <- design.rank[is.finite(design.rank)]
+    pca.fallback.used <- fallback.used &
+        !is.na(diagnostics$fallback.reason) &
+        diagnostics$fallback.reason != "none" &
+        diagnostics$fallback.reason != "plain_pca_fallback_not_feasible"
+    structured.failure <- fallback.used &
+        !is.na(diagnostics$fallback.reason) &
+        diagnostics$fallback.reason == "plain_pca_fallback_not_feasible"
+    list(
+        local.chart.method = local.chart.method,
+        n.charts = nrow(diagnostics),
+        fallback.count = as.integer(fallback.count),
+        fallback.rate = fallback.count / nrow(diagnostics),
+        fallback.reasons = fallback.reasons,
+        any.fallback.used = fallback.count > 0L,
+        any.pca.fallback.used = any(pca.fallback.used),
+        any.structured.failure = any(structured.failure),
+        min.design.rank = if (length(design.rank)) {
+            as.integer(min(design.rank))
+        } else {
+            NA_integer_
+        },
+        median.design.rank = if (length(design.rank)) {
+            stats::median(design.rank)
+        } else {
+            NA_real_
+        },
+        max.design.rank = if (length(design.rank)) {
+            as.integer(max(design.rank))
+        } else {
+            NA_integer_
+        },
+        median.design.condition = if (length(condition)) {
+            stats::median(condition)
+        } else {
+            NA_real_
+        },
+        max.design.condition = if (length(condition)) {
+            max(condition)
+        } else {
+            NA_real_
+        }
+    )
 }
 
 .klp.kernel.weights <- function(distances, kernel) {
