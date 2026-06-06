@@ -861,21 +861,6 @@ lps.backend.diagnostics <- function(object) {
             kernel = kernel
         ))
     }
-    if (identical(coordinate.method, "local.pca") &&
-        identical(local.chart.method, "pca") &&
-        identical(backend, "cpp.local.pca") &&
-        is.null(chart.dim.by.eval) &&
-        !return.chart.diagnostics) {
-        return(rcpp_kernel_local_polynomial_predict_local_pca(
-            X_train = X.train,
-            y_train = y.train,
-            X_eval = X.eval,
-            support_size = support.size,
-            degree = as.integer(degree),
-            kernel = kernel,
-            chart_dim = as.integer(chart.dim)
-        ))
-    }
     out <- rep(NA_real_, nrow(X.eval))
     diagnostics <- vector("list", nrow(X.eval))
     for (i in seq_len(nrow(X.eval))) {
@@ -1043,6 +1028,10 @@ lps.backend.diagnostics <- function(object) {
     if (sum(ok) < ncol(design)) {
         return(stats::weighted.mean(y, weights, na.rm = TRUE))
     }
+    if (!.klp.local.design.is.safe(design[ok, , drop = FALSE],
+                                   weights[ok])) {
+        return(stats::weighted.mean(y, weights, na.rm = TRUE))
+    }
     fit <- tryCatch(
         stats::lm.wfit(design[ok, , drop = FALSE], y[ok], weights[ok]),
         error = function(e) NULL
@@ -1053,6 +1042,29 @@ lps.backend.diagnostics <- function(object) {
     } else {
         fit$coefficients[[1L]]
     }
+}
+
+.klp.local.design.is.safe <- function(design, weights,
+                                      min.rows.per.column = 1.25,
+                                      max.condition = 1e4) {
+    design <- as.matrix(design)
+    weights <- as.numeric(weights)
+    ok <- rowSums(is.finite(design)) == ncol(design) &
+        is.finite(weights) & weights > 0
+    if (sum(ok) < ncol(design)) return(FALSE)
+    if (sum(ok) < ceiling(min.rows.per.column * ncol(design))) {
+        return(FALSE)
+    }
+    xw <- design[ok, , drop = FALSE] * sqrt(weights[ok])
+    sv <- tryCatch(svd(xw, nu = 0L, nv = 0L)$d,
+                   error = function(e) numeric(0))
+    if (!length(sv) || any(!is.finite(sv))) return(FALSE)
+    tol <- max(dim(xw)) * max(sv) * .Machine$double.eps
+    if (sum(sv > tol) < ncol(design)) return(FALSE)
+    smallest <- min(sv)
+    if (!is.finite(smallest) || smallest <= 0) return(FALSE)
+    condition <- max(sv) / smallest
+    is.finite(condition) && condition <= max.condition
 }
 
 .klp.design.ncol <- function(degree, chart.dim) {

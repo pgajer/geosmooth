@@ -154,6 +154,9 @@ double solve_weighted_lm_qr(const std::vector<std::vector<double> >& features,
         if (finite_features) ++n_ok;
     }
     if (n_ok < q) return NA_REAL;
+    if (n_ok < static_cast<int>(std::ceil(1.25 * static_cast<double>(q)))) {
+        return NA_REAL;
+    }
 
     Eigen::MatrixXd Xw(n_ok, q);
     Eigen::VectorXd yw(n_ok);
@@ -176,6 +179,25 @@ double solve_weighted_lm_qr(const std::vector<std::vector<double> >& features,
         }
         yw(row) = sw * yi;
         ++row;
+    }
+
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(Xw, Eigen::ComputeThinU);
+    const Eigen::VectorXd singular_values = svd.singularValues();
+    if (singular_values.size() < q) return NA_REAL;
+    const double sv_max = singular_values.maxCoeff();
+    const double sv_min = singular_values.minCoeff();
+    const double tol = static_cast<double>(std::max(n_ok, q)) * sv_max *
+        std::numeric_limits<double>::epsilon();
+    int rank = 0;
+    for (int j = 0; j < singular_values.size(); ++j) {
+        if (singular_values(j) > tol) ++rank;
+    }
+    if (rank < q || sv_min <= 0.0 || !std::isfinite(sv_min)) {
+        return NA_REAL;
+    }
+    const double condition = sv_max / sv_min;
+    if (!std::isfinite(condition) || condition > 1e4) {
+        return NA_REAL;
     }
 
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(Xw);
@@ -207,6 +229,9 @@ double solve_weighted_lm_r_compatible(
         if (finite_features) ++n_ok;
     }
     if (n_ok < q) return NA_REAL;
+    if (n_ok < static_cast<int>(std::ceil(1.25 * static_cast<double>(q)))) {
+        return NA_REAL;
+    }
 
     NumericMatrix design(n_ok, q);
     NumericVector response(n_ok);
@@ -230,6 +255,32 @@ double solve_weighted_lm_r_compatible(
         response[row] = yi;
         fit_weights[row] = wi;
         ++row;
+    }
+
+    Eigen::MatrixXd Xw(n_ok, q);
+    for (int i = 0; i < n_ok; ++i) {
+        const double sw = std::sqrt(fit_weights[i]);
+        for (int j = 0; j < q; ++j) {
+            Xw(i, j) = sw * design(i, j);
+        }
+    }
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(Xw, Eigen::ComputeThinU);
+    const Eigen::VectorXd singular_values = svd.singularValues();
+    if (singular_values.size() < q) return NA_REAL;
+    const double sv_max = singular_values.maxCoeff();
+    const double sv_min = singular_values.minCoeff();
+    const double tol = static_cast<double>(std::max(n_ok, q)) * sv_max *
+        std::numeric_limits<double>::epsilon();
+    int rank = 0;
+    for (int j = 0; j < singular_values.size(); ++j) {
+        if (singular_values(j) > tol) ++rank;
+    }
+    if (rank < q || sv_min <= 0.0 || !std::isfinite(sv_min)) {
+        return NA_REAL;
+    }
+    const double condition = sv_max / sv_min;
+    if (!std::isfinite(condition) || condition > 1e4) {
+        return NA_REAL;
     }
 
     try {
@@ -298,14 +349,14 @@ double fit_intercept(const NumericMatrix& X,
                 xtwx[static_cast<size_t>(a) + static_cast<size_t>(q) * static_cast<size_t>(b)];
         }
     }
-    const double qr_intercept = solve_weighted_lm_qr(
-        qr_features, y, weights, support_size, q
-    );
-    if (std::isfinite(qr_intercept)) return qr_intercept;
     const double r_intercept = solve_weighted_lm_r_compatible(
         qr_features, y, weights, support_size, q
     );
     if (std::isfinite(r_intercept)) return r_intercept;
+    const double qr_intercept = solve_weighted_lm_qr(
+        qr_features, y, weights, support_size, q
+    );
+    if (std::isfinite(qr_intercept)) return qr_intercept;
     if (solve_spd(xtwx, xtwy, q)) return xtwy[0];
     return weighted_mean(y, weights, support_size);
 }
@@ -388,15 +439,10 @@ double fit_intercept_from_chart(const Eigen::MatrixXd& Z,
                 xtwx[static_cast<size_t>(a) + static_cast<size_t>(q) * static_cast<size_t>(b)];
         }
     }
-    const double qr_intercept = solve_weighted_lm_qr(
-        qr_features, y, weights, support_size, q
-    );
-    if (std::isfinite(qr_intercept)) return qr_intercept;
     const double r_intercept = solve_weighted_lm_r_compatible(
         qr_features, y, weights, support_size, q
     );
     if (std::isfinite(r_intercept)) return r_intercept;
-    if (solve_spd(xtwx, xtwy, q)) return xtwy[0];
     return weighted_mean(y, weights, support_size);
 }
 

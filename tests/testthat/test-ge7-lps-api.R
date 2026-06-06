@@ -355,6 +355,23 @@ test_that("LPS local auto chart dimensions stay on the R local-PCA path", {
     )
 })
 
+test_that("LPS local WLS falls back on nearly saturated ill-conditioned designs", {
+    set.seed(1701)
+    z <- matrix(rnorm(35 * 6), 35, 6)
+    design <- .local.polynomial.design.matrix(z, degree = 2L)
+    design[, ncol(design)] <- design[, ncol(design) - 1L] +
+        1e-8 * rnorm(nrow(design))
+    y <- sin(seq(0, 1, length.out = nrow(design)))
+    weights <- rep(1, nrow(design))
+
+    expect_false(.klp.local.design.is.safe(design, weights))
+    expect_equal(
+        .klp.fit.intercept.design(design, y, weights),
+        stats::weighted.mean(y, weights),
+        tolerance = 1e-12
+    )
+})
+
 test_that("K12 local-PCA contract excludes experimental second-order charts", {
     t <- seq(-1, 1, length.out = 36)
     X <- cbind(t, t^2, sin(pi * t))
