@@ -1,0 +1,15 @@
+"dataset_id","p","embedding_method","graph_edges","graph_components_before","graph_components_after"
+"LA-D1-RAW-N500",4,"adaptive-radius graph layout, k.scale = 34; classical MDS initialization + weighted KK polish",11546,1,1
+"LA-D1-HC-Li-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"LA-D1-HC-Lc-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"LA-D1-HC-Gv-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"LA-D1-HC-Bv-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"LA-D2-RAW-N500",43,"adaptive-radius graph layout, k.scale = 33; classical MDS initialization + weighted KK polish",12188,1,1
+"LA-D2-HC-TOP1-N500",42,"adaptive-radius graph layout, k.scale = 35; classical MDS initialization + weighted KK polish",12973,1,1
+"LA-D3-RAW-N500",77,"adaptive-radius graph layout, k.scale = 33; classical MDS initialization + weighted KK polish",11960,1,1
+"LA-13K-SUB-N500",178,"adaptive-radius graph layout, k.scale = 15; classical MDS initialization + weighted KK polish",5193,1,1
+"SYN-PARA-LINE-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"SYN-SADDLE-LINE-N500",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"SYN-TWO-PLANES-N600",3,"direct ambient coordinates, p = 3",NA,NA,NA
+"SYN-SIMPLEX-FACES-N600",5,"adaptive-radius graph layout, k.scale = 33; classical MDS initialization + weighted KK polish",14834,1,1
+"SYN-RANK-BLOCKS-N600-P100",100,"adaptive-radius graph layout, k.scale = 35; classical MDS initialization + weighted KK polish",14968,1,1

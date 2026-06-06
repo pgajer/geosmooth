@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <title>PS-LPS First-Batch Experiment</title>
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2933; line-height: 1.45; }
+h1, h2 { line-height: 1.15; }
+.note { max-width: 980px; }
+.figure { margin: 24px 0 30px; }
+.figure img { max-width: 100%; border: 1px solid #ddd; }
+.caption { font-size: 0.94rem; color: #53606c; max-width: 980px; }
+.data-table { border-collapse: collapse; font-size: 0.88rem; margin: 12px 0 24px; }
+.data-table th, .data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: right; }
+.data-table th:first-child, .data-table td:first-child, .data-table th:nth-child(2), .data-table td:nth-child(2), .data-table th:nth-child(3), .data-table td:nth-child(3) { text-align: left; }
+code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<html>
+  <body>
+    <h1>PS-LPS First-Batch Experiment</h1>
+    <p class="note">
+      This report compares ordinary LPS 
+      <code>auto</code>
+       and 
+      <code>local.auto</code>
+       against prediction-synchronized LPS (PS-LPS) variants that reuse the 
+      same selected support, kernel, degree, and chart-dimension policy, 
+      then tune only 
+      \(\lambda_{\mathrm{sync}}\)
+       by CV.
+    </p>
+    <p class="note">Lambda grid: {0, 0.1, 1}. Sync neighbor size: 3. Best-method counts: LPS auto=0; LPS local.auto=0; PS-LPS auto=5; PS-LPS local.auto=9.</p>
+    <h2>Truth RMSE</h2>
+    <div class="figure">
+      <img src="figures/truth_rmse_lps_vs_ps_lps.png"/>
+      <p class="caption">Lower Truth RMSE is better. Gray lines connect methods within a dataset.</p>
+    </div>
+    <h2>Total Local GCV and CV RMSE</h2>
+    <p class="note">
+      The plotted total local GCV is computed after synchronization, using 
+      the synchronized chart coefficients. It is therefore not the same 
+      quantity as total local GCV for independent LPS charts.
+    </p>
+    <div class="figure">
+      <img src="figures/ps_lps_total_gcv_vs_cv_rmse.png"/>
+      <p class="caption">Each point is one PS-LPS lambda candidate on one dataset and one chart-dimension variant.</p>
+    </div>
+    <div class="figure">
+      <img src="figures/ps_lps_selected_total_gcv_vs_truth_rmse.png"/>
+      <p class="caption">
+        This synthetic-truth diagnostic asks whether the synchronized total 
+        local GCV of the selected PS-LPS fit is aligned with the final Truth 
+        RMSE. It should not be read as a deployable selection rule because 
+        Truth RMSE is unavailable on real data.
+      </p>
+    </div>
+    <h2>Synchronization Energy and Improvement</h2>
+    <p class="note">
+      As an additional diagnostic, the next figure compares synchronization 
+      energy with the Truth-RMSE change relative to the corresponding 
+      ordinary LPS source fit. This helps check whether the empirical gains 
+      are plausibly connected to prediction synchronization.
+    </p>
+    <div class="figure">
+      <img src="figures/ps_lps_sync_energy_vs_truth_rmse_delta.png"/>
+      <p class="caption">
+        Negative y-values mean PS-LPS improved over the ordinary LPS fit 
+        from which it inherited support size, kernel, degree, and chart 
+        dimension policy.
+      </p>
+    </div>
+    <h2>Pointwise Components</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_pointwise_components.png"/>
+      <p class="caption">
+        Positive c_i means the PS-LPS variant contributes more Truth-RMSE 
+        than ordinary LPS auto at that point. Colors show local degrees-of-freedom ratio.
+      </p>
+    </div>
+    <h2>PS-LPS Summary</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>method</th>
+          <th>selected_lambda_sync</th>
+          <th>selected_support_size</th>
+          <th>selected_kernel</th>
+          <th>selected_chart_dim</th>
+          <th>selected_cv_rmse_observed</th>
+          <th>truth_rmse</th>
+          <th>total_local_gcv_ps</th>
+          <th>sync_energy</th>
+          <th>elapsed_sec</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10923</td>
+          <td>0.033713</td>
+          <td>5.2945</td>
+          <td>0.74576</td>
+          <td>35.34</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>34</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.11097</td>
+          <td>0.034254</td>
+          <td>5.4635</td>
+          <td>0.75465</td>
+          <td>34.15</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>26</td>
+          <td>gaussian</td>
+          <td>1</td>
+          <td>0.11429</td>
+          <td>0.044227</td>
+          <td> 5.919</td>
+          <td>1.8875</td>
+          <td>19.55</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>32</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.12091</td>
+          <td>0.042546</td>
+          <td>6.2746</td>
+          <td>2.0411</td>
+          <td>30.95</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>27</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>0.11109</td>
+          <td>0.040919</td>
+          <td>2.8849</td>
+          <td>0.49135</td>
+          <td>21.82</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>23</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>0.12227</td>
+          <td>0.042011</td>
+          <td>3.6696</td>
+          <td>0.37252</td>
+          <td>15.86</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>PS-LPS auto</td>
+          <td>0.1</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>1</td>
+          <td>0.11433</td>
+          <td>0.0429</td>
+          <td>2.5836</td>
+          <td>2.9469</td>
+          <td>36.06</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>1</td>
+          <td>0.10508</td>
+          <td>0.03236</td>
+          <td>2.9651</td>
+          <td>0.28551</td>
+          <td>36.55</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>15</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>0.13276</td>
+          <td>0.047828</td>
+          <td>4.8683</td>
+          <td>0.27382</td>
+          <td>7.066</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>34</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10857</td>
+          <td>0.033157</td>
+          <td>5.1242</td>
+          <td>0.56938</td>
+          <td>34.03</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>30</td>
+          <td>tricube</td>
+          <td>4</td>
+          <td>0.16569</td>
+          <td>0.051517</td>
+          <td>3.7694</td>
+          <td>0.68807</td>
+          <td>27.32</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>33</td>
+          <td>gaussian</td>
+          <td>4</td>
+          <td>0.94511</td>
+          <td>0.044332</td>
+          <td>44.829</td>
+          <td>3.0861</td>
+          <td>34.19</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>21</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>1.4277</td>
+          <td>0.057782</td>
+          <td> 14.11</td>
+          <td>2.0634</td>
+          <td>13.08</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>0.30071</td>
+          <td>0.055718</td>
+          <td>32.172</td>
+          <td>6.0857</td>
+          <td>38.12</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>31</td>
+          <td>gaussian</td>
+          <td>4</td>
+          <td>0.19709</td>
+          <td>0.046105</td>
+          <td>11.879</td>
+          <td> 1.459</td>
+          <td>29.62</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>33</td>
+          <td>gaussian</td>
+          <td>4</td>
+          <td>1.0043</td>
+          <td>0.043691</td>
+          <td>41.196</td>
+          <td>3.5964</td>
+          <td>34.53</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>15</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>0.52631</td>
+          <td>0.063652</td>
+          <td>18.584</td>
+          <td>1.8951</td>
+          <td>6.603</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>15</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>0.25876</td>
+          <td>0.061784</td>
+          <td>18.164</td>
+          <td>1.9954</td>
+          <td>6.636</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10845</td>
+          <td>0.029042</td>
+          <td>5.3642</td>
+          <td>0.86515</td>
+          <td>29.32</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>32</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10905</td>
+          <td>0.029482</td>
+          <td>5.4847</td>
+          <td>0.87104</td>
+          <td>24.48</td>
+        </tr>
+        <tr>
+          <td>FB11</td>
+          <td>SYN-SADDLE-LINE-N500</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>32</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10529</td>
+          <td>0.034839</td>
+          <td>5.4027</td>
+          <td>1.0669</td>
+          <td>24.96</td>
+        </tr>
+        <tr>
+          <td>FB11</td>
+          <td>SYN-SADDLE-LINE-N500</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>32</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10522</td>
+          <td>0.034867</td>
+          <td>5.3963</td>
+          <td>1.0693</td>
+          <td>25.23</td>
+        </tr>
+        <tr>
+          <td>FB12</td>
+          <td>SYN-TWO-PLANES-N600</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10797</td>
+          <td>0.031703</td>
+          <td> 6.032</td>
+          <td>1.8604</td>
+          <td>41.24</td>
+        </tr>
+        <tr>
+          <td>FB12</td>
+          <td>SYN-TWO-PLANES-N600</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>0.10838</td>
+          <td>0.033513</td>
+          <td>6.2407</td>
+          <td>1.5658</td>
+          <td>41.67</td>
+        </tr>
+        <tr>
+          <td>FB13</td>
+          <td>SYN-SIMPLEX-FACES-N600</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>16</td>
+          <td>tricube</td>
+          <td>3</td>
+          <td>0.12141</td>
+          <td>0.057709</td>
+          <td>11.616</td>
+          <td>0.42709</td>
+          <td>11.96</td>
+        </tr>
+        <tr>
+          <td>FB13</td>
+          <td>SYN-SIMPLEX-FACES-N600</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>33</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>0.10478</td>
+          <td>0.03894</td>
+          <td> 7.054</td>
+          <td>1.7962</td>
+          <td>48.25</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>PS-LPS auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>6</td>
+          <td>0.26439</td>
+          <td>0.07497</td>
+          <td>36.656</td>
+          <td>5.6739</td>
+          <td> 50.9</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>PS-LPS local.auto</td>
+          <td>1</td>
+          <td>35</td>
+          <td>gaussian</td>
+          <td>6</td>
+          <td>0.14182</td>
+          <td>0.068432</td>
+          <td>32.195</td>
+          <td>6.3835</td>
+          <td>49.81</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Tables</h2>
+    <ul>
+      <li>
+        <a href="tables/ps_lps_first_batch_method_comparison.csv">Method comparison table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_first_batch_summary.csv">PS-LPS summary table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_lambda_cv_gcv_table.csv">Lambda CV/GCV table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_pointwise_components.csv">Pointwise component table</a>
+      </li>
+    </ul>
+  </body>
+</html>
+</html>

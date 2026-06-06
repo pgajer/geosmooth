@@ -1,0 +1,549 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{enumitem}
+\usepackage{microtype}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!50!black
+}
+
+\input{build_info.tex}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\GCV}{\operatorname{GCV}}
+\newcommand{\RSS}{\operatorname{RSS}}
+\newcommand{\df}{\operatorname{df}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+
+\title{Local GCV, Synchronized Local Model Selection, and LPS}
+\author{%
+  \small
+  \begin{tabular}{@{}c@{}}
+  Source path: \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}\\
+  \texttt{lps\_gcv\_synchronized\_selection\_2026-06-05/}\\
+  \texttt{lps\_gcv\_synchronized\_selection\_design.tex}
+  \end{tabular}%
+}
+\date{Build: \reportbuilddatetime}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose}
+
+This report records a systematic version of the GCV idea for local polynomial
+smoothing (LPS).  The motivating question is:
+
+\begin{quote}
+Can local weighted-linear-model diagnostics guide the choice of neighborhood
+size, kernel, degree, and chart dimension?
+\end{quote}
+
+The immediate application is the comparison between
+\[
+  \texttt{chart.dim = "auto"}
+  \qquad\text{and}\qquad
+  \texttt{chart.dim = "local.auto"}.
+\]
+The broader methodological idea is more general.  Every local chart fit in LPS
+is a weighted linear regression problem.  Therefore each local fit has
+linear-model diagnostics such as residual sum of squares, leverage, effective
+degrees of freedom, and generalized cross-validation (GCV).  These quantities
+may help choose local modeling parameters in a data-driven way.
+
+The key conceptual turn is this: local GCV should not only be viewed as an
+isolated diagnostic for one chart.  It can also be aggregated, smoothed, or
+synchronized across overlapping neighborhoods.  This creates a bridge between
+ordinary LPS, local parameter selection, and the synchronization philosophy that
+motivated S-LPL-TF / SLPLiFT.
+
+\section{The Local Weighted Polynomial Fit}
+
+Let \(x_1,\ldots,x_n\) be observed covariate points and let
+\[
+  y_i = f_i + \varepsilon_i
+\]
+be the observed response at point \(i\).  For an anchor point \(i\), LPS chooses
+a local support
+\[
+  N_i \subset \{1,\ldots,n\},
+  \qquad m_i = |N_i|.
+\]
+The local support is usually determined by a neighborhood size, a metric, and a
+kernel bandwidth rule.  After constructing a local chart around the anchor,
+each neighbor \(j\in N_i\) has local coordinates
+\[
+  z_{ij}\in \R^{d_i},
+\]
+where \(d_i\) is the chart dimension used at anchor \(i\).  For polynomial
+degree \(p_i\), form the local polynomial design matrix
+\[
+  X_i \in \R^{m_i\times q_i},
+\]
+where each row contains the polynomial basis evaluated at \(z_{ij}\).  For
+example, with degree one,
+\[
+  \phi(z) = (1,z_1,\ldots,z_{d_i}),
+\]
+so \(q_i=d_i+1\).  With degree two, the design also includes all squared and
+cross-product terms.
+
+Let
+\[
+  W_i = \operatorname{diag}(w_{ij}: j\in N_i)
+\]
+be the diagonal matrix of nonnegative kernel weights, and let
+\[
+  y_{N_i} = (y_j:j\in N_i)
+\]
+be the local response vector.  The local weighted least-squares estimate is
+\[
+  \widehat\beta_i
+  =
+  \argmin_{\beta\in\R^{q_i}}
+  \|W_i^{1/2}(y_{N_i}-X_i\beta)\|_2^2.
+\]
+When the weighted design has full rank, this is
+\[
+  \widehat\beta_i
+  =
+  (X_i^\top W_i X_i)^{-1}X_i^\top W_i y_{N_i}.
+\]
+In implementation, this should be computed by a stable QR or SVD-based solve
+rather than by forming an explicit inverse.
+
+\section{Local Hat Matrix, Degrees of Freedom, and GCV}
+
+For fixed local choices, the fitted values on the local support are a linear
+function of the local response vector:
+\[
+  \widehat y_{N_i}
+  =
+  H_i y_{N_i},
+\]
+where
+\[
+  H_i
+  =
+  X_i(X_i^\top W_iX_i)^{-1}X_i^\top W_i.
+\]
+The matrix \(H_i\) is the local weighted hat matrix.  It describes how the
+observed local responses are transformed into local fitted values.  Its trace
+is the effective local degrees of freedom:
+\[
+  \df_i = \tr(H_i).
+\]
+For ordinary unweighted least squares with a full-rank design, \(\df_i\) is the
+number of fitted coefficients.  With weights, numerical rank deficiency, or
+regularization, \(\df_i\) is the effective model complexity.
+
+The local residual sum of squares is
+\[
+  \RSS_i
+  =
+  \|W_i^{1/2}(y_{N_i}-\widehat y_{N_i})\|_2^2.
+\]
+A local generalized cross-validation score can then be written as
+\[
+  \GCV_i
+  =
+  \frac{\RSS_i/m_i}{(1-\df_i/m_i)^2}.
+\]
+This score penalizes models that fit the local data well only by using too much
+local flexibility.  If \(\df_i/m_i\) is close to one, the denominator becomes
+small and the score becomes large.  That is exactly the desired behavior when a
+local fit is close to being underdetermined or interpolating.
+
+\section{The Caveat and the Opportunity}
+
+The caveat is that \(\GCV_i\) estimates prediction behavior inside the local
+neighborhood \(N_i\).  It is not automatically the same thing as the global
+held-out prediction error used by dataset-level cross-validation.  Neighboring
+local supports overlap heavily, so the local GCV scores
+\[
+  \GCV_1,\ldots,\GCV_n
+\]
+are dependent rather than independent observations.
+
+This caveat is also an opportunity.  The dependence is not merely a nuisance;
+it is information about the geometry of the smoother.  If nearby anchors share
+many data points and produce related local models, then their GCV scores and
+their selected local parameters should not be treated as unrelated.  Instead,
+we can use overlap and graph adjacency to stabilize local model selection.
+
+This is closely aligned with the motivation behind S-LPL-TF / SLPLiFT.  In
+S-LPL-TF, the synchronization term was introduced because neighboring local
+models should agree when they make predictions on overlapping regions.  The GCV
+view gives a complementary way to express a similar desire: local models should
+not only fit well locally, but the field of local choices should be stable and
+coherent across the data geometry.
+
+\section{Formulation 1: Global Discrete GCV Selector}
+
+The simplest formulation keeps all tuning parameters global.  Let
+\[
+  \theta = (k,\kappa,p,d)
+\]
+denote a candidate parameter setting, where:
+
+\begin{itemize}[leftmargin=*]
+  \item \(k\) is the neighborhood/support size;
+  \item \(\kappa\) is the kernel type, such as Gaussian or tricube;
+  \item \(p\) is the polynomial degree;
+  \item \(d\) is the local chart dimension.
+\end{itemize}
+
+For a fixed global \(\theta\), every anchor uses the same rule.  Each anchor
+still has its own local support, design matrix, and weights, but the model
+configuration is global.  Compute
+\[
+  \GCV_i(\theta),
+  \qquad i=1,\ldots,n.
+\]
+Then select
+\[
+  \widehat\theta_{\mathrm{global}}
+  =
+  \argmin_{\theta\in\Theta}
+  \sum_{i=1}^{n}\GCV_i(\theta).
+\]
+
+This is the most auditable first experiment.  It is a direct analogue of
+cross-validation over a candidate grid, but it replaces fold refits with
+local linear-model diagnostics.  It should be much cheaper than full K-fold CV
+and easier to inspect pointwise.
+
+\paragraph{Robust aggregation.}
+Instead of summing raw GCV scores, one may use a robust transformation:
+\[
+  \widehat\theta_{\mathrm{robust}}
+  =
+  \argmin_{\theta\in\Theta}
+  \sum_{i=1}^{n}\rho\{\GCV_i(\theta)\}.
+\]
+Here \(\rho\) is increasing but reduces the influence of extreme local failures.
+Examples include a winsorized score, a Huberized score, or a trimmed mean.  This
+may matter on real geometries where a few local neighborhoods are numerically
+unstable.
+
+\section{Formulation 2: Local GCV with a Graph-Smoothed Parameter Field}
+
+The next formulation lets tuning parameters vary by anchor:
+\[
+  \theta_i = (k_i,\kappa_i,p_i,d_i).
+\]
+If each anchor independently minimizes its own GCV,
+\[
+  \widehat\theta_i^{\mathrm{greedy}}
+  =
+  \argmin_{\theta_i\in\Theta_i}\GCV_i(\theta_i),
+\]
+then the resulting parameter field may be noisy.  Nearby anchors could choose
+very different dimensions or supports because of small local fluctuations.
+
+To borrow strength across nearby anchors, put a graph on the data points:
+\[
+  G=(V,E),
+  \qquad V=\{1,\ldots,n\}.
+\]
+Then choose the full parameter field
+\[
+  \theta_{1:n}=(\theta_1,\ldots,\theta_n)
+\]
+by minimizing
+\[
+  \sum_{i=1}^{n}\GCV_i(\theta_i)
+  +
+  \eta
+  \sum_{(i,j)\in E}
+  D(\theta_i,\theta_j).
+\]
+Here \(\eta\ge 0\) controls how strongly neighboring local choices are
+synchronized, and \(D\) measures disagreement between local parameter choices.
+
+For example, if the most important local choice is chart dimension, one could
+use
+\[
+  D(\theta_i,\theta_j)
+  =
+  (d_i-d_j)^2.
+\]
+If support size matters too, one might use
+\[
+  D(\theta_i,\theta_j)
+  =
+  \alpha_d(d_i-d_j)^2
+  +
+  \alpha_k\{\log(k_i)-\log(k_j)\}^2
+  +
+  \alpha_{\kappa}\mathbf{1}\{\kappa_i\ne \kappa_j\}.
+\]
+The exact choice of \(D\) is a modeling decision.  The important point is that
+this formulation selects a spatially coherent field of local model choices,
+rather than a collection of independent local winners.
+
+\section{Formulation 3: Prediction-Synchronized LPS}
+
+The most S-LPL-TF-like formulation synchronizes predictions rather than only
+the discrete parameter choices.  Let
+\[
+  \widehat f^{(i)}(x)
+\]
+denote the local polynomial model fitted at anchor \(i\), evaluated at a point
+\(x\) where that local model is meaningful.  If anchors \(i\) and \(j\) have
+overlapping supports, then both local models can often predict values on the
+same points.  A prediction-synchronization penalty can be written schematically
+as
+\[
+  \sum_{(i,j)\in\mathcal O}
+  \sum_{x_\ell\in N_i\cap N_j}
+  \omega_{ij\ell}
+  \left\{
+    \widehat f^{(i)}(x_\ell)
+    -
+    \widehat f^{(j)}(x_\ell)
+  \right\}^2,
+\]
+where \(\mathcal O\) is a set of overlapping anchor pairs and
+\(\omega_{ij\ell}\) are overlap weights.
+
+A prediction-synchronized LPS criterion could therefore be
+\[
+  \sum_{i=1}^{n}\GCV_i(\theta_i)
+  +
+  \eta
+  \sum_{(i,j)\in\mathcal O}
+  \sum_{x_\ell\in N_i\cap N_j}
+  \omega_{ij\ell}
+  \left\{
+    \widehat f^{(i)}_{\theta_i}(x_\ell)
+    -
+    \widehat f^{(j)}_{\theta_j}(x_\ell)
+  \right\}^2.
+\]
+
+This has the same spirit as S-LPL-TF but removes the \(\ell_1\) lifting trend
+filtering penalty.  In words: choose local models that have good local
+predictive diagnostics and also agree with nearby local models on overlapping
+regions.
+
+\section{Relation to S-LPL-TF / SLPLiFT}
+
+S-LPL-TF introduced synchronization because local polynomial lifting models
+should not behave as unrelated fits.  Each local model gives predictions on a
+support.  When supports overlap, disagreement between those predictions is
+evidence that the local models are not forming a coherent global smoother.
+
+The GCV idea complements this.  It says:
+
+\[
+  \text{First, ask whether each local model is statistically reasonable.}
+\]
+
+Then synchronization says:
+
+\[
+  \text{Second, ask whether neighboring local models are mutually coherent.}
+\]
+
+So there are two kinds of regularity:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Internal local regularity:} a local model should not use too
+  much flexibility for its neighborhood.  GCV, degrees of freedom, leverage, and
+  condition diagnostics address this.
+  \item \textbf{External overlap regularity:} neighboring local models should
+  not make incompatible predictions on shared data.  Synchronization penalties
+  address this.
+\end{enumerate}
+
+This suggests a larger design principle: local smoothers should balance local
+fit, local complexity, and overlap coherence.
+
+\section{Relation to Batched or Randomized Optimization}
+
+The analogy with minibatch optimization in neural networks is useful, but it
+should be stated carefully.  The similarity is not that LPS-GCV selection
+requires gradient descent.  The similarity is that a large global objective is
+assembled from many local losses:
+\[
+  \mathcal L(\theta)
+  =
+  \sum_{i=1}^{n}\ell_i(\theta).
+\]
+In neural-network training, the local losses are usually sample losses, and
+minibatches provide noisy but computationally manageable estimates of the full
+objective.  In LPS-GCV selection, the local losses are neighborhood-level GCV
+scores.  One could imagine estimating
+\[
+  \sum_{i=1}^{n}\GCV_i(\theta)
+\]
+using random batches of anchor points rather than all anchors at every
+candidate evaluation.
+
+This gives a possible computational strategy:
+
+\begin{enumerate}[leftmargin=*]
+  \item sample a batch of anchors \(B\subset\{1,\ldots,n\}\);
+  \item evaluate \(\sum_{i\in B}\GCV_i(\theta)\) for candidate \(\theta\);
+  \item refine or eliminate candidate parameters based on repeated batches;
+  \item only run full-anchor evaluation for the most promising candidates.
+\end{enumerate}
+
+The statistical motivation is also similar: do not trust one highly local
+quantity too much.  Use many local pieces of evidence, possibly batched,
+smoothed, or synchronized, to make more stable choices.
+
+\section{Recommended First Test}
+
+Before building the more ambitious synchronized versions, the first test should
+be simple and auditable.
+
+\subsection*{Test 1: Global discrete GCV selector on frozen local-auto batch}
+
+For each frozen dataset and each candidate
+\[
+  \theta=(k,\kappa,p,d),
+\]
+compute
+\[
+  S_{\mathrm{GCV}}(\theta)
+  =
+  \sum_{i=1}^{n}\GCV_i(\theta).
+\]
+Then compare the selected candidate
+\[
+  \widehat\theta_{\mathrm{GCV}}
+  =
+  \argmin_{\theta} S_{\mathrm{GCV}}(\theta)
+\]
+to the candidates selected by the existing CV-based auto and local-auto runs.
+
+The output should include:
+
+\begin{itemize}[leftmargin=*]
+  \item the GCV-selected support size, kernel, degree, and chart dimension;
+  \item the CV-selected support size, kernel, degree, and chart dimension;
+  \item Truth RMSE for both selected fits when truth is available;
+  \item local degrees-of-freedom ratios \(\df_i/m_i\);
+  \item local condition diagnostics;
+  \item a comparison between pointwise Truth-RMSE contributions \(c_i\) and
+  local GCV diagnostics.
+\end{itemize}
+
+The key question is whether red \(c_i\) regions correspond to high GCV, high
+leverage, high \(\df_i/m_i\), or unstable local designs.
+If the answer is yes, local GCV is not only a selector candidate; it is also an
+explanatory diagnostic for why one chart-dimension rule wins or loses.
+
+\section{Possible Next Tests After the First One}
+
+If the global GCV selector is promising, the next natural steps are:
+
+\begin{enumerate}[leftmargin=*]
+  \item replace the raw sum of GCV scores by robust summaries, such as trimmed
+  means or Huberized sums;
+  \item allow chart dimension to vary by anchor while keeping support size and
+  kernel global;
+  \item add graph-smoothed penalties on the local dimension field;
+  \item compare prediction-synchronized LPS to S-LPL-TF without the
+  \(\ell_1\) lifting term;
+  \item test batched anchor subsets as a scalable approximation for large
+  16S-style datasets.
+\end{enumerate}
+
+\section*{Conclusion}
+
+Local GCV provides a principled way to use the fact that each local LPS chart is
+a weighted linear model.  The simplest version selects one global parameter
+setting by minimizing the sum of local GCV scores.  The more interesting
+versions treat local GCV scores as a field over the data geometry and stabilize
+that field through graph smoothing or prediction synchronization.  This is
+conceptually close to the synchronization motivation behind S-LPL-TF, but it
+focuses first on local statistical adequacy rather than on trend-filtering
+structure.
+
+The recommended first implementation is therefore deliberately modest: compute
+local GCV diagnostics on the frozen non-manifold batch and test whether a global
+GCV selector agrees with, improves on, or explains the existing CV-selected
+auto and local-auto fits.
+
+\appendix
+\section{Weighted Hat Matrix Details}
+
+The weighted least-squares problem at anchor \(i\) is
+\[
+  \min_{\beta}
+  (y_{N_i}-X_i\beta)^\top W_i(y_{N_i}-X_i\beta).
+\]
+Assuming \(X_i^\top W_iX_i\) is nonsingular, the solution is
+\[
+  \widehat\beta_i
+  =
+  (X_i^\top W_iX_i)^{-1}X_i^\top W_i y_{N_i}.
+\]
+The local fitted vector is
+\[
+  \widehat y_{N_i}
+  =
+  X_i\widehat\beta_i
+  =
+  X_i(X_i^\top W_iX_i)^{-1}X_i^\top W_i y_{N_i}.
+\]
+Thus
+\[
+  H_i
+  =
+  X_i(X_i^\top W_iX_i)^{-1}X_i^\top W_i.
+\]
+The local degrees of freedom are
+\[
+  \df_i = \tr(H_i).
+\]
+
+For numerical implementation, it is often better to work with
+\[
+  \widetilde X_i = W_i^{1/2}X_i,
+  \qquad
+  \widetilde y_i = W_i^{1/2}y_{N_i}.
+\]
+Then the fitted values in the weighted space are obtained by projecting
+\(\widetilde y_i\) onto the column space of \(\widetilde X_i\).  If
+\(\widetilde X_i\) has singular value decomposition
+\[
+  \widetilde X_i = U_iD_iV_i^\top,
+\]
+then the effective rank, leverage diagnostics, and degrees of freedom can be
+computed stably from this decomposition.  This is also where rank tolerance and
+conditioning diagnostics enter naturally.
+
+\section{Why Ordinary GCV Can Fail Locally}
+
+Local GCV can fail or become unstable when:
+
+\begin{itemize}[leftmargin=*]
+  \item \(m_i\) is too small relative to the number of local polynomial
+  coefficients;
+  \item the local design is nearly rank deficient;
+  \item kernel weights concentrate on too few effective observations;
+  \item the local neighborhood crosses a singularity, boundary, or mixed
+  dimension transition;
+  \item the local chart dimension is overestimated.
+\end{itemize}
+
+These are not reasons to discard GCV.  They are reasons to record diagnostics
+alongside it.  In fact, if high GCV or high \(\df_i/m_i\) aligns with red
+pointwise Truth-RMSE contributions, then GCV is doing exactly what we want: it
+is identifying local modeling choices that are too flexible or unstable.
+
+\end{document}

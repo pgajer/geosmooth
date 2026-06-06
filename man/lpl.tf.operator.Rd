@@ -140,11 +140,10 @@ predictor support, and drops requested-degree rank-deficient rows with
 explicit metadata. There is no silent degree downgrade. Graph support
 distances affect support selection and kernel bandwidths only; local
 polynomial coordinates are controlled separately by \code{coordinate.method}.
-In the geosmooth split, graph construction and graph-geodesic helper
-utilities remain owned by \pkg{gflow}. Coordinate support paths are
-package-local; \code{support.metric = "graph.geodesic"} requires supplied
-graph inputs and a compatible \pkg{gflow} installation for graph validation
-and shortest-path helper routines.
+Graph construction is supplied by \pkg{dgraphs} or by explicit
+\code{adj.list}/\code{weight.list} payloads. Coordinate support paths and
+graph-geodesic payload validation are package-local; shortest-path distances
+are computed through \pkg{dgraphs}.
 
 If \eqn{a_i} is the complete assembled residual row, then
 \code{row.normalize = "l2"} uses \eqn{a_i / \|a_i\|_2}, and

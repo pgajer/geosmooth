@@ -1,0 +1,6 @@
+"measure","value"
+"Truth RMSE auto",0.0467257316615594
+"Truth RMSE local.auto",0.0491154352290414
+"Truth RMSE delta",0.00238970356748196
+"sum pointwise components",0.00238970356748196
+"Truth MSE delta",0.000229031978430102

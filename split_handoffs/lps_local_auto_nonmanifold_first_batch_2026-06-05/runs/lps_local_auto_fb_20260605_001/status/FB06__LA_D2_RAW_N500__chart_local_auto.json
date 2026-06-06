@@ -1,0 +1,14 @@
+{
+  "task_id": "FB06__LA_D2_RAW_N500__chart_local_auto",
+  "dataset_id": "LA-D2-RAW-N500",
+  "chart_dim_rule": "local.auto",
+  "status": "ok",
+  "started_at": "2026-06-05 06:07:10 EDT",
+  "finished_at": "2026-06-05 06:07:42 EDT",
+  "elapsed_sec": 31.75,
+  "hostname": "pgajerm4-osx",
+  "pid": 14494,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_local_auto_nonmanifold_first_batch_2026-06-05/runs/lps_local_auto_fb_20260605_001/results/FB06__LA_D2_RAW_N500__chart_local_auto.rds",
+  "error_message": null,
+  "error_class": null
+}

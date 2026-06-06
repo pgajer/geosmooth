@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <title>LPS Local GCV First Experiment</title>
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2933; line-height: 1.45; }
+h1, h2 { line-height: 1.15; }
+.note { max-width: 980px; }
+.figure { margin: 24px 0 30px; }
+.figure img { max-width: 100%; border: 1px solid #ddd; }
+.caption { font-size: 0.94rem; color: #53606c; max-width: 980px; }
+.data-table { border-collapse: collapse; font-size: 0.88rem; margin: 12px 0 24px; }
+.data-table th, .data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: right; }
+.data-table th:first-child, .data-table td:first-child,
+.data-table th:nth-child(2), .data-table td:nth-child(2),
+.data-table th:nth-child(3), .data-table td:nth-child(3) { text-align: left; }
+code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+.math { font-family: Georgia, serif; font-size: 1.08rem; margin: 14px 0; }
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<html>
+  <body>
+    <h1>LPS Local GCV First Experiment</h1>
+    <p class="note">
+      This report implements the first local-GCV experiment on the frozen 
+      first-batch non-manifold LPS datasets. For every dataset and every 
+      candidate combination of support size k, kernel, degree, and fixed 
+      global chart dimension d, it computes the summed local generalized 
+      cross-validation score.
+    </p>
+    <div class="math">\[ \operatorname{GCV}_{i}(\theta)=
+          \frac{\operatorname{RSS}_{i}(\theta)/k}
+          {(1-\operatorname{df}_{i}(\theta)/k)^2},
+          \qquad
+          \operatorname{GCV}_{\Sigma}(\theta)=
+          \sum_{i=1}^{n}\operatorname{GCV}_{i}(\theta). \]</div>
+    <p class="note">
+      Here 
+      <code>\theta=(k,kernel,degree,d)</code>
+      , RSS is the weighted residual sum of squares for the local weighted 
+      polynomial fit at anchor i, and df is the local weighted-design rank. 
+      The candidate selected by the smallest summed local GCV is compared 
+      with the existing CV-selected 
+      <code>chart.dim = "auto"</code>
+       and 
+      <code>chart.dim = "local.auto"</code>
+       fits.
+    </p>
+    <p class="note">Across 14 datasets, summed local GCV was the best of the three compared selectors in 1 datasets. Its median Truth-RMSE regret relative to the best of {CV auto, CV local.auto, GCV sum} was 0.0071055.</p>
+    <h2>Truth RMSE Comparison</h2>
+    <div class="figure">
+      <img src="figures/truth_rmse_method_comparison.png"/>
+      <p class="caption">
+        Truth RMSE for the three selectors. Gray lines connect methods 
+        within the same dataset; lower is better. The GCV selector uses no 
+        CV folds for selection, but its selected candidate is then refit 
+        through the standard LPS path to report Truth RMSE, Observed RMSE, 
+        and the usual CV RMSE diagnostic.
+      </p>
+    </div>
+    <div class="figure">
+      <img src="figures/truth_rmse_regret_by_dataset.png"/>
+      <p class="caption">
+        Truth-RMSE regret relative to the best of the three compared 
+        selectors on each dataset.
+      </p>
+    </div>
+    <h2>Does Local GCV Explain Red c_i Regions?</h2>
+    <p class="note">
+      The pointwise component 
+      \(c_i=((e_i^{la})^2-(e_i^a)^2)/(n(R_{la}+R_a))\)
+       is positive where local.auto contributes more Truth-RMSE than auto. 
+      The scatter plot below overlays these components against the local 
+      GCV score of the CV-selected local.auto fit, colored by the local 
+      degrees-of-freedom ratio df/k.
+    </p>
+    <div class="figure">
+      <img src="figures/pointwise_component_vs_local_gcv.png"/>
+      <p class="caption">
+        If red regions were simply high-local-risk or high-complexity 
+        regions, positive c_i values would tend to occur at high local GCV 
+        or high df/k.
+      </p>
+    </div>
+    <div class="figure">
+      <img src="figures/component_diagnostic_correlations.png"/>
+      <p class="caption">
+        Spearman correlations summarize whether the pointwise local.auto 
+        loss/win components are monotone-associated with local GCV or with 
+        the local degrees-of-freedom ratio.
+      </p>
+    </div>
+    <h2>Median Diagnostic Correlations</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>diagnostic</th>
+          <th>median_spearman</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>cor(|c_i|, df/k)</td>
+          <td>0.06787</td>
+        </tr>
+        <tr>
+          <td>cor(|c_i|, local GCV)</td>
+          <td>0.07546</td>
+        </tr>
+        <tr>
+          <td>cor(c_i, df/k)</td>
+          <td>0.1251</td>
+        </tr>
+        <tr>
+          <td>cor(c_i, local GCV)</td>
+          <td>0.05451</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>GCV-Selected Candidates</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>support.size</th>
+          <th>kernel</th>
+          <th>degree</th>
+          <th>chart.dim</th>
+          <th>sum.local.gcv</th>
+          <th>fallback.rate</th>
+          <th>mean.df.ratio</th>
+          <th>truth_rmse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>16</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>4</td>
+          <td>0.73666</td>
+          <td>0</td>
+          <td>0.5366</td>
+          <td>0.095159</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>2</td>
+          <td>2.3261</td>
+          <td>0</td>
+          <td>0.1519</td>
+          <td>0.055785</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>2</td>
+          <td>2.1268</td>
+          <td>0</td>
+          <td>0.1486</td>
+          <td>0.060765</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>32</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>1</td>
+          <td>2.3928</td>
+          <td>0</td>
+          <td>0.0915</td>
+          <td>0.053643</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>34</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>1</td>
+          <td>2.2201</td>
+          <td>0</td>
+          <td>0.08818</td>
+          <td>0.046969</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>22</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>5</td>
+          <td>0.0000091856</td>
+          <td>0</td>
+          <td>0.932</td>
+          <td>0.10112</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>16</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>4</td>
+          <td>0.0021683</td>
+          <td>0</td>
+          <td>0.8174</td>
+          <td>0.10112</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>29</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>6</td>
+          <td>0.0000015394</td>
+          <td>0</td>
+          <td>0.9252</td>
+          <td>0.10112</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>29</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>6</td>
+          <td>0.0000000038417</td>
+          <td>0</td>
+          <td>0.9639</td>
+          <td>0.10112</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>2</td>
+          <td>2.5021</td>
+          <td>0</td>
+          <td>0.1642</td>
+          <td>0.039332</td>
+        </tr>
+        <tr>
+          <td>FB11</td>
+          <td>SYN-SADDLE-LINE-N500</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>2</td>
+          <td>2.4663</td>
+          <td>0</td>
+          <td>0.1714</td>
+          <td>0.044459</td>
+        </tr>
+        <tr>
+          <td>FB12</td>
+          <td>SYN-TWO-PLANES-N600</td>
+          <td>35</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>2</td>
+          <td>2.5655</td>
+          <td>0</td>
+          <td>0.1714</td>
+          <td>0.044694</td>
+        </tr>
+        <tr>
+          <td>FB13</td>
+          <td>SYN-SIMPLEX-FACES-N600</td>
+          <td>22</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>5</td>
+          <td>1.2163</td>
+          <td>0</td>
+          <td>0.502</td>
+          <td>0.092398</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>16</td>
+          <td>tricube</td>
+          <td>2</td>
+          <td>4</td>
+          <td>0.0000000000000018218</td>
+          <td>0</td>
+          <td>0.9375</td>
+          <td>0.10032</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Output Assets</h2>
+    <ul>
+      <li>
+        <a href="tables/candidate_local_gcv_scores.csv">Candidate local-GCV score table</a>
+      </li>
+      <li>
+        <a href="tables/gcv_selected_candidates.csv">GCV-selected candidate table</a>
+      </li>
+      <li>
+        <a href="tables/method_comparison.csv">Selector comparison table</a>
+      </li>
+      <li>
+        <a href="tables/pointwise_gcv_component_diagnostics.csv">Pointwise c_i versus local-GCV diagnostics</a>
+      </li>
+      <li>
+        <a href="tables/pointwise_gcv_component_summary.csv">Pointwise diagnostic correlation summary</a>
+      </li>
+    </ul>
+  </body>
+</html>
+</html>

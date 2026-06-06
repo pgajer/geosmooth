@@ -568,6 +568,7 @@ fit.pttf.trend.filtering <- function(
     )
 }
 
+#' @method print pttf.trend.filtering.fit
 #' @export
 print.pttf.trend.filtering.fit <- function(x, ...) {
     cat("PTTF trend-filtering fit\n")

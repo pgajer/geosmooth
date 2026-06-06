@@ -93,6 +93,7 @@ DataFrame diagnostics_to_frame(
 //' shared plain local-PCA chart backend.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 List rcpp_local_second_order_svd_chart(
         const NumericMatrix& X_support,

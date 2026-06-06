@@ -352,6 +352,74 @@
     )
 }
 
+.local.pca.auto.chart.dim.from.singular.values <- function(
+    sv, n.support, degree, ambient.dim, support.metric = "coordinates",
+    anchor = NA_integer_, variance.threshold = 0.95,
+    eigengap.threshold = 4) {
+
+    sv <- as.numeric(sv)
+    sv <- sv[is.finite(sv) & sv > 0]
+    n.support <- as.integer(max(0L, n.support))
+    ambient.dim <- as.integer(max(1L, ambient.dim))
+    if (!length(sv)) {
+        return(.local.pca.auto.chart.dim.row(
+            anchor = anchor,
+            support.size = n.support,
+            support.metric = support.metric,
+            status = "zero_spectrum"
+        ))
+    }
+    energy <- sv^2
+    total <- sum(energy)
+    if (!is.finite(total) || total <= 0) {
+        return(.local.pca.auto.chart.dim.row(
+            anchor = anchor,
+            support.size = n.support,
+            support.metric = support.metric,
+            status = "bad_spectrum"
+        ))
+    }
+    support.cap <- .local.pca.max.chart.dim.for.support(
+        n.support = max(1L, n.support - 1L),
+        degree = degree,
+        ambient.dim = ambient.dim
+    )
+    max.dim <- min(
+        ambient.dim,
+        support.cap,
+        length(sv),
+        max(1L, n.support - 1L)
+    )
+    var.dim <- which(cumsum(energy) / total >= variance.threshold)[1L]
+    var.dim <- min(max.dim, max(1L, var.dim))
+    gap.dim <- NA_integer_
+    max.gap <- NA_real_
+    if (max.dim >= 2L) {
+        ratios <- sv[seq_len(max.dim - 1L)] /
+            pmax(sv[seq_len(max.dim - 1L) + 1L], .Machine$double.eps)
+        best <- which.max(ratios)
+        max.gap <- ratios[[best]]
+        if (length(best) && is.finite(ratios[[best]]) &&
+            ratios[[best]] >= eigengap.threshold) {
+            gap.dim <- as.integer(best)
+        }
+    }
+    selected <- if (is.na(gap.dim)) var.dim else min(var.dim, gap.dim)
+    participation <- sum(energy)^2 / sum(energy^2)
+    .local.pca.auto.chart.dim.row(
+        anchor = anchor,
+        support.size = n.support,
+        support.metric = support.metric,
+        variance.dim = var.dim,
+        eigengap.dim = gap.dim,
+        selected.local.dim = selected,
+        support.cap = support.cap,
+        max.eigengap.ratio = max.gap,
+        participation.rank = participation,
+        status = "ok"
+    )
+}
+
 .local.pca.max.chart.dim.for.support <- function(n.support, degree,
                                                  ambient.dim) {
     n.support <- as.integer(max(1L, n.support))

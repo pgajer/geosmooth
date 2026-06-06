@@ -44,6 +44,7 @@ NumericVector eigen_vector_to_numeric(const Eigen::VectorXd& x) {
 //' Internal C++ backend for shared local-PCA chart construction.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 List rcpp_local_pca_chart(
         const NumericMatrix& X_support,

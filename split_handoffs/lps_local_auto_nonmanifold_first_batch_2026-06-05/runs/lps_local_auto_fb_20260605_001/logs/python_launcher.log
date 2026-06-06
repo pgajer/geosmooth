@@ -1,0 +1,2092 @@
+[2026-06-05 06:06:55 EDT] start workers=4 pending=22
+[2026-06-05 06:06:55 EDT] launched FB02__LA_D1_HC_Li_N500__chart_local_auto pid=14395
+[2026-06-05 06:06:55 EDT] launched FB03__LA_D1_HC_Lc_N500__chart_local_auto pid=14396
+[2026-06-05 06:06:55 EDT] launched FB04__LA_D1_HC_Gv_N500__chart_local_auto pid=14397
+[2026-06-05 06:06:55 EDT] launched FB05__LA_D1_HC_Bv_N500__chart_local_auto pid=14398
+[2026-06-05 06:07:09 EDT] finished FB02__LA_D1_HC_Li_N500__chart_local_auto rc=0 elapsed_sec=13.9
+[2026-06-05 06:07:09 EDT] finished FB03__LA_D1_HC_Lc_N500__chart_local_auto rc=0 elapsed_sec=13.9
+[2026-06-05 06:07:09 EDT] finished FB04__LA_D1_HC_Gv_N500__chart_local_auto rc=0 elapsed_sec=13.8
+[2026-06-05 06:07:09 EDT] finished FB05__LA_D1_HC_Bv_N500__chart_local_auto rc=0 elapsed_sec=13.8
+[2026-06-05 06:07:10 EDT] launched FB06__LA_D2_RAW_N500__chart_auto pid=14493
+[2026-06-05 06:07:10 EDT] launched FB06__LA_D2_RAW_N500__chart_local_auto pid=14494
+[2026-06-05 06:07:10 EDT] launched FB07__LA_D2_HC_TOP1_N500__chart_auto pid=14495
+[2026-06-05 06:07:10 EDT] launched FB07__LA_D2_HC_TOP1_N500__chart_local_auto pid=14496
+[2026-06-05 06:07:30 EDT] finished FB07__LA_D2_HC_TOP1_N500__chart_auto rc=0 elapsed_sec=20.0
+[2026-06-05 06:07:31 EDT] launched FB08__LA_D3_RAW_N500__chart_auto pid=14650
+[2026-06-05 06:07:31 EDT] finished FB06__LA_D2_RAW_N500__chart_auto rc=0 elapsed_sec=21.1
+[2026-06-05 06:07:32 EDT] launched FB08__LA_D3_RAW_N500__chart_local_auto pid=14659
+[2026-06-05 06:07:42 EDT] finished FB06__LA_D2_RAW_N500__chart_local_auto rc=0 elapsed_sec=32.7
+[2026-06-05 06:07:42 EDT] finished FB07__LA_D2_HC_TOP1_N500__chart_local_auto rc=0 elapsed_sec=32.7
+[2026-06-05 06:07:44 EDT] launched FB09__LA_13K_SUB_N500__chart_auto pid=14740
+[2026-06-05 06:07:44 EDT] launched FB09__LA_13K_SUB_N500__chart_local_auto pid=14741
+[2026-06-05 06:07:56 EDT] finished FB08__LA_D3_RAW_N500__chart_auto rc=0 elapsed_sec=25.3
+[2026-06-05 06:07:57 EDT] launched FB10__SYN_PARA_LINE_N500__chart_auto pid=15078
+[2026-06-05 06:08:04 EDT] finished FB10__SYN_PARA_LINE_N500__chart_auto rc=0 elapsed_sec=6.3
+[2026-06-05 06:08:05 EDT] launched FB10__SYN_PARA_LINE_N500__chart_local_auto pid=15090
+[2026-06-05 06:08:09 EDT] finished FB08__LA_D3_RAW_N500__chart_local_auto rc=0 elapsed_sec=37.0
+[2026-06-05 06:08:10 EDT] launched FB11__SYN_SADDLE_LINE_N500__chart_auto pid=15099
+[2026-06-05 06:08:16 EDT] finished FB11__SYN_SADDLE_LINE_N500__chart_auto rc=0 elapsed_sec=6.4
+[2026-06-05 06:08:17 EDT] launched FB11__SYN_SADDLE_LINE_N500__chart_local_auto pid=15114
+[2026-06-05 06:08:19 EDT] finished FB09__LA_13K_SUB_N500__chart_auto rc=0 elapsed_sec=35.0
+[2026-06-05 06:08:19 EDT] finished FB10__SYN_PARA_LINE_N500__chart_local_auto rc=0 elapsed_sec=13.9
+[2026-06-05 06:08:20 EDT] launched FB12__SYN_TWO_PLANES_N600__chart_auto pid=15124
+[2026-06-05 06:08:20 EDT] launched FB12__SYN_TWO_PLANES_N600__chart_local_auto pid=15125
+[2026-06-05 06:08:26 EDT] finished FB12__SYN_TWO_PLANES_N600__chart_auto rc=0 elapsed_sec=6.3
+[2026-06-05 06:08:27 EDT] launched FB13__SYN_SIMPLEX_FACES_N600__chart_auto pid=15167
+[2026-06-05 06:08:31 EDT] finished FB09__LA_13K_SUB_N500__chart_local_auto rc=0 elapsed_sec=47.6
+[2026-06-05 06:08:31 EDT] finished FB11__SYN_SADDLE_LINE_N500__chart_local_auto rc=0 elapsed_sec=13.7
+[2026-06-05 06:08:32 EDT] launched FB13__SYN_SIMPLEX_FACES_N600__chart_local_auto pid=15180
+[2026-06-05 06:08:32 EDT] launched FB14__SYN_RANK_BLOCKS_N600_P100__chart_auto pid=15181
+[2026-06-05 06:08:33 EDT] finished FB13__SYN_SIMPLEX_FACES_N600__chart_auto rc=0 elapsed_sec=6.4
+[2026-06-05 06:08:34 EDT] launched FB14__SYN_RANK_BLOCKS_N600_P100__chart_local_auto pid=15199
+[2026-06-05 06:08:34 EDT] finished FB12__SYN_TWO_PLANES_N600__chart_local_auto rc=0 elapsed_sec=14.8
+[2026-06-05 06:08:48 EDT] finished FB13__SYN_SIMPLEX_FACES_N600__chart_local_auto rc=0 elapsed_sec=15.8
+[2026-06-05 06:08:59 EDT] finished FB14__SYN_RANK_BLOCKS_N600_P100__chart_auto rc=0 elapsed_sec=26.4
+[2026-06-05 06:09:09 EDT] finished FB14__SYN_RANK_BLOCKS_N600_P100__chart_local_auto rc=0 elapsed_sec=34.9
+[2026-06-05 06:09:10 EDT] complete
+[2026-06-05 06:09:11 EDT] start workers=4 pending=0
+[2026-06-05 06:09:11 EDT] complete
+[2026-06-05 06:09:21 EDT] start workers=4 pending=0
+[2026-06-05 06:09:21 EDT] complete
+[2026-06-05 06:09:31 EDT] start workers=4 pending=0
+[2026-06-05 06:09:31 EDT] complete
+[2026-06-05 06:09:41 EDT] start workers=4 pending=0
+[2026-06-05 06:09:41 EDT] complete
+[2026-06-05 06:09:51 EDT] start workers=4 pending=0
+[2026-06-05 06:09:51 EDT] complete
+[2026-06-05 06:10:01 EDT] start workers=4 pending=0
+[2026-06-05 06:10:01 EDT] complete
+[2026-06-05 06:10:11 EDT] start workers=4 pending=0
+[2026-06-05 06:10:11 EDT] complete
+[2026-06-05 06:10:21 EDT] start workers=4 pending=0
+[2026-06-05 06:10:21 EDT] complete
+[2026-06-05 06:10:31 EDT] start workers=4 pending=0
+[2026-06-05 06:10:31 EDT] complete
+[2026-06-05 06:10:41 EDT] start workers=4 pending=0
+[2026-06-05 06:10:41 EDT] complete
+[2026-06-05 06:10:52 EDT] start workers=4 pending=0
+[2026-06-05 06:10:52 EDT] complete
+[2026-06-05 06:11:02 EDT] start workers=4 pending=0
+[2026-06-05 06:11:02 EDT] complete
+[2026-06-05 06:11:12 EDT] start workers=4 pending=0
+[2026-06-05 06:11:12 EDT] complete
+[2026-06-05 06:11:22 EDT] start workers=4 pending=0
+[2026-06-05 06:11:22 EDT] complete
+[2026-06-05 06:11:32 EDT] start workers=4 pending=0
+[2026-06-05 06:11:32 EDT] complete
+[2026-06-05 06:11:42 EDT] start workers=4 pending=0
+[2026-06-05 06:11:42 EDT] complete
+[2026-06-05 06:11:52 EDT] start workers=4 pending=0
+[2026-06-05 06:11:52 EDT] complete
+[2026-06-05 06:12:02 EDT] start workers=4 pending=0
+[2026-06-05 06:12:02 EDT] complete
+[2026-06-05 06:12:12 EDT] start workers=4 pending=0
+[2026-06-05 06:12:12 EDT] complete
+[2026-06-05 06:12:23 EDT] start workers=4 pending=0
+[2026-06-05 06:12:23 EDT] complete
+[2026-06-05 06:12:33 EDT] start workers=4 pending=0
+[2026-06-05 06:12:33 EDT] complete
+[2026-06-05 06:12:43 EDT] start workers=4 pending=0
+[2026-06-05 06:12:43 EDT] complete
+[2026-06-05 06:12:53 EDT] start workers=4 pending=0
+[2026-06-05 06:12:53 EDT] complete
+[2026-06-05 06:13:03 EDT] start workers=4 pending=0
+[2026-06-05 06:13:03 EDT] complete
+[2026-06-05 06:13:13 EDT] start workers=4 pending=0
+[2026-06-05 06:13:13 EDT] complete
+[2026-06-05 06:13:23 EDT] start workers=4 pending=0
+[2026-06-05 06:13:23 EDT] complete
+[2026-06-05 06:13:33 EDT] start workers=4 pending=0
+[2026-06-05 06:13:33 EDT] complete
+[2026-06-05 06:13:43 EDT] start workers=4 pending=0
+[2026-06-05 06:13:43 EDT] complete
+[2026-06-05 06:13:53 EDT] start workers=4 pending=0
+[2026-06-05 06:13:53 EDT] complete
+[2026-06-05 06:14:04 EDT] start workers=4 pending=0
+[2026-06-05 06:14:04 EDT] complete
+[2026-06-05 06:14:14 EDT] start workers=4 pending=0
+[2026-06-05 06:14:14 EDT] complete
+[2026-06-05 06:14:24 EDT] start workers=4 pending=0
+[2026-06-05 06:14:24 EDT] complete
+[2026-06-05 06:14:34 EDT] start workers=4 pending=0
+[2026-06-05 06:14:34 EDT] complete
+[2026-06-05 06:14:44 EDT] start workers=4 pending=0
+[2026-06-05 06:14:44 EDT] complete
+[2026-06-05 06:14:54 EDT] start workers=4 pending=0
+[2026-06-05 06:14:54 EDT] complete
+[2026-06-05 06:15:04 EDT] start workers=4 pending=0
+[2026-06-05 06:15:04 EDT] complete
+[2026-06-05 06:15:14 EDT] start workers=4 pending=0
+[2026-06-05 06:15:14 EDT] complete
+[2026-06-05 06:15:24 EDT] start workers=4 pending=0
+[2026-06-05 06:15:24 EDT] complete
+[2026-06-05 06:15:35 EDT] start workers=4 pending=0
+[2026-06-05 06:15:35 EDT] complete
+[2026-06-05 06:15:45 EDT] start workers=4 pending=0
+[2026-06-05 06:15:45 EDT] complete
+[2026-06-05 06:15:55 EDT] start workers=4 pending=0
+[2026-06-05 06:15:55 EDT] complete
+[2026-06-05 06:16:05 EDT] start workers=4 pending=0
+[2026-06-05 06:16:05 EDT] complete
+[2026-06-05 06:16:15 EDT] start workers=4 pending=0
+[2026-06-05 06:16:15 EDT] complete
+[2026-06-05 06:16:25 EDT] start workers=4 pending=0
+[2026-06-05 06:16:25 EDT] complete
+[2026-06-05 06:16:35 EDT] start workers=4 pending=0
+[2026-06-05 06:16:35 EDT] complete
+[2026-06-05 06:16:45 EDT] start workers=4 pending=0
+[2026-06-05 06:16:45 EDT] complete
+[2026-06-05 06:16:55 EDT] start workers=4 pending=0
+[2026-06-05 06:16:55 EDT] complete
+[2026-06-05 06:17:06 EDT] start workers=4 pending=0
+[2026-06-05 06:17:06 EDT] complete
+[2026-06-05 06:17:16 EDT] start workers=4 pending=0
+[2026-06-05 06:17:16 EDT] complete
+[2026-06-05 06:17:26 EDT] start workers=4 pending=0
+[2026-06-05 06:17:26 EDT] complete
+[2026-06-05 06:17:36 EDT] start workers=4 pending=0
+[2026-06-05 06:17:36 EDT] complete
+[2026-06-05 06:17:46 EDT] start workers=4 pending=0
+[2026-06-05 06:17:46 EDT] complete
+[2026-06-05 06:17:56 EDT] start workers=4 pending=0
+[2026-06-05 06:17:56 EDT] complete
+[2026-06-05 06:18:06 EDT] start workers=4 pending=0
+[2026-06-05 06:18:06 EDT] complete
+[2026-06-05 06:18:16 EDT] start workers=4 pending=0
+[2026-06-05 06:18:16 EDT] complete
+[2026-06-05 06:18:26 EDT] start workers=4 pending=0
+[2026-06-05 06:18:26 EDT] complete
+[2026-06-05 06:18:36 EDT] start workers=4 pending=0
+[2026-06-05 06:18:36 EDT] complete
+[2026-06-05 06:18:47 EDT] start workers=4 pending=0
+[2026-06-05 06:18:47 EDT] complete
+[2026-06-05 06:18:57 EDT] start workers=4 pending=0
+[2026-06-05 06:18:57 EDT] complete
+[2026-06-05 06:19:07 EDT] start workers=4 pending=0
+[2026-06-05 06:19:07 EDT] complete
+[2026-06-05 06:19:17 EDT] start workers=4 pending=0
+[2026-06-05 06:19:17 EDT] complete
+[2026-06-05 06:19:27 EDT] start workers=4 pending=0
+[2026-06-05 06:19:27 EDT] complete
+[2026-06-05 06:19:37 EDT] start workers=4 pending=0
+[2026-06-05 06:19:37 EDT] complete
+[2026-06-05 06:19:47 EDT] start workers=4 pending=0
+[2026-06-05 06:19:47 EDT] complete
+[2026-06-05 06:19:57 EDT] start workers=4 pending=0
+[2026-06-05 06:19:57 EDT] complete
+[2026-06-05 06:20:07 EDT] start workers=4 pending=0
+[2026-06-05 06:20:07 EDT] complete
+[2026-06-05 06:20:18 EDT] start workers=4 pending=0
+[2026-06-05 06:20:18 EDT] complete
+[2026-06-05 06:20:28 EDT] start workers=4 pending=0
+[2026-06-05 06:20:28 EDT] complete
+[2026-06-05 06:20:38 EDT] start workers=4 pending=0
+[2026-06-05 06:20:38 EDT] complete
+[2026-06-05 06:20:48 EDT] start workers=4 pending=0
+[2026-06-05 06:20:48 EDT] complete
+[2026-06-05 06:20:58 EDT] start workers=4 pending=0
+[2026-06-05 06:20:58 EDT] complete
+[2026-06-05 06:21:08 EDT] start workers=4 pending=0
+[2026-06-05 06:21:08 EDT] complete
+[2026-06-05 06:21:18 EDT] start workers=4 pending=0
+[2026-06-05 06:21:18 EDT] complete
+[2026-06-05 06:21:28 EDT] start workers=4 pending=0
+[2026-06-05 06:21:28 EDT] complete
+[2026-06-05 06:21:38 EDT] start workers=4 pending=0
+[2026-06-05 06:21:38 EDT] complete
+[2026-06-05 06:21:48 EDT] start workers=4 pending=0
+[2026-06-05 06:21:48 EDT] complete
+[2026-06-05 06:21:59 EDT] start workers=4 pending=0
+[2026-06-05 06:21:59 EDT] complete
+[2026-06-05 06:22:09 EDT] start workers=4 pending=0
+[2026-06-05 06:22:09 EDT] complete
+[2026-06-05 06:22:19 EDT] start workers=4 pending=0
+[2026-06-05 06:22:19 EDT] complete
+[2026-06-05 06:22:29 EDT] start workers=4 pending=0
+[2026-06-05 06:22:29 EDT] complete
+[2026-06-05 06:22:39 EDT] start workers=4 pending=0
+[2026-06-05 06:22:39 EDT] complete
+[2026-06-05 06:22:49 EDT] start workers=4 pending=0
+[2026-06-05 06:22:49 EDT] complete
+[2026-06-05 06:22:59 EDT] start workers=4 pending=0
+[2026-06-05 06:22:59 EDT] complete
+[2026-06-05 06:23:09 EDT] start workers=4 pending=0
+[2026-06-05 06:23:09 EDT] complete
+[2026-06-05 06:23:19 EDT] start workers=4 pending=0
+[2026-06-05 06:23:19 EDT] complete
+[2026-06-05 06:23:29 EDT] start workers=4 pending=0
+[2026-06-05 06:23:29 EDT] complete
+[2026-06-05 06:23:40 EDT] start workers=4 pending=0
+[2026-06-05 06:23:40 EDT] complete
+[2026-06-05 06:23:50 EDT] start workers=4 pending=0
+[2026-06-05 06:23:50 EDT] complete
+[2026-06-05 06:24:00 EDT] start workers=4 pending=0
+[2026-06-05 06:24:00 EDT] complete
+[2026-06-05 06:24:10 EDT] start workers=4 pending=0
+[2026-06-05 06:24:10 EDT] complete
+[2026-06-05 06:24:20 EDT] start workers=4 pending=0
+[2026-06-05 06:24:20 EDT] complete
+[2026-06-05 06:24:30 EDT] start workers=4 pending=0
+[2026-06-05 06:24:30 EDT] complete
+[2026-06-05 06:24:40 EDT] start workers=4 pending=0
+[2026-06-05 06:24:40 EDT] complete
+[2026-06-05 06:24:50 EDT] start workers=4 pending=0
+[2026-06-05 06:24:50 EDT] complete
+[2026-06-05 06:25:00 EDT] start workers=4 pending=0
+[2026-06-05 06:25:00 EDT] complete
+[2026-06-05 06:25:11 EDT] start workers=4 pending=0
+[2026-06-05 06:25:11 EDT] complete
+[2026-06-05 06:25:21 EDT] start workers=4 pending=0
+[2026-06-05 06:25:21 EDT] complete
+[2026-06-05 06:25:31 EDT] start workers=4 pending=0
+[2026-06-05 06:25:31 EDT] complete
+[2026-06-05 06:25:41 EDT] start workers=4 pending=0
+[2026-06-05 06:25:41 EDT] complete
+[2026-06-05 06:25:51 EDT] start workers=4 pending=0
+[2026-06-05 06:25:51 EDT] complete
+[2026-06-05 06:26:01 EDT] start workers=4 pending=0
+[2026-06-05 06:26:01 EDT] complete
+[2026-06-05 06:26:11 EDT] start workers=4 pending=0
+[2026-06-05 06:26:11 EDT] complete
+[2026-06-05 06:26:21 EDT] start workers=4 pending=0
+[2026-06-05 06:26:21 EDT] complete
+[2026-06-05 06:26:31 EDT] start workers=4 pending=0
+[2026-06-05 06:26:31 EDT] complete
+[2026-06-05 06:26:41 EDT] start workers=4 pending=0
+[2026-06-05 06:26:41 EDT] complete
+[2026-06-05 06:26:52 EDT] start workers=4 pending=0
+[2026-06-05 06:26:52 EDT] complete
+[2026-06-05 06:27:02 EDT] start workers=4 pending=0
+[2026-06-05 06:27:02 EDT] complete
+[2026-06-05 06:27:12 EDT] start workers=4 pending=0
+[2026-06-05 06:27:12 EDT] complete
+[2026-06-05 06:27:22 EDT] start workers=4 pending=0
+[2026-06-05 06:27:22 EDT] complete
+[2026-06-05 06:27:32 EDT] start workers=4 pending=0
+[2026-06-05 06:27:32 EDT] complete
+[2026-06-05 06:27:42 EDT] start workers=4 pending=0
+[2026-06-05 06:27:42 EDT] complete
+[2026-06-05 06:27:52 EDT] start workers=4 pending=0
+[2026-06-05 06:27:52 EDT] complete
+[2026-06-05 06:28:02 EDT] start workers=4 pending=0
+[2026-06-05 06:28:02 EDT] complete
+[2026-06-05 06:28:12 EDT] start workers=4 pending=0
+[2026-06-05 06:28:12 EDT] complete
+[2026-06-05 06:28:22 EDT] start workers=4 pending=0
+[2026-06-05 06:28:22 EDT] complete
+[2026-06-05 06:28:33 EDT] start workers=4 pending=0
+[2026-06-05 06:28:33 EDT] complete
+[2026-06-05 06:28:43 EDT] start workers=4 pending=0
+[2026-06-05 06:28:43 EDT] complete
+[2026-06-05 06:28:53 EDT] start workers=4 pending=0
+[2026-06-05 06:28:53 EDT] complete
+[2026-06-05 06:29:03 EDT] start workers=4 pending=0
+[2026-06-05 06:29:03 EDT] complete
+[2026-06-05 06:29:13 EDT] start workers=4 pending=0
+[2026-06-05 06:29:13 EDT] complete
+[2026-06-05 06:29:23 EDT] start workers=4 pending=0
+[2026-06-05 06:29:23 EDT] complete
+[2026-06-05 06:29:33 EDT] start workers=4 pending=0
+[2026-06-05 06:29:33 EDT] complete
+[2026-06-05 06:29:43 EDT] start workers=4 pending=0
+[2026-06-05 06:29:43 EDT] complete
+[2026-06-05 06:29:53 EDT] start workers=4 pending=0
+[2026-06-05 06:29:53 EDT] complete
+[2026-06-05 06:30:04 EDT] start workers=4 pending=0
+[2026-06-05 06:30:04 EDT] complete
+[2026-06-05 06:30:14 EDT] start workers=4 pending=0
+[2026-06-05 06:30:14 EDT] complete
+[2026-06-05 06:30:24 EDT] start workers=4 pending=0
+[2026-06-05 06:30:24 EDT] complete
+[2026-06-05 06:30:34 EDT] start workers=4 pending=0
+[2026-06-05 06:30:34 EDT] complete
+[2026-06-05 06:30:44 EDT] start workers=4 pending=0
+[2026-06-05 06:30:44 EDT] complete
+[2026-06-05 06:30:54 EDT] start workers=4 pending=0
+[2026-06-05 06:30:54 EDT] complete
+[2026-06-05 06:31:04 EDT] start workers=4 pending=0
+[2026-06-05 06:31:04 EDT] complete
+[2026-06-05 06:31:14 EDT] start workers=4 pending=0
+[2026-06-05 06:31:14 EDT] complete
+[2026-06-05 06:31:24 EDT] start workers=4 pending=0
+[2026-06-05 06:31:24 EDT] complete
+[2026-06-05 06:31:34 EDT] start workers=4 pending=0
+[2026-06-05 06:31:34 EDT] complete
+[2026-06-05 06:31:45 EDT] start workers=4 pending=0
+[2026-06-05 06:31:45 EDT] complete
+[2026-06-05 06:31:55 EDT] start workers=4 pending=0
+[2026-06-05 06:31:55 EDT] complete
+[2026-06-05 06:32:05 EDT] start workers=4 pending=0
+[2026-06-05 06:32:05 EDT] complete
+[2026-06-05 06:32:15 EDT] start workers=4 pending=0
+[2026-06-05 06:32:15 EDT] complete
+[2026-06-05 06:32:25 EDT] start workers=4 pending=0
+[2026-06-05 06:32:25 EDT] complete
+[2026-06-05 06:32:35 EDT] start workers=4 pending=0
+[2026-06-05 06:32:35 EDT] complete
+[2026-06-05 06:32:45 EDT] start workers=4 pending=0
+[2026-06-05 06:32:45 EDT] complete
+[2026-06-05 06:32:55 EDT] start workers=4 pending=0
+[2026-06-05 06:32:55 EDT] complete
+[2026-06-05 06:33:05 EDT] start workers=4 pending=0
+[2026-06-05 06:33:05 EDT] complete
+[2026-06-05 06:33:16 EDT] start workers=4 pending=0
+[2026-06-05 06:33:16 EDT] complete
+[2026-06-05 06:33:26 EDT] start workers=4 pending=0
+[2026-06-05 06:33:26 EDT] complete
+[2026-06-05 06:33:36 EDT] start workers=4 pending=0
+[2026-06-05 06:33:36 EDT] complete
+[2026-06-05 06:33:46 EDT] start workers=4 pending=0
+[2026-06-05 06:33:46 EDT] complete
+[2026-06-05 06:33:56 EDT] start workers=4 pending=0
+[2026-06-05 06:33:56 EDT] complete
+[2026-06-05 06:34:06 EDT] start workers=4 pending=0
+[2026-06-05 06:34:06 EDT] complete
+[2026-06-05 06:34:16 EDT] start workers=4 pending=0
+[2026-06-05 06:34:16 EDT] complete
+[2026-06-05 06:34:26 EDT] start workers=4 pending=0
+[2026-06-05 06:34:26 EDT] complete
+[2026-06-05 06:34:36 EDT] start workers=4 pending=0
+[2026-06-05 06:34:36 EDT] complete
+[2026-06-05 06:34:47 EDT] start workers=4 pending=0
+[2026-06-05 06:34:47 EDT] complete
+[2026-06-05 06:34:57 EDT] start workers=4 pending=0
+[2026-06-05 06:34:57 EDT] complete
+[2026-06-05 06:35:07 EDT] start workers=4 pending=0
+[2026-06-05 06:35:07 EDT] complete
+[2026-06-05 06:35:17 EDT] start workers=4 pending=0
+[2026-06-05 06:35:17 EDT] complete
+[2026-06-05 06:35:27 EDT] start workers=4 pending=0
+[2026-06-05 06:35:27 EDT] complete
+[2026-06-05 06:35:37 EDT] start workers=4 pending=0
+[2026-06-05 06:35:37 EDT] complete
+[2026-06-05 06:35:47 EDT] start workers=4 pending=0
+[2026-06-05 06:35:47 EDT] complete
+[2026-06-05 06:35:57 EDT] start workers=4 pending=0
+[2026-06-05 06:35:57 EDT] complete
+[2026-06-05 06:36:07 EDT] start workers=4 pending=0
+[2026-06-05 06:36:07 EDT] complete
+[2026-06-05 06:36:18 EDT] start workers=4 pending=0
+[2026-06-05 06:36:18 EDT] complete
+[2026-06-05 06:36:28 EDT] start workers=4 pending=0
+[2026-06-05 06:36:28 EDT] complete
+[2026-06-05 06:36:38 EDT] start workers=4 pending=0
+[2026-06-05 06:36:38 EDT] complete
+[2026-06-05 06:36:48 EDT] start workers=4 pending=0
+[2026-06-05 06:36:48 EDT] complete
+[2026-06-05 06:36:58 EDT] start workers=4 pending=0
+[2026-06-05 06:36:58 EDT] complete
+[2026-06-05 06:37:08 EDT] start workers=4 pending=0
+[2026-06-05 06:37:08 EDT] complete
+[2026-06-05 06:37:18 EDT] start workers=4 pending=0
+[2026-06-05 06:37:18 EDT] complete
+[2026-06-05 06:37:28 EDT] start workers=4 pending=0
+[2026-06-05 06:37:28 EDT] complete
+[2026-06-05 06:37:38 EDT] start workers=4 pending=0
+[2026-06-05 06:37:38 EDT] complete
+[2026-06-05 06:37:49 EDT] start workers=4 pending=0
+[2026-06-05 06:37:49 EDT] complete
+[2026-06-05 06:37:59 EDT] start workers=4 pending=0
+[2026-06-05 06:37:59 EDT] complete
+[2026-06-05 06:38:09 EDT] start workers=4 pending=0
+[2026-06-05 06:38:09 EDT] complete
+[2026-06-05 06:38:19 EDT] start workers=4 pending=0
+[2026-06-05 06:38:19 EDT] complete
+[2026-06-05 06:38:29 EDT] start workers=4 pending=0
+[2026-06-05 06:38:29 EDT] complete
+[2026-06-05 06:38:39 EDT] start workers=4 pending=0
+[2026-06-05 06:38:39 EDT] complete
+[2026-06-05 06:38:49 EDT] start workers=4 pending=0
+[2026-06-05 06:38:49 EDT] complete
+[2026-06-05 06:38:59 EDT] start workers=4 pending=0
+[2026-06-05 06:38:59 EDT] complete
+[2026-06-05 06:39:09 EDT] start workers=4 pending=0
+[2026-06-05 06:39:09 EDT] complete
+[2026-06-05 06:39:20 EDT] start workers=4 pending=0
+[2026-06-05 06:39:20 EDT] complete
+[2026-06-05 06:39:30 EDT] start workers=4 pending=0
+[2026-06-05 06:39:30 EDT] complete
+[2026-06-05 06:39:40 EDT] start workers=4 pending=0
+[2026-06-05 06:39:40 EDT] complete
+[2026-06-05 06:39:50 EDT] start workers=4 pending=0
+[2026-06-05 06:39:50 EDT] complete
+[2026-06-05 06:40:00 EDT] start workers=4 pending=0
+[2026-06-05 06:40:00 EDT] complete
+[2026-06-05 06:40:10 EDT] start workers=4 pending=0
+[2026-06-05 06:40:10 EDT] complete
+[2026-06-05 06:40:20 EDT] start workers=4 pending=0
+[2026-06-05 06:40:20 EDT] complete
+[2026-06-05 06:40:30 EDT] start workers=4 pending=0
+[2026-06-05 06:40:30 EDT] complete
+[2026-06-05 06:40:40 EDT] start workers=4 pending=0
+[2026-06-05 06:40:40 EDT] complete
+[2026-06-05 06:40:51 EDT] start workers=4 pending=0
+[2026-06-05 06:40:51 EDT] complete
+[2026-06-05 06:41:01 EDT] start workers=4 pending=0
+[2026-06-05 06:41:01 EDT] complete
+[2026-06-05 06:41:11 EDT] start workers=4 pending=0
+[2026-06-05 06:41:11 EDT] complete
+[2026-06-05 06:41:21 EDT] start workers=4 pending=0
+[2026-06-05 06:41:21 EDT] complete
+[2026-06-05 06:41:31 EDT] start workers=4 pending=0
+[2026-06-05 06:41:31 EDT] complete
+[2026-06-05 06:41:41 EDT] start workers=4 pending=0
+[2026-06-05 06:41:41 EDT] complete
+[2026-06-05 06:41:51 EDT] start workers=4 pending=0
+[2026-06-05 06:41:51 EDT] complete
+[2026-06-05 06:42:01 EDT] start workers=4 pending=0
+[2026-06-05 06:42:01 EDT] complete
+[2026-06-05 06:42:11 EDT] start workers=4 pending=0
+[2026-06-05 06:42:11 EDT] complete
+[2026-06-05 06:42:21 EDT] start workers=4 pending=0
+[2026-06-05 06:42:21 EDT] complete
+[2026-06-05 06:42:32 EDT] start workers=4 pending=0
+[2026-06-05 06:42:32 EDT] complete
+[2026-06-05 06:42:42 EDT] start workers=4 pending=0
+[2026-06-05 06:42:42 EDT] complete
+[2026-06-05 06:42:52 EDT] start workers=4 pending=0
+[2026-06-05 06:42:52 EDT] complete
+[2026-06-05 06:43:02 EDT] start workers=4 pending=0
+[2026-06-05 06:43:02 EDT] complete
+[2026-06-05 06:43:12 EDT] start workers=4 pending=0
+[2026-06-05 06:43:12 EDT] complete
+[2026-06-05 06:43:22 EDT] start workers=4 pending=0
+[2026-06-05 06:43:22 EDT] complete
+[2026-06-05 06:43:32 EDT] start workers=4 pending=0
+[2026-06-05 06:43:32 EDT] complete
+[2026-06-05 06:43:42 EDT] start workers=4 pending=0
+[2026-06-05 06:43:42 EDT] complete
+[2026-06-05 06:43:52 EDT] start workers=4 pending=0
+[2026-06-05 06:43:52 EDT] complete
+[2026-06-05 06:44:03 EDT] start workers=4 pending=0
+[2026-06-05 06:44:03 EDT] complete
+[2026-06-05 06:44:13 EDT] start workers=4 pending=0
+[2026-06-05 06:44:13 EDT] complete
+[2026-06-05 06:44:23 EDT] start workers=4 pending=0
+[2026-06-05 06:44:23 EDT] complete
+[2026-06-05 06:44:33 EDT] start workers=4 pending=0
+[2026-06-05 06:44:33 EDT] complete
+[2026-06-05 06:44:43 EDT] start workers=4 pending=0
+[2026-06-05 06:44:43 EDT] complete
+[2026-06-05 06:44:53 EDT] start workers=4 pending=0
+[2026-06-05 06:44:53 EDT] complete
+[2026-06-05 06:45:03 EDT] start workers=4 pending=0
+[2026-06-05 06:45:03 EDT] complete
+[2026-06-05 06:45:13 EDT] start workers=4 pending=0
+[2026-06-05 06:45:13 EDT] complete
+[2026-06-05 06:45:23 EDT] start workers=4 pending=0
+[2026-06-05 06:45:23 EDT] complete
+[2026-06-05 06:45:34 EDT] start workers=4 pending=0
+[2026-06-05 06:45:34 EDT] complete
+[2026-06-05 06:45:44 EDT] start workers=4 pending=0
+[2026-06-05 06:45:44 EDT] complete
+[2026-06-05 06:45:54 EDT] start workers=4 pending=0
+[2026-06-05 06:45:54 EDT] complete
+[2026-06-05 06:46:04 EDT] start workers=4 pending=0
+[2026-06-05 06:46:04 EDT] complete
+[2026-06-05 06:46:14 EDT] start workers=4 pending=0
+[2026-06-05 06:46:14 EDT] complete
+[2026-06-05 06:46:24 EDT] start workers=4 pending=0
+[2026-06-05 06:46:24 EDT] complete
+[2026-06-05 06:46:34 EDT] start workers=4 pending=0
+[2026-06-05 06:46:34 EDT] complete
+[2026-06-05 06:46:44 EDT] start workers=4 pending=0
+[2026-06-05 06:46:44 EDT] complete
+[2026-06-05 06:46:54 EDT] start workers=4 pending=0
+[2026-06-05 06:46:54 EDT] complete
+[2026-06-05 06:47:04 EDT] start workers=4 pending=0
+[2026-06-05 06:47:04 EDT] complete
+[2026-06-05 06:47:15 EDT] start workers=4 pending=0
+[2026-06-05 06:47:15 EDT] complete
+[2026-06-05 06:47:25 EDT] start workers=4 pending=0
+[2026-06-05 06:47:25 EDT] complete
+[2026-06-05 06:47:35 EDT] start workers=4 pending=0
+[2026-06-05 06:47:35 EDT] complete
+[2026-06-05 06:47:45 EDT] start workers=4 pending=0
+[2026-06-05 06:47:45 EDT] complete
+[2026-06-05 06:47:55 EDT] start workers=4 pending=0
+[2026-06-05 06:47:55 EDT] complete
+[2026-06-05 06:48:05 EDT] start workers=4 pending=0
+[2026-06-05 06:48:05 EDT] complete
+[2026-06-05 06:48:15 EDT] start workers=4 pending=0
+[2026-06-05 06:48:15 EDT] complete
+[2026-06-05 06:48:25 EDT] start workers=4 pending=0
+[2026-06-05 06:48:25 EDT] complete
+[2026-06-05 06:48:35 EDT] start workers=4 pending=0
+[2026-06-05 06:48:35 EDT] complete
+[2026-06-05 06:48:46 EDT] start workers=4 pending=0
+[2026-06-05 06:48:46 EDT] complete
+[2026-06-05 06:48:56 EDT] start workers=4 pending=0
+[2026-06-05 06:48:56 EDT] complete
+[2026-06-05 06:49:06 EDT] start workers=4 pending=0
+[2026-06-05 06:49:06 EDT] complete
+[2026-06-05 06:49:16 EDT] start workers=4 pending=0
+[2026-06-05 06:49:16 EDT] complete
+[2026-06-05 06:49:26 EDT] start workers=4 pending=0
+[2026-06-05 06:49:26 EDT] complete
+[2026-06-05 06:49:36 EDT] start workers=4 pending=0
+[2026-06-05 06:49:36 EDT] complete
+[2026-06-05 06:49:46 EDT] start workers=4 pending=0
+[2026-06-05 06:49:46 EDT] complete
+[2026-06-05 06:49:56 EDT] start workers=4 pending=0
+[2026-06-05 06:49:56 EDT] complete
+[2026-06-05 06:50:06 EDT] start workers=4 pending=0
+[2026-06-05 06:50:06 EDT] complete
+[2026-06-05 06:50:17 EDT] start workers=4 pending=0
+[2026-06-05 06:50:17 EDT] complete
+[2026-06-05 06:50:27 EDT] start workers=4 pending=0
+[2026-06-05 06:50:27 EDT] complete
+[2026-06-05 06:50:37 EDT] start workers=4 pending=0
+[2026-06-05 06:50:37 EDT] complete
+[2026-06-05 06:50:47 EDT] start workers=4 pending=0
+[2026-06-05 06:50:47 EDT] complete
+[2026-06-05 06:50:57 EDT] start workers=4 pending=0
+[2026-06-05 06:50:57 EDT] complete
+[2026-06-05 06:51:07 EDT] start workers=4 pending=0
+[2026-06-05 06:51:07 EDT] complete
+[2026-06-05 06:51:17 EDT] start workers=4 pending=0
+[2026-06-05 06:51:17 EDT] complete
+[2026-06-05 06:51:27 EDT] start workers=4 pending=0
+[2026-06-05 06:51:27 EDT] complete
+[2026-06-05 06:51:37 EDT] start workers=4 pending=0
+[2026-06-05 06:51:37 EDT] complete
+[2026-06-05 06:51:48 EDT] start workers=4 pending=0
+[2026-06-05 06:51:48 EDT] complete
+[2026-06-05 06:51:58 EDT] start workers=4 pending=0
+[2026-06-05 06:51:58 EDT] complete
+[2026-06-05 06:52:08 EDT] start workers=4 pending=0
+[2026-06-05 06:52:08 EDT] complete
+[2026-06-05 06:52:18 EDT] start workers=4 pending=0
+[2026-06-05 06:52:18 EDT] complete
+[2026-06-05 06:52:28 EDT] start workers=4 pending=0
+[2026-06-05 06:52:28 EDT] complete
+[2026-06-05 06:52:38 EDT] start workers=4 pending=0
+[2026-06-05 06:52:38 EDT] complete
+[2026-06-05 06:52:48 EDT] start workers=4 pending=0
+[2026-06-05 06:52:48 EDT] complete
+[2026-06-05 06:52:58 EDT] start workers=4 pending=0
+[2026-06-05 06:52:58 EDT] complete
+[2026-06-05 06:53:08 EDT] start workers=4 pending=0
+[2026-06-05 06:53:08 EDT] complete
+[2026-06-05 06:53:19 EDT] start workers=4 pending=0
+[2026-06-05 06:53:19 EDT] complete
+[2026-06-05 06:53:29 EDT] start workers=4 pending=0
+[2026-06-05 06:53:29 EDT] complete
+[2026-06-05 06:53:39 EDT] start workers=4 pending=0
+[2026-06-05 06:53:39 EDT] complete
+[2026-06-05 06:53:49 EDT] start workers=4 pending=0
+[2026-06-05 06:53:49 EDT] complete
+[2026-06-05 06:53:59 EDT] start workers=4 pending=0
+[2026-06-05 06:53:59 EDT] complete
+[2026-06-05 06:54:09 EDT] start workers=4 pending=0
+[2026-06-05 06:54:09 EDT] complete
+[2026-06-05 06:54:19 EDT] start workers=4 pending=0
+[2026-06-05 06:54:19 EDT] complete
+[2026-06-05 06:54:29 EDT] start workers=4 pending=0
+[2026-06-05 06:54:29 EDT] complete
+[2026-06-05 06:54:39 EDT] start workers=4 pending=0
+[2026-06-05 06:54:39 EDT] complete
+[2026-06-05 06:54:49 EDT] start workers=4 pending=0
+[2026-06-05 06:54:49 EDT] complete
+[2026-06-05 06:55:00 EDT] start workers=4 pending=0
+[2026-06-05 06:55:00 EDT] complete
+[2026-06-05 06:55:10 EDT] start workers=4 pending=0
+[2026-06-05 06:55:10 EDT] complete
+[2026-06-05 06:55:20 EDT] start workers=4 pending=0
+[2026-06-05 06:55:20 EDT] complete
+[2026-06-05 06:55:30 EDT] start workers=4 pending=0
+[2026-06-05 06:55:30 EDT] complete
+[2026-06-05 06:55:40 EDT] start workers=4 pending=0
+[2026-06-05 06:55:40 EDT] complete
+[2026-06-05 06:55:50 EDT] start workers=4 pending=0
+[2026-06-05 06:55:50 EDT] complete
+[2026-06-05 06:56:00 EDT] start workers=4 pending=0
+[2026-06-05 06:56:00 EDT] complete
+[2026-06-05 06:56:10 EDT] start workers=4 pending=0
+[2026-06-05 06:56:10 EDT] complete
+[2026-06-05 06:56:20 EDT] start workers=4 pending=0
+[2026-06-05 06:56:20 EDT] complete
+[2026-06-05 06:56:31 EDT] start workers=4 pending=0
+[2026-06-05 06:56:31 EDT] complete
+[2026-06-05 06:56:41 EDT] start workers=4 pending=0
+[2026-06-05 06:56:41 EDT] complete
+[2026-06-05 06:56:51 EDT] start workers=4 pending=0
+[2026-06-05 06:56:51 EDT] complete
+[2026-06-05 06:57:01 EDT] start workers=4 pending=0
+[2026-06-05 06:57:01 EDT] complete
+[2026-06-05 06:57:11 EDT] start workers=4 pending=0
+[2026-06-05 06:57:11 EDT] complete
+[2026-06-05 06:57:21 EDT] start workers=4 pending=0
+[2026-06-05 06:57:21 EDT] complete
+[2026-06-05 06:57:31 EDT] start workers=4 pending=0
+[2026-06-05 06:57:31 EDT] complete
+[2026-06-05 06:57:41 EDT] start workers=4 pending=0
+[2026-06-05 06:57:41 EDT] complete
+[2026-06-05 06:57:51 EDT] start workers=4 pending=0
+[2026-06-05 06:57:51 EDT] complete
+[2026-06-05 06:58:02 EDT] start workers=4 pending=0
+[2026-06-05 06:58:02 EDT] complete
+[2026-06-05 06:58:12 EDT] start workers=4 pending=0
+[2026-06-05 06:58:12 EDT] complete
+[2026-06-05 06:58:22 EDT] start workers=4 pending=0
+[2026-06-05 06:58:22 EDT] complete
+[2026-06-05 06:58:32 EDT] start workers=4 pending=0
+[2026-06-05 06:58:32 EDT] complete
+[2026-06-05 06:58:42 EDT] start workers=4 pending=0
+[2026-06-05 06:58:42 EDT] complete
+[2026-06-05 06:58:52 EDT] start workers=4 pending=0
+[2026-06-05 06:58:52 EDT] complete
+[2026-06-05 06:59:02 EDT] start workers=4 pending=0
+[2026-06-05 06:59:02 EDT] complete
+[2026-06-05 06:59:12 EDT] start workers=4 pending=0
+[2026-06-05 06:59:12 EDT] complete
+[2026-06-05 06:59:22 EDT] start workers=4 pending=0
+[2026-06-05 06:59:22 EDT] complete
+[2026-06-05 06:59:33 EDT] start workers=4 pending=0
+[2026-06-05 06:59:33 EDT] complete
+[2026-06-05 06:59:43 EDT] start workers=4 pending=0
+[2026-06-05 06:59:43 EDT] complete
+[2026-06-05 06:59:53 EDT] start workers=4 pending=0
+[2026-06-05 06:59:53 EDT] complete
+[2026-06-05 07:00:03 EDT] start workers=4 pending=0
+[2026-06-05 07:00:03 EDT] complete
+[2026-06-05 07:00:13 EDT] start workers=4 pending=0
+[2026-06-05 07:00:13 EDT] complete
+[2026-06-05 07:00:23 EDT] start workers=4 pending=0
+[2026-06-05 07:00:23 EDT] complete
+[2026-06-05 07:00:33 EDT] start workers=4 pending=0
+[2026-06-05 07:00:33 EDT] complete
+[2026-06-05 07:00:43 EDT] start workers=4 pending=0
+[2026-06-05 07:00:43 EDT] complete
+[2026-06-05 07:00:53 EDT] start workers=4 pending=0
+[2026-06-05 07:00:53 EDT] complete
+[2026-06-05 07:01:03 EDT] start workers=4 pending=0
+[2026-06-05 07:01:03 EDT] complete
+[2026-06-05 07:01:14 EDT] start workers=4 pending=0
+[2026-06-05 07:01:14 EDT] complete
+[2026-06-05 07:01:24 EDT] start workers=4 pending=0
+[2026-06-05 07:01:24 EDT] complete
+[2026-06-05 07:01:34 EDT] start workers=4 pending=0
+[2026-06-05 07:01:34 EDT] complete
+[2026-06-05 07:01:44 EDT] start workers=4 pending=0
+[2026-06-05 07:01:44 EDT] complete
+[2026-06-05 07:01:54 EDT] start workers=4 pending=0
+[2026-06-05 07:01:54 EDT] complete
+[2026-06-05 07:02:04 EDT] start workers=4 pending=0
+[2026-06-05 07:02:04 EDT] complete
+[2026-06-05 07:02:14 EDT] start workers=4 pending=0
+[2026-06-05 07:02:14 EDT] complete
+[2026-06-05 07:02:24 EDT] start workers=4 pending=0
+[2026-06-05 07:02:24 EDT] complete
+[2026-06-05 07:02:34 EDT] start workers=4 pending=0
+[2026-06-05 07:02:34 EDT] complete
+[2026-06-05 07:02:45 EDT] start workers=4 pending=0
+[2026-06-05 07:02:45 EDT] complete
+[2026-06-05 07:02:55 EDT] start workers=4 pending=0
+[2026-06-05 07:02:55 EDT] complete
+[2026-06-05 07:03:05 EDT] start workers=4 pending=0
+[2026-06-05 07:03:05 EDT] complete
+[2026-06-05 07:03:15 EDT] start workers=4 pending=0
+[2026-06-05 07:03:15 EDT] complete
+[2026-06-05 07:03:25 EDT] start workers=4 pending=0
+[2026-06-05 07:03:25 EDT] complete
+[2026-06-05 07:03:35 EDT] start workers=4 pending=0
+[2026-06-05 07:03:35 EDT] complete
+[2026-06-05 07:03:45 EDT] start workers=4 pending=0
+[2026-06-05 07:03:45 EDT] complete
+[2026-06-05 07:03:55 EDT] start workers=4 pending=0
+[2026-06-05 07:03:55 EDT] complete
+[2026-06-05 07:04:05 EDT] start workers=4 pending=0
+[2026-06-05 07:04:05 EDT] complete
+[2026-06-05 07:04:15 EDT] start workers=4 pending=0
+[2026-06-05 07:04:15 EDT] complete
+[2026-06-05 07:04:26 EDT] start workers=4 pending=0
+[2026-06-05 07:04:26 EDT] complete
+[2026-06-05 07:04:36 EDT] start workers=4 pending=0
+[2026-06-05 07:04:36 EDT] complete
+[2026-06-05 07:04:46 EDT] start workers=4 pending=0
+[2026-06-05 07:04:46 EDT] complete
+[2026-06-05 07:04:56 EDT] start workers=4 pending=0
+[2026-06-05 07:04:56 EDT] complete
+[2026-06-05 07:05:06 EDT] start workers=4 pending=0
+[2026-06-05 07:05:06 EDT] complete
+[2026-06-05 07:05:16 EDT] start workers=4 pending=0
+[2026-06-05 07:05:16 EDT] complete
+[2026-06-05 07:05:26 EDT] start workers=4 pending=0
+[2026-06-05 07:05:26 EDT] complete
+[2026-06-05 07:05:36 EDT] start workers=4 pending=0
+[2026-06-05 07:05:36 EDT] complete
+[2026-06-05 07:05:46 EDT] start workers=4 pending=0
+[2026-06-05 07:05:46 EDT] complete
+[2026-06-05 07:05:57 EDT] start workers=4 pending=0
+[2026-06-05 07:05:57 EDT] complete
+[2026-06-05 07:06:07 EDT] start workers=4 pending=0
+[2026-06-05 07:06:07 EDT] complete
+[2026-06-05 07:06:17 EDT] start workers=4 pending=0
+[2026-06-05 07:06:17 EDT] complete
+[2026-06-05 07:06:27 EDT] start workers=4 pending=0
+[2026-06-05 07:06:27 EDT] complete
+[2026-06-05 07:06:37 EDT] start workers=4 pending=0
+[2026-06-05 07:06:37 EDT] complete
+[2026-06-05 07:06:47 EDT] start workers=4 pending=0
+[2026-06-05 07:06:47 EDT] complete
+[2026-06-05 07:06:57 EDT] start workers=4 pending=0
+[2026-06-05 07:06:57 EDT] complete
+[2026-06-05 07:07:07 EDT] start workers=4 pending=0
+[2026-06-05 07:07:07 EDT] complete
+[2026-06-05 07:07:18 EDT] start workers=4 pending=0
+[2026-06-05 07:07:18 EDT] complete
+[2026-06-05 07:07:28 EDT] start workers=4 pending=0
+[2026-06-05 07:07:28 EDT] complete
+[2026-06-05 07:07:38 EDT] start workers=4 pending=0
+[2026-06-05 07:07:38 EDT] complete
+[2026-06-05 07:07:48 EDT] start workers=4 pending=0
+[2026-06-05 07:07:48 EDT] complete
+[2026-06-05 07:07:58 EDT] start workers=4 pending=0
+[2026-06-05 07:07:58 EDT] complete
+[2026-06-05 07:08:08 EDT] start workers=4 pending=0
+[2026-06-05 07:08:08 EDT] complete
+[2026-06-05 07:08:18 EDT] start workers=4 pending=0
+[2026-06-05 07:08:18 EDT] complete
+[2026-06-05 07:08:28 EDT] start workers=4 pending=0
+[2026-06-05 07:08:28 EDT] complete
+[2026-06-05 07:08:38 EDT] start workers=4 pending=0
+[2026-06-05 07:08:38 EDT] complete
+[2026-06-05 07:08:49 EDT] start workers=4 pending=0
+[2026-06-05 07:08:49 EDT] complete
+[2026-06-05 07:08:59 EDT] start workers=4 pending=0
+[2026-06-05 07:08:59 EDT] complete
+[2026-06-05 07:09:09 EDT] start workers=4 pending=0
+[2026-06-05 07:09:09 EDT] complete
+[2026-06-05 07:09:19 EDT] start workers=4 pending=0
+[2026-06-05 07:09:19 EDT] complete
+[2026-06-05 07:09:29 EDT] start workers=4 pending=0
+[2026-06-05 07:09:29 EDT] complete
+[2026-06-05 07:09:39 EDT] start workers=4 pending=0
+[2026-06-05 07:09:39 EDT] complete
+[2026-06-05 07:09:49 EDT] start workers=4 pending=0
+[2026-06-05 07:09:49 EDT] complete
+[2026-06-05 07:09:59 EDT] start workers=4 pending=0
+[2026-06-05 07:09:59 EDT] complete
+[2026-06-05 07:10:09 EDT] start workers=4 pending=0
+[2026-06-05 07:10:09 EDT] complete
+[2026-06-05 07:10:19 EDT] start workers=4 pending=0
+[2026-06-05 07:10:19 EDT] complete
+[2026-06-05 07:10:30 EDT] start workers=4 pending=0
+[2026-06-05 07:10:30 EDT] complete
+[2026-06-05 07:10:40 EDT] start workers=4 pending=0
+[2026-06-05 07:10:40 EDT] complete
+[2026-06-05 07:10:50 EDT] start workers=4 pending=0
+[2026-06-05 07:10:50 EDT] complete
+[2026-06-05 07:11:00 EDT] start workers=4 pending=0
+[2026-06-05 07:11:00 EDT] complete
+[2026-06-05 07:11:10 EDT] start workers=4 pending=0
+[2026-06-05 07:11:10 EDT] complete
+[2026-06-05 07:11:20 EDT] start workers=4 pending=0
+[2026-06-05 07:11:20 EDT] complete
+[2026-06-05 07:11:30 EDT] start workers=4 pending=0
+[2026-06-05 07:11:30 EDT] complete
+[2026-06-05 07:11:40 EDT] start workers=4 pending=0
+[2026-06-05 07:11:40 EDT] complete
+[2026-06-05 07:11:50 EDT] start workers=4 pending=0
+[2026-06-05 07:11:50 EDT] complete
+[2026-06-05 07:12:01 EDT] start workers=4 pending=0
+[2026-06-05 07:12:01 EDT] complete
+[2026-06-05 07:12:11 EDT] start workers=4 pending=0
+[2026-06-05 07:12:11 EDT] complete
+[2026-06-05 07:12:21 EDT] start workers=4 pending=0
+[2026-06-05 07:12:21 EDT] complete
+[2026-06-05 07:12:31 EDT] start workers=4 pending=0
+[2026-06-05 07:12:31 EDT] complete
+[2026-06-05 07:12:41 EDT] start workers=4 pending=0
+[2026-06-05 07:12:41 EDT] complete
+[2026-06-05 07:12:51 EDT] start workers=4 pending=0
+[2026-06-05 07:12:51 EDT] complete
+[2026-06-05 07:13:01 EDT] start workers=4 pending=0
+[2026-06-05 07:13:01 EDT] complete
+[2026-06-05 07:13:11 EDT] start workers=4 pending=0
+[2026-06-05 07:13:11 EDT] complete
+[2026-06-05 07:13:21 EDT] start workers=4 pending=0
+[2026-06-05 07:13:21 EDT] complete
+[2026-06-05 07:13:32 EDT] start workers=4 pending=0
+[2026-06-05 07:13:32 EDT] complete
+[2026-06-05 07:13:42 EDT] start workers=4 pending=0
+[2026-06-05 07:13:42 EDT] complete
+[2026-06-05 07:13:52 EDT] start workers=4 pending=0
+[2026-06-05 07:13:52 EDT] complete
+[2026-06-05 07:14:02 EDT] start workers=4 pending=0
+[2026-06-05 07:14:02 EDT] complete
+[2026-06-05 07:14:12 EDT] start workers=4 pending=0
+[2026-06-05 07:14:12 EDT] complete
+[2026-06-05 07:14:22 EDT] start workers=4 pending=0
+[2026-06-05 07:14:22 EDT] complete
+[2026-06-05 07:14:32 EDT] start workers=4 pending=0
+[2026-06-05 07:14:32 EDT] complete
+[2026-06-05 07:14:42 EDT] start workers=4 pending=0
+[2026-06-05 07:14:42 EDT] complete
+[2026-06-05 07:14:52 EDT] start workers=4 pending=0
+[2026-06-05 07:14:52 EDT] complete
+[2026-06-05 07:15:03 EDT] start workers=4 pending=0
+[2026-06-05 07:15:03 EDT] complete
+[2026-06-05 07:15:13 EDT] start workers=4 pending=0
+[2026-06-05 07:15:13 EDT] complete
+[2026-06-05 07:15:23 EDT] start workers=4 pending=0
+[2026-06-05 07:15:23 EDT] complete
+[2026-06-05 07:15:33 EDT] start workers=4 pending=0
+[2026-06-05 07:15:33 EDT] complete
+[2026-06-05 07:15:43 EDT] start workers=4 pending=0
+[2026-06-05 07:15:43 EDT] complete
+[2026-06-05 07:15:53 EDT] start workers=4 pending=0
+[2026-06-05 07:15:53 EDT] complete
+[2026-06-05 07:16:03 EDT] start workers=4 pending=0
+[2026-06-05 07:16:03 EDT] complete
+[2026-06-05 07:16:13 EDT] start workers=4 pending=0
+[2026-06-05 07:16:13 EDT] complete
+[2026-06-05 07:16:24 EDT] start workers=4 pending=0
+[2026-06-05 07:16:24 EDT] complete
+[2026-06-05 07:16:34 EDT] start workers=4 pending=0
+[2026-06-05 07:16:34 EDT] complete
+[2026-06-05 07:16:44 EDT] start workers=4 pending=0
+[2026-06-05 07:16:44 EDT] complete
+[2026-06-05 07:16:54 EDT] start workers=4 pending=0
+[2026-06-05 07:16:54 EDT] complete
+[2026-06-05 07:17:04 EDT] start workers=4 pending=0
+[2026-06-05 07:17:04 EDT] complete
+[2026-06-05 07:17:14 EDT] start workers=4 pending=0
+[2026-06-05 07:17:14 EDT] complete
+[2026-06-05 07:17:24 EDT] start workers=4 pending=0
+[2026-06-05 07:17:24 EDT] complete
+[2026-06-05 07:17:34 EDT] start workers=4 pending=0
+[2026-06-05 07:17:34 EDT] complete
+[2026-06-05 07:17:44 EDT] start workers=4 pending=0
+[2026-06-05 07:17:44 EDT] complete
+[2026-06-05 07:17:55 EDT] start workers=4 pending=0
+[2026-06-05 07:17:55 EDT] complete
+[2026-06-05 07:18:05 EDT] start workers=4 pending=0
+[2026-06-05 07:18:05 EDT] complete
+[2026-06-05 07:18:15 EDT] start workers=4 pending=0
+[2026-06-05 07:18:15 EDT] complete
+[2026-06-05 07:18:25 EDT] start workers=4 pending=0
+[2026-06-05 07:18:25 EDT] complete
+[2026-06-05 07:18:35 EDT] start workers=4 pending=0
+[2026-06-05 07:18:35 EDT] complete
+[2026-06-05 07:18:45 EDT] start workers=4 pending=0
+[2026-06-05 07:18:45 EDT] complete
+[2026-06-05 07:18:55 EDT] start workers=4 pending=0
+[2026-06-05 07:18:55 EDT] complete
+[2026-06-05 07:19:05 EDT] start workers=4 pending=0
+[2026-06-05 07:19:05 EDT] complete
+[2026-06-05 07:19:15 EDT] start workers=4 pending=0
+[2026-06-05 07:19:15 EDT] complete
+[2026-06-05 07:19:26 EDT] start workers=4 pending=0
+[2026-06-05 07:19:26 EDT] complete
+[2026-06-05 07:19:36 EDT] start workers=4 pending=0
+[2026-06-05 07:19:36 EDT] complete
+[2026-06-05 07:19:46 EDT] start workers=4 pending=0
+[2026-06-05 07:19:46 EDT] complete
+[2026-06-05 07:19:56 EDT] start workers=4 pending=0
+[2026-06-05 07:19:56 EDT] complete
+[2026-06-05 07:20:06 EDT] start workers=4 pending=0
+[2026-06-05 07:20:06 EDT] complete
+[2026-06-05 07:20:16 EDT] start workers=4 pending=0
+[2026-06-05 07:20:16 EDT] complete
+[2026-06-05 07:20:26 EDT] start workers=4 pending=0
+[2026-06-05 07:20:26 EDT] complete
+[2026-06-05 07:20:36 EDT] start workers=4 pending=0
+[2026-06-05 07:20:36 EDT] complete
+[2026-06-05 07:20:46 EDT] start workers=4 pending=0
+[2026-06-05 07:20:46 EDT] complete
+[2026-06-05 07:20:56 EDT] start workers=4 pending=0
+[2026-06-05 07:20:56 EDT] complete
+[2026-06-05 07:21:07 EDT] start workers=4 pending=0
+[2026-06-05 07:21:07 EDT] complete
+[2026-06-05 07:21:17 EDT] start workers=4 pending=0
+[2026-06-05 07:21:17 EDT] complete
+[2026-06-05 07:21:27 EDT] start workers=4 pending=0
+[2026-06-05 07:21:27 EDT] complete
+[2026-06-05 07:21:37 EDT] start workers=4 pending=0
+[2026-06-05 07:21:37 EDT] complete
+[2026-06-05 07:21:47 EDT] start workers=4 pending=0
+[2026-06-05 07:21:47 EDT] complete
+[2026-06-05 07:21:57 EDT] start workers=4 pending=0
+[2026-06-05 07:21:57 EDT] complete
+[2026-06-05 07:22:07 EDT] start workers=4 pending=0
+[2026-06-05 07:22:07 EDT] complete
+[2026-06-05 07:22:17 EDT] start workers=4 pending=0
+[2026-06-05 07:22:17 EDT] complete
+[2026-06-05 07:22:27 EDT] start workers=4 pending=0
+[2026-06-05 07:22:27 EDT] complete
+[2026-06-05 07:22:37 EDT] start workers=4 pending=0
+[2026-06-05 07:22:37 EDT] complete
+[2026-06-05 07:22:48 EDT] start workers=4 pending=0
+[2026-06-05 07:22:48 EDT] complete
+[2026-06-05 07:22:58 EDT] start workers=4 pending=0
+[2026-06-05 07:22:58 EDT] complete
+[2026-06-05 07:23:08 EDT] start workers=4 pending=0
+[2026-06-05 07:23:08 EDT] complete
+[2026-06-05 07:23:18 EDT] start workers=4 pending=0
+[2026-06-05 07:23:18 EDT] complete
+[2026-06-05 07:23:28 EDT] start workers=4 pending=0
+[2026-06-05 07:23:28 EDT] complete
+[2026-06-05 07:23:38 EDT] start workers=4 pending=0
+[2026-06-05 07:23:38 EDT] complete
+[2026-06-05 07:23:48 EDT] start workers=4 pending=0
+[2026-06-05 07:23:48 EDT] complete
+[2026-06-05 07:23:58 EDT] start workers=4 pending=0
+[2026-06-05 07:23:58 EDT] complete
+[2026-06-05 07:24:08 EDT] start workers=4 pending=0
+[2026-06-05 07:24:08 EDT] complete
+[2026-06-05 07:24:19 EDT] start workers=4 pending=0
+[2026-06-05 07:24:19 EDT] complete
+[2026-06-05 07:24:29 EDT] start workers=4 pending=0
+[2026-06-05 07:24:29 EDT] complete
+[2026-06-05 07:24:39 EDT] start workers=4 pending=0
+[2026-06-05 07:24:39 EDT] complete
+[2026-06-05 07:24:49 EDT] start workers=4 pending=0
+[2026-06-05 07:24:49 EDT] complete
+[2026-06-05 07:24:59 EDT] start workers=4 pending=0
+[2026-06-05 07:24:59 EDT] complete
+[2026-06-05 07:25:09 EDT] start workers=4 pending=0
+[2026-06-05 07:25:09 EDT] complete
+[2026-06-05 07:25:19 EDT] start workers=4 pending=0
+[2026-06-05 07:25:19 EDT] complete
+[2026-06-05 07:25:29 EDT] start workers=4 pending=0
+[2026-06-05 07:25:29 EDT] complete
+[2026-06-05 07:25:39 EDT] start workers=4 pending=0
+[2026-06-05 07:25:39 EDT] complete
+[2026-06-05 07:25:50 EDT] start workers=4 pending=0
+[2026-06-05 07:25:50 EDT] complete
+[2026-06-05 07:26:00 EDT] start workers=4 pending=0
+[2026-06-05 07:26:00 EDT] complete
+[2026-06-05 07:26:10 EDT] start workers=4 pending=0
+[2026-06-05 07:26:10 EDT] complete
+[2026-06-05 07:26:20 EDT] start workers=4 pending=0
+[2026-06-05 07:26:20 EDT] complete
+[2026-06-05 07:26:30 EDT] start workers=4 pending=0
+[2026-06-05 07:26:30 EDT] complete
+[2026-06-05 07:26:40 EDT] start workers=4 pending=0
+[2026-06-05 07:26:40 EDT] complete
+[2026-06-05 07:26:50 EDT] start workers=4 pending=0
+[2026-06-05 07:26:50 EDT] complete
+[2026-06-05 07:27:00 EDT] start workers=4 pending=0
+[2026-06-05 07:27:00 EDT] complete
+[2026-06-05 07:27:10 EDT] start workers=4 pending=0
+[2026-06-05 07:27:10 EDT] complete
+[2026-06-05 07:27:21 EDT] start workers=4 pending=0
+[2026-06-05 07:27:21 EDT] complete
+[2026-06-05 07:27:31 EDT] start workers=4 pending=0
+[2026-06-05 07:27:31 EDT] complete
+[2026-06-05 07:27:41 EDT] start workers=4 pending=0
+[2026-06-05 07:27:41 EDT] complete
+[2026-06-05 07:27:51 EDT] start workers=4 pending=0
+[2026-06-05 07:27:51 EDT] complete
+[2026-06-05 07:28:01 EDT] start workers=4 pending=0
+[2026-06-05 07:28:01 EDT] complete
+[2026-06-05 07:28:11 EDT] start workers=4 pending=0
+[2026-06-05 07:28:11 EDT] complete
+[2026-06-05 07:28:21 EDT] start workers=4 pending=0
+[2026-06-05 07:28:21 EDT] complete
+[2026-06-05 07:28:31 EDT] start workers=4 pending=0
+[2026-06-05 07:28:31 EDT] complete
+[2026-06-05 07:28:41 EDT] start workers=4 pending=0
+[2026-06-05 07:28:41 EDT] complete
+[2026-06-05 07:28:52 EDT] start workers=4 pending=0
+[2026-06-05 07:28:52 EDT] complete
+[2026-06-05 07:29:02 EDT] start workers=4 pending=0
+[2026-06-05 07:29:02 EDT] complete
+[2026-06-05 07:29:12 EDT] start workers=4 pending=0
+[2026-06-05 07:29:12 EDT] complete
+[2026-06-05 07:29:22 EDT] start workers=4 pending=0
+[2026-06-05 07:29:22 EDT] complete
+[2026-06-05 07:29:32 EDT] start workers=4 pending=0
+[2026-06-05 07:29:32 EDT] complete
+[2026-06-05 07:29:42 EDT] start workers=4 pending=0
+[2026-06-05 07:29:42 EDT] complete
+[2026-06-05 07:29:52 EDT] start workers=4 pending=0
+[2026-06-05 07:29:52 EDT] complete
+[2026-06-05 07:30:02 EDT] start workers=4 pending=0
+[2026-06-05 07:30:02 EDT] complete
+[2026-06-05 07:30:12 EDT] start workers=4 pending=0
+[2026-06-05 07:30:12 EDT] complete
+[2026-06-05 07:30:23 EDT] start workers=4 pending=0
+[2026-06-05 07:30:23 EDT] complete
+[2026-06-05 07:30:33 EDT] start workers=4 pending=0
+[2026-06-05 07:30:33 EDT] complete
+[2026-06-05 07:30:43 EDT] start workers=4 pending=0
+[2026-06-05 07:30:43 EDT] complete
+[2026-06-05 07:30:53 EDT] start workers=4 pending=0
+[2026-06-05 07:30:53 EDT] complete
+[2026-06-05 07:31:03 EDT] start workers=4 pending=0
+[2026-06-05 07:31:03 EDT] complete
+[2026-06-05 07:31:13 EDT] start workers=4 pending=0
+[2026-06-05 07:31:13 EDT] complete
+[2026-06-05 07:31:23 EDT] start workers=4 pending=0
+[2026-06-05 07:31:23 EDT] complete
+[2026-06-05 07:31:33 EDT] start workers=4 pending=0
+[2026-06-05 07:31:33 EDT] complete
+[2026-06-05 07:31:43 EDT] start workers=4 pending=0
+[2026-06-05 07:31:43 EDT] complete
+[2026-06-05 07:31:54 EDT] start workers=4 pending=0
+[2026-06-05 07:31:54 EDT] complete
+[2026-06-05 07:32:04 EDT] start workers=4 pending=0
+[2026-06-05 07:32:04 EDT] complete
+[2026-06-05 07:32:14 EDT] start workers=4 pending=0
+[2026-06-05 07:32:14 EDT] complete
+[2026-06-05 07:32:24 EDT] start workers=4 pending=0
+[2026-06-05 07:32:24 EDT] complete
+[2026-06-05 07:32:34 EDT] start workers=4 pending=0
+[2026-06-05 07:32:34 EDT] complete
+[2026-06-05 07:32:44 EDT] start workers=4 pending=0
+[2026-06-05 07:32:44 EDT] complete
+[2026-06-05 07:32:54 EDT] start workers=4 pending=0
+[2026-06-05 07:32:54 EDT] complete
+[2026-06-05 07:33:04 EDT] start workers=4 pending=0
+[2026-06-05 07:33:04 EDT] complete
+[2026-06-05 07:33:14 EDT] start workers=4 pending=0
+[2026-06-05 07:33:14 EDT] complete
+[2026-06-05 07:33:24 EDT] start workers=4 pending=0
+[2026-06-05 07:33:24 EDT] complete
+[2026-06-05 07:33:35 EDT] start workers=4 pending=0
+[2026-06-05 07:33:35 EDT] complete
+[2026-06-05 07:33:45 EDT] start workers=4 pending=0
+[2026-06-05 07:33:45 EDT] complete
+[2026-06-05 07:33:55 EDT] start workers=4 pending=0
+[2026-06-05 07:33:55 EDT] complete
+[2026-06-05 07:34:05 EDT] start workers=4 pending=0
+[2026-06-05 07:34:05 EDT] complete
+[2026-06-05 07:34:15 EDT] start workers=4 pending=0
+[2026-06-05 07:34:15 EDT] complete
+[2026-06-05 07:34:25 EDT] start workers=4 pending=0
+[2026-06-05 07:34:25 EDT] complete
+[2026-06-05 07:34:35 EDT] start workers=4 pending=0
+[2026-06-05 07:34:35 EDT] complete
+[2026-06-05 07:34:45 EDT] start workers=4 pending=0
+[2026-06-05 07:34:45 EDT] complete
+[2026-06-05 07:34:55 EDT] start workers=4 pending=0
+[2026-06-05 07:34:55 EDT] complete
+[2026-06-05 07:35:06 EDT] start workers=4 pending=0
+[2026-06-05 07:35:06 EDT] complete
+[2026-06-05 07:35:16 EDT] start workers=4 pending=0
+[2026-06-05 07:35:16 EDT] complete
+[2026-06-05 07:35:26 EDT] start workers=4 pending=0
+[2026-06-05 07:35:26 EDT] complete
+[2026-06-05 07:35:36 EDT] start workers=4 pending=0
+[2026-06-05 07:35:36 EDT] complete
+[2026-06-05 07:35:46 EDT] start workers=4 pending=0
+[2026-06-05 07:35:46 EDT] complete
+[2026-06-05 07:35:56 EDT] start workers=4 pending=0
+[2026-06-05 07:35:56 EDT] complete
+[2026-06-05 07:36:06 EDT] start workers=4 pending=0
+[2026-06-05 07:36:06 EDT] complete
+[2026-06-05 07:36:16 EDT] start workers=4 pending=0
+[2026-06-05 07:36:16 EDT] complete
+[2026-06-05 07:36:27 EDT] start workers=4 pending=0
+[2026-06-05 07:36:27 EDT] complete
+[2026-06-05 07:36:37 EDT] start workers=4 pending=0
+[2026-06-05 07:36:37 EDT] complete
+[2026-06-05 07:36:47 EDT] start workers=4 pending=0
+[2026-06-05 07:36:47 EDT] complete
+[2026-06-05 07:36:57 EDT] start workers=4 pending=0
+[2026-06-05 07:36:57 EDT] complete
+[2026-06-05 07:37:07 EDT] start workers=4 pending=0
+[2026-06-05 07:37:07 EDT] complete
+[2026-06-05 07:37:17 EDT] start workers=4 pending=0
+[2026-06-05 07:37:17 EDT] complete
+[2026-06-05 07:37:27 EDT] start workers=4 pending=0
+[2026-06-05 07:37:27 EDT] complete
+[2026-06-05 07:37:37 EDT] start workers=4 pending=0
+[2026-06-05 07:37:37 EDT] complete
+[2026-06-05 07:37:47 EDT] start workers=4 pending=0
+[2026-06-05 07:37:47 EDT] complete
+[2026-06-05 07:37:58 EDT] start workers=4 pending=0
+[2026-06-05 07:37:58 EDT] complete
+[2026-06-05 07:38:08 EDT] start workers=4 pending=0
+[2026-06-05 07:38:08 EDT] complete
+[2026-06-05 07:38:18 EDT] start workers=4 pending=0
+[2026-06-05 07:38:18 EDT] complete
+[2026-06-05 07:38:28 EDT] start workers=4 pending=0
+[2026-06-05 07:38:28 EDT] complete
+[2026-06-05 07:38:38 EDT] start workers=4 pending=0
+[2026-06-05 07:38:38 EDT] complete
+[2026-06-05 07:38:48 EDT] start workers=4 pending=0
+[2026-06-05 07:38:48 EDT] complete
+[2026-06-05 07:38:58 EDT] start workers=4 pending=0
+[2026-06-05 07:38:58 EDT] complete
+[2026-06-05 07:39:08 EDT] start workers=4 pending=0
+[2026-06-05 07:39:08 EDT] complete
+[2026-06-05 07:39:18 EDT] start workers=4 pending=0
+[2026-06-05 07:39:18 EDT] complete
+[2026-06-05 07:39:29 EDT] start workers=4 pending=0
+[2026-06-05 07:39:29 EDT] complete
+[2026-06-05 07:39:39 EDT] start workers=4 pending=0
+[2026-06-05 07:39:39 EDT] complete
+[2026-06-05 07:39:49 EDT] start workers=4 pending=0
+[2026-06-05 07:39:49 EDT] complete
+[2026-06-05 07:39:59 EDT] start workers=4 pending=0
+[2026-06-05 07:39:59 EDT] complete
+[2026-06-05 07:40:09 EDT] start workers=4 pending=0
+[2026-06-05 07:40:09 EDT] complete
+[2026-06-05 07:40:19 EDT] start workers=4 pending=0
+[2026-06-05 07:40:19 EDT] complete
+[2026-06-05 07:40:29 EDT] start workers=4 pending=0
+[2026-06-05 07:40:29 EDT] complete
+[2026-06-05 07:40:39 EDT] start workers=4 pending=0
+[2026-06-05 07:40:39 EDT] complete
+[2026-06-05 07:40:49 EDT] start workers=4 pending=0
+[2026-06-05 07:40:49 EDT] complete
+[2026-06-05 07:41:00 EDT] start workers=4 pending=0
+[2026-06-05 07:41:00 EDT] complete
+[2026-06-05 07:41:10 EDT] start workers=4 pending=0
+[2026-06-05 07:41:10 EDT] complete
+[2026-06-05 07:41:20 EDT] start workers=4 pending=0
+[2026-06-05 07:41:20 EDT] complete
+[2026-06-05 07:41:30 EDT] start workers=4 pending=0
+[2026-06-05 07:41:30 EDT] complete
+[2026-06-05 07:41:40 EDT] start workers=4 pending=0
+[2026-06-05 07:41:40 EDT] complete
+[2026-06-05 07:41:50 EDT] start workers=4 pending=0
+[2026-06-05 07:41:50 EDT] complete
+[2026-06-05 07:42:00 EDT] start workers=4 pending=0
+[2026-06-05 07:42:00 EDT] complete
+[2026-06-05 07:42:10 EDT] start workers=4 pending=0
+[2026-06-05 07:42:10 EDT] complete
+[2026-06-05 07:42:20 EDT] start workers=4 pending=0
+[2026-06-05 07:42:20 EDT] complete
+[2026-06-05 07:42:31 EDT] start workers=4 pending=0
+[2026-06-05 07:42:31 EDT] complete
+[2026-06-05 07:42:41 EDT] start workers=4 pending=0
+[2026-06-05 07:42:41 EDT] complete
+[2026-06-05 07:42:51 EDT] start workers=4 pending=0
+[2026-06-05 07:42:51 EDT] complete
+[2026-06-05 07:43:01 EDT] start workers=4 pending=0
+[2026-06-05 07:43:01 EDT] complete
+[2026-06-05 07:43:11 EDT] start workers=4 pending=0
+[2026-06-05 07:43:11 EDT] complete
+[2026-06-05 07:43:21 EDT] start workers=4 pending=0
+[2026-06-05 07:43:21 EDT] complete
+[2026-06-05 07:43:31 EDT] start workers=4 pending=0
+[2026-06-05 07:43:31 EDT] complete
+[2026-06-05 07:43:41 EDT] start workers=4 pending=0
+[2026-06-05 07:43:41 EDT] complete
+[2026-06-05 07:43:51 EDT] start workers=4 pending=0
+[2026-06-05 07:43:51 EDT] complete
+[2026-06-05 07:44:02 EDT] start workers=4 pending=0
+[2026-06-05 07:44:02 EDT] complete
+[2026-06-05 07:44:12 EDT] start workers=4 pending=0
+[2026-06-05 07:44:12 EDT] complete
+[2026-06-05 07:44:22 EDT] start workers=4 pending=0
+[2026-06-05 07:44:22 EDT] complete
+[2026-06-05 07:44:32 EDT] start workers=4 pending=0
+[2026-06-05 07:44:32 EDT] complete
+[2026-06-05 07:44:42 EDT] start workers=4 pending=0
+[2026-06-05 07:44:42 EDT] complete
+[2026-06-05 07:44:52 EDT] start workers=4 pending=0
+[2026-06-05 07:44:52 EDT] complete
+[2026-06-05 07:45:02 EDT] start workers=4 pending=0
+[2026-06-05 07:45:02 EDT] complete
+[2026-06-05 07:45:12 EDT] start workers=4 pending=0
+[2026-06-05 07:45:12 EDT] complete
+[2026-06-05 07:45:22 EDT] start workers=4 pending=0
+[2026-06-05 07:45:22 EDT] complete
+[2026-06-05 07:45:33 EDT] start workers=4 pending=0
+[2026-06-05 07:45:33 EDT] complete
+[2026-06-05 07:45:43 EDT] start workers=4 pending=0
+[2026-06-05 07:45:43 EDT] complete
+[2026-06-05 07:45:53 EDT] start workers=4 pending=0
+[2026-06-05 07:45:53 EDT] complete
+[2026-06-05 07:46:03 EDT] start workers=4 pending=0
+[2026-06-05 07:46:03 EDT] complete
+[2026-06-05 07:46:13 EDT] start workers=4 pending=0
+[2026-06-05 07:46:13 EDT] complete
+[2026-06-05 07:46:23 EDT] start workers=4 pending=0
+[2026-06-05 07:46:23 EDT] complete
+[2026-06-05 07:46:33 EDT] start workers=4 pending=0
+[2026-06-05 07:46:33 EDT] complete
+[2026-06-05 07:46:43 EDT] start workers=4 pending=0
+[2026-06-05 07:46:43 EDT] complete
+[2026-06-05 07:46:53 EDT] start workers=4 pending=0
+[2026-06-05 07:46:53 EDT] complete
+[2026-06-05 07:47:04 EDT] start workers=4 pending=0
+[2026-06-05 07:47:04 EDT] complete
+[2026-06-05 07:47:14 EDT] start workers=4 pending=0
+[2026-06-05 07:47:14 EDT] complete
+[2026-06-05 07:47:24 EDT] start workers=4 pending=0
+[2026-06-05 07:47:24 EDT] complete
+[2026-06-05 07:47:34 EDT] start workers=4 pending=0
+[2026-06-05 07:47:34 EDT] complete
+[2026-06-05 07:47:44 EDT] start workers=4 pending=0
+[2026-06-05 07:47:44 EDT] complete
+[2026-06-05 07:47:54 EDT] start workers=4 pending=0
+[2026-06-05 07:47:54 EDT] complete
+[2026-06-05 07:48:04 EDT] start workers=4 pending=0
+[2026-06-05 07:48:04 EDT] complete
+[2026-06-05 07:48:14 EDT] start workers=4 pending=0
+[2026-06-05 07:48:14 EDT] complete
+[2026-06-05 07:48:24 EDT] start workers=4 pending=0
+[2026-06-05 07:48:24 EDT] complete
+[2026-06-05 07:48:34 EDT] start workers=4 pending=0
+[2026-06-05 07:48:34 EDT] complete
+[2026-06-05 07:48:45 EDT] start workers=4 pending=0
+[2026-06-05 07:48:45 EDT] complete
+[2026-06-05 07:48:55 EDT] start workers=4 pending=0
+[2026-06-05 07:48:55 EDT] complete
+[2026-06-05 07:49:05 EDT] start workers=4 pending=0
+[2026-06-05 07:49:05 EDT] complete
+[2026-06-05 07:49:15 EDT] start workers=4 pending=0
+[2026-06-05 07:49:15 EDT] complete
+[2026-06-05 07:49:25 EDT] start workers=4 pending=0
+[2026-06-05 07:49:25 EDT] complete
+[2026-06-05 07:49:35 EDT] start workers=4 pending=0
+[2026-06-05 07:49:35 EDT] complete
+[2026-06-05 07:49:45 EDT] start workers=4 pending=0
+[2026-06-05 07:49:45 EDT] complete
+[2026-06-05 07:49:55 EDT] start workers=4 pending=0
+[2026-06-05 07:49:55 EDT] complete
+[2026-06-05 07:50:06 EDT] start workers=4 pending=0
+[2026-06-05 07:50:06 EDT] complete
+[2026-06-05 07:50:16 EDT] start workers=4 pending=0
+[2026-06-05 07:50:16 EDT] complete
+[2026-06-05 07:50:26 EDT] start workers=4 pending=0
+[2026-06-05 07:50:26 EDT] complete
+[2026-06-05 07:50:36 EDT] start workers=4 pending=0
+[2026-06-05 07:50:36 EDT] complete
+[2026-06-05 07:50:46 EDT] start workers=4 pending=0
+[2026-06-05 07:50:46 EDT] complete
+[2026-06-05 07:50:56 EDT] start workers=4 pending=0
+[2026-06-05 07:50:56 EDT] complete
+[2026-06-05 07:51:06 EDT] start workers=4 pending=0
+[2026-06-05 07:51:06 EDT] complete
+[2026-06-05 07:51:16 EDT] start workers=4 pending=0
+[2026-06-05 07:51:16 EDT] complete
+[2026-06-05 07:51:26 EDT] start workers=4 pending=0
+[2026-06-05 07:51:26 EDT] complete
+[2026-06-05 07:51:37 EDT] start workers=4 pending=0
+[2026-06-05 07:51:37 EDT] complete
+[2026-06-05 07:51:47 EDT] start workers=4 pending=0
+[2026-06-05 07:51:47 EDT] complete
+[2026-06-05 07:51:57 EDT] start workers=4 pending=0
+[2026-06-05 07:51:57 EDT] complete
+[2026-06-05 07:52:07 EDT] start workers=4 pending=0
+[2026-06-05 07:52:07 EDT] complete
+[2026-06-05 07:52:17 EDT] start workers=4 pending=0
+[2026-06-05 07:52:17 EDT] complete
+[2026-06-05 07:52:27 EDT] start workers=4 pending=0
+[2026-06-05 07:52:27 EDT] complete
+[2026-06-05 07:52:37 EDT] start workers=4 pending=0
+[2026-06-05 07:52:37 EDT] complete
+[2026-06-05 07:52:47 EDT] start workers=4 pending=0
+[2026-06-05 07:52:47 EDT] complete
+[2026-06-05 07:52:57 EDT] start workers=4 pending=0
+[2026-06-05 07:52:57 EDT] complete
+[2026-06-05 07:53:07 EDT] start workers=4 pending=0
+[2026-06-05 07:53:07 EDT] complete
+[2026-06-05 07:53:18 EDT] start workers=4 pending=0
+[2026-06-05 07:53:18 EDT] complete
+[2026-06-05 07:53:28 EDT] start workers=4 pending=0
+[2026-06-05 07:53:28 EDT] complete
+[2026-06-05 07:53:38 EDT] start workers=4 pending=0
+[2026-06-05 07:53:38 EDT] complete
+[2026-06-05 07:53:48 EDT] start workers=4 pending=0
+[2026-06-05 07:53:48 EDT] complete
+[2026-06-05 07:53:58 EDT] start workers=4 pending=0
+[2026-06-05 07:53:58 EDT] complete
+[2026-06-05 07:54:08 EDT] start workers=4 pending=0
+[2026-06-05 07:54:08 EDT] complete
+[2026-06-05 07:54:18 EDT] start workers=4 pending=0
+[2026-06-05 07:54:18 EDT] complete
+[2026-06-05 07:54:28 EDT] start workers=4 pending=0
+[2026-06-05 07:54:28 EDT] complete
+[2026-06-05 07:54:38 EDT] start workers=4 pending=0
+[2026-06-05 07:54:38 EDT] complete
+[2026-06-05 07:54:49 EDT] start workers=4 pending=0
+[2026-06-05 07:54:49 EDT] complete
+[2026-06-05 07:54:59 EDT] start workers=4 pending=0
+[2026-06-05 07:54:59 EDT] complete
+[2026-06-05 07:55:09 EDT] start workers=4 pending=0
+[2026-06-05 07:55:09 EDT] complete
+[2026-06-05 07:55:19 EDT] start workers=4 pending=0
+[2026-06-05 07:55:19 EDT] complete
+[2026-06-05 07:55:29 EDT] start workers=4 pending=0
+[2026-06-05 07:55:29 EDT] complete
+[2026-06-05 07:55:39 EDT] start workers=4 pending=0
+[2026-06-05 07:55:39 EDT] complete
+[2026-06-05 07:55:49 EDT] start workers=4 pending=0
+[2026-06-05 07:55:49 EDT] complete
+[2026-06-05 07:55:59 EDT] start workers=4 pending=0
+[2026-06-05 07:55:59 EDT] complete
+[2026-06-05 07:56:09 EDT] start workers=4 pending=0
+[2026-06-05 07:56:09 EDT] complete
+[2026-06-05 07:56:19 EDT] start workers=4 pending=0
+[2026-06-05 07:56:19 EDT] complete
+[2026-06-05 07:56:30 EDT] start workers=4 pending=0
+[2026-06-05 07:56:30 EDT] complete
+[2026-06-05 07:56:40 EDT] start workers=4 pending=0
+[2026-06-05 07:56:40 EDT] complete
+[2026-06-05 07:56:50 EDT] start workers=4 pending=0
+[2026-06-05 07:56:50 EDT] complete
+[2026-06-05 07:57:00 EDT] start workers=4 pending=0
+[2026-06-05 07:57:00 EDT] complete
+[2026-06-05 07:57:10 EDT] start workers=4 pending=0
+[2026-06-05 07:57:10 EDT] complete
+[2026-06-05 07:57:20 EDT] start workers=4 pending=0
+[2026-06-05 07:57:20 EDT] complete
+[2026-06-05 07:57:30 EDT] start workers=4 pending=0
+[2026-06-05 07:57:30 EDT] complete
+[2026-06-05 07:57:40 EDT] start workers=4 pending=0
+[2026-06-05 07:57:40 EDT] complete
+[2026-06-05 07:57:50 EDT] start workers=4 pending=0
+[2026-06-05 07:57:50 EDT] complete
+[2026-06-05 07:58:01 EDT] start workers=4 pending=0
+[2026-06-05 07:58:01 EDT] complete
+[2026-06-05 07:58:11 EDT] start workers=4 pending=0
+[2026-06-05 07:58:11 EDT] complete
+[2026-06-05 07:58:21 EDT] start workers=4 pending=0
+[2026-06-05 07:58:21 EDT] complete
+[2026-06-05 07:58:31 EDT] start workers=4 pending=0
+[2026-06-05 07:58:31 EDT] complete
+[2026-06-05 07:58:41 EDT] start workers=4 pending=0
+[2026-06-05 07:58:41 EDT] complete
+[2026-06-05 07:58:51 EDT] start workers=4 pending=0
+[2026-06-05 07:58:51 EDT] complete
+[2026-06-05 07:59:01 EDT] start workers=4 pending=0
+[2026-06-05 07:59:01 EDT] complete
+[2026-06-05 07:59:11 EDT] start workers=4 pending=0
+[2026-06-05 07:59:11 EDT] complete
+[2026-06-05 07:59:21 EDT] start workers=4 pending=0
+[2026-06-05 07:59:21 EDT] complete
+[2026-06-05 07:59:32 EDT] start workers=4 pending=0
+[2026-06-05 07:59:32 EDT] complete
+[2026-06-05 07:59:42 EDT] start workers=4 pending=0
+[2026-06-05 07:59:42 EDT] complete
+[2026-06-05 07:59:52 EDT] start workers=4 pending=0
+[2026-06-05 07:59:52 EDT] complete
+[2026-06-05 08:00:02 EDT] start workers=4 pending=0
+[2026-06-05 08:00:02 EDT] complete
+[2026-06-05 08:00:12 EDT] start workers=4 pending=0
+[2026-06-05 08:00:12 EDT] complete
+[2026-06-05 08:00:22 EDT] start workers=4 pending=0
+[2026-06-05 08:00:22 EDT] complete
+[2026-06-05 08:00:32 EDT] start workers=4 pending=0
+[2026-06-05 08:00:32 EDT] complete
+[2026-06-05 08:00:42 EDT] start workers=4 pending=0
+[2026-06-05 08:00:42 EDT] complete
+[2026-06-05 08:00:52 EDT] start workers=4 pending=0
+[2026-06-05 08:00:52 EDT] complete
+[2026-06-05 08:01:02 EDT] start workers=4 pending=0
+[2026-06-05 08:01:02 EDT] complete
+[2026-06-05 08:01:13 EDT] start workers=4 pending=0
+[2026-06-05 08:01:13 EDT] complete
+[2026-06-05 08:01:23 EDT] start workers=4 pending=0
+[2026-06-05 08:01:23 EDT] complete
+[2026-06-05 08:01:33 EDT] start workers=4 pending=0
+[2026-06-05 08:01:33 EDT] complete
+[2026-06-05 08:01:43 EDT] start workers=4 pending=0
+[2026-06-05 08:01:43 EDT] complete
+[2026-06-05 08:01:53 EDT] start workers=4 pending=0
+[2026-06-05 08:01:53 EDT] complete
+[2026-06-05 08:02:03 EDT] start workers=4 pending=0
+[2026-06-05 08:02:03 EDT] complete
+[2026-06-05 08:02:13 EDT] start workers=4 pending=0
+[2026-06-05 08:02:13 EDT] complete
+[2026-06-05 08:02:23 EDT] start workers=4 pending=0
+[2026-06-05 08:02:23 EDT] complete
+[2026-06-05 08:02:33 EDT] start workers=4 pending=0
+[2026-06-05 08:02:33 EDT] complete
+[2026-06-05 08:02:44 EDT] start workers=4 pending=0
+[2026-06-05 08:02:44 EDT] complete
+[2026-06-05 08:02:54 EDT] start workers=4 pending=0
+[2026-06-05 08:02:54 EDT] complete
+[2026-06-05 08:03:04 EDT] start workers=4 pending=0
+[2026-06-05 08:03:04 EDT] complete
+[2026-06-05 08:03:14 EDT] start workers=4 pending=0
+[2026-06-05 08:03:14 EDT] complete
+[2026-06-05 08:03:24 EDT] start workers=4 pending=0
+[2026-06-05 08:03:24 EDT] complete
+[2026-06-05 08:03:34 EDT] start workers=4 pending=0
+[2026-06-05 08:03:34 EDT] complete
+[2026-06-05 08:03:44 EDT] start workers=4 pending=0
+[2026-06-05 08:03:44 EDT] complete
+[2026-06-05 08:03:54 EDT] start workers=4 pending=0
+[2026-06-05 08:03:54 EDT] complete
+[2026-06-05 08:04:04 EDT] start workers=4 pending=0
+[2026-06-05 08:04:04 EDT] complete
+[2026-06-05 08:04:15 EDT] start workers=4 pending=0
+[2026-06-05 08:04:15 EDT] complete
+[2026-06-05 08:04:25 EDT] start workers=4 pending=0
+[2026-06-05 08:04:25 EDT] complete
+[2026-06-05 08:04:35 EDT] start workers=4 pending=0
+[2026-06-05 08:04:35 EDT] complete
+[2026-06-05 08:04:45 EDT] start workers=4 pending=0
+[2026-06-05 08:04:45 EDT] complete
+[2026-06-05 08:04:55 EDT] start workers=4 pending=0
+[2026-06-05 08:04:55 EDT] complete
+[2026-06-05 08:05:05 EDT] start workers=4 pending=0
+[2026-06-05 08:05:05 EDT] complete
+[2026-06-05 08:05:15 EDT] start workers=4 pending=0
+[2026-06-05 08:05:15 EDT] complete
+[2026-06-05 08:05:25 EDT] start workers=4 pending=0
+[2026-06-05 08:05:25 EDT] complete
+[2026-06-05 08:05:35 EDT] start workers=4 pending=0
+[2026-06-05 08:05:35 EDT] complete
+[2026-06-05 08:05:46 EDT] start workers=4 pending=0
+[2026-06-05 08:05:46 EDT] complete
+[2026-06-05 08:05:56 EDT] start workers=4 pending=0
+[2026-06-05 08:05:56 EDT] complete
+[2026-06-05 08:06:06 EDT] start workers=4 pending=0
+[2026-06-05 08:06:06 EDT] complete
+[2026-06-05 08:06:16 EDT] start workers=4 pending=0
+[2026-06-05 08:06:16 EDT] complete
+[2026-06-05 08:06:26 EDT] start workers=4 pending=0
+[2026-06-05 08:06:26 EDT] complete
+[2026-06-05 08:06:36 EDT] start workers=4 pending=0
+[2026-06-05 08:06:36 EDT] complete
+[2026-06-05 08:06:46 EDT] start workers=4 pending=0
+[2026-06-05 08:06:46 EDT] complete
+[2026-06-05 08:06:56 EDT] start workers=4 pending=0
+[2026-06-05 08:06:56 EDT] complete
+[2026-06-05 08:07:06 EDT] start workers=4 pending=0
+[2026-06-05 08:07:06 EDT] complete
+[2026-06-05 08:07:17 EDT] start workers=4 pending=0
+[2026-06-05 08:07:17 EDT] complete
+[2026-06-05 08:07:27 EDT] start workers=4 pending=0
+[2026-06-05 08:07:27 EDT] complete
+[2026-06-05 08:07:37 EDT] start workers=4 pending=0
+[2026-06-05 08:07:37 EDT] complete
+[2026-06-05 08:07:47 EDT] start workers=4 pending=0
+[2026-06-05 08:07:47 EDT] complete
+[2026-06-05 08:07:57 EDT] start workers=4 pending=0
+[2026-06-05 08:07:57 EDT] complete
+[2026-06-05 08:08:07 EDT] start workers=4 pending=0
+[2026-06-05 08:08:07 EDT] complete
+[2026-06-05 08:08:17 EDT] start workers=4 pending=0
+[2026-06-05 08:08:17 EDT] complete
+[2026-06-05 08:08:27 EDT] start workers=4 pending=0
+[2026-06-05 08:08:27 EDT] complete
+[2026-06-05 08:08:37 EDT] start workers=4 pending=0
+[2026-06-05 08:08:37 EDT] complete
+[2026-06-05 08:08:48 EDT] start workers=4 pending=0
+[2026-06-05 08:08:48 EDT] complete
+[2026-06-05 08:08:58 EDT] start workers=4 pending=0
+[2026-06-05 08:08:58 EDT] complete
+[2026-06-05 08:09:08 EDT] start workers=4 pending=0
+[2026-06-05 08:09:08 EDT] complete
+[2026-06-05 08:09:18 EDT] start workers=4 pending=0
+[2026-06-05 08:09:18 EDT] complete
+[2026-06-05 08:09:28 EDT] start workers=4 pending=0
+[2026-06-05 08:09:28 EDT] complete
+[2026-06-05 08:09:38 EDT] start workers=4 pending=0
+[2026-06-05 08:09:38 EDT] complete
+[2026-06-05 08:09:48 EDT] start workers=4 pending=0
+[2026-06-05 08:09:48 EDT] complete
+[2026-06-05 08:09:58 EDT] start workers=4 pending=0
+[2026-06-05 08:09:58 EDT] complete
+[2026-06-05 08:10:08 EDT] start workers=4 pending=0
+[2026-06-05 08:10:08 EDT] complete
+[2026-06-05 08:10:19 EDT] start workers=4 pending=0
+[2026-06-05 08:10:19 EDT] complete
+[2026-06-05 08:10:29 EDT] start workers=4 pending=0
+[2026-06-05 08:10:29 EDT] complete
+[2026-06-05 08:10:39 EDT] start workers=4 pending=0
+[2026-06-05 08:10:39 EDT] complete
+[2026-06-05 08:10:49 EDT] start workers=4 pending=0
+[2026-06-05 08:10:49 EDT] complete
+[2026-06-05 08:10:59 EDT] start workers=4 pending=0
+[2026-06-05 08:10:59 EDT] complete
+[2026-06-05 08:11:09 EDT] start workers=4 pending=0
+[2026-06-05 08:11:09 EDT] complete
+[2026-06-05 08:11:19 EDT] start workers=4 pending=0
+[2026-06-05 08:11:19 EDT] complete
+[2026-06-05 08:11:29 EDT] start workers=4 pending=0
+[2026-06-05 08:11:29 EDT] complete
+[2026-06-05 08:11:39 EDT] start workers=4 pending=0
+[2026-06-05 08:11:39 EDT] complete
+[2026-06-05 08:11:50 EDT] start workers=4 pending=0
+[2026-06-05 08:11:50 EDT] complete
+[2026-06-05 08:12:00 EDT] start workers=4 pending=0
+[2026-06-05 08:12:00 EDT] complete
+[2026-06-05 08:12:10 EDT] start workers=4 pending=0
+[2026-06-05 08:12:10 EDT] complete
+[2026-06-05 08:12:20 EDT] start workers=4 pending=0
+[2026-06-05 08:12:20 EDT] complete
+[2026-06-05 08:12:30 EDT] start workers=4 pending=0
+[2026-06-05 08:12:30 EDT] complete
+[2026-06-05 08:12:40 EDT] start workers=4 pending=0
+[2026-06-05 08:12:40 EDT] complete
+[2026-06-05 08:12:50 EDT] start workers=4 pending=0
+[2026-06-05 08:12:50 EDT] complete
+[2026-06-05 08:13:00 EDT] start workers=4 pending=0
+[2026-06-05 08:13:00 EDT] complete
+[2026-06-05 08:13:10 EDT] start workers=4 pending=0
+[2026-06-05 08:13:10 EDT] complete
+[2026-06-05 08:13:21 EDT] start workers=4 pending=0
+[2026-06-05 08:13:21 EDT] complete
+[2026-06-05 08:13:31 EDT] start workers=4 pending=0
+[2026-06-05 08:13:31 EDT] complete
+[2026-06-05 08:13:41 EDT] start workers=4 pending=0
+[2026-06-05 08:13:41 EDT] complete
+[2026-06-05 08:13:51 EDT] start workers=4 pending=0
+[2026-06-05 08:13:51 EDT] complete
+[2026-06-05 08:14:01 EDT] start workers=4 pending=0
+[2026-06-05 08:14:01 EDT] complete
+[2026-06-05 08:14:11 EDT] start workers=4 pending=0
+[2026-06-05 08:14:11 EDT] complete
+[2026-06-05 08:14:21 EDT] start workers=4 pending=0
+[2026-06-05 08:14:21 EDT] complete
+[2026-06-05 08:14:31 EDT] start workers=4 pending=0
+[2026-06-05 08:14:31 EDT] complete
+[2026-06-05 08:14:41 EDT] start workers=4 pending=0
+[2026-06-05 08:14:41 EDT] complete
+[2026-06-05 08:14:52 EDT] start workers=4 pending=0
+[2026-06-05 08:14:52 EDT] complete
+[2026-06-05 08:15:02 EDT] start workers=4 pending=0
+[2026-06-05 08:15:02 EDT] complete
+[2026-06-05 08:15:12 EDT] start workers=4 pending=0
+[2026-06-05 08:15:12 EDT] complete
+[2026-06-05 08:15:22 EDT] start workers=4 pending=0
+[2026-06-05 08:15:22 EDT] complete
+[2026-06-05 08:15:32 EDT] start workers=4 pending=0
+[2026-06-05 08:15:32 EDT] complete
+[2026-06-05 08:15:42 EDT] start workers=4 pending=0
+[2026-06-05 08:15:42 EDT] complete
+[2026-06-05 08:15:52 EDT] start workers=4 pending=0
+[2026-06-05 08:15:52 EDT] complete
+[2026-06-05 08:16:02 EDT] start workers=4 pending=0
+[2026-06-05 08:16:02 EDT] complete
+[2026-06-05 08:16:12 EDT] start workers=4 pending=0
+[2026-06-05 08:16:12 EDT] complete
+[2026-06-05 08:16:23 EDT] start workers=4 pending=0
+[2026-06-05 08:16:23 EDT] complete
+[2026-06-05 08:16:33 EDT] start workers=4 pending=0
+[2026-06-05 08:16:33 EDT] complete
+[2026-06-05 08:16:43 EDT] start workers=4 pending=0
+[2026-06-05 08:16:43 EDT] complete
+[2026-06-05 08:16:53 EDT] start workers=4 pending=0
+[2026-06-05 08:16:53 EDT] complete
+[2026-06-05 08:17:03 EDT] start workers=4 pending=0
+[2026-06-05 08:17:03 EDT] complete
+[2026-06-05 08:17:13 EDT] start workers=4 pending=0
+[2026-06-05 08:17:13 EDT] complete
+[2026-06-05 08:17:23 EDT] start workers=4 pending=0
+[2026-06-05 08:17:23 EDT] complete
+[2026-06-05 08:17:33 EDT] start workers=4 pending=0
+[2026-06-05 08:17:33 EDT] complete
+[2026-06-05 08:17:43 EDT] start workers=4 pending=0
+[2026-06-05 08:17:43 EDT] complete
+[2026-06-05 08:17:54 EDT] start workers=4 pending=0
+[2026-06-05 08:17:54 EDT] complete
+[2026-06-05 08:18:04 EDT] start workers=4 pending=0
+[2026-06-05 08:18:04 EDT] complete
+[2026-06-05 08:18:14 EDT] start workers=4 pending=0
+[2026-06-05 08:18:14 EDT] complete
+[2026-06-05 08:18:24 EDT] start workers=4 pending=0
+[2026-06-05 08:18:24 EDT] complete
+[2026-06-05 08:18:34 EDT] start workers=4 pending=0
+[2026-06-05 08:18:34 EDT] complete
+[2026-06-05 08:18:44 EDT] start workers=4 pending=0
+[2026-06-05 08:18:44 EDT] complete
+[2026-06-05 08:18:54 EDT] start workers=4 pending=0
+[2026-06-05 08:18:54 EDT] complete
+[2026-06-05 08:19:04 EDT] start workers=4 pending=0
+[2026-06-05 08:19:04 EDT] complete
+[2026-06-05 08:19:14 EDT] start workers=4 pending=0
+[2026-06-05 08:19:14 EDT] complete
+[2026-06-05 08:19:24 EDT] start workers=4 pending=0
+[2026-06-05 08:19:24 EDT] complete
+[2026-06-05 08:19:35 EDT] start workers=4 pending=0
+[2026-06-05 08:19:35 EDT] complete
+[2026-06-05 08:19:45 EDT] start workers=4 pending=0
+[2026-06-05 08:19:45 EDT] complete
+[2026-06-05 08:19:55 EDT] start workers=4 pending=0
+[2026-06-05 08:19:55 EDT] complete
+[2026-06-05 08:20:05 EDT] start workers=4 pending=0
+[2026-06-05 08:20:05 EDT] complete
+[2026-06-05 08:20:15 EDT] start workers=4 pending=0
+[2026-06-05 08:20:15 EDT] complete
+[2026-06-05 08:20:25 EDT] start workers=4 pending=0
+[2026-06-05 08:20:25 EDT] complete
+[2026-06-05 08:20:35 EDT] start workers=4 pending=0
+[2026-06-05 08:20:35 EDT] complete
+[2026-06-05 08:20:45 EDT] start workers=4 pending=0
+[2026-06-05 08:20:45 EDT] complete
+[2026-06-05 08:20:55 EDT] start workers=4 pending=0
+[2026-06-05 08:20:55 EDT] complete
+[2026-06-05 08:21:06 EDT] start workers=4 pending=0
+[2026-06-05 08:21:06 EDT] complete
+[2026-06-05 08:21:16 EDT] start workers=4 pending=0
+[2026-06-05 08:21:16 EDT] complete
+[2026-06-05 08:21:26 EDT] start workers=4 pending=0
+[2026-06-05 08:21:26 EDT] complete
+[2026-06-05 08:21:36 EDT] start workers=4 pending=0
+[2026-06-05 08:21:36 EDT] complete
+[2026-06-05 08:21:46 EDT] start workers=4 pending=0
+[2026-06-05 08:21:46 EDT] complete
+[2026-06-05 08:21:56 EDT] start workers=4 pending=0
+[2026-06-05 08:21:56 EDT] complete
+[2026-06-05 08:22:06 EDT] start workers=4 pending=0
+[2026-06-05 08:22:06 EDT] complete
+[2026-06-05 08:22:16 EDT] start workers=4 pending=0
+[2026-06-05 08:22:16 EDT] complete
+[2026-06-05 08:22:26 EDT] start workers=4 pending=0
+[2026-06-05 08:22:26 EDT] complete
+[2026-06-05 08:22:37 EDT] start workers=4 pending=0
+[2026-06-05 08:22:37 EDT] complete
+[2026-06-05 08:22:47 EDT] start workers=4 pending=0
+[2026-06-05 08:22:47 EDT] complete
+[2026-06-05 08:22:57 EDT] start workers=4 pending=0
+[2026-06-05 08:22:57 EDT] complete
+[2026-06-05 08:23:07 EDT] start workers=4 pending=0
+[2026-06-05 08:23:07 EDT] complete
+[2026-06-05 08:23:17 EDT] start workers=4 pending=0
+[2026-06-05 08:23:17 EDT] complete
+[2026-06-05 08:23:27 EDT] start workers=4 pending=0
+[2026-06-05 08:23:27 EDT] complete
+[2026-06-05 08:23:37 EDT] start workers=4 pending=0
+[2026-06-05 08:23:37 EDT] complete
+[2026-06-05 08:23:47 EDT] start workers=4 pending=0
+[2026-06-05 08:23:47 EDT] complete
+[2026-06-05 08:23:57 EDT] start workers=4 pending=0
+[2026-06-05 08:23:57 EDT] complete
+[2026-06-05 08:24:07 EDT] start workers=4 pending=0
+[2026-06-05 08:24:07 EDT] complete
+[2026-06-05 08:24:18 EDT] start workers=4 pending=0
+[2026-06-05 08:24:18 EDT] complete
+[2026-06-05 08:24:28 EDT] start workers=4 pending=0
+[2026-06-05 08:24:28 EDT] complete
+[2026-06-05 08:24:38 EDT] start workers=4 pending=0
+[2026-06-05 08:24:38 EDT] complete
+[2026-06-05 08:24:48 EDT] start workers=4 pending=0
+[2026-06-05 08:24:48 EDT] complete
+[2026-06-05 08:24:58 EDT] start workers=4 pending=0
+[2026-06-05 08:24:58 EDT] complete
+[2026-06-05 08:25:08 EDT] start workers=4 pending=0
+[2026-06-05 08:25:08 EDT] complete
+[2026-06-05 08:25:18 EDT] start workers=4 pending=0
+[2026-06-05 08:25:18 EDT] complete
+[2026-06-05 08:25:28 EDT] start workers=4 pending=0
+[2026-06-05 08:25:28 EDT] complete
+[2026-06-05 08:25:38 EDT] start workers=4 pending=0
+[2026-06-05 08:25:38 EDT] complete
+[2026-06-05 08:25:49 EDT] start workers=4 pending=0
+[2026-06-05 08:25:49 EDT] complete
+[2026-06-05 08:25:59 EDT] start workers=4 pending=0
+[2026-06-05 08:25:59 EDT] complete
+[2026-06-05 08:26:09 EDT] start workers=4 pending=0
+[2026-06-05 08:26:09 EDT] complete
+[2026-06-05 08:26:19 EDT] start workers=4 pending=0
+[2026-06-05 08:26:19 EDT] complete
+[2026-06-05 08:26:29 EDT] start workers=4 pending=0
+[2026-06-05 08:26:29 EDT] complete
+[2026-06-05 08:26:39 EDT] start workers=4 pending=0
+[2026-06-05 08:26:39 EDT] complete
+[2026-06-05 08:26:49 EDT] start workers=4 pending=0
+[2026-06-05 08:26:49 EDT] complete
+[2026-06-05 08:26:59 EDT] start workers=4 pending=0
+[2026-06-05 08:26:59 EDT] complete
+[2026-06-05 08:27:09 EDT] start workers=4 pending=0
+[2026-06-05 08:27:09 EDT] complete
+[2026-06-05 08:27:20 EDT] start workers=4 pending=0
+[2026-06-05 08:27:20 EDT] complete
+[2026-06-05 08:27:30 EDT] start workers=4 pending=0
+[2026-06-05 08:27:30 EDT] complete
+[2026-06-05 08:27:40 EDT] start workers=4 pending=0
+[2026-06-05 08:27:40 EDT] complete
+[2026-06-05 08:27:50 EDT] start workers=4 pending=0
+[2026-06-05 08:27:50 EDT] complete
+[2026-06-05 08:28:00 EDT] start workers=4 pending=0
+[2026-06-05 08:28:00 EDT] complete
+[2026-06-05 08:28:10 EDT] start workers=4 pending=0
+[2026-06-05 08:28:10 EDT] complete
+[2026-06-05 08:28:20 EDT] start workers=4 pending=0
+[2026-06-05 08:28:20 EDT] complete
+[2026-06-05 08:28:30 EDT] start workers=4 pending=0
+[2026-06-05 08:28:30 EDT] complete
+[2026-06-05 08:28:40 EDT] start workers=4 pending=0
+[2026-06-05 08:28:40 EDT] complete
+[2026-06-05 08:28:51 EDT] start workers=4 pending=0
+[2026-06-05 08:28:51 EDT] complete
+[2026-06-05 08:29:01 EDT] start workers=4 pending=0
+[2026-06-05 08:29:01 EDT] complete
+[2026-06-05 08:29:11 EDT] start workers=4 pending=0
+[2026-06-05 08:29:11 EDT] complete
+[2026-06-05 08:29:21 EDT] start workers=4 pending=0
+[2026-06-05 08:29:21 EDT] complete
+[2026-06-05 08:29:31 EDT] start workers=4 pending=0
+[2026-06-05 08:29:31 EDT] complete
+[2026-06-05 08:29:41 EDT] start workers=4 pending=0
+[2026-06-05 08:29:41 EDT] complete
+[2026-06-05 08:29:51 EDT] start workers=4 pending=0
+[2026-06-05 08:29:51 EDT] complete
+[2026-06-05 08:30:01 EDT] start workers=4 pending=0
+[2026-06-05 08:30:01 EDT] complete
+[2026-06-05 08:30:11 EDT] start workers=4 pending=0
+[2026-06-05 08:30:11 EDT] complete
+[2026-06-05 08:30:21 EDT] start workers=4 pending=0
+[2026-06-05 08:30:21 EDT] complete
+[2026-06-05 08:30:32 EDT] start workers=4 pending=0
+[2026-06-05 08:30:32 EDT] complete
+[2026-06-05 08:30:42 EDT] start workers=4 pending=0
+[2026-06-05 08:30:42 EDT] complete
+[2026-06-05 08:30:52 EDT] start workers=4 pending=0
+[2026-06-05 08:30:52 EDT] complete
+[2026-06-05 08:31:02 EDT] start workers=4 pending=0
+[2026-06-05 08:31:02 EDT] complete
+[2026-06-05 08:31:12 EDT] start workers=4 pending=0
+[2026-06-05 08:31:12 EDT] complete
+[2026-06-05 08:31:22 EDT] start workers=4 pending=0
+[2026-06-05 08:31:22 EDT] complete
+[2026-06-05 08:31:32 EDT] start workers=4 pending=0
+[2026-06-05 08:31:32 EDT] complete
+[2026-06-05 08:31:42 EDT] start workers=4 pending=0
+[2026-06-05 08:31:42 EDT] complete
+[2026-06-05 08:31:52 EDT] start workers=4 pending=0
+[2026-06-05 08:31:52 EDT] complete
+[2026-06-05 08:32:03 EDT] start workers=4 pending=0
+[2026-06-05 08:32:03 EDT] complete
+[2026-06-05 08:32:13 EDT] start workers=4 pending=0
+[2026-06-05 08:32:13 EDT] complete
+[2026-06-05 08:32:23 EDT] start workers=4 pending=0
+[2026-06-05 08:32:23 EDT] complete
+[2026-06-05 08:32:33 EDT] start workers=4 pending=0
+[2026-06-05 08:32:33 EDT] complete
+[2026-06-05 08:32:43 EDT] start workers=4 pending=0
+[2026-06-05 08:32:43 EDT] complete
+[2026-06-05 08:32:53 EDT] start workers=4 pending=0
+[2026-06-05 08:32:53 EDT] complete
+[2026-06-05 08:33:03 EDT] start workers=4 pending=0
+[2026-06-05 08:33:03 EDT] complete
+[2026-06-05 08:33:13 EDT] start workers=4 pending=0
+[2026-06-05 08:33:13 EDT] complete
+[2026-06-05 08:33:23 EDT] start workers=4 pending=0
+[2026-06-05 08:33:23 EDT] complete
+[2026-06-05 08:33:34 EDT] start workers=4 pending=0
+[2026-06-05 08:33:34 EDT] complete
+[2026-06-05 08:33:44 EDT] start workers=4 pending=0
+[2026-06-05 08:33:44 EDT] complete
+[2026-06-05 08:33:54 EDT] start workers=4 pending=0
+[2026-06-05 08:33:54 EDT] complete
+[2026-06-05 08:34:04 EDT] start workers=4 pending=0
+[2026-06-05 08:34:04 EDT] complete
+[2026-06-05 08:34:14 EDT] start workers=4 pending=0
+[2026-06-05 08:34:14 EDT] complete
+[2026-06-05 08:34:24 EDT] start workers=4 pending=0
+[2026-06-05 08:34:24 EDT] complete
+[2026-06-05 08:34:34 EDT] start workers=4 pending=0
+[2026-06-05 08:34:34 EDT] complete
+[2026-06-05 08:34:44 EDT] start workers=4 pending=0
+[2026-06-05 08:34:44 EDT] complete
+[2026-06-05 08:34:54 EDT] start workers=4 pending=0
+[2026-06-05 08:34:54 EDT] complete
+[2026-06-05 08:35:05 EDT] start workers=4 pending=0
+[2026-06-05 08:35:05 EDT] complete
+[2026-06-05 08:35:15 EDT] start workers=4 pending=0
+[2026-06-05 08:35:15 EDT] complete
+[2026-06-05 08:35:25 EDT] start workers=4 pending=0
+[2026-06-05 08:35:25 EDT] complete
+[2026-06-05 08:35:35 EDT] start workers=4 pending=0
+[2026-06-05 08:35:35 EDT] complete
+[2026-06-05 08:35:45 EDT] start workers=4 pending=0
+[2026-06-05 08:35:45 EDT] complete
+[2026-06-05 08:35:55 EDT] start workers=4 pending=0
+[2026-06-05 08:35:55 EDT] complete
+[2026-06-05 08:36:05 EDT] start workers=4 pending=0
+[2026-06-05 08:36:05 EDT] complete
+[2026-06-05 08:36:15 EDT] start workers=4 pending=0
+[2026-06-05 08:36:15 EDT] complete
+[2026-06-05 08:36:26 EDT] start workers=4 pending=0
+[2026-06-05 08:36:26 EDT] complete
+[2026-06-05 08:36:36 EDT] start workers=4 pending=0
+[2026-06-05 08:36:36 EDT] complete
+[2026-06-05 08:36:46 EDT] start workers=4 pending=0
+[2026-06-05 08:36:46 EDT] complete
+[2026-06-05 08:36:56 EDT] start workers=4 pending=0
+[2026-06-05 08:36:56 EDT] complete
+[2026-06-05 08:37:06 EDT] start workers=4 pending=0
+[2026-06-05 08:37:06 EDT] complete
+[2026-06-05 08:37:16 EDT] start workers=4 pending=0
+[2026-06-05 08:37:16 EDT] complete
+[2026-06-05 08:37:26 EDT] start workers=4 pending=0
+[2026-06-05 08:37:26 EDT] complete
+[2026-06-05 08:37:36 EDT] start workers=4 pending=0
+[2026-06-05 08:37:36 EDT] complete
+[2026-06-05 08:37:46 EDT] start workers=4 pending=0
+[2026-06-05 08:37:46 EDT] complete
+[2026-06-05 08:37:57 EDT] start workers=4 pending=0
+[2026-06-05 08:37:57 EDT] complete
+[2026-06-05 08:38:07 EDT] start workers=4 pending=0
+[2026-06-05 08:38:07 EDT] complete
+[2026-06-05 08:38:17 EDT] start workers=4 pending=0
+[2026-06-05 08:38:17 EDT] complete
+[2026-06-05 08:38:27 EDT] start workers=4 pending=0
+[2026-06-05 08:38:27 EDT] complete
+[2026-06-05 08:38:37 EDT] start workers=4 pending=0
+[2026-06-05 08:38:37 EDT] complete
+[2026-06-05 08:38:47 EDT] start workers=4 pending=0
+[2026-06-05 08:38:47 EDT] complete
+[2026-06-05 08:38:57 EDT] start workers=4 pending=0
+[2026-06-05 08:38:57 EDT] complete
+[2026-06-05 08:39:07 EDT] start workers=4 pending=0
+[2026-06-05 08:39:07 EDT] complete
+[2026-06-05 08:39:17 EDT] start workers=4 pending=0
+[2026-06-05 08:39:17 EDT] complete
+[2026-06-05 08:39:28 EDT] start workers=4 pending=0
+[2026-06-05 08:39:28 EDT] complete
+[2026-06-05 08:39:38 EDT] start workers=4 pending=0
+[2026-06-05 08:39:38 EDT] complete
+[2026-06-05 08:39:48 EDT] start workers=4 pending=0
+[2026-06-05 08:39:48 EDT] complete
+[2026-06-05 08:39:58 EDT] start workers=4 pending=0
+[2026-06-05 08:39:58 EDT] complete
+[2026-06-05 08:40:08 EDT] start workers=4 pending=0
+[2026-06-05 08:40:08 EDT] complete
+[2026-06-05 08:40:18 EDT] start workers=4 pending=0
+[2026-06-05 08:40:18 EDT] complete
+[2026-06-05 08:40:28 EDT] start workers=4 pending=0
+[2026-06-05 08:40:28 EDT] complete
+[2026-06-05 08:40:38 EDT] start workers=4 pending=0
+[2026-06-05 08:40:38 EDT] complete
+[2026-06-05 08:40:49 EDT] start workers=4 pending=0
+[2026-06-05 08:40:49 EDT] complete
+[2026-06-05 08:40:59 EDT] start workers=4 pending=0
+[2026-06-05 08:40:59 EDT] complete
+[2026-06-05 08:41:09 EDT] start workers=4 pending=0
+[2026-06-05 08:41:09 EDT] complete
+[2026-06-05 08:41:19 EDT] start workers=4 pending=0
+[2026-06-05 08:41:19 EDT] complete
+[2026-06-05 08:41:29 EDT] start workers=4 pending=0
+[2026-06-05 08:41:29 EDT] complete
+[2026-06-05 08:41:39 EDT] start workers=4 pending=0
+[2026-06-05 08:41:39 EDT] complete
+[2026-06-05 08:41:49 EDT] start workers=4 pending=0
+[2026-06-05 08:41:49 EDT] complete
+[2026-06-05 08:41:59 EDT] start workers=4 pending=0
+[2026-06-05 08:41:59 EDT] complete
+[2026-06-05 08:42:09 EDT] start workers=4 pending=0
+[2026-06-05 08:42:09 EDT] complete
+[2026-06-05 08:42:19 EDT] start workers=4 pending=0
+[2026-06-05 08:42:19 EDT] complete
+[2026-06-05 08:42:30 EDT] start workers=4 pending=0
+[2026-06-05 08:42:30 EDT] complete
+[2026-06-05 08:42:40 EDT] start workers=4 pending=0
+[2026-06-05 08:42:40 EDT] complete
+[2026-06-05 08:42:50 EDT] start workers=4 pending=0
+[2026-06-05 08:42:50 EDT] complete
+[2026-06-05 08:43:00 EDT] start workers=4 pending=0
+[2026-06-05 08:43:00 EDT] complete
+[2026-06-05 08:43:10 EDT] start workers=4 pending=0
+[2026-06-05 08:43:10 EDT] complete
+[2026-06-05 08:43:20 EDT] start workers=4 pending=0
+[2026-06-05 08:43:20 EDT] complete
+[2026-06-05 08:43:30 EDT] start workers=4 pending=0
+[2026-06-05 08:43:30 EDT] complete
+[2026-06-05 08:43:40 EDT] start workers=4 pending=0
+[2026-06-05 08:43:40 EDT] complete
+[2026-06-05 08:43:51 EDT] start workers=4 pending=0
+[2026-06-05 08:43:51 EDT] complete
+[2026-06-05 08:44:01 EDT] start workers=4 pending=0
+[2026-06-05 08:44:01 EDT] complete
+[2026-06-05 08:44:11 EDT] start workers=4 pending=0
+[2026-06-05 08:44:11 EDT] complete
+[2026-06-05 08:44:21 EDT] start workers=4 pending=0
+[2026-06-05 08:44:21 EDT] complete
+[2026-06-05 08:44:31 EDT] start workers=4 pending=0
+[2026-06-05 08:44:31 EDT] complete
+[2026-06-05 08:44:41 EDT] start workers=4 pending=0
+[2026-06-05 08:44:41 EDT] complete
+[2026-06-05 08:44:51 EDT] start workers=4 pending=0
+[2026-06-05 08:44:51 EDT] complete
+[2026-06-05 08:45:01 EDT] start workers=4 pending=0
+[2026-06-05 08:45:01 EDT] complete
+[2026-06-05 08:45:11 EDT] start workers=4 pending=0
+[2026-06-05 08:45:11 EDT] complete
+[2026-06-05 08:45:22 EDT] start workers=4 pending=0
+[2026-06-05 08:45:22 EDT] complete
+[2026-06-05 08:45:32 EDT] start workers=4 pending=0
+[2026-06-05 08:45:32 EDT] complete
+[2026-06-05 08:45:42 EDT] start workers=4 pending=0
+[2026-06-05 08:45:42 EDT] complete
+[2026-06-05 08:45:52 EDT] start workers=4 pending=0
+[2026-06-05 08:45:52 EDT] complete
+[2026-06-05 08:46:02 EDT] start workers=4 pending=0
+[2026-06-05 08:46:02 EDT] complete
+[2026-06-05 08:46:12 EDT] start workers=4 pending=0
+[2026-06-05 08:46:12 EDT] complete
+[2026-06-05 08:46:22 EDT] start workers=4 pending=0
+[2026-06-05 08:46:22 EDT] complete
+[2026-06-05 08:46:32 EDT] start workers=4 pending=0
+[2026-06-05 08:46:32 EDT] complete
+[2026-06-05 08:46:42 EDT] start workers=4 pending=0
+[2026-06-05 08:46:42 EDT] complete
+[2026-06-05 08:46:52 EDT] start workers=4 pending=0
+[2026-06-05 08:46:52 EDT] complete
+[2026-06-05 08:47:03 EDT] start workers=4 pending=0
+[2026-06-05 08:47:03 EDT] complete
+[2026-06-05 08:47:13 EDT] start workers=4 pending=0
+[2026-06-05 08:47:13 EDT] complete
+[2026-06-05 08:47:23 EDT] start workers=4 pending=0
+[2026-06-05 08:47:23 EDT] complete
+[2026-06-05 08:47:33 EDT] start workers=4 pending=0
+[2026-06-05 08:47:33 EDT] complete
+[2026-06-05 08:47:43 EDT] start workers=4 pending=0
+[2026-06-05 08:47:43 EDT] complete
+[2026-06-05 08:47:53 EDT] start workers=4 pending=0
+[2026-06-05 08:47:53 EDT] complete
+[2026-06-05 08:48:03 EDT] start workers=4 pending=0
+[2026-06-05 08:48:03 EDT] complete
+[2026-06-05 08:48:13 EDT] start workers=4 pending=0
+[2026-06-05 08:48:13 EDT] complete
+[2026-06-05 08:48:23 EDT] start workers=4 pending=0
+[2026-06-05 08:48:23 EDT] complete
+[2026-06-05 08:48:34 EDT] start workers=4 pending=0
+[2026-06-05 08:48:34 EDT] complete
+[2026-06-05 08:48:44 EDT] start workers=4 pending=0
+[2026-06-05 08:48:44 EDT] complete
+[2026-06-05 08:48:54 EDT] start workers=4 pending=0
+[2026-06-05 08:48:54 EDT] complete
+[2026-06-05 08:49:04 EDT] start workers=4 pending=0
+[2026-06-05 08:49:04 EDT] complete
+[2026-06-05 08:49:14 EDT] start workers=4 pending=0
+[2026-06-05 08:49:14 EDT] complete
+[2026-06-05 08:49:24 EDT] start workers=4 pending=0
+[2026-06-05 08:49:24 EDT] complete
+[2026-06-05 08:49:34 EDT] start workers=4 pending=0
+[2026-06-05 08:49:34 EDT] complete
+[2026-06-05 08:49:44 EDT] start workers=4 pending=0
+[2026-06-05 08:49:44 EDT] complete
+[2026-06-05 08:49:54 EDT] start workers=4 pending=0
+[2026-06-05 08:49:54 EDT] complete
+[2026-06-05 08:50:04 EDT] start workers=4 pending=0
+[2026-06-05 08:50:04 EDT] complete
+[2026-06-05 08:50:15 EDT] start workers=4 pending=0
+[2026-06-05 08:50:15 EDT] complete
+[2026-06-05 08:50:25 EDT] start workers=4 pending=0
+[2026-06-05 08:50:25 EDT] complete
+[2026-06-05 08:50:35 EDT] start workers=4 pending=0
+[2026-06-05 08:50:35 EDT] complete
+[2026-06-05 08:50:45 EDT] start workers=4 pending=0
+[2026-06-05 08:50:45 EDT] complete
+[2026-06-05 08:50:55 EDT] start workers=4 pending=0
+[2026-06-05 08:50:55 EDT] complete
+[2026-06-05 08:51:05 EDT] start workers=4 pending=0
+[2026-06-05 08:51:05 EDT] complete
+[2026-06-05 08:51:15 EDT] start workers=4 pending=0
+[2026-06-05 08:51:15 EDT] complete
+[2026-06-05 08:51:25 EDT] start workers=4 pending=0
+[2026-06-05 08:51:25 EDT] complete
+[2026-06-05 08:51:35 EDT] start workers=4 pending=0
+[2026-06-05 08:51:35 EDT] complete
+[2026-06-05 08:51:45 EDT] start workers=4 pending=0
+[2026-06-05 08:51:45 EDT] complete
+[2026-06-05 08:51:56 EDT] start workers=4 pending=0
+[2026-06-05 08:51:56 EDT] complete
+[2026-06-05 08:52:06 EDT] start workers=4 pending=0
+[2026-06-05 08:52:06 EDT] complete
+[2026-06-05 08:52:16 EDT] start workers=4 pending=0
+[2026-06-05 08:52:16 EDT] complete
+[2026-06-05 08:52:26 EDT] start workers=4 pending=0
+[2026-06-05 08:52:26 EDT] complete
+[2026-06-05 08:52:36 EDT] start workers=4 pending=0
+[2026-06-05 08:52:36 EDT] complete
+[2026-06-05 08:52:46 EDT] start workers=4 pending=0
+[2026-06-05 08:52:46 EDT] complete
+[2026-06-05 08:52:56 EDT] start workers=4 pending=0
+[2026-06-05 08:52:56 EDT] complete
+[2026-06-05 08:53:06 EDT] start workers=4 pending=0
+[2026-06-05 08:53:06 EDT] complete
+[2026-06-05 08:53:16 EDT] start workers=4 pending=0
+[2026-06-05 08:53:16 EDT] complete
+[2026-06-05 08:53:27 EDT] start workers=4 pending=0
+[2026-06-05 08:53:27 EDT] complete
+[2026-06-05 08:53:37 EDT] start workers=4 pending=0
+[2026-06-05 08:53:37 EDT] complete
+[2026-06-05 08:53:47 EDT] start workers=4 pending=0
+[2026-06-05 08:53:47 EDT] complete
+[2026-06-05 08:53:57 EDT] start workers=4 pending=0
+[2026-06-05 08:53:57 EDT] complete
+[2026-06-05 08:54:07 EDT] start workers=4 pending=0
+[2026-06-05 08:54:07 EDT] complete
+[2026-06-05 08:54:17 EDT] start workers=4 pending=0
+[2026-06-05 08:54:17 EDT] complete
+[2026-06-05 08:54:27 EDT] start workers=4 pending=0
+[2026-06-05 08:54:27 EDT] complete
+[2026-06-05 08:54:37 EDT] start workers=4 pending=0
+[2026-06-05 08:54:37 EDT] complete
+[2026-06-05 08:54:47 EDT] start workers=4 pending=0
+[2026-06-05 08:54:47 EDT] complete
+[2026-06-05 08:54:57 EDT] start workers=4 pending=0
+[2026-06-05 08:54:57 EDT] complete
+[2026-06-05 08:55:08 EDT] start workers=4 pending=0
+[2026-06-05 08:55:08 EDT] complete
+[2026-06-05 08:55:18 EDT] start workers=4 pending=0
+[2026-06-05 08:55:18 EDT] complete
+[2026-06-05 08:55:28 EDT] start workers=4 pending=0
+[2026-06-05 08:55:28 EDT] complete
+[2026-06-05 08:55:38 EDT] start workers=4 pending=0
+[2026-06-05 08:55:38 EDT] complete
+[2026-06-05 08:55:48 EDT] start workers=4 pending=0
+[2026-06-05 08:55:48 EDT] complete
+[2026-06-05 08:55:58 EDT] start workers=4 pending=0
+[2026-06-05 08:55:58 EDT] complete
+[2026-06-05 08:56:08 EDT] start workers=4 pending=0
+[2026-06-05 08:56:08 EDT] complete
+[2026-06-05 08:56:18 EDT] start workers=4 pending=0
+[2026-06-05 08:56:18 EDT] complete
+[2026-06-05 08:56:28 EDT] start workers=4 pending=0
+[2026-06-05 08:56:28 EDT] complete
+[2026-06-05 08:56:39 EDT] start workers=4 pending=0
+[2026-06-05 08:56:39 EDT] complete
+[2026-06-05 08:56:49 EDT] start workers=4 pending=0
+[2026-06-05 08:56:49 EDT] complete
+[2026-06-05 08:56:59 EDT] start workers=4 pending=0
+[2026-06-05 08:56:59 EDT] complete
+[2026-06-05 08:57:09 EDT] start workers=4 pending=0
+[2026-06-05 08:57:09 EDT] complete
+[2026-06-05 08:57:19 EDT] start workers=4 pending=0
+[2026-06-05 08:57:19 EDT] complete
+[2026-06-05 08:57:29 EDT] start workers=4 pending=0
+[2026-06-05 08:57:29 EDT] complete
+[2026-06-05 08:57:39 EDT] start workers=4 pending=0
+[2026-06-05 08:57:39 EDT] complete
+[2026-06-05 08:57:49 EDT] start workers=4 pending=0
+[2026-06-05 08:57:49 EDT] complete
+[2026-06-05 08:57:59 EDT] start workers=4 pending=0
+[2026-06-05 08:57:59 EDT] complete
+[2026-06-05 08:58:10 EDT] start workers=4 pending=0
+[2026-06-05 08:58:10 EDT] complete
+[2026-06-05 08:58:20 EDT] start workers=4 pending=0
+[2026-06-05 08:58:20 EDT] complete
+[2026-06-05 08:58:30 EDT] start workers=4 pending=0
+[2026-06-05 08:58:30 EDT] complete
+[2026-06-05 08:58:40 EDT] start workers=4 pending=0
+[2026-06-05 08:58:40 EDT] complete
+[2026-06-05 08:58:50 EDT] start workers=4 pending=0
+[2026-06-05 08:58:50 EDT] complete
+[2026-06-05 08:59:00 EDT] start workers=4 pending=0
+[2026-06-05 08:59:00 EDT] complete
+[2026-06-05 08:59:10 EDT] start workers=4 pending=0
+[2026-06-05 08:59:10 EDT] complete
+[2026-06-05 08:59:20 EDT] start workers=4 pending=0
+[2026-06-05 08:59:20 EDT] complete
+[2026-06-05 08:59:30 EDT] start workers=4 pending=0
+[2026-06-05 08:59:30 EDT] complete
+[2026-06-05 08:59:41 EDT] start workers=4 pending=0
+[2026-06-05 08:59:41 EDT] complete
+[2026-06-05 08:59:51 EDT] start workers=4 pending=0
+[2026-06-05 08:59:51 EDT] complete
+[2026-06-05 09:00:01 EDT] start workers=4 pending=0
+[2026-06-05 09:00:01 EDT] complete
+[2026-06-05 09:00:11 EDT] start workers=4 pending=0
+[2026-06-05 09:00:11 EDT] complete
+[2026-06-05 09:00:21 EDT] start workers=4 pending=0
+[2026-06-05 09:00:21 EDT] complete
+[2026-06-05 09:00:31 EDT] start workers=4 pending=0
+[2026-06-05 09:00:31 EDT] complete
+[2026-06-05 09:00:41 EDT] start workers=4 pending=0
+[2026-06-05 09:00:41 EDT] complete
+[2026-06-05 09:00:51 EDT] start workers=4 pending=0
+[2026-06-05 09:00:51 EDT] complete
+[2026-06-05 09:01:02 EDT] start workers=4 pending=0
+[2026-06-05 09:01:02 EDT] complete
+[2026-06-05 09:01:12 EDT] start workers=4 pending=0
+[2026-06-05 09:01:12 EDT] complete
+[2026-06-05 09:01:22 EDT] start workers=4 pending=0
+[2026-06-05 09:01:22 EDT] complete

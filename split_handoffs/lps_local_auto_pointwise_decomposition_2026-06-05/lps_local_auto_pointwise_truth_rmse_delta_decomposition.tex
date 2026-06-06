@@ -1,0 +1,479 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{xurl}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!50!black
+}
+
+\graphicspath{{figures/}}
+\input{build_info.tex}
+\input{fb01_summary_macros.tex}
+
+\title{Pointwise Truth-RMSE Delta Decomposition for Local versus Global Auto Chart Dimension}
+\author{%
+  \small
+  \begin{tabular}{@{}c@{}}
+  Source path: \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}\\
+  \texttt{lps\_local\_auto\_pointwise\_decomposition\_2026-06-05/}\\
+  \texttt{lps\_local\_auto\_pointwise\_truth\_rmse\_delta\_decomposition.tex}
+  \end{tabular}%
+}
+\date{Build: \reportbuilddatetime}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose and Main Question}
+
+This report records a diagnostic framework for understanding why the local
+chart-dimension version of the local polynomial smoother (LPS) differs from the
+global chart-dimension version.  The immediate empirical question is not only
+whether
+\[
+  \texttt{chart.dim = "local.auto"}
+\]
+has lower Truth RMSE than
+\[
+  \texttt{chart.dim = "auto"}.
+\]
+The deeper question is \emph{which data points and which local-dimension
+decisions drive the dataset-level difference}.
+
+The paired HTML report showed the overall Truth-RMSE difference between the two
+rules.  Such a number is useful, but it is too compressed.  A small global
+difference could mean that nearly every point changed a little, or it could
+mean that a few high-impact points changed a lot while most points were
+irrelevant.  It could also mean that local dimension one helped in one region
+while local dimension three hurt in another.  This report defines five
+complementary meanings of a pointwise or grouped ``component'' of the
+Truth-RMSE delta, then applies them to the first dataset in the current HTML
+report:
+\[
+  \texttt{FB01. LA-D1-RAW-N500}.
+\]
+
+\paragraph{Executive summary for FB01.}
+For this dataset, the global-auto fit used chart dimension
+\(\fbAutoDim\) everywhere, selected support size \(\fbAutoSupport\), Gaussian
+kernel, and had Truth RMSE \(\fbAutoTruthRmse\).  The local-auto fit selected
+support size \(\fbLocalSupport\), Gaussian kernel, and used pointwise local
+chart dimensions \(1,2,3\) with counts
+\(\fbDimOneCount,\fbDimTwoCount,\fbDimThreeCount\), respectively.  Its Truth
+RMSE was \(\fbLocalTruthRmse\).  Therefore local-auto was worse by
+\[
+  \fbDeltaTruthRmse.
+\]
+The exact pointwise decomposition below sums to
+\[
+  \fbComponentSum,
+\]
+which matches the observed Truth-RMSE delta up to displayed rounding.
+
+\section{Definitions}
+
+Let \(n\) be the number of points in a synthetic dataset.  At point \(i\), let
+\(f_i\) be the true signal and \(y_i\) be the noisy observation:
+\[
+  y_i = f_i + \varepsilon_i,
+  \qquad i=1,\ldots,n.
+\]
+Let \(\widehat f_i^{a}\) be the fitted value from the global-auto chart
+dimension rule and let \(\widehat f_i^{la}\) be the fitted value from the
+local-auto chart dimension rule.  The corresponding truth errors are
+\[
+  e_i^{a} = \widehat f_i^{a} - f_i,
+  \qquad
+  e_i^{la} = \widehat f_i^{la} - f_i.
+\]
+The two Truth RMSE values are
+\[
+  R_a =
+  \left\{
+    \frac{1}{n}
+    \sum_{i=1}^{n}
+    (e_i^a)^2
+  \right\}^{1/2},
+  \qquad
+  R_{la} =
+  \left\{
+    \frac{1}{n}
+    \sum_{i=1}^{n}
+    (e_i^{la})^2
+  \right\}^{1/2}.
+\]
+The dataset-level Truth-RMSE delta is
+\[
+  \Delta_{\mathrm{RMSE}}
+  =
+  R_{la} - R_a.
+\]
+Positive values mean that local-auto is worse; negative values mean that
+local-auto is better.
+
+Let \(d_i^{la}\) be the local-auto chart dimension estimated at point \(i\), and
+let \(d^a\) be the single global-auto dimension.  The dimension deviation is
+\[
+  q_i = d_i^{la} - d^a.
+\]
+In FB01, \(d^a=\fbAutoDim\), while \(d_i^{la}\) takes values 1, 2, and 3.
+
+\section{Five Ways to Interpret a Pointwise or Grouped Component}
+
+The word ``component'' can mean several related but different things.  The
+following five definitions are deliberately complementary.  None by itself
+answers every question; together they separate algebraic contribution,
+pointwise error geometry, spatial localization, concentration of influence, and
+group-level interpretation.
+
+\subsection{Component 1: Exact Pointwise RMSE-Delta Contribution}
+
+Define
+\[
+  c_i
+  =
+  \frac{
+    (e_i^{la})^2 - (e_i^a)^2
+  }{
+    n(R_{la}+R_a)
+  },
+  \qquad R_{la}+R_a>0.
+\]
+Then
+\[
+  \Delta_{\mathrm{RMSE}}
+  =
+  \sum_{i=1}^{n} c_i.
+\]
+Thus \(c_i\) is an exact additive pointwise contribution to the RMSE
+difference.  If \(c_i<0\), point \(i\) helps local-auto.  If \(c_i>0\), point
+\(i\) hurts local-auto.
+
+This is the cleanest answer to the vague phrase ``the component of the
+dataset-level Truth-RMSE delta.''  It is also the quantity used in most figures
+below.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.84\linewidth]{fb01_contribution_by_dimension.png}
+  \caption{Pointwise RMSE-delta contributions by dimension deviation for FB01.
+  The global-auto chart dimension is \(d^a=\fbAutoDim\).  The horizontal axis is
+  \(q_i=d_i^{la}-d^a\).  Negative vertical values are points where local-auto
+  improves Truth RMSE relative to auto; positive values are points where
+  local-auto worsens Truth RMSE.}
+  \label{fig:component-by-dimension}
+\end{figure}
+
+For FB01, the dimension-one points slightly help local-auto in aggregate, but
+the dimension-two and dimension-three points hurt it in aggregate.  This already
+suggests that the worse global Truth RMSE for local-auto is not simply caused
+by all dimension changes.  The direction and magnitude depend on which local
+dimension was selected and where.
+
+\subsection{Component 2: Pointwise Error-Pair Geometry}
+
+The exact component \(c_i\) is additive, but it hides the sign of the raw errors.
+A second diagnostic is the error-pair plot:
+\[
+  x_i=e_i^a,
+  \qquad
+  y_i=e_i^{la}.
+\]
+The point \(i\) is improved by local-auto exactly when
+\[
+  |e_i^{la}| < |e_i^a|.
+\]
+Equivalently, the point lies closer to the horizontal axis in the local-auto
+coordinate than in the auto coordinate.  The lines
+\[
+  y=x
+  \qquad\text{and}\qquad
+  y=-x
+\]
+mark the boundaries where the two squared errors are equal.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.78\linewidth]{fb01_error_error_scatter.png}
+  \caption{Truth-error scatter for FB01.  The horizontal coordinate is the
+  auto truth error \(e_i^a\), and the vertical coordinate is the local-auto
+  truth error \(e_i^{la}\).  Points between the two diagonal boundary lines have
+  smaller absolute truth error under local-auto than under auto.  Color shows
+  the local-auto dimension deviation from the global-auto dimension.}
+  \label{fig:error-error}
+\end{figure}
+
+This plot asks a different question from Figure~\ref{fig:component-by-dimension}.
+Instead of asking how much each point contributes to the final delta, it asks
+whether local-auto changes the \emph{error direction and magnitude}.  It can
+reveal systematic bias changes, for example a model that tends to overshoot in
+one chart-dimension regime and undershoot in another.
+
+\subsection{Component 3: Spatial or Geometric Localization}
+
+A third interpretation is geometric.  The same exact contribution \(c_i\) can be
+displayed over a representation of the observed state space.  For FB01, the
+observed coordinate matrix is the four-component VALENCIA depth-1 dCST
+relative-abundance matrix.  The figure below uses a two-dimensional PCA view of
+that four-dimensional coordinate matrix.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\linewidth]{fb01_geometry_contribution_pca.png}
+  \caption{Geometry view for FB01, colored by the exact pointwise RMSE-delta
+  contribution \(c_i\).  Blue points help local-auto, and red points hurt
+  local-auto.  The plot uses the first two principal components of the observed
+  four-component relative-abundance coordinates, only as a visualization device.}
+  \label{fig:geometry-contribution}
+\end{figure}
+
+This view answers whether the delta is spatially localized.  If red and blue
+regions form coherent patches, then the local-dimension rule is interacting
+with geometry.  If the colors are scattered without structure, then the
+difference may be more noise-like or driven by individual leverage points.
+
+\subsection{Component 4: Cumulative Influence or Leverage}
+
+A fourth interpretation asks whether the dataset-level delta is concentrated in
+a small number of points.  Sort points by decreasing absolute contribution:
+\[
+  |c_{(1)}| \ge |c_{(2)}| \ge \cdots \ge |c_{(n)}|.
+\]
+Then plot
+\[
+  S_m
+  =
+  \sum_{r=1}^{m} c_{(r)},
+  \qquad m=1,\ldots,n.
+\]
+If the curve reaches most of the final delta quickly, a small number of points
+dominate the comparison.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.84\linewidth]{fb01_cumulative_contribution.png}
+  \caption{Cumulative contribution for FB01 after sorting points by decreasing
+  absolute pointwise contribution.  The dashed horizontal line is the final
+  dataset-level Truth-RMSE delta.  A steep initial curve indicates that a small
+  subset of points has high leverage for the local-auto versus auto comparison.}
+  \label{fig:cumulative}
+\end{figure}
+
+For FB01, the ten largest absolute point contributions account for
+approximately \(\fbTopTenAbsPct\%\) of the final signed delta, and the twenty
+largest account for approximately \(\fbTopTwentyAbsPct\%\).  This suggests that
+the observed difference is not purely diffuse.  A relatively small collection
+of points contributes substantially to the final comparison.
+
+\subsection{Component 5: Grouped or Regional Contribution}
+
+Finally, pointwise components can be aggregated over a group \(g\).  Let
+\(G_g\) be a subset of point indices, for example all points with a given local
+dimension, all points in a biological component label, or all points in a
+synthetic stratum.  Define
+\[
+  C_g
+  =
+  \sum_{i\in G_g} c_i.
+\]
+The group contributions add to the same global delta:
+\[
+  \Delta_{\mathrm{RMSE}}
+  =
+  \sum_g C_g,
+\]
+provided the groups form a partition of the dataset.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.84\linewidth]{fb01_grouped_contribution_by_dimension.png}
+  \caption{Grouped contribution by local-auto selected dimension for FB01.  Each
+  point is the sum of exact pointwise contributions over all data points with a
+  given local dimension.  Group sums add to the full Truth-RMSE delta.}
+  \label{fig:grouped-dim}
+\end{figure}
+
+The grouped decomposition for FB01 is:
+\[
+\begin{array}{ccl}
+  d_i^{la}=1 &:& -0.000164\quad (40\text{ points}),\\
+  d_i^{la}=2 &:& \phantom{-}0.000648\quad (410\text{ points}),\\
+  d_i^{la}=3 &:& \phantom{-}0.001906\quad (50\text{ points}).
+\end{array}
+\]
+Thus, in this example, points where local-auto reduced dimension below the
+global-auto dimension helped slightly.  Points where local-auto matched the
+global dimension hurt modestly, and points where local-auto increased dimension
+to three hurt most in aggregate.
+
+\section{Interpretation for FB01}
+
+The five diagnostics give a coherent first read of FB01.  The global-auto model
+used a single chart dimension of \(\fbAutoDim\).  The local-auto model mostly
+agreed with this dimension, but it selected dimension one at \(\fbDimOneCount\)
+points and dimension three at \(\fbDimThreeCount\) points.  The net result was a
+small worsening of Truth RMSE:
+\[
+  R_{la}-R_a
+  =
+  \fbDeltaTruthRmse.
+\]
+
+The most informative feature is not simply that local-auto changed dimensions.
+Rather, different changes had different consequences.  Dimension-one selections
+were slightly beneficial in aggregate.  Dimension-three selections were
+unfavorable in aggregate.  This pattern suggests a useful next diagnostic:
+inspect whether the dimension-three points correspond to genuinely
+higher-dimensional local neighborhoods or to unstable local dimension
+overestimation near sparse, noisy, or boundary-heavy regions.
+
+The cumulative contribution plot also says that the comparison is somewhat
+high-leverage.  A small number of points explains a large part of the signed
+delta.  Therefore, before concluding that local-auto is globally worse on this
+kind of dataset, it would be useful to identify these points in the original
+coordinate space and examine their local neighborhoods, selected supports, and
+fold behavior.
+
+\section{Recommended Use in the HTML Report}
+
+The HTML report should not include every diagnostic for every dataset at full
+detail, because that would become visually heavy.  A practical compromise is:
+
+\begin{enumerate}[leftmargin=*]
+  \item Define the exact contribution \(c_i\) once.
+  \item For each dataset, show the contribution-versus-dimension plot and the
+  grouped contribution summary.
+  \item Add the error-error scatter and geometry-colored contribution view for
+  selected datasets where the grouped summary indicates a notable difference.
+  \item Keep the full pointwise CSV as a linked audit artifact rather than a
+  large table in the report body.
+\end{enumerate}
+
+This would make the HTML report more explanatory without turning it into a full
+per-point diagnostic atlas.
+
+\section*{Conclusion}
+
+The exact pointwise decomposition makes the dataset-level Truth-RMSE delta
+auditable.  It converts the question ``which model won?'' into more precise
+questions: which points helped, which hurt, whether those points form geometric
+regions, whether a few points dominate, and whether grouped local-dimension
+choices explain the result.  For FB01, local-auto is slightly worse overall,
+but the result is structured: dimension-one local choices help slightly,
+dimension-three choices hurt most in aggregate, and a relatively small number
+of points contributes strongly to the final delta.
+
+\appendix
+\section{Proof of the Pointwise Truth-RMSE Delta Decomposition}
+
+Assume
+\[
+  R_{la}+R_a>0.
+\]
+If \(R_{la}=R_a=0\), then both models recover the truth perfectly and
+\(\Delta_{\mathrm{RMSE}}=0\), so no nontrivial decomposition is needed.
+
+Starting from the definition,
+\[
+  \Delta_{\mathrm{RMSE}}
+  =
+  R_{la}-R_a.
+\]
+Use the elementary identity
+\[
+  x-y=\frac{x^2-y^2}{x+y},
+  \qquad x+y>0.
+\]
+With \(x=R_{la}\) and \(y=R_a\),
+\[
+  R_{la}-R_a
+  =
+  \frac{R_{la}^2-R_a^2}{R_{la}+R_a}.
+\]
+By definition of Truth RMSE,
+\[
+  R_{la}^2
+  =
+  \frac{1}{n}
+  \sum_{i=1}^{n}
+  (e_i^{la})^2,
+  \qquad
+  R_a^2
+  =
+  \frac{1}{n}
+  \sum_{i=1}^{n}
+  (e_i^a)^2.
+\]
+Therefore
+\[
+  R_{la}^2-R_a^2
+  =
+  \frac{1}{n}
+  \sum_{i=1}^{n}
+  \left\{
+    (e_i^{la})^2-(e_i^a)^2
+  \right\}.
+\]
+Substituting this into the previous display gives
+\[
+  R_{la}-R_a
+  =
+  \sum_{i=1}^{n}
+  \frac{
+    (e_i^{la})^2-(e_i^a)^2
+  }{
+    n(R_{la}+R_a)
+  }.
+\]
+Thus, if
+\[
+  c_i
+  =
+  \frac{
+    (e_i^{la})^2-(e_i^a)^2
+  }{
+    n(R_{la}+R_a)
+  },
+\]
+then
+\[
+  \Delta_{\mathrm{RMSE}}
+  =
+  R_{la}-R_a
+  =
+  \sum_{i=1}^{n} c_i.
+\]
+
+\section{Squared-RMSE Alternative}
+
+Sometimes it is simpler to decompose squared RMSE instead of RMSE.  Define
+\[
+  b_i
+  =
+  \frac{(e_i^{la})^2-(e_i^a)^2}{n}.
+\]
+Then
+\[
+  R_{la}^2-R_a^2
+  =
+  \sum_{i=1}^{n} b_i.
+\]
+This squared-error decomposition is more direct algebraically.  The \(c_i\)
+decomposition used in the main text is just the squared-error decomposition
+rescaled by the positive factor \(R_{la}+R_a\), so that the components sum to
+the actual RMSE delta rather than the MSE delta.
+
+\end{document}

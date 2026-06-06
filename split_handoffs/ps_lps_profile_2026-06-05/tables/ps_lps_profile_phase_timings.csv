@@ -1,0 +1,5 @@
+"batch_id","dataset_id","chart_dim_rule","n","p","support_size","degree","kernel","chart_dim_median","chart_dim_max","lambda_sync","lambda_ridge","phase_prepare_frames_sec","phase_prepare_sync_rows_sec","phase_one_fold_solve_sec","phase_cv_all_folds_sec","phase_full_solve_sec","phase_total_candidate_sec","n_system_rows","n_coefficients","n_sync_pairs","n_sync_rows","ridge_max"
+"FB01","LA-D1-RAW-N500","auto",500,4,35,2,"gaussian",2,2,10,1e-08,0.0940000000000001,0.0289999999999999,0.267,0.629,0.119,0.871,51102,3000,1037,33602,8.78255506386762e-05
+"FB09","LA-13K-SUB-N500","auto",500,178,15,2,"gaussian",3,3,10,1e-08,0.541,0.0289999999999999,0.0659999999999998,0.343,0.0689999999999995,0.981999999999999,19269,5000,1089,11769,1.26093648246077e-05
+"FB14","SYN-RANK-BLOCKS-N600-P100","auto",600,100,35,2,"gaussian",6,6,10,1e-08,1.46,0.0299999999999994,0.933,3.365,0.688000000000001,5.543,55392,16800,1318,34392,0.000325566749690526
+"FB14","SYN-RANK-BLOCKS-N600-P100","local.auto",600,100,35,2,"gaussian",6,6,10,1e-08,1.431,0.0299999999999994,0.654999999999999,2.751,0.606000000000002,4.818,55392,15065,1318,34392,0.000325566749690526

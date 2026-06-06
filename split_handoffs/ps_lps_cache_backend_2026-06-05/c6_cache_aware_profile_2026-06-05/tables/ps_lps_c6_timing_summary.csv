@@ -1,0 +1,7 @@
+"batch_id","dataset_id","chart_dim_rule","grid_name","n_lambda","lambda_grid","n","p","support_size","degree","kernel","chart_dim_median","chart_dim_max","direct_elapsed_sec","cache_elapsed_sec","speedup","selected_lambda_direct","selected_lambda_cache","max_cv_rmse_delta","max_fitted_delta","cache_backend"
+"FB01","LA-D1-RAW-N500","auto","mixed_4",4,"0, 0.1, 1, 10",500,4,35,2,"gaussian",2,2,2.878,0.662999999999999,4.34087481146305,10,10,9.38138455808257e-15,5.28188603965418e-13,"component"
+"FB01","LA-D1-RAW-N500","auto","positive_7",7,"0.01, 0.03, 0.1, 0.3, 1, 3, 10",500,4,35,2,"gaussian",2,2,5.815,0.911,6.38309549945116,10,10,2.59098298371896e-14,5.28188603965418e-13,"component"
+"FB09","LA-13K-SUB-N500","auto","mixed_4",4,"0, 0.1, 1, 10",500,178,15,2,"gaussian",3,3,1.951,1.336,1.46032934131737,10,10,1.87188731182175e-09,4.03177491392626e-13,"component"
+"FB09","LA-13K-SUB-N500","auto","positive_7",7,"0.01, 0.03, 0.1, 0.3, 1, 3, 10",500,178,15,2,"gaussian",3,3,3.598,1.673,2.15062761506276,10,10,4.88822937683153e-09,4.03177491392626e-13,"component"
+"FB14","SYN-RANK-BLOCKS-N600-P100","local.auto","mixed_4",4,"0, 0.1, 1, 10",600,100,35,2,"gaussian",6,6,13.398,9.33600000000001,1.43508997429306,10,10,1.62397872927045e-13,3.55604434787438e-13,"component"
+"FB14","SYN-RANK-BLOCKS-N600-P100","local.auto","positive_7",7,"0.01, 0.03, 0.1, 0.3, 1, 3, 10",600,100,35,2,"gaussian",6,6,27.393,16.462,1.66401409306281,10,10,6.51645404303736e-13,3.55604434787438e-13,"component"

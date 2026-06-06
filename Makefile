@@ -1,4 +1,4 @@
-.PHONY: clean build check check-fast install document attrs test
+.PHONY: clean build check check-fast install document attrs test test-migration
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
@@ -23,6 +23,9 @@ document: attrs
 
 test:
 	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/testthat")'
+
+test-migration:
+	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/migration")'
 
 build: clean
 	R CMD build .

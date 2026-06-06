@@ -1,0 +1,537 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{enumitem}
+\usepackage{microtype}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!55!black,
+  citecolor=blue!50!black
+}
+
+\input{build_info.tex}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\GCV}{\operatorname{GCV}}
+\newcommand{\RMSE}{\operatorname{RMSE}}
+
+\title{PS-LPS Progress Report}
+\author{%
+  \small
+  \begin{tabular}{@{}c@{}}
+  Source path: \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}\\
+  \texttt{ps\_lps\_progress\_2026-06-05/ps\_lps\_progress\_report.tex}
+  \end{tabular}%
+}
+\date{Build: \reportbuilddatetime}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose}
+
+This report records the current state of prediction-synchronized local
+polynomial smoothing, abbreviated \emph{PS-LPS}.  It is intended as a living
+progress report rather than a final method paper.  The design document answers
+the question ``what is PS-LPS?''  This report answers:
+\begin{quote}
+What has been implemented, what has been observed, what remains uncertain, and
+what should be audited or tested next?
+\end{quote}
+
+The report is deliberately conservative.  The first-batch results are
+encouraging, but they are preliminary until the implementation and experiment
+have passed an independent audit and have been tested on a broader validation
+suite.
+
+\section{Motivation}
+
+Ordinary local polynomial smoothing (LPS) fits one local polynomial model around
+each anchor point.  This makes LPS simple and often effective, but it also means
+that neighboring local charts are fitted independently even though their
+supports overlap heavily.  Two charts can make different predictions at the same
+overlap point, and ordinary LPS has no explicit mechanism to reduce that
+incoherence.
+
+Before PS-LPS, we tested whether the sum of ordinary independent-chart local
+GCV scores could select global LPS parameters.  That first experiment did not
+support using
+\[
+  \sum_i \GCV_i
+\]
+as a standalone global selector for independent LPS.  The diagnostic often
+favored high local degrees-of-freedom ratios and did not reliably track Truth
+RMSE on the first-batch examples.
+
+PS-LPS takes a different route.  Instead of using local GCV alone to select
+parameters, it modifies the smoother itself by adding a prediction
+synchronization term.  The central idea is that overlapping local charts should
+not merely fit their own local responses; they should also agree where their
+prediction domains overlap.
+
+\section{Model Definition}
+
+Let \(x_1,\ldots,x_n\in\R^D\) be observed covariate points and let \(y_i\) be
+the observed response at point \(x_i\).  For each anchor \(i\), define a local
+support
+\[
+  N_i\subset\{1,\ldots,n\},
+  \qquad |N_i|=k.
+\]
+Let \(w_{ij}\ge 0\) be the kernel weight assigned by chart \(i\) to point
+\(j\in N_i\).  Let
+\[
+  \phi_i(x_j)\in\R^q
+\]
+be the local polynomial feature vector for point \(x_j\), expressed in the
+local chart centered at anchor \(i\).  The local coefficient vector at anchor
+\(i\) is \(\beta_i\in\R^q\).
+
+The local data-fit loss is
+\[
+  \mathcal L_{\mathrm{local}}(\beta)
+  =
+  \frac12
+  \sum_{i=1}^{n}
+  \sum_{j\in N_i}
+  w_{ij}
+  \{y_j-\phi_i(x_j)^\top\beta_i\}^2.
+\]
+
+For two charts \(i\) and \(\ell\), define the overlap
+\[
+  O_{i\ell}=N_i\cap N_\ell.
+\]
+The PS-LPS synchronization penalty is
+\[
+  \mathcal S(\beta)
+  =
+  \frac12
+  \sum_{(i,\ell)}
+  \sum_{r\in O_{i\ell}}
+  \omega_{i\ell r}
+  \left\{
+    \phi_i(x_r)^\top\beta_i
+    -
+    \phi_\ell(x_r)^\top\beta_\ell
+  \right\}^2.
+\]
+
+The PS-LPS estimate is
+\[
+  \widehat\beta
+  =
+  \arg\min_{\beta_1,\ldots,\beta_n}
+  \left[
+    \mathcal L_{\mathrm{local}}(\beta)
+    +
+    \lambda_{\mathrm{sync}}\mathcal S(\beta)
+  \right].
+\]
+When \(\lambda_{\mathrm{sync}}=0\), the model should reduce to independent LPS
+local chart fits with the same support, kernel, degree, and chart dimensions.
+This is an important audit gate for the implementation.
+
+\section{Overlap Weight Decision}
+
+The current recommended overlap weight is the normalized product of the two
+ordinary chart weights:
+\[
+  \omega_{i\ell r}
+  =
+  |O_{i\ell}|
+  \frac{
+    w_{ir}w_{\ell r}
+  }{
+    \sum_{s\in O_{i\ell}} w_{is}w_{\ell s}+\epsilon
+  }.
+\]
+The product \(w_{ir}w_{\ell r}\) emphasizes points that are central in both
+charts.  This matches the intended geometry: charts should be synchronized most
+strongly in the middle of their overlap, and less strongly near either chart's
+boundary.  The pair normalization makes the overall synchronization scale more
+stable across chart pairs, kernels, and overlap sizes.
+
+\section{Implementation Status}
+
+The first implementation is an R reference prototype in
+\[
+  \texttt{\string~/current\_projects/geosmooth/R/ps\_lps.R}.
+\]
+The exported user-facing function is
+\[
+  \texttt{fit.ps.lps()}.
+\]
+
+The prototype currently:
+\begin{itemize}[leftmargin=*]
+  \item uses ordinary local PCA charts;
+  \item supports fixed scalar chart dimension or a local chart-dimension vector;
+  \item fits a fixed support size, kernel, degree, and chart-dimension policy;
+  \item tunes only \(\lambda_{\mathrm{sync}}\) by CV in the first experiment;
+  \item assembles a sparse global least-squares system;
+  \item solves sparse normal equations with a small scale-relative numerical
+    ridge.
+\end{itemize}
+
+The current numerical ridge is a prototype stabilization device.  It should be
+audited and eventually reported as a solver diagnostic, especially when testing
+whether \(\lambda_{\mathrm{sync}}=0\) reproduces ordinary LPS.
+
+\section{Diagnostics}
+
+The PS-LPS implementation and first experiment record the following quantities:
+\begin{itemize}[leftmargin=*]
+  \item CV RMSE, computed on held-out responses;
+  \item Observed RMSE, computed against the noisy observed response;
+  \item Truth RMSE, computed against synthetic truth when available;
+  \item synchronization energy \(\mathcal S(\widehat\beta)\);
+  \item mean synchronization disagreement;
+  \item local degrees-of-freedom ratios;
+  \item total synchronized local GCV.
+\end{itemize}
+
+The synchronized local GCV diagnostic is defined after solving the synchronized
+problem.  For chart \(i\),
+\[
+  \operatorname{RSS}^{\mathrm{PS}}_i
+  =
+  \sum_{j\in N_i}
+  w_{ij}
+  \{y_j-\phi_i(x_j)^\top\widehat\beta_i\}^2.
+\]
+Let \(r_i\) be the numerical rank of the local weighted design matrix.  Then
+\[
+  \GCV^{\mathrm{PS}}_i
+  =
+  \frac{\operatorname{RSS}^{\mathrm{PS}}_i/k}
+       {(1-r_i/k)^2},
+  \qquad
+  \GCV^{\mathrm{PS}}_{\Sigma}
+  =
+  \sum_i \GCV^{\mathrm{PS}}_i.
+\]
+This is not the same as total local GCV for independent LPS charts.  The
+residuals are computed from the synchronized chart coefficients
+\(\widehat\beta_i\).  This distinction matters because the preliminary results
+suggest that \(\GCV^{\mathrm{PS}}_{\Sigma}\) may be more aligned with Truth RMSE
+than the independent-LPS version.
+
+\section{First-Batch Experiment}
+
+The first PS-LPS experiment used the frozen first-batch non-manifold datasets:
+\[
+  \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}
+\]
+\[
+  \texttt{lps\_local\_auto\_nonmanifold\_first\_batch\_2026-06-05/}.
+\]
+The generated PS-LPS report is:
+\[
+  \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}
+\]
+\[
+  \texttt{ps\_lps\_first\_batch\_experiment\_2026-06-05/}
+\]
+\[
+  \texttt{ps\_lps\_first\_batch\_experiment\_report.html}.
+\]
+
+The comparison included four methods:
+\begin{itemize}[leftmargin=*]
+  \item ordinary LPS with \texttt{chart.dim = "auto"};
+  \item ordinary LPS with \texttt{chart.dim = "local.auto"};
+  \item PS-LPS using the ordinary \texttt{auto} source settings;
+  \item PS-LPS using the ordinary \texttt{local.auto} source settings.
+\end{itemize}
+In the first experiment, PS-LPS reused the corresponding ordinary LPS selected
+support size, kernel, degree, and chart-dimension policy, and tuned only
+\[
+  \lambda_{\mathrm{sync}}\in\{0,0.1,1\}.
+\]
+
+\section{Audit Result and Response}
+
+The first implementation audit was blocked for two substantive reasons.  First,
+the implementation used an unconditional ridge in the normal-equation solve, so
+\(\lambda_{\mathrm{sync}}=0\) did not reproduce ordinary LPS fixed-chart fits.
+Second, the synchronization diagnostics were incorrectly reported as zero when
+\(\lambda_{\mathrm{sync}}=0\), even though the unmultiplied disagreement
+\(\mathcal S(\widehat\beta)\) is generally nonzero.
+
+The response was to make the ridge explicit rather than hidden.  The current
+implementation has a user-facing parameter
+\[
+  \lambda_{\mathrm{ridge}}\ge 0.
+\]
+When \(\lambda_{\mathrm{ridge}}=0\) and
+\(\lambda_{\mathrm{sync}}=0\), PS-LPS is tested to reproduce ordinary
+independent LPS full-data fixed-chart fitted values.  When
+\(\lambda_{\mathrm{ridge}}>0\) and \(\lambda_{\mathrm{sync}}=0\), the method is
+instead an independent ridge-stabilized LPS fit.  Therefore any
+ridge-stabilized PS-LPS comparison must include the matched ridge-LPS baseline.
+
+The diagnostics now compute and report the unmultiplied synchronization energy
+\[
+  \mathcal S(\widehat\beta)
+\]
+for every fitted coefficient vector whenever overlap rows exist, including the
+\(\lambda_{\mathrm{sync}}=0\) case.  The ambiguous diagnostic name
+\texttt{mean.sync.disagreement} has been retained only as a compatibility alias;
+the preferred diagnostic is
+\[
+  \texttt{mean.sync.squared.disagreement}.
+\]
+
+\section{Focused Tests}
+
+The focused PS-LPS test file is
+\[
+  \texttt{\string~/current\_projects/geosmooth/tests/testthat/test-ps-lps.R}.
+\]
+It currently checks:
+\begin{itemize}[leftmargin=*]
+  \item normalized product overlap weights have the intended per-pair mass;
+  \item \(\lambda_{\mathrm{ridge}}=0\) and
+    \(\lambda_{\mathrm{sync}}=0\) reproduce ordinary LPS fixed-chart fitted
+    values;
+  \item positive ridge with \(\lambda_{\mathrm{sync}}=0\) reproduces the
+    independent ridge-LPS solver path;
+  \item synchronization energy and mean squared disagreement are nonzero
+    diagnostics at \(\lambda_{\mathrm{sync}}=0\) when charts disagree.
+\end{itemize}
+The targeted test run passed with 9 expectations and no failures.
+
+\section{Refined First-Batch Experiment}
+
+The refined report is:
+\[
+  \texttt{\string~/current\_projects/geosmooth/split\_handoffs/}
+\]
+\[
+  \texttt{ps\_lps\_first\_batch\_refined\_experiment\_2026-06-05/}
+\]
+\[
+  \texttt{ps\_lps\_first\_batch\_refined\_experiment\_report.html}.
+\]
+
+The refined comparison separates six methods:
+\begin{itemize}[leftmargin=*]
+  \item ordinary LPS \texttt{auto};
+  \item ridge-LPS \texttt{auto};
+  \item PS-LPS \texttt{auto};
+  \item ordinary LPS \texttt{local.auto};
+  \item ridge-LPS \texttt{local.auto};
+  \item PS-LPS \texttt{local.auto}.
+\end{itemize}
+All ridge-LPS and PS-LPS rows use
+\[
+  \lambda_{\mathrm{ridge}}=10^{-8}.
+\]
+The PS-LPS grid remains
+\[
+  \lambda_{\mathrm{sync}}\in\{0,0.1,1\},
+\]
+and ridge-LPS is the matched \(\lambda_{\mathrm{sync}}=0\) baseline.
+
+All 84 method--dataset rows completed successfully.  The best Truth-RMSE method
+counts over the 14 first-batch datasets were:
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Method & Number of datasets where best \\
+\midrule
+PS-LPS local.auto & 8 \\
+PS-LPS auto & 5 \\
+ridge-LPS local.auto & 1 \\
+ordinary LPS variants & 0 \\
+ridge-LPS auto & 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Median Truth RMSE by method was:
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Method & Median Truth RMSE \\
+\midrule
+PS-LPS local.auto & \(0.04048\) \\
+PS-LPS auto & \(0.04517\) \\
+ridge-LPS local.auto & \(0.04868\) \\
+LPS local.auto & \(0.05755\) \\
+ridge-LPS auto & \(0.05752\) \\
+LPS auto & \(0.06978\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The refined delta decomposition is the main interpretive result.  The median
+Truth-RMSE changes were:
+\begin{center}
+\begin{tabular}{@{}llr@{}}
+\toprule
+Method & Reference & Median Truth-RMSE delta \\
+\midrule
+ridge-LPS auto & ordinary LPS auto & \(-0.00651\) \\
+ridge-LPS local.auto & ordinary LPS local.auto & \(-0.00638\) \\
+PS-LPS auto & ordinary LPS auto & \(-0.02437\) \\
+PS-LPS local.auto & ordinary LPS local.auto & \(-0.02190\) \\
+PS-LPS auto & ridge-LPS auto & \(-0.01048\) \\
+PS-LPS local.auto & ridge-LPS local.auto & \(-0.00865\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+Thus the initial favorable result was partly a ridge-stabilization effect, but
+not only a ridge effect.  In this refined first-batch experiment, positive
+prediction synchronization still improved over the matched ridge-LPS baseline
+in median Truth RMSE.  The dataset-wise caveat is that each PS-LPS variant
+improved over its matched ridge-LPS baseline on 13 of 14 datasets, not on every
+dataset.  Therefore the appropriate short summary is ``median improvement over
+matched ridge-LPS, with 13/14 dataset-wise wins for each PS variant.''
+
+\section{Open Questions}
+
+The following questions remain open and should guide the next phase:
+\begin{itemize}[leftmargin=*]
+  \item Is the improvement over ridge-LPS stable under a wider
+    \(\lambda_{\mathrm{sync}}\) grid?
+  \item How sensitive are the conclusions to the ridge scale
+    \(\lambda_{\mathrm{ridge}}\)?
+  \item Does PS-LPS still improve on prospective datasets that were not used to
+    motivate the method?
+  \item Does total synchronized local GCV remain aligned with CV RMSE and Truth
+    RMSE on larger suites?
+  \item Should PS-LPS select support size, kernel, degree, and chart dimension
+    directly, or remain a synchronization refinement around an ordinary
+    LPS-selected candidate?
+  \item Is the R prototype sufficient for near-term experiments, or should the
+    sparse system assembly and solve be moved to C++?
+\end{itemize}
+
+\section{PS-LPS-S1 Sensitivity Plan}
+
+The re-audit accepted the refined ridge-stabilized contract with minor
+follow-ups.  The next validation phase is therefore not yet a prospective
+experiment.  The immediate phase is:
+\[
+  \text{PS-LPS-S1: first-batch lambda/ridge sensitivity}.
+\]
+Its purpose is to test whether the refined first-batch PS-LPS signal is stable
+to the two prototype tuning axes:
+\[
+  \lambda_{\mathrm{sync}}
+  \quad\text{and}\quad
+  \lambda_{\mathrm{ridge}}.
+\]
+
+The planned synchronization grid is
+\[
+  \lambda_{\mathrm{sync}}
+  \in
+  \{0,\ 0.01,\ 0.03,\ 0.1,\ 0.3,\ 1,\ 3,\ 10\},
+\]
+and the planned ridge grid is
+\[
+  \lambda_{\mathrm{ridge}}
+  \in
+  \{0,\ 10^{-10},\ 10^{-8},\ 10^{-6}\}.
+\]
+For every ridge scale, the matched baseline is the candidate with
+\(\lambda_{\mathrm{sync}}=0\) and the same support size, kernel, degree, chart
+rule, and ridge scale.  When \(\lambda_{\mathrm{ridge}}=0\), this is ordinary
+unregularized LPS.  When \(\lambda_{\mathrm{ridge}}>0\), this is ridge-LPS.
+
+The S1 report should include:
+\begin{itemize}[leftmargin=*]
+  \item selected \(\lambda_{\mathrm{sync}}\) by dataset, chart rule, and ridge
+    scale;
+  \item candidate-level Truth RMSE over the
+    \((\lambda_{\mathrm{ridge}},\lambda_{\mathrm{sync}})\) grid;
+  \item selected Truth-RMSE deltas against the matched
+    \(\lambda_{\mathrm{sync}}=0\) baseline;
+  \item median and dataset-wise win summaries;
+  \item total local GCV, synchronization energy, and mean squared overlap
+    disagreement diagnostics.
+\end{itemize}
+The decision criterion is conservative: proceed to prospective PS-LPS
+experiments only if the improvement over matched ridge-LPS is not confined to a
+single ridge scale or to a boundary value of \(\lambda_{\mathrm{sync}}\).
+
+\section{PS-LPS-S1 Results}
+
+The S1 experiment has now been run on the frozen first-batch non-manifold
+suite.  The report is:
+\[
+\begin{gathered}
+  \texttt{~/current\_projects/geosmooth/split\_handoffs/}\\
+  \texttt{ps\_lps\_s1\_lambda\_ridge\_sensitivity\_2026-06-05/}\\
+  \texttt{ps\_lps\_s1\_lambda\_ridge\_sensitivity\_report.html}.
+\end{gathered}
+\]
+The run evaluated \(896\) candidate rows:
+\[
+  14\ \text{datasets}
+  \times 2\ \text{chart rules}
+  \times 4\ \lambda_{\mathrm{ridge}}\text{ values}
+  \times 8\ \lambda_{\mathrm{sync}}\text{ values}.
+\]
+All candidate rows completed with status \texttt{ok}.  The requested
+\(\lambda_{\mathrm{ridge}}=0\) rows are included, but the numerical solver did
+use its internal fallback ridge on a small number of zero-ridge candidate
+solves.  The S1 tables record the realized \(\lambda_{\mathrm{ridge}}\)
+diagnostics as \texttt{ridge\_median} and \texttt{ridge\_max}.  Thus the
+zero-ridge rows are valuable as a stress test of the no-ridge path, but they
+should not be described as uniformly exact unregularized normal-equation solves.
+
+The selected-by-CV median Truth-RMSE deltas against the matched
+\(\lambda_{\mathrm{sync}}=0\) baseline were:
+\begin{center}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Chart rule & \(\lambda_{\mathrm{ridge}}\) & Median delta & Wins \\
+\midrule
+\texttt{auto} & \(0\) & \(-0.02224\) & \(12/14\) \\
+\texttt{local.auto} & \(0\) & \(-0.01523\) & \(13/14\) \\
+\texttt{auto} & \(10^{-10}\) & \(-0.01319\) & \(12/14\) \\
+\texttt{local.auto} & \(10^{-10}\) & \(-0.01104\) & \(12/14\) \\
+\texttt{auto} & \(10^{-8}\) & \(-0.01523\) & \(12/14\) \\
+\texttt{local.auto} & \(10^{-8}\) & \(-0.01095\) & \(12/14\) \\
+\texttt{auto} & \(10^{-6}\) & \(-0.01425\) & \(12/14\) \\
+\texttt{local.auto} & \(10^{-6}\) & \(-0.01057\) & \(12/14\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+Negative deltas mean that the selected synchronized fit has lower Truth RMSE
+than the matched independent baseline at the same ridge scale.  The signal is
+therefore not confined to one ridge scale: every ridge scale and both chart
+rules show a negative median delta.
+
+The caution is that the selected synchronization strength is usually at the
+upper boundary of the S1 grid.  Across all ridge scales, the median selected
+\(\lambda_{\mathrm{sync}}\) was \(10\) for both chart rules.  This does not
+invalidate the positive S1 result, but it does mean that the next sensitivity
+run should extend the synchronization grid above \(10\) and should examine
+whether the Truth-RMSE profile plateaus, improves further, or eventually
+deteriorates.  In short, S1 supports prediction synchronization as a useful
+refinement, but it does not yet freeze the synchronization search range.
+
+\section*{Summary}
+
+PS-LPS has moved from a concept note to a tested ridge-stabilized prototype.
+The blocked audit identified a real interpretability problem, and the refined
+experiment now separates ordinary LPS, ridge-LPS, and synchronized PS-LPS.  The
+first-batch evidence remains encouraging because PS-LPS improves over the
+matched independent baseline in median Truth RMSE across the tested ridge
+scales.  The main limitation is now different: S1 frequently selects the largest
+tested synchronization weight, so the next experiment should extend
+\(\lambda_{\mathrm{sync}}\) before prospective validation.
+
+\end{document}

@@ -213,6 +213,206 @@ test_that("K4 native neighbor probe repairs raw ANN tie order", {
     check.probe(grid, center = c(0, 0), k = 4L)
 })
 
+test_that("K12 LPS backend diagnostics expose conservative backend policy", {
+    X <- matrix(seq(0, 1, length.out = 24), ncol = 1L)
+    y <- sin(2 * pi * X[, 1])
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    ambient <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(6L, 8L),
+        degree.grid = 0:1,
+        kernel.grid = "gaussian",
+        coordinate.method = "coordinates",
+        backend = "auto"
+    )
+    ambient.diag <- lps.backend.diagnostics(ambient)
+
+    expect_s3_class(ambient.diag, "data.frame")
+    expect_equal(nrow(ambient.diag), 1L)
+    expect_equal(ambient.diag$backend.requested, "auto")
+    expect_equal(ambient.diag$backend.used, "cpp")
+    expect_equal(ambient.diag$backend.auto.policy, "auto_coordinates_cpp")
+    expect_equal(ambient.diag$requested.chart.dim, "NULL")
+    expect_equal(ambient.diag$resolved.chart.dim, ncol(X))
+    expect_false(ambient.diag$chart.dim.auto)
+    expect_false(ambient.diag$local.pca.real.data.contract)
+    expect_equal(ambient.diag$candidate.count, nrow(ambient$cv.table))
+})
+
+test_that("K12 local-PCA diagnostics record auto-dimension contract", {
+    t <- seq(0, 1, length.out = 32)
+    X <- cbind(t, t^2, sin(2 * pi * t))
+    y <- cos(2 * pi * t)
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(10L, 12L),
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = "auto",
+        auto.chart.support.metric = "both",
+        auto.chart.selection.metric = "operator",
+        backend = "auto"
+    )
+    diag <- lps.backend.diagnostics(fit)
+
+    expect_equal(diag$backend.requested, "auto")
+    expect_equal(diag$backend.used, "R")
+    expect_equal(diag$backend.auto.policy, "auto_local_pca_R_reference")
+    expect_equal(diag$requested.chart.dim, "auto")
+    expect_true(diag$chart.dim.auto)
+    expect_equal(diag$auto.chart.support.metric, "both")
+    expect_equal(diag$auto.chart.selection.metric, "operator")
+    expect_equal(diag$auto.chart.support.metric.selected, "coordinates")
+    expect_true(is.finite(diag$resolved.chart.dim))
+    expect_true(diag$local.pca.real.data.contract)
+})
+
+test_that("LPS supports opt-in per-anchor local auto chart dimensions", {
+    t <- seq(0, 1, length.out = 40)
+    X <- cbind(t, t^2, sin(2 * pi * t), 0.02 * cos(5 * pi * t))
+    y <- sin(3 * pi * t)
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(10L, 14L),
+        degree.grid = 1:2,
+        kernel.grid = "gaussian",
+        coordinate.method = "local.pca",
+        chart.dim = "local.auto",
+        auto.chart.support.metric = "both",
+        auto.chart.selection.metric = "operator",
+        backend = "auto"
+    )
+    diag <- lps.backend.diagnostics(fit)
+
+    expect_s3_class(fit, "lps")
+    expect_equal(fit$backend.used, "R")
+    expect_true(fit$auto.chart.dim)
+    expect_true(fit$auto.chart.dim.local)
+    expect_equal(fit$chart.dim.mode, "local.auto")
+    expect_length(fit$chart.dim.by.eval, nrow(X))
+    expect_true(all(fit$chart.dim.by.eval >= 1L))
+    expect_true(all(fit$chart.dim.by.eval <= ncol(X)))
+    expect_true(is.finite(fit$chart.dim))
+    expect_equal(diag$requested.chart.dim, "local.auto")
+    expect_true(diag$chart.dim.auto)
+    expect_true(diag$chart.dim.local.auto)
+    expect_equal(diag$chart.dim.mode, "local.auto")
+    expect_equal(diag$chart.dim.by.eval.n, nrow(X))
+    expect_true(diag$local.pca.real.data.contract)
+    expect_equal(length(predict(fit, X[1:5, , drop = FALSE])), 5L)
+})
+
+test_that("LPS local auto chart dimensions stay on the R local-PCA path", {
+    X <- cbind(seq(0, 1, length.out = 24), seq(0, 1, length.out = 24)^2)
+    y <- X[, 1]
+    foldid <- rep(1:3, length.out = nrow(X))
+
+    expect_error(
+        fit.lps(
+            X,
+            y,
+            foldid = foldid,
+            coordinate.method = "coordinates",
+            chart.dim = "local.auto",
+            backend = "R"
+        ),
+        "requires coordinate.method = 'local.pca'"
+    )
+    expect_error(
+        fit.lps(
+            X,
+            y,
+            foldid = foldid,
+            coordinate.method = "local.pca",
+            chart.dim = "local.auto",
+            backend = "cpp.local.pca"
+        ),
+        "currently uses the R local-PCA backend"
+    )
+    expect_error(
+        fit.lps(
+            X,
+            y,
+            foldid = foldid,
+            coordinate.method = "local.pca",
+            chart.dim = "local.auto",
+            local.chart.method = "second.order.svd",
+            backend = "auto"
+        ),
+        "currently supports only local.chart.method = 'pca'"
+    )
+})
+
+test_that("K12 local-PCA contract excludes experimental second-order charts", {
+    t <- seq(-1, 1, length.out = 36)
+    X <- cbind(t, t^2, sin(pi * t))
+    y <- t^2 + 0.1 * sin(3 * pi * t)
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = 14L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        coordinate.method = "local.pca",
+        local.chart.method = "second.order.svd",
+        chart.dim = "auto",
+        auto.chart.support.metric = "both",
+        auto.chart.selection.metric = "operator",
+        backend = "auto"
+    )
+    diag <- lps.backend.diagnostics(fit)
+
+    expect_equal(diag$local.chart.method.effective, "second.order.svd")
+    expect_equal(diag$backend.auto.policy, "auto_local_pca_R_reference")
+    expect_true(diag$chart.dim.auto)
+    expect_false(diag$local.pca.real.data.contract)
+})
+
+test_that("K12 explicit local-PCA native opt-in is reported as opt-in", {
+    t <- seq(0, 1, length.out = 28)
+    X <- cbind(t, t^2)
+    y <- t + 0.2 * t^2
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = 10L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        coordinate.method = "local.pca",
+        chart.dim = 1L,
+        backend = "cpp.local.pca"
+    )
+    diag <- lps.backend.diagnostics(fit)
+
+    expect_equal(diag$backend.requested, "cpp.local.pca")
+    expect_equal(diag$backend.used, "cpp.local.pca")
+    expect_equal(
+        diag$backend.auto.policy,
+        "explicit_local_pca_native_opt_in"
+    )
+    expect_equal(diag$requested.chart.dim, "1")
+    expect_false(diag$chart.dim.auto)
+    expect_false(diag$local.pca.real.data.contract)
+})
+
 test_that("K10 row-Gram local PCA chart matches the SVD subspace", {
     set.seed(104)
     X <- matrix(rnorm(8L * 60L), nrow = 8L)

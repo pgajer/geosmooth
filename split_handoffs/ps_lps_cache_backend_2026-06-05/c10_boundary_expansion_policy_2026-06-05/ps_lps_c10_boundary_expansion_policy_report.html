@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <title>PS-LPS C10 Boundary-Expansion Search Policy</title>
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2933; line-height: 1.45; }
+h1, h2 { line-height: 1.15; }
+.note { max-width: 1040px; }
+.figure { margin: 24px 0 30px; }
+.figure img { max-width: 100%; border: 1px solid #ddd; }
+.caption { font-size: 0.94rem; color: #53606c; max-width: 1040px; }
+.data-table { border-collapse: collapse; font-size: 0.86rem; margin: 12px 0 24px; }
+.data-table th, .data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: right; }
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<html>
+  <body>
+    <h1>PS-LPS C10 Boundary-Expansion Search Policy</h1>
+    <p class="note">
+      C10 evaluates the guarded coarse-to-refine lambda.sync search policy 
+      with explicit boundary expansion across a frozen first-batch suite. 
+      The expanded reference grid contains two extra candidates below the 
+      initial positive lower bound and two extra candidates above the 
+      initial upper bound.  The deployable 
+      correctness guard is CV RMSE regret: the search-selected CV RMSE 
+      minus the expanded-reference selected CV RMSE.  A practical tie rule selects 
+      the smallest lambda.sync whose CV RMSE is within 0.2% of the grid 
+      minimum.
+    </p>
+    <h2>Summary</h2>
+    <p class="note">Across the C10 validation cases, selected-lambda agreement was complete, maximum CV RMSE regret was 0, and candidate reduction was at least 47.368% relative to the expanded reference grid.  These validation results exercise the package helper, but they do not yet establish a package default.</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>chart_dim_rule</th>
+          <th>layout_id</th>
+          <th>initial_candidate_count</th>
+          <th>reference_candidate_count</th>
+          <th>search_candidate_count</th>
+          <th>candidate_reduction_pct</th>
+          <th>boundary_expansion_count</th>
+          <th>full_best_position</th>
+          <th>full_selected_lambda</th>
+          <th>search_selected_lambda</th>
+          <th>selected_agree</th>
+          <th>cv_rmse_regret</th>
+          <th>cv_rmse_relative_regret</th>
+          <th>full_total_elapsed_sec</th>
+          <th>search_total_elapsed_sec</th>
+          <th>elapsed_speedup</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>30</td>
+          <td>30</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 3.003</td>
+          <td> 1.699</td>
+          <td>1.7675</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>2</td>
+          <td>interior</td>
+          <td>100</td>
+          <td>100</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 2.946</td>
+          <td> 1.807</td>
+          <td>1.6303</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>8</td>
+          <td>57.895</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>30</td>
+          <td>30</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 8.782</td>
+          <td> 4.004</td>
+          <td>2.1933</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>10</td>
+          <td>10</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td>10.778</td>
+          <td> 6.194</td>
+          <td>1.7401</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>2</td>
+          <td>right_boundary</td>
+          <td>2700</td>
+          <td>2700</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.341</td>
+          <td> 2.525</td>
+          <td>1.7192</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>9</td>
+          <td>52.632</td>
+          <td>1</td>
+          <td>interior</td>
+          <td>100</td>
+          <td>100</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.253</td>
+          <td> 2.317</td>
+          <td>1.8356</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>9</td>
+          <td>52.632</td>
+          <td>1</td>
+          <td>interior</td>
+          <td>100</td>
+          <td>100</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td>  2.74</td>
+          <td> 1.451</td>
+          <td>1.8884</td>
+        </tr>
+        <tr>
+          <td>FB11</td>
+          <td>SYN-SADDLE-LINE-N500</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>30</td>
+          <td>30</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 2.719</td>
+          <td> 1.573</td>
+          <td>1.7285</td>
+        </tr>
+        <tr>
+          <td>FB12</td>
+          <td>SYN-TWO-PLANES-N600</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>9</td>
+          <td>52.632</td>
+          <td>1</td>
+          <td>interior</td>
+          <td>100</td>
+          <td>100</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td>  3.56</td>
+          <td> 1.905</td>
+          <td>1.8688</td>
+        </tr>
+        <tr>
+          <td>FB13</td>
+          <td>SYN-SIMPLEX-FACES-N600</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>10</td>
+          <td>10</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.232</td>
+          <td> 2.416</td>
+          <td>1.7517</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>2</td>
+          <td>interior</td>
+          <td>900</td>
+          <td>900</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td>45.658</td>
+          <td>22.483</td>
+          <td>2.0308</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>local.auto</td>
+          <td>wide_mixed_15_expand_2</td>
+          <td>15</td>
+          <td>19</td>
+          <td>10</td>
+          <td>47.368</td>
+          <td>0</td>
+          <td>interior</td>
+          <td>30</td>
+          <td>30</td>
+          <td>TRUE</td>
+          <td>0</td>
+          <td>0</td>
+          <td>34.576</td>
+          <td>18.664</td>
+          <td>1.8526</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Expanded Reference Curves</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_c10_cv_curves.png"/>
+      <p class="caption">
+        Each panel shows the expanded reference CV curve. 
+        Search-evaluated candidates are highlighted.  The green circle 
+        marks the expanded-reference tie-rule selection and the orange 
+        cross marks the search selection.
+      </p>
+    </div>
+    <h2>Candidate Count and Regret</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_c10_candidate_counts.png"/>
+    </div>
+    <div class="figure">
+      <img src="figures/ps_lps_c10_cv_regret.png"/>
+    </div>
+    <h2>Output Tables</h2>
+    <ul>
+      <li>
+        <a href="tables/ps_lps_c10_search_summary.csv">Search summary</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c10_reference_grid_curves.csv">Expanded-reference CV curves</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c10_search_stages.csv">Search stages</a>
+      </li>
+    </ul>
+  </body>
+</html>
+</html>

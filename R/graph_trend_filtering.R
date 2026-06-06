@@ -881,6 +881,7 @@ fit.graph.trend.filtering <- function(adj.list,
     )
 }
 
+#' @method print graph.trend.filtering.fit
 #' @export
 print.graph.trend.filtering.fit <- function(x, ...) {
     cat("\nGraph Trend-Filtering Fit\n")

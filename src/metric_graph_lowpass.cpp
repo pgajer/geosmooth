@@ -682,7 +682,7 @@ extern "C" SEXP S_metric_graph_lowpass_spectrum(
     const std::string dense_fallback = scalar_string(s_dense_fallback, "dense.fallback");
     const bool verbose = scalar_logical(s_verbose, "verbose");
 
-    unsigned int available_threads = gflow_get_max_threads();
+    unsigned int available_threads = geosmooth_get_max_threads();
     if (available_threads == 0) available_threads = 1;
     Eigen::setNbThreads(available_threads);
 

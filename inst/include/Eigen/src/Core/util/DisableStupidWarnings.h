@@ -1,7 +1,7 @@
 #ifndef EIGEN_WARNINGS_DISABLED
 #define EIGEN_WARNINGS_DISABLED
 
-/* gflow local patch:
+/* geosmooth local patch:
  * Keep Eigen include semantics while avoiding compiler-specific diagnostic
  * suppression pragmas that trigger CRAN NOTE checks.
  */

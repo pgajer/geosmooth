@@ -36,6 +36,66 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_harmonic_smoother
+List rcpp_harmonic_smoother(const List& adj_list, const List& weight_list, const NumericVector& values, const IntegerVector& region_vertices, const int max_iterations, const double tolerance, const int record_frequency, const int stability_window, const double stability_threshold);
+RcppExport SEXP _geosmooth_rcpp_harmonic_smoother(SEXP adj_listSEXP, SEXP weight_listSEXP, SEXP valuesSEXP, SEXP region_verticesSEXP, SEXP max_iterationsSEXP, SEXP toleranceSEXP, SEXP record_frequencySEXP, SEXP stability_windowSEXP, SEXP stability_thresholdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type adj_list(adj_listSEXP);
+    Rcpp::traits::input_parameter< const List& >::type weight_list(weight_listSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type region_vertices(region_verticesSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_iterations(max_iterationsSEXP);
+    Rcpp::traits::input_parameter< const double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< const int >::type record_frequency(record_frequencySEXP);
+    Rcpp::traits::input_parameter< const int >::type stability_window(stability_windowSEXP);
+    Rcpp::traits::input_parameter< const double >::type stability_threshold(stability_thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_harmonic_smoother(adj_list, weight_list, values, region_vertices, max_iterations, tolerance, record_frequency, stability_window, stability_threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_local_pca_chart
+List rcpp_local_pca_chart(const NumericMatrix& X_support, const NumericVector& center, const int chart_dim, const std::string& center_mode, const std::string& dim_rule, const double eigen_tolerance, Nullable<NumericVector> weights, const bool rebase_to_anchor, const bool orient_basis);
+RcppExport SEXP _geosmooth_rcpp_local_pca_chart(SEXP X_supportSEXP, SEXP centerSEXP, SEXP chart_dimSEXP, SEXP center_modeSEXP, SEXP dim_ruleSEXP, SEXP eigen_toleranceSEXP, SEXP weightsSEXP, SEXP rebase_to_anchorSEXP, SEXP orient_basisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_support(X_supportSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type center_mode(center_modeSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type dim_rule(dim_ruleSEXP);
+    Rcpp::traits::input_parameter< const double >::type eigen_tolerance(eigen_toleranceSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
+    Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_local_pca_chart(X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_local_second_order_svd_chart
+List rcpp_local_second_order_svd_chart(const NumericMatrix& X_support, const NumericVector& center, const int chart_dim, const std::string& center_mode, Nullable<NumericVector> weights, const double rank_tolerance, const double rank_absolute_tolerance, const double curvature_condition_max, const double curvature_ridge, const int min_curvature_support, const bool rebase_to_anchor, const bool orient_basis);
+RcppExport SEXP _geosmooth_rcpp_local_second_order_svd_chart(SEXP X_supportSEXP, SEXP centerSEXP, SEXP chart_dimSEXP, SEXP center_modeSEXP, SEXP weightsSEXP, SEXP rank_toleranceSEXP, SEXP rank_absolute_toleranceSEXP, SEXP curvature_condition_maxSEXP, SEXP curvature_ridgeSEXP, SEXP min_curvature_supportSEXP, SEXP rebase_to_anchorSEXP, SEXP orient_basisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_support(X_supportSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
+    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type center_mode(center_modeSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const double >::type rank_tolerance(rank_toleranceSEXP);
+    Rcpp::traits::input_parameter< const double >::type rank_absolute_tolerance(rank_absolute_toleranceSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvature_condition_max(curvature_condition_maxSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvature_ridge(curvature_ridgeSEXP);
+    Rcpp::traits::input_parameter< const int >::type min_curvature_support(min_curvature_supportSEXP);
+    Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
+    Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_local_second_order_svd_chart(X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_kernel_local_polynomial_cv_coordinates
 NumericVector rcpp_kernel_local_polynomial_cv_coordinates(const NumericMatrix& X, const NumericVector& y, const IntegerVector& foldid, const IntegerVector& support_size, const IntegerVector& degree, const CharacterVector& kernel);
 RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_cv_coordinates(SEXP XSEXP, SEXP ySEXP, SEXP foldidSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP) {
@@ -132,47 +192,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// rcpp_local_pca_chart
-List rcpp_local_pca_chart(const NumericMatrix& X_support, const NumericVector& center, const int chart_dim, const std::string& center_mode, const std::string& dim_rule, const double eigen_tolerance, Nullable<NumericVector> weights, const bool rebase_to_anchor, const bool orient_basis);
-RcppExport SEXP _geosmooth_rcpp_local_pca_chart(SEXP X_supportSEXP, SEXP centerSEXP, SEXP chart_dimSEXP, SEXP center_modeSEXP, SEXP dim_ruleSEXP, SEXP eigen_toleranceSEXP, SEXP weightsSEXP, SEXP rebase_to_anchorSEXP, SEXP orient_basisSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_support(X_supportSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
-    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type center_mode(center_modeSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type dim_rule(dim_ruleSEXP);
-    Rcpp::traits::input_parameter< const double >::type eigen_tolerance(eigen_toleranceSEXP);
-    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
-    Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_local_pca_chart(X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rcpp_local_second_order_svd_chart
-List rcpp_local_second_order_svd_chart(const NumericMatrix& X_support, const NumericVector& center, const int chart_dim, const std::string& center_mode, Nullable<NumericVector> weights, const double rank_tolerance, const double rank_absolute_tolerance, const double curvature_condition_max, const double curvature_ridge, const int min_curvature_support, const bool rebase_to_anchor, const bool orient_basis);
-RcppExport SEXP _geosmooth_rcpp_local_second_order_svd_chart(SEXP X_supportSEXP, SEXP centerSEXP, SEXP chart_dimSEXP, SEXP center_modeSEXP, SEXP weightsSEXP, SEXP rank_toleranceSEXP, SEXP rank_absolute_toleranceSEXP, SEXP curvature_condition_maxSEXP, SEXP curvature_ridgeSEXP, SEXP min_curvature_supportSEXP, SEXP rebase_to_anchorSEXP, SEXP orient_basisSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_support(X_supportSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type center(centerSEXP);
-    Rcpp::traits::input_parameter< const int >::type chart_dim(chart_dimSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type center_mode(center_modeSEXP);
-    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< const double >::type rank_tolerance(rank_toleranceSEXP);
-    Rcpp::traits::input_parameter< const double >::type rank_absolute_tolerance(rank_absolute_toleranceSEXP);
-    Rcpp::traits::input_parameter< const double >::type curvature_condition_max(curvature_condition_maxSEXP);
-    Rcpp::traits::input_parameter< const double >::type curvature_ridge(curvature_ridgeSEXP);
-    Rcpp::traits::input_parameter< const int >::type min_curvature_support(min_curvature_supportSEXP);
-    Rcpp::traits::input_parameter< const bool >::type rebase_to_anchor(rebase_to_anchorSEXP);
-    Rcpp::traits::input_parameter< const bool >::type orient_basis(orient_basisSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_local_second_order_svd_chart(X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis));
-    return rcpp_result_gen;
-END_RCPP
-}
 // rcpp_metric_graph_lowpass_operator
 SEXP rcpp_metric_graph_lowpass_operator(SEXP s_adj_list, SEXP s_weight_list, SEXP s_conductance_rule, SEXP s_conductance_epsilon, SEXP s_conductance_alpha, SEXP s_conductance_sigma, SEXP s_sigma_rule, SEXP s_sigma_quantile, SEXP s_local_k, SEXP s_laplacian_type);
 RcppExport SEXP _geosmooth_rcpp_metric_graph_lowpass_operator(SEXP s_adj_listSEXP, SEXP s_weight_listSEXP, SEXP s_conductance_ruleSEXP, SEXP s_conductance_epsilonSEXP, SEXP s_conductance_alphaSEXP, SEXP s_conductance_sigmaSEXP, SEXP s_sigma_ruleSEXP, SEXP s_sigma_quantileSEXP, SEXP s_local_kSEXP, SEXP s_laplacian_typeSEXP) {
@@ -219,6 +238,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_ps_lps_assemble_cached_system
+List rcpp_ps_lps_assemble_cached_system(const List& cache, const NumericVector& y, const NumericVector& response_weights, const double lambda_sync);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_assemble_cached_system(SEXP cacheSEXP, SEXP ySEXP, SEXP response_weightsSEXP, SEXP lambda_syncSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type cache(cacheSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type response_weights(response_weightsSEXP);
+    Rcpp::traits::input_parameter< const double >::type lambda_sync(lambda_syncSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_assemble_cached_system(cache, y, response_weights, lambda_sync));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_ssrhe_hessian_operator
 SEXP rcpp_ssrhe_hessian_operator(SEXP s_X, SEXP s_k, SEXP s_tangent_dim, SEXP s_nn_index, SEXP s_support_index, SEXP s_tangent_dim_rule, SEXP s_eigen_tolerance, SEXP s_derivative_order, SEXP s_stabilizer, SEXP s_pinv_tol, SEXP s_local_solver, SEXP s_normal_equations_max_condition, SEXP s_verbose);
 RcppExport SEXP _geosmooth_rcpp_ssrhe_hessian_operator(SEXP s_XSEXP, SEXP s_kSEXP, SEXP s_tangent_dimSEXP, SEXP s_nn_indexSEXP, SEXP s_support_indexSEXP, SEXP s_tangent_dim_ruleSEXP, SEXP s_eigen_toleranceSEXP, SEXP s_derivative_orderSEXP, SEXP s_stabilizerSEXP, SEXP s_pinv_tolSEXP, SEXP s_local_solverSEXP, SEXP s_normal_equations_max_conditionSEXP, SEXP s_verboseSEXP) {
@@ -246,16 +279,18 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_geosmooth_native_stub", (DL_FUNC) &_geosmooth_rcpp_geosmooth_native_stub, 0},
     {"_geosmooth_rcpp_perform_harmonic_smoothing", (DL_FUNC) &_geosmooth_rcpp_perform_harmonic_smoothing, 6},
+    {"_geosmooth_rcpp_harmonic_smoother", (DL_FUNC) &_geosmooth_rcpp_harmonic_smoother, 9},
+    {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
+    {"_geosmooth_rcpp_local_second_order_svd_chart", (DL_FUNC) &_geosmooth_rcpp_local_second_order_svd_chart, 12},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe, 3},
-    {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
-    {"_geosmooth_rcpp_local_second_order_svd_chart", (DL_FUNC) &_geosmooth_rcpp_local_second_order_svd_chart, 12},
     {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
     {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
+    {"_geosmooth_rcpp_ps_lps_assemble_cached_system", (DL_FUNC) &_geosmooth_rcpp_ps_lps_assemble_cached_system, 4},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},
     {NULL, NULL, 0}
 };

@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <title>PS-LPS C11 Policy Readiness</title>
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2933; line-height: 1.45; }
+h1, h2 { line-height: 1.15; }
+.note { max-width: 1060px; }
+.figure { margin: 24px 0 30px; }
+.figure img { max-width: 100%; border: 1px solid #ddd; }
+.caption { font-size: 0.94rem; color: #53606c; max-width: 1060px; }
+.data-table { border-collapse: collapse; font-size: 0.82rem; margin: 12px 0 24px; }
+.data-table th, .data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: right; }
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<html>
+  <body>
+    <h1>PS-LPS C11 Policy Readiness</h1>
+    <p class="note">
+      C11 compares exact expanded-grid PS-LPS with guarded lambda.sync 
+      search policies on all frozen first-batch examples under both 
+      auto and local.auto chart-dimension rules.  The reference policy 
+      uses the expanded C10 grid and the same practical 0.2% tie rule. 
+      The main readiness criterion is whether guarded policies preserve 
+      the selected fit, Truth RMSE, and pointwise truth-error behavior, 
+      not merely whether they save candidate evaluations.
+    </p>
+    <h2>Summary</h2>
+    <p class="note">No fit failures were recorded. Maximum absolute Truth RMSE delta versus the exact reference was 0.063499, and maximum fitted-vector RMSE difference was 0.082531.</p>
+    <h2>Truth RMSE Delta</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_c11_truth_rmse_delta.png"/>
+      <p class="caption">
+        Truth RMSE delta is variant Truth RMSE minus exact-reference 
+        Truth RMSE.  Values near zero indicate practical equivalence to 
+        the expanded exact-grid reference.
+      </p>
+    </div>
+    <h2>Fitted-Value Difference</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_c11_fit_delta.png"/>
+    </div>
+    <h2>Selected Lambda and Candidate Counts</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_c11_selected_lambda.png"/>
+    </div>
+    <div class="figure">
+      <img src="figures/ps_lps_c11_candidate_counts.png"/>
+    </div>
+    <h2>Metric Preview</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>chart_dim_rule</th>
+          <th>variant_id</th>
+          <th>selected_lambda_sync</th>
+          <th>candidate_count</th>
+          <th>boundary_expansion_count</th>
+          <th>selected_cv_rmse</th>
+          <th>truth_rmse</th>
+          <th>truth_rmse_delta_vs_exact</th>
+          <th>fit_rmse_delta_vs_exact</th>
+          <th>elapsed_sec</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>    30</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10594</td>
+          <td>0.029611</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.913</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10594</td>
+          <td>0.029611</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.182</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10594</td>
+          <td>0.029611</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.084</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10594</td>
+          <td>0.029611</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.119</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   100</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10492</td>
+          <td>0.030155</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.881</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   100</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.10492</td>
+          <td>0.030155</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.105</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10492</td>
+          <td>0.030155</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.119</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10492</td>
+          <td>0.030155</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.037</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>     1</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.11429</td>
+          <td>0.044227</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.031</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>     1</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11429</td>
+          <td>0.044227</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.621</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>     1</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11429</td>
+          <td>0.044227</td>
+          <td>0</td>
+          <td>0</td>
+          <td>  0.61</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>     1</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11429</td>
+          <td>0.044227</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.683</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   0.3</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.11735</td>
+          <td>0.038332</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.394</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11735</td>
+          <td>0.038332</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.872</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11735</td>
+          <td>0.038332</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.856</td>
+        </tr>
+        <tr>
+          <td>FB02</td>
+          <td>LA-D1-HC-Li-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.11735</td>
+          <td>0.038332</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.926</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>    10</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10623</td>
+          <td>0.035277</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.533</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10623</td>
+          <td>0.035277</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.973</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10623</td>
+          <td>0.035277</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.921</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10623</td>
+          <td>0.035277</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.917</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   300</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10652</td>
+          <td>0.029558</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.651</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   300</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10652</td>
+          <td>0.029558</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.953</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   300</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10652</td>
+          <td>0.029558</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.885</td>
+        </tr>
+        <tr>
+          <td>FB03</td>
+          <td>LA-D1-HC-Lc-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   300</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10652</td>
+          <td>0.029558</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.959</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>   0.3</td>
+          <td>19</td>
+          <td>0</td>
+          <td> 0.114</td>
+          <td>0.043267</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.128</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td> 0.114</td>
+          <td>0.043267</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.654</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td> 0.114</td>
+          <td>0.043267</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.661</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   0.3</td>
+          <td>10</td>
+          <td>0</td>
+          <td> 0.114</td>
+          <td>0.043267</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.647</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>     3</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10438</td>
+          <td>0.031705</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.467</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>     3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10438</td>
+          <td>0.031705</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.856</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>     3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10438</td>
+          <td>0.031705</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.928</td>
+        </tr>
+        <tr>
+          <td>FB04</td>
+          <td>LA-D1-HC-Gv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>     3</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10438</td>
+          <td>0.031705</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.847</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>  2700</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10705</td>
+          <td>0.02868</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.424</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.10705</td>
+          <td>0.02868</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.834</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.10705</td>
+          <td>0.02868</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.875</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   900</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10735</td>
+          <td>0.028609</td>
+          <td>-0.000071361</td>
+          <td>0.009279</td>
+          <td> 0.761</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   100</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10556</td>
+          <td>0.030619</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.516</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10556</td>
+          <td>0.030619</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.851</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.10556</td>
+          <td>0.030619</td>
+          <td>0</td>
+          <td>0</td>
+          <td>  0.86</td>
+        </tr>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10556</td>
+          <td>0.030619</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.962</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>    30</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.11711</td>
+          <td>0.033346</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 8.039</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>    30</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.11711</td>
+          <td>0.033346</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.294</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    30</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.11711</td>
+          <td>0.033346</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.252</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    30</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.11711</td>
+          <td>0.033346</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 4.137</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>  2700</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.24292</td>
+          <td> 0.196</td>
+          <td>0</td>
+          <td>0</td>
+          <td>12.943</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.24292</td>
+          <td> 0.196</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 7.544</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.24292</td>
+          <td> 0.196</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 7.309</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   900</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.24874</td>
+          <td>0.1325</td>
+          <td>-0.063499</td>
+          <td>0.078505</td>
+          <td>  6.96</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>   100</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.20989</td>
+          <td>0.12331</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 3.316</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.20989</td>
+          <td>0.12331</td>
+          <td>0</td>
+          <td>0</td>
+          <td>  1.71</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.20989</td>
+          <td>0.12331</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.807</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.20989</td>
+          <td>0.12331</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.793</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>    10</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.17117</td>
+          <td>0.077035</td>
+          <td>0</td>
+          <td>0</td>
+          <td>11.112</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.17117</td>
+          <td>0.077035</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 6.504</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.17117</td>
+          <td>0.077035</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 6.404</td>
+        </tr>
+        <tr>
+          <td>FB07</td>
+          <td>LA-D2-HC-TOP1-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.17117</td>
+          <td>0.077035</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 6.138</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>  2700</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.16279</td>
+          <td>0.078771</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 8.531</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.16647</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.073917</td>
+          <td> 4.942</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.16647</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.073917</td>
+          <td> 4.929</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    10</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.16647</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.073917</td>
+          <td> 5.069</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>  2700</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.28811</td>
+          <td>0.24608</td>
+          <td>0</td>
+          <td>0</td>
+          <td>12.878</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.28811</td>
+          <td>0.24608</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 7.262</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.28811</td>
+          <td>0.24608</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 7.093</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   900</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.31573</td>
+          <td>0.18417</td>
+          <td>-0.061912</td>
+          <td>0.082531</td>
+          <td> 6.453</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>  2700</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.13768</td>
+          <td>0.070879</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 3.177</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>  2700</td>
+          <td>10</td>
+          <td>2</td>
+          <td>0.13768</td>
+          <td>0.070879</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 2.238</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.14299</td>
+          <td>0.040373</td>
+          <td>-0.030506</td>
+          <td>0.057717</td>
+          <td> 1.766</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   900</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.13922</td>
+          <td>0.055009</td>
+          <td>-0.01587</td>
+          <td>0.026699</td>
+          <td> 1.888</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   100</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.13055</td>
+          <td>0.043437</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 3.291</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.13055</td>
+          <td>0.043437</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.851</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.13055</td>
+          <td>0.043437</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.731</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.13055</td>
+          <td>0.043437</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.854</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>auto</td>
+          <td>exact_reference</td>
+          <td>    30</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10553</td>
+          <td>0.026249</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.478</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10553</td>
+          <td>0.026249</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.985</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10553</td>
+          <td>0.026249</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.928</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>    30</td>
+          <td>10</td>
+          <td>0</td>
+          <td>0.10553</td>
+          <td>0.026249</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.929</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>local.auto</td>
+          <td>exact_reference</td>
+          <td>   100</td>
+          <td>19</td>
+          <td>0</td>
+          <td>0.10521</td>
+          <td>0.02682</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 1.527</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>local.auto</td>
+          <td>guarded_default</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10521</td>
+          <td>0.02682</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.946</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>local.auto</td>
+          <td>guarded_strict_edge</td>
+          <td>   100</td>
+          <td>8</td>
+          <td>0</td>
+          <td>0.10521</td>
+          <td>0.02682</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.819</td>
+        </tr>
+        <tr>
+          <td>FB10</td>
+          <td>SYN-PARA-LINE-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>   100</td>
+          <td>9</td>
+          <td>1</td>
+          <td>0.10521</td>
+          <td>0.02682</td>
+          <td>0</td>
+          <td>0</td>
+          <td> 0.861</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Selected-Lambda Mismatches</h2>
+    <p class="note">
+      This table lists cases where a guarded policy selected a different 
+      lambda.sync than the exact expanded reference.  Negative Truth RMSE 
+      delta means the guarded policy had lower synthetic truth error.
+    </p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>chart_dim_rule</th>
+          <th>variant_id</th>
+          <th>exact_selected_lambda_sync</th>
+          <th>selected_lambda_sync</th>
+          <th>exact_truth_rmse</th>
+          <th>truth_rmse</th>
+          <th>truth_rmse_delta_vs_exact</th>
+          <th>exact_selected_cv_rmse</th>
+          <th>selected_cv_rmse</th>
+          <th>candidate_count</th>
+          <th>boundary_expansion_count</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB05</td>
+          <td>LA-D1-HC-Bv-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>  2700</td>
+          <td>   900</td>
+          <td>0.02868</td>
+          <td>0.028609</td>
+          <td>-0.000071361</td>
+          <td>0.10705</td>
+          <td>0.10735</td>
+          <td>9</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>FB06</td>
+          <td>LA-D2-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>  2700</td>
+          <td>   900</td>
+          <td> 0.196</td>
+          <td>0.1325</td>
+          <td>-0.063499</td>
+          <td>0.24292</td>
+          <td>0.24874</td>
+          <td>9</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_default</td>
+          <td>  2700</td>
+          <td>    10</td>
+          <td>0.078771</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.16279</td>
+          <td>0.16647</td>
+          <td>10</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>  2700</td>
+          <td>    10</td>
+          <td>0.078771</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.16279</td>
+          <td>0.16647</td>
+          <td>10</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>  2700</td>
+          <td>    10</td>
+          <td>0.078771</td>
+          <td>0.0329</td>
+          <td>-0.045871</td>
+          <td>0.16279</td>
+          <td>0.16647</td>
+          <td>10</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>FB08</td>
+          <td>LA-D3-RAW-N500</td>
+          <td>local.auto</td>
+          <td>guarded_one_expansion</td>
+          <td>  2700</td>
+          <td>   900</td>
+          <td>0.24608</td>
+          <td>0.18417</td>
+          <td>-0.061912</td>
+          <td>0.28811</td>
+          <td>0.31573</td>
+          <td>9</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>guarded_strict_edge</td>
+          <td>  2700</td>
+          <td>   100</td>
+          <td>0.070879</td>
+          <td>0.040373</td>
+          <td>-0.030506</td>
+          <td>0.13768</td>
+          <td>0.14299</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>guarded_one_expansion</td>
+          <td>  2700</td>
+          <td>   900</td>
+          <td>0.070879</td>
+          <td>0.055009</td>
+          <td>-0.01587</td>
+          <td>0.13768</td>
+          <td>0.13922</td>
+          <td>9</td>
+          <td>1</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Output Tables</h2>
+    <ul>
+      <li>
+        <a href="tables/ps_lps_c11_policy_metrics.csv">Policy metrics</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c11_policy_summary.csv">Policy summary</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c11_lambda_mismatches.csv">Selected-lambda mismatches</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c11_pointwise_delta.csv">Pointwise delta table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c11_pointwise_delta_summary.csv">Pointwise delta summary</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_c11_failures.csv">Failures</a>
+      </li>
+    </ul>
+  </body>
+</html>
+</html>

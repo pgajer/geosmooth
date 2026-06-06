@@ -1,0 +1,14 @@
+{
+  "task_id": "FB13__SYN_SIMPLEX_FACES_N600__chart_auto",
+  "dataset_id": "SYN-SIMPLEX-FACES-N600",
+  "chart_dim_rule": "auto",
+  "status": "ok",
+  "started_at": "2026-06-05 06:08:27 EDT",
+  "finished_at": "2026-06-05 06:08:33 EDT",
+  "elapsed_sec": 5.858000000000001,
+  "hostname": "pgajerm4-osx",
+  "pid": 15167,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_local_auto_nonmanifold_first_batch_2026-06-05/runs/lps_local_auto_fb_20260605_001/results/FB13__SYN_SIMPLEX_FACES_N600__chart_auto.rds",
+  "error_message": null,
+  "error_class": null
+}
