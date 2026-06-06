@@ -25,11 +25,10 @@
 #' local residual reweighting, and conservative/smoothed GCV selection remain
 #' experimental controls rather than default recommendations.
 #'
-#' In the geosmooth split, graph construction and graph-geodesic helper
-#' utilities remain owned by \pkg{gflow}. Coordinate MALPS paths are
-#' package-local; graph-geodesic support construction requires supplied graph
-#' inputs and a compatible \pkg{gflow} installation for graph validation and
-#' shortest-path helper routines.
+#' Graph construction is supplied by \pkg{dgraphs} or by explicit
+#' \code{adj.list}/\code{weight.list} payloads. Coordinate MALPS paths and
+#' graph-geodesic payload validation are package-local; shortest-path distances
+#' are computed through \pkg{dgraphs}.
 #'
 #' @param X Numeric coordinate matrix with one row per observation.
 #' @param y Numeric response vector with length \code{nrow(X)}.
@@ -41,8 +40,10 @@
 #'   together with \code{weight.list} when using a supplied graph payload.
 #' @param weight.list Optional positive edge-length list parallel to
 #'   \code{adj.list}.  Edge weights are interpreted as graph lengths.
-#' @param graph.stage Graph lifecycle stage used when \code{graph} is a gflow
-#'   graph object; see \code{\link[gflow:graph.geodesic.distances]{graph.geodesic.distances}}.
+#' @param graph.stage Graph lifecycle stage used when \code{graph} is a
+#'   \pkg{dgraphs} graph object. Supported stages include \code{"final"},
+#'   \code{"raw"}, and \code{"pruned"} when those payloads are available on the
+#'   supplied graph.
 #' @param anchor.index Optional integer vector of observed rows used as local
 #'   model anchors.  Defaults to all rows when \code{anchor.coordinates} is
 #'   \code{NULL}.
@@ -270,7 +271,7 @@ fit.malps <- function(
         auto.degree <- max(c(degree, degree.grid %||% degree), na.rm = TRUE)
         auto.distance.matrix <- NULL
         if (identical(support.metric, "graph.geodesic")) {
-            auto.distance.matrix <- shortest.path(
+            auto.distance.matrix <- .geosmooth.shortest.path(
                 graph.info$adj.list,
                 graph.info$weight.list,
                 seq_along(graph.info$adj.list)
@@ -1854,7 +1855,7 @@ print.malps_bootstrap <- function(x, ...) {
         stop("graph-geodesic support distances require observed anchor.index values.",
              call. = FALSE)
     }
-    all.dist <- shortest.path(
+    all.dist <- .geosmooth.shortest.path(
         graph.info$adj.list,
         graph.info$weight.list,
         seq_along(graph.info$adj.list)

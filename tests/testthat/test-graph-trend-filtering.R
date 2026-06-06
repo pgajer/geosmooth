@@ -56,56 +56,6 @@ make_grid_graph_weights <- function(nx, ny) {
   )
 }
 
-load_ssrhe_all_labeled_validation_definitions <- function() {
-  runner <- "/Users/pgajer/current_projects/trend_filtering/development/ssrhe_hessian_energy/ssrhe_all_labeled_comparator_validation.R"
-  skip_if_not(file.exists(runner),
-              "SSRHE all-labeled validation runner is not available.")
-  if (!requireNamespace("pkgload", quietly = TRUE)) {
-    skip("Package 'pkgload' is required for SSRHE validation regression cases.")
-  }
-  skip_if_not_installed("dgraphs")
-  env <- new.env(parent = globalenv())
-  exprs <- parse(runner, keep.source = FALSE)
-  for (expr in exprs) {
-    txt <- paste(deparse(expr), collapse = "\n")
-    if (grepl("^manifest <- build\\.dataset\\.manifest", txt)) break
-    if (grepl("pkgload::load_all\\(gflow.dir", txt, fixed = FALSE)) next
-    eval(expr, envir = env)
-  }
-  env$create.rknn.graph <- dgraphs::create.rknn.graph
-  if (requireNamespace("gflow", quietly = TRUE)) {
-    env$quadform.embed <- gflow::quadform.embed
-    env$quadform.edge.lengths <- gflow::quadform.edge.lengths
-  }
-  env
-}
-
-fit_ssrhe_graph_trend_filtering_case <- function(dataset.id, order, variant) {
-  skip_if_not_installed("gflow")
-  env <- load_ssrhe_all_labeled_validation_definitions()
-  manifest <- env$build.dataset.manifest()
-  row <- manifest[manifest$dataset.id == dataset.id, , drop = FALSE]
-  expect_equal(nrow(row), 1L)
-  ds <- env$materialize.dataset(row)
-  graph.info <- env$make.graph.payload(ds)
-  weights <- if (identical(variant, "unit")) {
-    graph.info$metric.weight.list
-  } else {
-    graph.info$conductance.weight.list
-  }
-  fit.graph.trend.filtering(
-    adj.list = graph.info$metric.adj.list,
-    weight.list = weights,
-    y = ds$y,
-    order = order,
-    lambda.selection = "cv",
-    weight.rule = variant,
-    n.lambda = 20L,
-    nfolds = 4L,
-    maxsteps = 500L
-  )
-}
-
 ssrhe_like_truth_function <- function(U) {
   y <- sin(pi * U[, 1])
   if (ncol(U) >= 2L) {
@@ -113,6 +63,10 @@ ssrhe_like_truth_function <- function(U) {
       0.45 * U[, 1]^2 - 0.25 * U[, 1] * U[, 2]
   }
   as.numeric(scale(y, center = TRUE, scale = FALSE))
+}
+
+quadform_like_embed <- function(U, curvature = 0.35) {
+  cbind(U, curvature * rowSums(U^2))
 }
 
 adj_weight_from_edge_matrix <- function(n, edge.matrix, edge.weight) {
@@ -143,18 +97,13 @@ make_ssrhe_like_graph_trend_case <- function(kind = c("flat", "quadform")) {
     set.seed(seed)
     U <- matrix(stats::runif(n * dim, -1, 1), ncol = dim)
     X <- U
-    index.k <- NA_integer_
-    coefficients <- rep(NA_real_, dim)
     order <- 0L
     variant <- "sqrt.conductance"
   } else {
     seed <- 16104L
     set.seed(seed)
     U <- matrix(stats::runif(n * dim, -1, 1), ncol = dim)
-    index.k <- 1L
-    coefficients <- 0.35 * c(1, 1)
-    skip_if_not_installed("gflow")
-    X <- gflow::quadform.embed(U, index.k = index.k, coefficients = coefficients)
+    X <- quadform_like_embed(U, curvature = 0.35)
     order <- 2L
     variant <- "conductance"
   }
@@ -172,17 +121,8 @@ make_ssrhe_like_graph_trend_case <- function(kind = c("flat", "quadform")) {
     connect.method = "component.mst"
   )
   edges <- graph$edge_matrix
-  metric.length <- if (identical(kind, "flat")) {
-    sqrt(rowSums((U[edges[, 1L], , drop = FALSE] -
-                    U[edges[, 2L], , drop = FALSE])^2))
-  } else {
-    gflow::quadform.edge.lengths(
-      U[edges[, 1L], , drop = FALSE],
-      U[edges[, 2L], , drop = FALSE],
-      index.k = index.k,
-      coefficients = coefficients
-    )
-  }
+  metric.length <- sqrt(rowSums((X[edges[, 1L], , drop = FALSE] -
+                                   X[edges[, 2L], , drop = FALSE])^2))
   metric.graph <- adj_weight_from_edge_matrix(nrow(X), edges, metric.length)
   conductance.graph <- adj_weight_from_edge_matrix(
     nrow(X), edges, 1 / pmax(metric.length, 1e-8)
@@ -471,37 +411,6 @@ test_that("package-local SSRHE-like graph trend-filtering cases return finite fi
       identical(case$order, 1L)
     )
     expect_equal(length(fit$fitted.values), length(case$y))
-  }
-})
-
-test_that("SSRHE affected graph trend-filtering cases return finite fitted values", {
-  skip_if_not_installed("genlasso")
-  skip_if_not_installed("Matrix")
-  skip_if_not_installed("gflow")
-
-  cases <- list(
-    list(
-      dataset.id = "flat_d2_rep1",
-      order = 0L,
-      variant = "sqrt.conductance"
-    ),
-    list(
-      dataset.id = "quadform_d2_idx1_curv035_rep1",
-      order = 2L,
-      variant = "conductance"
-    )
-  )
-
-  for (case in cases) {
-    fit <- fit_ssrhe_graph_trend_filtering_case(
-      dataset.id = case$dataset.id,
-      order = case$order,
-      variant = case$variant
-    )
-    expect_s3_class(fit, "graph.trend.filtering.fit")
-    expect_true(all(is.finite(fit$fitted.values)))
-    expect_true(is.finite(fit$lambda))
-    expect_equal(length(fit$fitted.values), fit$graph$n.vertices)
   }
 })
 

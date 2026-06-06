@@ -5,7 +5,7 @@
 #elif defined(EIGEN_WARNINGS_DISABLED)
 #undef EIGEN_WARNINGS_DISABLED
 
-/* gflow local patch:
+/* geosmooth local patch:
  * DisableStupidWarnings.h no longer pushes diagnostic state.
  * Keep this include as a no-op for compatibility.
  */

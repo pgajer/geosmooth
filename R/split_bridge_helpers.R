@@ -1,4 +1,4 @@
-# Helpers used during the gflow-to-geosmooth split.
+# Shared helpers used by geosmooth split-package code.
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
@@ -10,79 +10,72 @@
     )
 }
 
-.geosmooth.gflow.bridge <- function(
-    name,
-    feature = "graph-dependent geosmooth functionality"
-) {
-    if (!requireNamespace("gflow", quietly = TRUE)) {
-        stop(
-            feature, " requires the 'gflow' package. In the geosmooth split, ",
-            "graph construction and graph-geodesic utilities remain owned by ",
-            "gflow; install gflow or use a coordinate/fixed-k geosmooth path.",
-            call. = FALSE
-        )
-    }
-    ns <- asNamespace("gflow")
-    if (!exists(name, envir = ns, inherits = FALSE)) {
-        stop(
-            "Required gflow helper '", name, "' is not available. ",
-            "Use a split-era gflow source/package compatible with geosmooth.",
-            call. = FALSE
-        )
-    }
-    get(name, envir = ns, inherits = FALSE)
-}
-
-if (!exists(".validate.metric.graph.lowpass.graph", mode = "function")) {
-    .validate.metric.graph.lowpass.graph <- function(adj.list, weight.list) {
-        .geosmooth.gflow.bridge(
-            ".validate.metric.graph.lowpass.graph",
-            feature = "graph-geodesic support validation"
-        )(
-            adj.list, weight.list
-        )
-    }
-}
-
-.graph.geodesic.fields <- function(graph, stage = "final") {
-    .geosmooth.gflow.bridge(
-        ".graph.geodesic.fields",
-        feature = "graph-geodesic support extraction"
-    )(graph, stage = stage)
-}
-
-.validate.graph.geodesic.payload <- function(adj.list, weight.list, fields) {
-    .geosmooth.gflow.bridge(
-        ".validate.graph.geodesic.payload",
-        feature = "graph-geodesic support validation"
-    )(
-        adj.list, weight.list, fields
+.geosmooth.graph.geodesic.stage <- function(stage) {
+    match.arg(
+        stage,
+        c("final", "raw", "raw.repaired", "pruned", "pruned.repaired",
+          "repaired.pruned")
     )
 }
 
-shortest.path <- function(graph, edge.lengths, vertices) {
-    .geosmooth.gflow.bridge(
-        "shortest.path",
-        feature = "graph-geodesic shortest-path support"
-    )(graph, edge.lengths, vertices)
+.graph.geodesic.fields <- function(graph, stage = "final") {
+    if (!is.list(graph)) {
+        stop("'graph' must be a list-like graph object.", call. = FALSE)
+    }
+    stage <- .geosmooth.graph.geodesic.stage(stage)
+    candidates <- switch(
+        stage,
+        final = list(c("adj_list", "weight_list"),
+                     c("adj.list", "weight.list")),
+        raw = list(c("raw_adj_list", "raw_weight_list"),
+                   c("raw.adj.list", "raw.weight.list")),
+        raw.repaired = list(c("raw_repaired_adj_list", "raw_repaired_weight_list"),
+                            c("raw.repaired.adj.list", "raw.repaired.weight.list")),
+        pruned = list(c("pruned_adj_list", "pruned_weight_list"),
+                      c("pruned.adj.list", "pruned.weight.list")),
+        pruned.repaired = list(c("pruned_repaired_adj_list",
+                                 "pruned_repaired_weight_list"),
+                               c("pruned.repaired.adj.list",
+                                 "pruned.repaired.weight.list")),
+        repaired.pruned = list(c("repaired_pruned_adj_list",
+                                 "repaired_pruned_weight_list"),
+                               c("repaired.pruned.adj.list",
+                                 "repaired.pruned.weight.list"))
+    )
+    for (pair in candidates) {
+        if (!is.null(graph[[pair[[1L]]]]) &&
+            !is.null(graph[[pair[[2L]]]])) {
+            return(list(adj = pair[[1L]], weight = pair[[2L]], stage = stage))
+        }
+    }
+    stop(
+        "Could not extract graph adjacency and weights for graph.stage = '",
+        stage, "'.",
+        call. = FALSE
+    )
 }
 
-if (!exists(".pttf.geometry.edge.table", mode = "function")) {
-    .pttf.geometry.edge.table <- function(adj.list, weight.list) {
-        .geosmooth.gflow.bridge(
-            ".pttf.geometry.edge.table",
-            feature = "graph-geodesic support conversion"
-        )(adj.list, weight.list)
+.validate.graph.geodesic.payload <- function(adj.list, weight.list, fields) {
+    if (!is.list(fields) ||
+        !all(c("adj", "weight", "stage") %in% names(fields))) {
+        stop("Internal graph field metadata is malformed.", call. = FALSE)
     }
+    tryCatch(
+        .validate.metric.graph.lowpass.graph(adj.list, weight.list),
+        error = function(e) {
+            stop(
+                "Invalid graph-geodesic payload for graph.stage = '",
+                fields$stage, "' using fields '", fields$adj, "' and '",
+                fields$weight, "': ", conditionMessage(e),
+                call. = FALSE
+            )
+        }
+    )
+    invisible(TRUE)
 }
 
-if (!exists(".pttf.geometry.all.source.distances", mode = "function")) {
-    .pttf.geometry.all.source.distances <- function(adj, weights) {
-        .geosmooth.gflow.bridge(
-            ".pttf.geometry.all.source.distances",
-            feature = "graph-geodesic all-source distance support"
-        )(adj, weights)
-    }
+.geosmooth.shortest.path <- function(graph, edge.lengths, vertices) {
+    dgraphs::shortest.path(graph, edge.lengths, vertices)
 }
 
 .exact.knn.index <- function(X, k) {

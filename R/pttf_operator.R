@@ -720,6 +720,7 @@ pttf.operator <- function(
     )
 }
 
+#' @method print pttf_operator
 #' @export
 print.pttf_operator <- function(x, ...) {
     cat("PTTF transported-difference operator\n")

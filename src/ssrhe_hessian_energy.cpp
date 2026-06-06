@@ -838,6 +838,7 @@ END_RCPP
 //' Internal native backend for `ssrhe.hessian.operator()`.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 SEXP rcpp_ssrhe_hessian_operator(
     SEXP s_X,

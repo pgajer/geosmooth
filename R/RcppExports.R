@@ -6,6 +6,7 @@
 #' Internal native scaffold check.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_geosmooth_native_stub <- function() {
     .Call(`_geosmooth_rcpp_geosmooth_native_stub`)
 }
@@ -15,8 +16,41 @@ rcpp_geosmooth_native_stub <- function() {
 #' Internal C++ backend for `perform.harmonic.smoothing()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_perform_harmonic_smoothing <- function(adj_list, weight_list, values, region_vertices, max_iterations, tolerance) {
     .Call(`_geosmooth_rcpp_perform_harmonic_smoothing`, adj_list, weight_list, values, region_vertices, max_iterations, tolerance)
+}
+
+#' Native graph harmonic smoothing backend with topology tracking
+#'
+#' Internal C++ backend for `harmonic.smoother()`.
+#'
+#' @keywords internal
+#' @noRd
+rcpp_harmonic_smoother <- function(adj_list, weight_list, values, region_vertices, max_iterations, tolerance, record_frequency, stability_window, stability_threshold) {
+    .Call(`_geosmooth_rcpp_harmonic_smoother`, adj_list, weight_list, values, region_vertices, max_iterations, tolerance, record_frequency, stability_window, stability_threshold)
+}
+
+#' Local PCA chart
+#'
+#' Internal C++ backend for shared local-PCA chart construction.
+#'
+#' @keywords internal
+#' @noRd
+rcpp_local_pca_chart <- function(X_support, center, chart_dim, center_mode = "anchor", dim_rule = "fixed", eigen_tolerance = 0.9, weights = NULL, rebase_to_anchor = TRUE, orient_basis = FALSE) {
+    .Call(`_geosmooth_rcpp_local_pca_chart`, X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis)
+}
+
+#' Second-order local SVD chart
+#'
+#' Internal experimental C++ backend for Harlim-style second-order local SVD
+#' chart construction.  This primitive is intentionally separate from the
+#' shared plain local-PCA chart backend.
+#'
+#' @keywords internal
+#' @noRd
+rcpp_local_second_order_svd_chart <- function(X_support, center, chart_dim, center_mode = "anchor", weights = NULL, rank_tolerance = 1.4901161193847656e-8, rank_absolute_tolerance = 0.0, curvature_condition_max = 1e8, curvature_ridge = 0.0, min_curvature_support = 0L, rebase_to_anchor = TRUE, orient_basis = FALSE) {
+    .Call(`_geosmooth_rcpp_local_second_order_svd_chart`, X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis)
 }
 
 #' Kernel local polynomial CV RMSE for ambient coordinates
@@ -24,6 +58,7 @@ rcpp_perform_harmonic_smoothing <- function(adj_list, weight_list, values, regio
 #' Internal C++ backend for `fit.lps()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_cv_coordinates <- function(X, y, foldid, support_size, degree, kernel) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates`, X, y, foldid, support_size, degree, kernel)
 }
@@ -33,6 +68,7 @@ rcpp_kernel_local_polynomial_cv_coordinates <- function(X, y, foldid, support_si
 #' Internal C++ prototype backend for `fit.lps()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_cv_local_pca <- function(X, y, foldid, support_size, degree, kernel, chart_dim) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca`, X, y, foldid, support_size, degree, kernel, chart_dim)
 }
@@ -45,6 +81,7 @@ rcpp_kernel_local_polynomial_cv_local_pca <- function(X, y, foldid, support_size
 #' not as a user-facing API.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_cv_local_pca_profile <- function(X, y, foldid, support_size, degree, kernel, chart_dim) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile`, X, y, foldid, support_size, degree, kernel, chart_dim)
 }
@@ -54,6 +91,7 @@ rcpp_kernel_local_polynomial_cv_local_pca_profile <- function(X, y, foldid, supp
 #' Internal C++ backend for `fit.lps()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_predict_coordinates <- function(X_train, y_train, X_eval, support_size, degree, kernel) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_predict_coordinates`, X_train, y_train, X_eval, support_size, degree, kernel)
 }
@@ -63,6 +101,7 @@ rcpp_kernel_local_polynomial_predict_coordinates <- function(X_train, y_train, X
 #' Internal C++ prototype backend for `fit.lps()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_predict_local_pca <- function(X_train, y_train, X_eval, support_size, degree, kernel, chart_dim) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_predict_local_pca`, X_train, y_train, X_eval, support_size, degree, kernel, chart_dim)
 }
@@ -73,28 +112,9 @@ rcpp_kernel_local_polynomial_predict_local_pca <- function(X_train, y_train, X_e
 #' geosmooth tie-complete support order for one query point.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_kernel_local_polynomial_neighbor_probe <- function(X, center, k) {
     .Call(`_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe`, X, center, k)
-}
-
-#' Local PCA chart
-#'
-#' Internal C++ backend for shared local-PCA chart construction.
-#'
-#' @keywords internal
-rcpp_local_pca_chart <- function(X_support, center, chart_dim, center_mode = "anchor", dim_rule = "fixed", eigen_tolerance = 0.9, weights = NULL, rebase_to_anchor = TRUE, orient_basis = FALSE) {
-    .Call(`_geosmooth_rcpp_local_pca_chart`, X_support, center, chart_dim, center_mode, dim_rule, eigen_tolerance, weights, rebase_to_anchor, orient_basis)
-}
-
-#' Second-order local SVD chart
-#'
-#' Internal experimental C++ backend for Harlim-style second-order local SVD
-#' chart construction.  This primitive is intentionally separate from the
-#' shared plain local-PCA chart backend.
-#'
-#' @keywords internal
-rcpp_local_second_order_svd_chart <- function(X_support, center, chart_dim, center_mode = "anchor", weights = NULL, rank_tolerance = 1.4901161193847656e-8, rank_absolute_tolerance = 0.0, curvature_condition_max = 1e8, curvature_ridge = 0.0, min_curvature_support = 0L, rebase_to_anchor = TRUE, orient_basis = FALSE) {
-    .Call(`_geosmooth_rcpp_local_second_order_svd_chart`, X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis)
 }
 
 rcpp_metric_graph_lowpass_operator <- function(s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type) {
@@ -105,11 +125,16 @@ rcpp_metric_graph_lowpass_spectrum <- function(s_adj_list, s_weight_list, s_cond
     .Call(`_geosmooth_rcpp_metric_graph_lowpass_spectrum`, s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose)
 }
 
+rcpp_ps_lps_assemble_cached_system <- function(cache, y, response_weights, lambda_sync) {
+    .Call(`_geosmooth_rcpp_ps_lps_assemble_cached_system`, cache, y, response_weights, lambda_sync)
+}
+
 #' SSRHE Hessian operator native backend
 #'
 #' Internal native backend for `ssrhe.hessian.operator()`.
 #'
 #' @keywords internal
+#' @noRd
 rcpp_ssrhe_hessian_operator <- function(s_X, s_k, s_tangent_dim, s_nn_index, s_support_index, s_tangent_dim_rule, s_eigen_tolerance, s_derivative_order, s_stabilizer, s_pinv_tol, s_local_solver, s_normal_equations_max_condition, s_verbose) {
     .Call(`_geosmooth_rcpp_ssrhe_hessian_operator`, s_X, s_k, s_tangent_dim, s_nn_index, s_support_index, s_tangent_dim_rule, s_eigen_tolerance, s_derivative_order, s_stabilizer, s_pinv_tol, s_local_solver, s_normal_equations_max_condition, s_verbose)
 }

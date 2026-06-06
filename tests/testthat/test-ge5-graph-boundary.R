@@ -43,15 +43,64 @@ test_that("GE5 coordinate and fixed-k paths are package-local geosmooth paths", 
     expect_equal(ssrhe.op$parameters$neighborhood.type, "knn")
 })
 
-test_that("GE5 gflow bridge gives explicit graph-boundary errors", {
-    skip_if_not_installed("gflow")
+test_that("GE5 graph-geodesic paths use dgraphs graph payloads", {
+    skip_if_not_installed("Matrix")
+    skip_if_not_installed("dgraphs")
+
+    X <- cbind(seq(0, 1, length.out = 18),
+               0.1 * sin(seq(0, 2 * pi, length.out = 18)))
+    y <- sin(2 * pi * X[, 1]) + 0.2 * X[, 2]
+    graph <- dgraphs::create.rknn.graph(
+        X,
+        type = "adaptive.radius",
+        k.scale = 5L,
+        radius.factor = 1.25,
+        prune.method = "none",
+        connect.components = TRUE,
+        connect.method = "component.mst"
+    )
+
+    malps.fit <- fit.malps(
+        X = X,
+        y = y,
+        graph = graph,
+        degree = 1L,
+        support.type = "knn",
+        support.size = 6L,
+        support.metric = "graph.geodesic",
+        support.selection = "fixed",
+        coordinate.method = "coordinates"
+    )
+    expect_s3_class(malps.fit, "malps")
+    expect_equal(malps.fit$support.metric, "graph.geodesic")
+
+    lpl.op <- lpl.tf.operator(
+        X = X,
+        graph = graph,
+        degree = 1L,
+        support.type = "knn",
+        support.size = 6L,
+        support.metric = "graph.geodesic",
+        coordinate.method = "coordinates"
+    )
+    expect_s3_class(lpl.op, "lpl_tf_operator")
+    expect_equal(lpl.op$settings$support.metric, "graph.geodesic")
+})
+
+test_that("GE5 graph-geodesic payload validation is package-local", {
+    bad.graph <- list(
+        adj_list = list(2L, integer()),
+        weight_list = list(1, numeric())
+    )
+    fields <- .graph.geodesic.fields(bad.graph, stage = "final")
 
     expect_error(
-        .geosmooth.gflow.bridge(
-            "__definitely_not_a_gflow_helper__",
-            feature = "graph boundary test"
+        .validate.graph.geodesic.payload(
+            bad.graph$adj_list,
+            bad.graph$weight_list,
+            fields
         ),
-        "Required gflow helper '__definitely_not_a_gflow_helper__'"
+        "Invalid graph-geodesic payload"
     )
 })
 

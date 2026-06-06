@@ -38,6 +38,5 @@ Suggests:
     testthat (>= 3.0.0),
     genlasso,
     grip,
-    igraph,
-    gflow
+    igraph
 Config/testthat/edition: 3

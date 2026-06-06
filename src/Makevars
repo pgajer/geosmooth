@@ -1,12 +1,10 @@
-# Native support for geosmooth methods.  ANN and Eigen remain vendored while
-# the split from gflow is in progress.
+# Native support for geosmooth methods. ANN and Eigen are vendored locally.
 
 PKG_CPPFLAGS = -I. -IANN
 PKG_CPPFLAGS += -I../inst/include -DR_NO_REMAP
 PKG_CPPFLAGS += -DEIGEN_DONT_PARALLELIZE
 PKG_CPPFLAGS += -D_Alignof=__alignof__
 PKG_CPPFLAGS += -DDLL_API=
-PKG_CPPFLAGS += -DGFLOW_NO_TBB
 PKG_CPPFLAGS += -include ../inst/include/geosmooth/eigen_config.hpp
 
 CXX_STD = CXX17

@@ -10,8 +10,11 @@
 #' The optional \code{coordinate.method = "local.pca"} mode keeps the same
 #' support and kernel weighting rule, but builds the local polynomial in a local
 #' PCA chart centered at each prediction point.  With \code{chart.dim = "auto"},
-#' the chart dimension is estimated from observed \code{X} only, using the same
-#' shared local-PCA dimension helper used by LPL-TF and S-LPL-TF.
+#' the chart dimension is estimated as one global scalar from observed
+#' \code{X} only, using the same shared local-PCA dimension helper used by
+#' LPL-TF and S-LPL-TF.  The experimental
+#' \code{chart.dim = "local.auto"} mode estimates an input-only local chart
+#' dimension separately for each prediction anchor.
 #'
 #' @param X Numeric design/coordinate matrix with one observation per row.
 #' @param y Numeric response vector with length \code{nrow(X)}.
@@ -30,7 +33,10 @@
 #'   centered ambient coordinates. \code{"local.pca"} uses a local PCA chart.
 #' @param chart.dim Chart dimension for \code{coordinate.method = "local.pca"}.
 #'   If \code{NULL}, defaults to \code{ncol(X)}. The special value
-#'   \code{"auto"} estimates chart dimension from observed \code{X} only.
+#'   \code{"auto"} estimates one global chart dimension from observed
+#'   \code{X} only. The experimental special value \code{"local.auto"}
+#'   estimates a local chart dimension separately for each prediction anchor in
+#'   the ordinary local-PCA R backend.
 #' @param local.chart.method Local chart constructor used when
 #'   \code{coordinate.method = "local.pca"}. \code{"pca"} preserves the ordinary
 #'   local-PCA chart path. \code{"second.order.svd"} uses an experimental
@@ -38,8 +44,9 @@
 #'   fallback diagnostics. This option is opt-in and does not affect ambient
 #'   coordinate fits.
 #' @param auto.chart.support.metric Support system used when
-#'   \code{chart.dim = "auto"}. Included for consistency with LPL-TF and
-#'   S-LPL-TF; because this smoother uses coordinate supports,
+#'   \code{chart.dim = "auto"} or \code{"local.auto"}. Included for
+#'   consistency with LPL-TF and S-LPL-TF; because this smoother uses
+#'   coordinate supports,
 #'   \code{"operator"} is equivalent to \code{"coordinates"}.
 #' @param auto.chart.selection.metric Which auto chart-dimension diagnostic to
 #'   select when both diagnostics are requested.
@@ -105,6 +112,21 @@ fit.lps <- function(
         backend,
         local.chart.method.effective
     )
+    if (.klp.is.local.auto.chart.dim(chart.dim)) {
+        if (!identical(coordinate.method, "local.pca")) {
+            stop("'chart.dim = \"local.auto\"' requires ",
+                 "coordinate.method = 'local.pca'.", call. = FALSE)
+        }
+        if (!identical(local.chart.method.effective, "pca")) {
+            stop("'chart.dim = \"local.auto\"' currently supports only ",
+                 "local.chart.method = 'pca'.", call. = FALSE)
+        }
+        if (identical(backend.used, "cpp.local.pca")) {
+            stop("'chart.dim = \"local.auto\"' currently uses the R ",
+                 "local-PCA backend; use backend = 'auto' or 'R'.",
+                 call. = FALSE)
+        }
+    }
     support.grid <- .klp.clean.support.grid(support.grid, nrow(X))
     degree.grid <- .klp.clean.degree.grid(degree.grid)
     kernel.grid <- .klp.clean.kernel.grid(kernel.grid)
@@ -141,6 +163,17 @@ fit.lps <- function(
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric
     )
+    selected.pred.dim <- .klp.resolve.prediction.chart.dim(
+        X.train = X,
+        X.eval = X.eval,
+        support.size = selected$support.size[[1L]],
+        degree = selected$degree[[1L]],
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        summary.dim = selected.dim$chart.dim
+    )
     fitted.result <- .klp.predict.local.polynomial(
         X.train = X,
         y.train = y,
@@ -149,7 +182,8 @@ fit.lps <- function(
         degree = selected$degree[[1L]],
         kernel = selected$kernel[[1L]],
         coordinate.method = coordinate.method,
-        chart.dim = selected.dim$chart.dim,
+        chart.dim = selected.pred.dim$chart.dim,
+        chart.dim.by.eval = selected.pred.dim$chart.dim.by.eval,
         local.chart.method = local.chart.method.effective,
         backend = backend.used,
         return.chart.diagnostics = identical(local.chart.method.effective,
@@ -192,7 +226,10 @@ fit.lps <- function(
         chart.dim = selected.dim$chart.dim,
         local.chart.diagnostics = chart.diagnostics,
         local.chart.diagnostics.summary = chart.diagnostics.summary,
-        auto.chart.dim = identical(chart.dim, "auto"),
+        auto.chart.dim = .klp.is.auto.chart.dim(chart.dim),
+        auto.chart.dim.local = .klp.is.local.auto.chart.dim(chart.dim),
+        chart.dim.mode = .klp.chart.dim.mode(chart.dim, coordinate.method),
+        chart.dim.by.eval = selected.pred.dim$chart.dim.by.eval,
         auto.chart.dim.diagnostics = selected.dim$diagnostics,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
@@ -224,6 +261,19 @@ predict.lps <- function(object, newdata = NULL, ...) {
     } else {
         object$local.chart.method
     }
+    pred.dim <- .klp.resolve.prediction.chart.dim(
+        X.train = object$X,
+        X.eval = X.eval,
+        support.size = object$selected$support.size[[1L]],
+        degree = object$selected$degree[[1L]],
+        coordinate.method = object$coordinate.method,
+        chart.dim = object$requested.chart.dim,
+        auto.chart.support.metric = object$auto.chart.support.metric %||%
+            "coordinates",
+        auto.chart.selection.metric = object$auto.chart.selection.metric %||%
+            "coordinates",
+        summary.dim = object$chart.dim
+    )
     .klp.predict.local.polynomial(
         X.train = object$X,
         y.train = object$y,
@@ -232,7 +282,8 @@ predict.lps <- function(object, newdata = NULL, ...) {
         degree = object$selected$degree[[1L]],
         kernel = object$selected$kernel[[1L]],
         coordinate.method = object$coordinate.method,
-        chart.dim = object$chart.dim,
+        chart.dim = pred.dim$chart.dim,
+        chart.dim.by.eval = pred.dim$chart.dim.by.eval,
         local.chart.method = local.chart.method.effective,
         backend = if (is.null(object$backend.used)) "R" else object$backend.used
     )
@@ -260,6 +311,139 @@ print.lps <- function(x, ...) {
     cat("  selected CV RMSE:",
         signif(x$selected$cv.rmse.observed[[1L]], 5), "\n")
     invisible(x)
+}
+
+#' Report LPS Backend and Chart-Dimension Diagnostics
+#'
+#' Builds a compact one-row diagnostic table for a fitted local polynomial
+#' smoother.  The table records the requested backend, the backend actually
+#' used, the requested chart-dimension rule, the resolved chart dimension,
+#' selected tuning parameters, and whether the fit follows the current
+#' deployable local-PCA auto-dimension contract.
+#'
+#' The current backend policy is conservative: \code{backend = "auto"} uses the
+#' C++ backend for ambient-coordinate LPS, but uses the R reference backend for
+#' \code{coordinate.method = "local.pca"}.  The native local-PCA backend
+#' \code{"cpp.local.pca"} remains an explicit opt-in backend.  This helper
+#' makes that policy visible in reports and downstream experiment manifests
+#' without changing the default.
+#'
+#' For real-data local-PCA runs, the deployable chart-dimension contract is
+#' the ordinary \code{local.chart.method = "pca"} path with
+#' \code{chart.dim = "auto"} or \code{"local.auto"} and observed-covariate
+#' auto-dimension diagnostics.
+#' In P7-style experiments this is paired with
+#' \code{auto.chart.support.metric = "both"} and
+#' \code{auto.chart.selection.metric = "operator"}.  The experimental
+#' \code{"second.order.svd"} chart path is reported explicitly but is not
+#' certified by this deployable local-PCA contract.  For LPS itself, which uses
+#' coordinate supports, the operator-support diagnostic is currently equivalent
+#' to the coordinate-support diagnostic; the fields are still recorded so the
+#' same manifest schema can be shared with LPL-TF and S-LPL-TF experiments.
+#'
+#' @param object A fitted \code{"lps"} object.
+#' @return A one-row \code{data.frame} with backend, chart-dimension, selection,
+#'   candidate-count, and policy fields.
+#' @export
+lps.backend.diagnostics <- function(object) {
+    if (!inherits(object, "lps")) {
+        stop("'object' must be a fitted 'lps' object.", call. = FALSE)
+    }
+    selected <- object$selected
+    selected.value <- function(name, default = NA) {
+        if (is.null(selected) || !name %in% names(selected) ||
+            !length(selected[[name]])) {
+            return(default)
+        }
+        selected[[name]][[1L]]
+    }
+    requested.chart.dim <- object$requested.chart.dim
+    requested.chart.dim.label <- if (is.null(requested.chart.dim)) {
+        "NULL"
+    } else {
+        as.character(requested.chart.dim[[1L]])
+    }
+    auto.dim <- isTRUE(object$auto.chart.dim)
+    local.auto.dim <- isTRUE(object$auto.chart.dim.local)
+    coord.method <- object$coordinate.method %||% NA_character_
+    backend.requested <- object$backend %||% NA_character_
+    backend.used <- object$backend.used %||% NA_character_
+    local.chart.method <- object$local.chart.method %||% NA_character_
+    local.chart.method.effective <- object$local.chart.method.effective %||%
+        NA_character_
+    support.metric <- object$auto.chart.support.metric %||% NA_character_
+    selection.metric <- object$auto.chart.selection.metric %||% NA_character_
+    local.pca.real.data.contract <- identical(coord.method, "local.pca") &&
+        identical(local.chart.method.effective, "pca") &&
+        auto.dim &&
+        identical(support.metric, "both") &&
+        identical(selection.metric, "operator")
+    backend.auto.policy <- if (identical(backend.requested, "auto")) {
+        if (identical(coord.method, "coordinates")) {
+            "auto_coordinates_cpp"
+        } else if (identical(coord.method, "local.pca")) {
+            "auto_local_pca_R_reference"
+        } else {
+            "auto_unknown"
+        }
+    } else if (identical(backend.requested, "cpp.local.pca")) {
+        "explicit_local_pca_native_opt_in"
+    } else {
+        paste0("explicit_", backend.requested)
+    }
+    auto.summary <- object$auto.chart.dim.diagnostics$summary
+    data.frame(
+        method.id = object$method.id %||% "lps",
+        coordinate.method = coord.method,
+        local.chart.method = local.chart.method,
+        local.chart.method.effective = local.chart.method.effective,
+        backend.requested = backend.requested,
+        backend.used = backend.used,
+        backend.auto.policy = backend.auto.policy,
+        requested.chart.dim = requested.chart.dim.label,
+        resolved.chart.dim = as.integer(object$chart.dim %||% NA_integer_),
+        chart.dim.auto = auto.dim,
+        chart.dim.local.auto = local.auto.dim,
+        chart.dim.mode = object$chart.dim.mode %||% NA_character_,
+        chart.dim.by.eval.n = if (is.null(object$chart.dim.by.eval)) {
+            NA_integer_
+        } else {
+            as.integer(length(object$chart.dim.by.eval))
+        },
+        chart.dim.by.eval.min = if (is.null(object$chart.dim.by.eval)) {
+            NA_integer_
+        } else {
+            as.integer(min(object$chart.dim.by.eval, na.rm = TRUE))
+        },
+        chart.dim.by.eval.max = if (is.null(object$chart.dim.by.eval)) {
+            NA_integer_
+        } else {
+            as.integer(max(object$chart.dim.by.eval, na.rm = TRUE))
+        },
+        auto.chart.support.metric = support.metric,
+        auto.chart.selection.metric = selection.metric,
+        auto.chart.support.metric.selected =
+            auto.summary$support.metric %||% NA_character_,
+        auto.chart.fallback.used =
+            as.logical(auto.summary$fallback.used %||% NA),
+        auto.chart.n.anchors =
+            as.integer(auto.summary$n.anchors %||% NA_integer_),
+        auto.chart.median.local.dim =
+            as.numeric(auto.summary$median.local.dim %||% NA_real_),
+        selected.support.size =
+            as.integer(selected.value("support.size", NA_integer_)),
+        selected.degree = as.integer(selected.value("degree", NA_integer_)),
+        selected.kernel = as.character(selected.value("kernel", NA_character_)),
+        selected.cv.rmse.observed =
+            as.numeric(selected.value("cv.rmse.observed", NA_real_)),
+        candidate.count = if (is.null(object$cv.table)) {
+            NA_integer_
+        } else {
+            as.integer(nrow(object$cv.table))
+        },
+        local.pca.real.data.contract = local.pca.real.data.contract,
+        stringsAsFactors = FALSE
+    )
 }
 
 .klp.rmse <- function(x, y) {
@@ -296,6 +480,7 @@ print.lps <- function(x, ...) {
                           auto.chart.selection.metric,
                           backend = "R") {
     cand$chart.dim <- NA_integer_
+    local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
     if (identical(coordinate.method, "coordinates") &&
         identical(backend, "cpp")) {
         cand$chart.dim <- ncol(X)
@@ -363,8 +548,26 @@ print.lps <- function(x, ...) {
                 effective.support <- min(as.integer(support.size),
                                          length(ordered$distances))
                 support.rows <- which(cand$support.size == support.size)
-                max.chart.dim <- max(cand$chart.dim[support.rows],
-                                     na.rm = TRUE)
+                chart.dim.by.degree <- NULL
+                if (local.auto.dim) {
+                    degrees <- sort(unique(cand$degree[support.rows]))
+                    chart.dim.by.degree <- vapply(
+                        degrees,
+                        function(degree) .klp.local.auto.chart.dim.from.order(
+                            X.train = X.train,
+                            center = center,
+                            ordered = ordered,
+                            support.size = support.size,
+                            degree = degree
+                        ),
+                        integer(1L)
+                    )
+                    names(chart.dim.by.degree) <- as.character(degrees)
+                    max.chart.dim <- max(chart.dim.by.degree, na.rm = TRUE)
+                } else {
+                    max.chart.dim <- max(cand$chart.dim[support.rows],
+                                         na.rm = TRUE)
+                }
                 kernel.names <- unique(cand$kernel[support.rows])
                 if (!identical(local.chart.method, "second.order.svd")) {
                     local <- .klp.local.neighborhood.from.order(
@@ -390,18 +593,24 @@ print.lps <- function(x, ...) {
                     design.cache <- new.env(parent = emptyenv())
                     for (rr in support.rows) {
                         w <- kernel.weights[[cand$kernel[[rr]]]]
+                        fit.chart.dim <- if (local.auto.dim) {
+                            chart.dim.by.degree[[as.character(cand$degree[[rr]])]]
+                        } else {
+                            cand$chart.dim[[rr]]
+                        }
                         pred[target, rr] <- .klp.fit.intercept.lazy(
                             z = local$z,
                             y = local$y,
                             weights = w,
                             degree = cand$degree[[rr]],
-                            chart.dim = cand$chart.dim[[rr]],
+                            chart.dim = fit.chart.dim,
                             design.cache = design.cache
                         )
                     }
                 } else {
                     for (rr in support.rows) {
                         w <- kernel.weights[[cand$kernel[[rr]]]]
+                        fit.chart.dim <- cand$chart.dim[[rr]]
                         local <- .klp.local.neighborhood.from.order(
                             X.train = X.train,
                             y.train = y.train,
@@ -409,7 +618,7 @@ print.lps <- function(x, ...) {
                             ordered = ordered,
                             support.size = support.size,
                             coordinate.method = coordinate.method,
-                            chart.dim = cand$chart.dim[[rr]],
+                            chart.dim = fit.chart.dim,
                             local.chart.method = local.chart.method,
                             chart.weights = w
                         )
@@ -418,7 +627,7 @@ print.lps <- function(x, ...) {
                             y = local$y,
                             weights = w,
                             degree = cand$degree[[rr]],
-                            chart.dim = cand$chart.dim[[rr]],
+                            chart.dim = fit.chart.dim,
                             design.cache = new.env(parent = emptyenv())
                         )
                     }
@@ -505,6 +714,22 @@ print.lps <- function(x, ...) {
     backend
 }
 
+.klp.is.local.auto.chart.dim <- function(chart.dim) {
+    identical(chart.dim, "local.auto")
+}
+
+.klp.is.auto.chart.dim <- function(chart.dim) {
+    identical(chart.dim, "auto") || .klp.is.local.auto.chart.dim(chart.dim)
+}
+
+.klp.chart.dim.mode <- function(chart.dim, coordinate.method) {
+    if (!identical(coordinate.method, "local.pca")) return("ambient")
+    if (is.null(chart.dim)) return("ambient.default")
+    if (identical(chart.dim, "auto")) return("global.auto")
+    if (.klp.is.local.auto.chart.dim(chart.dim)) return("local.auto")
+    "fixed"
+}
+
 .klp.resolve.chart.dim <- function(X, support.size, degree, coordinate.method,
                                    chart.dim, auto.chart.support.metric,
                                    auto.chart.selection.metric) {
@@ -532,17 +757,92 @@ print.lps <- function(x, ...) {
         return(list(chart.dim = diagnostics$chart.dim,
                     diagnostics = diagnostics))
     }
+    if (.klp.is.local.auto.chart.dim(chart.dim)) {
+        diagnostics <- .local.pca.auto.chart.dim.with.metric(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            max.anchors = nrow(X),
+            operator.support.metric = "coordinates",
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+        return(list(chart.dim = diagnostics$chart.dim,
+                    diagnostics = diagnostics))
+    }
     dim <- as.integer(chart.dim)
     if (!is.finite(dim) || dim < 1L || dim > ncol(X)) {
-        stop("'chart.dim' must be between 1 and ncol(X), or 'auto'.",
+        stop("'chart.dim' must be between 1 and ncol(X), 'auto', ",
+             "or 'local.auto'.",
              call. = FALSE)
     }
     list(chart.dim = dim, diagnostics = NULL)
 }
 
+.klp.resolve.prediction.chart.dim <- function(
+    X.train, X.eval, support.size, degree, coordinate.method, chart.dim,
+    auto.chart.support.metric, auto.chart.selection.metric, summary.dim) {
+
+    if (!.klp.is.local.auto.chart.dim(chart.dim)) {
+        return(list(chart.dim = as.integer(summary.dim),
+                    chart.dim.by.eval = NULL))
+    }
+    dims <- vapply(seq_len(nrow(X.eval)), function(i) {
+        ordered <- .klp.local.order(
+            X.train = X.train,
+            center = X.eval[i, , drop = TRUE],
+            support.size = support.size
+        )
+        .klp.local.auto.chart.dim.from.order(
+            X.train = X.train,
+            center = X.eval[i, , drop = TRUE],
+            ordered = ordered,
+            support.size = support.size,
+            degree = degree
+        )
+    }, integer(1L))
+    dims[!is.finite(dims) | dims < 1L] <- as.integer(summary.dim)
+    list(
+        chart.dim = as.integer(max(dims, na.rm = TRUE)),
+        chart.dim.by.eval = as.integer(dims)
+    )
+}
+
+.klp.local.auto.chart.dim.from.order <- function(
+    X.train, center, ordered, support.size, degree) {
+
+    support.size <- min(as.integer(support.size), length(ordered$index))
+    if (!is.finite(support.size) || support.size < 1L) return(1L)
+    idx <- ordered$index[seq_len(support.size)]
+    centered <- sweep(X.train[idx, , drop = FALSE], 2L, center, "-")
+    sv <- tryCatch(svd(centered, nu = 0L, nv = 0L)$d,
+                   error = function(e) numeric(0))
+    row <- .local.pca.auto.chart.dim.from.singular.values(
+        sv = sv,
+        n.support = length(idx),
+        degree = degree,
+        ambient.dim = ncol(X.train),
+        support.metric = "coordinates",
+        anchor = 1L
+    )
+    dim <- as.integer(row$selected.local.dim[[1L]])
+    if (!is.finite(dim) || dim < 1L) {
+        dim <- min(
+            ncol(X.train),
+            .local.pca.max.chart.dim.for.support(
+                n.support = max(1L, length(idx) - 1L),
+                degree = degree,
+                ambient.dim = ncol(X.train)
+            )
+        )
+    }
+    as.integer(max(1L, min(ncol(X.train), dim)))
+}
+
 .klp.predict.local.polynomial <- function(X.train, y.train, X.eval,
                                           support.size, degree, kernel,
                                           coordinate.method, chart.dim,
+                                          chart.dim.by.eval = NULL,
                                           local.chart.method = "pca",
                                           backend = "R",
                                           return.chart.diagnostics = FALSE) {
@@ -564,6 +864,7 @@ print.lps <- function(x, ...) {
     if (identical(coordinate.method, "local.pca") &&
         identical(local.chart.method, "pca") &&
         identical(backend, "cpp.local.pca") &&
+        is.null(chart.dim.by.eval) &&
         !return.chart.diagnostics) {
         return(rcpp_kernel_local_polynomial_predict_local_pca(
             X_train = X.train,
@@ -578,6 +879,11 @@ print.lps <- function(x, ...) {
     out <- rep(NA_real_, nrow(X.eval))
     diagnostics <- vector("list", nrow(X.eval))
     for (i in seq_len(nrow(X.eval))) {
+        fit.chart.dim <- if (is.null(chart.dim.by.eval)) {
+            as.integer(chart.dim)
+        } else {
+            as.integer(chart.dim.by.eval[[i]])
+        }
         center <- X.eval[i, , drop = TRUE]
         d <- sqrt(rowSums((X.train -
             matrix(center, nrow(X.train), ncol(X.train), byrow = TRUE))^2))
@@ -589,7 +895,7 @@ print.lps <- function(x, ...) {
             X.support = X.train[idx, , drop = FALSE],
             center = center,
             coordinate.method = coordinate.method,
-            chart.dim = chart.dim,
+            chart.dim = fit.chart.dim,
             local.chart.method = local.chart.method,
             weights = weights,
             return.chart = return.chart.diagnostics

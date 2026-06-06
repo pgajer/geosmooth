@@ -130,10 +130,8 @@
 #' Exposing \eqn{A} is useful for auditability and for future
 #' \eqn{\ell_1}-style variants based on \eqn{\|Af\|_1}.
 #'
-#' In the geosmooth split, graph construction remains owned by \pkg{gflow}.
-#' Thus \code{neighborhood.type = "adaptive.radius"} requires a compatible
-#' \pkg{gflow} installation, while \code{neighborhood.type = "knn"} and
-#' \code{"supplied"} are package-local geosmooth paths.
+#' Adaptive-radius graph construction uses \pkg{dgraphs}; fixed-k and supplied
+#' neighborhoods are package-local geosmooth paths.
 #'
 #' @return A list of class \code{"ssrhe.hessian.operator"} containing:
 #'   \itemize{
@@ -1022,7 +1020,7 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #' Fits the \eqn{\ell_2} Hessian-energy regularized estimator associated with
 #' \code{\link{ssrhe.hessian.operator}}. This is a direct SSRHE-style
 #' comparator for Hessian smoothing on point clouds; it is not a replacement
-#' for \code{gflow::fit.rdgraph.regression()} and is distinct from
+#' for graph trend-filtering regression and is distinct from
 #' \eqn{\ell_1}-adaptive graph trend filtering.
 #'
 #' @inheritParams ssrhe.hessian.operator

@@ -163,7 +163,7 @@ diagnostics, the reused \code{operator}, solver metadata, and the call.
 Fits the \eqn{\ell_2} Hessian-energy regularized estimator associated with
 \code{\link{ssrhe.hessian.operator}}. This is a direct SSRHE-style
 comparator for Hessian smoothing on point clouds; it is not a replacement
-for \code{gflow::fit.rdgraph.regression()} and is distinct from
+for graph trend-filtering regression and is distinct from
 \eqn{\ell_1}-adaptive graph trend filtering.
 }
 \details{

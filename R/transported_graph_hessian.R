@@ -3619,6 +3619,7 @@ transported.graph.hessian.operator <- function(adj.list,
     )
 }
 
+#' @method print transported.graph.hessian.operator
 #' @export
 print.transported.graph.hessian.operator <- function(x, ...) {
     cat("\nTransported Graph Hessian Operator\n")

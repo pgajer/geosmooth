@@ -702,6 +702,7 @@ NumericVector predict_coordinates_cpp(const NumericMatrix& X_train,
 //' Internal C++ backend for `fit.lps()`.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector rcpp_kernel_local_polynomial_cv_coordinates(
         const NumericMatrix& X,
@@ -814,6 +815,7 @@ NumericVector rcpp_kernel_local_polynomial_cv_coordinates(
 //' Internal C++ prototype backend for `fit.lps()`.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector rcpp_kernel_local_polynomial_cv_local_pca(
         const NumericMatrix& X,
@@ -958,6 +960,7 @@ NumericVector rcpp_kernel_local_polynomial_cv_local_pca(
 //' not as a user-facing API.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 List rcpp_kernel_local_polynomial_cv_local_pca_profile(
         const NumericMatrix& X,
@@ -1215,6 +1218,7 @@ List rcpp_kernel_local_polynomial_cv_local_pca_profile(
 //' Internal C++ backend for `fit.lps()`.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector rcpp_kernel_local_polynomial_predict_coordinates(
         const NumericMatrix& X_train,
@@ -1241,6 +1245,7 @@ NumericVector rcpp_kernel_local_polynomial_predict_coordinates(
 //' Internal C++ prototype backend for `fit.lps()`.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector rcpp_kernel_local_polynomial_predict_local_pca(
         const NumericMatrix& X_train,
@@ -1325,6 +1330,7 @@ NumericVector rcpp_kernel_local_polynomial_predict_local_pca(
 //' geosmooth tie-complete support order for one query point.
 //'
 //' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 List rcpp_kernel_local_polynomial_neighbor_probe(
         const NumericMatrix& X,
