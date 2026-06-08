@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 .claude/
+split_handoffs/**/logs/
+split_handoffs/**/status/
 *.rds
 *.RDS
 *.o
