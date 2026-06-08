@@ -23,6 +23,308 @@ test_that("GE7 fit.lps is the canonical LPS entry point", {
     expect_match(capture.output(print(fit))[[1L]], "LPS")
 })
 
+test_that("LPS Bernoulli mode validates 0/1 responses and reports probabilities", {
+    X <- matrix(seq(0, 1, length.out = 30), ncol = 1L)
+    y <- as.numeric(X[, 1] > 0.45)
+    foldid <- rep(1:5, length.out = nrow(X))
+
+    gaussian <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        outcome.family = "gaussian",
+        support.grid = c(6L, 8L),
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        backend = "R",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
+    )
+    bernoulli <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        outcome.family = "bernoulli",
+        support.grid = c(6L, 8L),
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        backend = "R",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
+    )
+
+    expect_identical(bernoulli$outcome.family, "bernoulli")
+    expect_equal(bernoulli$fitted.values.raw, gaussian$fitted.values,
+                 tolerance = 1e-12)
+    expect_equal(bernoulli$cv.table$cv.rmse.observed,
+                 gaussian$cv.table$cv.rmse.observed,
+                 tolerance = 1e-12)
+    expect_true("cv.brier.observed" %in% names(bernoulli$cv.table))
+    expect_equal(bernoulli$cv.table$cv.brier.observed,
+                 bernoulli$cv.table$cv.rmse.observed^2,
+                 tolerance = 1e-12)
+    expect_true(all(bernoulli$fitted.values >= 0))
+    expect_true(all(bernoulli$fitted.values <= 1))
+    expect_true(is.list(bernoulli$probability.diagnostics))
+    expect_equal(bernoulli$probability.diagnostics$diagnostic.scope,
+                 "labeled_predictions")
+    expect_equal(bernoulli$probability.diagnostics$n.labels, length(y))
+    expect_equal(bernoulli$probability.diagnostics$n.predictions, length(y))
+    expect_equal(bernoulli$probability.diagnostics$brier.denominator,
+                 length(y))
+    expect_true(is.finite(bernoulli$probability.diagnostics$brier.clipped))
+    expect_true(is.finite(bernoulli$probability.diagnostics$logloss.clipped))
+    expect_equal(predict(bernoulli, type = "raw"),
+                 bernoulli$fitted.values.raw,
+                 tolerance = 1e-12)
+    expect_equal(predict(bernoulli, type = "response"),
+                 bernoulli$fitted.values,
+                 tolerance = 1e-12)
+    expect_equal(predict(gaussian, type = "raw"),
+                 predict(gaussian, type = "response"),
+                 tolerance = 1e-12)
+    expect_equal(
+        predict(bernoulli, X[1:6, , drop = FALSE], type = "raw"),
+        predict(gaussian, X[1:6, , drop = FALSE]),
+        tolerance = 1e-12
+    )
+    response.pred <- predict(bernoulli, X[1:6, , drop = FALSE],
+                             type = "response")
+    expect_true(all(response.pred >= 0))
+    expect_true(all(response.pred <= 1))
+    expect_error(
+        fit.lps(
+            X = X,
+            y = y + 0.1,
+            foldid = foldid,
+            outcome.family = "bernoulli",
+            support.grid = 6L,
+            degree.grid = 1L,
+            kernel.grid = "gaussian",
+            backend = "R"
+        ),
+        "requires y values in \\{0, 1\\}"
+    )
+
+    expect_warning(
+        single.class <- fit.lps(
+            X = X,
+            y = rep(1, nrow(X)),
+            foldid = foldid,
+            outcome.family = "bernoulli",
+            support.grid = 6L,
+            degree.grid = 1L,
+            kernel.grid = "gaussian",
+            backend = "R"
+        ),
+        "only one observed class"
+    )
+    expect_s3_class(single.class, "lps")
+    expect_true(all(single.class$fitted.values >= 0))
+    expect_true(all(single.class$fitted.values <= 1))
+
+    external <- fit.lps(
+        X = X,
+        y = y,
+        X.eval = X[1:10, , drop = FALSE],
+        foldid = foldid,
+        outcome.family = "bernoulli",
+        support.grid = 6L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        backend = "R"
+    )
+    expect_equal(external$probability.diagnostics$diagnostic.scope,
+                 "unlabeled_eval_predictions")
+    expect_equal(external$probability.diagnostics$n.labels, length(y))
+    expect_equal(external$probability.diagnostics$n.predictions, 10L)
+    expect_true(is.na(external$probability.diagnostics$brier.clipped))
+    expect_true(is.na(external$probability.diagnostics$logloss.clipped))
+})
+
+test_that("LPS binomial mode uses local logistic fits and log-loss selection", {
+    set.seed(1708)
+    X <- matrix(sort(runif(48)), ncol = 1L)
+    prob <- stats::plogis(-0.4 + 2.5 * sin(2 * pi * X[, 1]))
+    y <- stats::rbinom(nrow(X), size = 1L, prob = prob)
+    foldid <- rep(1:4, length.out = nrow(X))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        outcome.family = "binomial",
+        support.grid = c(10L, 14L),
+        degree.grid = 1L,
+        kernel.grid = c("gaussian", "tricube"),
+        backend = "R",
+        design.basis = "monomial",
+        ridge.multiplier.grid = c(1e-8, 1e-6),
+        ridge.condition.max = 1e10,
+        unstable.action = "mean"
+    )
+
+    expect_identical(fit$outcome.family, "binomial")
+    expect_true("cv.logloss.observed" %in% names(fit$cv.table))
+    expect_true("cv.brier.observed" %in% names(fit$cv.table))
+    expect_equal(
+        fit$selected$cv.logloss.observed[[1L]],
+        min(fit$cv.table$cv.logloss.observed, na.rm = TRUE),
+        tolerance = 1e-12
+    )
+    expect_true(all(fit$fitted.values >= 0))
+    expect_true(all(fit$fitted.values <= 1))
+    expect_true(is.list(fit$logistic.diagnostics))
+    expect_gt(fit$logistic.diagnostics$cv$attempted, 0)
+    expect_gt(fit$logistic.diagnostics$final$attempted, 0)
+    expect_gte(fit$logistic.diagnostics$cv$converged, 0)
+    expect_gte(fit$logistic.diagnostics$final$converged, 0)
+    expect_true("fallback.path.count" %in%
+                    names(fit$logistic.diagnostics$cv))
+    expect_true("event.rate.fallback.count" %in%
+                    names(fit$logistic.diagnostics$cv))
+    expect_true("na.failure.count" %in%
+                    names(fit$logistic.diagnostics$cv))
+    expect_equal(
+        fit$logistic.diagnostics$cv$attempted,
+        fit$logistic.diagnostics$cv$converged +
+            fit$logistic.diagnostics$cv$failed
+    )
+    expect_equal(fit$fitted.values, fit$fitted.values.raw, tolerance = 1e-12)
+    expect_true(is.finite(fit$probability.diagnostics$logloss.clipped))
+    expect_equal(predict(fit, type = "response"),
+                 fit$fitted.values,
+                 tolerance = 1e-12)
+    expect_equal(predict(fit, type = "raw"),
+                 fit$fitted.values.raw,
+                 tolerance = 1e-12)
+    fit.auto <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        outcome.family = "binomial",
+        support.grid = 10L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        backend = "auto",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
+    )
+    expect_identical(fit.auto$backend.used, "R")
+    expect_identical(fit.auto$outcome.family, "binomial")
+    expect_error(
+        fit.lps(
+            X = X,
+            y = y,
+            foldid = foldid,
+            outcome.family = "binomial",
+            support.grid = 10L,
+            degree.grid = 1L,
+            kernel.grid = "gaussian",
+            backend = "cpp",
+            design.basis = "monomial",
+            ridge.multiplier.grid = 0,
+            ridge.condition.max = Inf
+        ),
+        "currently uses the R backend"
+    )
+
+    external <- fit.lps(
+        X = X,
+        y = y,
+        X.eval = X[1:5, , drop = FALSE],
+        foldid = foldid,
+        outcome.family = "binomial",
+        support.grid = 10L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        backend = "R",
+        unstable.action = "mean"
+    )
+    expect_equal(external$probability.diagnostics$diagnostic.scope,
+                 "unlabeled_eval_predictions")
+    expect_true(is.na(external$probability.diagnostics$logloss.clipped))
+    expect_equal(length(external$fitted.values), 5)
+
+    local.pca <- fit.lps(
+        X = cbind(X, X^2),
+        y = y,
+        foldid = foldid,
+        outcome.family = "binomial",
+        support.grid = 14L,
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = "auto",
+        backend = "R",
+        unstable.action = "mean"
+    )
+    expect_true(is.finite(local.pca$selected$cv.logloss.observed[[1L]]))
+    expect_true(all(is.finite(local.pca$fitted.values)))
+    expect_gt(local.pca$logistic.diagnostics$final$attempted, 0)
+
+    expect_warning(
+        single.class <- fit.lps(
+            X = X,
+            y = rep(0, nrow(X)),
+            foldid = foldid,
+            outcome.family = "binomial",
+            support.grid = 10L,
+            degree.grid = 0L,
+            kernel.grid = "gaussian",
+            backend = "R",
+            unstable.action = "mean"
+        ),
+        "received only one observed class"
+    )
+    expect_true(all(single.class$fitted.values >= 0))
+    expect_true(all(single.class$fitted.values <= 1))
+
+    expect_error(
+        fit.lps(
+            X = X[1:12, , drop = FALSE],
+            y = y[1:12],
+            foldid = rep(1:3, length.out = 12),
+            outcome.family = "binomial",
+            support.grid = 2L,
+            degree.grid = 2L,
+            kernel.grid = "gaussian",
+            backend = "R",
+            design.basis = "monomial",
+            unstable.action = "na"
+        ),
+        "No candidate has a finite selection score"
+    )
+    telemetry <- new.env(parent = emptyenv())
+    telemetry$attempted <- 0L
+    telemetry$converged <- 0L
+    telemetry$fallback.path <- 0L
+    telemetry$event.rate.fallback <- 0L
+    telemetry$na.failure <- 0L
+    telemetry$status <- list()
+    z <- matrix(1, nrow = 3L, ncol = 5L)
+    y.small <- c(0, 1, 1)
+    w.small <- c(1, 1, 1)
+    failed <- geosmooth:::.klp.fit.logistic.prob.design(
+        design = z,
+        y = y.small,
+        weights = w.small,
+        unstable.action = "na",
+        logistic.telemetry = telemetry
+    )
+    summary <- geosmooth:::.klp.logistic.telemetry.summary(telemetry)
+    expect_true(is.na(failed))
+    expect_equal(summary$fallback.path.count, 1L)
+    expect_equal(summary$event.rate.fallback.count, 0L)
+    expect_equal(summary$na.failure.count, 1L)
+})
+
 test_that("GE8 removes the old kernel.local.polynomial.cv API", {
     expect_false(exists(
         "kernel.local.polynomial.cv",
@@ -57,7 +359,11 @@ test_that("K4 local-PCA LPS C++ backend matches R reference path", {
         kernel.grid = c("gaussian", "tricube"),
         coordinate.method = "local.pca",
         local.chart.method = "pca",
-        chart.dim = 2L
+        chart.dim = 2L,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
     )
 
     fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))
@@ -131,7 +437,11 @@ test_that("K4 local-PCA C++ backend uses R-compatible tie-stable supports", {
             kernel.grid = kernel.grid,
             coordinate.method = "local.pca",
             local.chart.method = "pca",
-            chart.dim = 2L
+            chart.dim = 2L,
+            design.basis = "monomial",
+            ridge.multiplier.grid = 0,
+            ridge.condition.max = Inf,
+            unstable.action = "mean"
         )
         fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))
         fit.cpp <- do.call(
@@ -233,8 +543,9 @@ test_that("K12 LPS backend diagnostics expose conservative backend policy", {
     expect_s3_class(ambient.diag, "data.frame")
     expect_equal(nrow(ambient.diag), 1L)
     expect_equal(ambient.diag$backend.requested, "auto")
-    expect_equal(ambient.diag$backend.used, "cpp")
-    expect_equal(ambient.diag$backend.auto.policy, "auto_coordinates_cpp")
+    expect_equal(ambient.diag$backend.used, "R")
+    expect_equal(ambient.diag$backend.auto.policy,
+                 "auto_coordinates_R_guarded_design")
     expect_equal(ambient.diag$requested.chart.dim, "NULL")
     expect_equal(ambient.diag$resolved.chart.dim, ncol(X))
     expect_false(ambient.diag$chart.dim.auto)
@@ -337,7 +648,10 @@ test_that("LPS local auto chart dimensions stay on the R local-PCA path", {
             foldid = foldid,
             coordinate.method = "local.pca",
             chart.dim = "local.auto",
-            backend = "cpp.local.pca"
+            backend = "cpp.local.pca",
+            design.basis = "monomial",
+            ridge.multiplier.grid = 0,
+            ridge.condition.max = Inf
         ),
         "currently uses the R local-PCA backend"
     )
@@ -370,6 +684,215 @@ test_that("LPS local WLS falls back on nearly saturated ill-conditioned designs"
         stats::weighted.mean(y, weights),
         tolerance = 1e-12
     )
+})
+
+test_that("LPS weighted QR drop removes dependent local polynomial columns", {
+    set.seed(1702)
+    z <- cbind(
+        seq(-1, 1, length.out = 12),
+        seq(-1, 1, length.out = 12)
+    )
+    design <- .local.polynomial.design.matrix(z, degree = 2L)
+    y <- sin(z[, 1])
+    weights <- rep(1, length(y))
+
+    monomial <- .klp.solve.local.wls(
+        design,
+        y,
+        weights,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
+    )
+    dropped <- .klp.solve.local.wls(
+        design,
+        y,
+        weights,
+        design.basis = "weighted.qr.drop",
+        design.drop.tol = 1e-7,
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
+    )
+
+    expect_false(isTRUE(monomial$ok))
+    expect_true(isTRUE(dropped$ok))
+    expect_true(is.finite(dropped$coefficients[[1L]]))
+})
+
+test_that("LPS guarded ridge selects the smallest passing multiplier", {
+    set.seed(1703)
+    z <- matrix(rnorm(28 * 3), 28, 3)
+    design <- .local.polynomial.design.matrix(z, degree = 2L)
+    design[, ncol(design)] <- design[, ncol(design) - 1L] +
+        1e-7 * rnorm(nrow(design))
+    y <- cos(seq(0, 2, length.out = nrow(design)))
+    weights <- rep(1, length(y))
+
+    strict <- .klp.solve.local.wls(
+        design,
+        y,
+        weights,
+        design.basis = "weighted.qr.drop",
+        design.drop.tol = 1e-10,
+        ridge.multiplier.grid = c(0, 1e-12),
+        ridge.condition.max = 10
+    )
+    guarded <- .klp.solve.local.wls(
+        design,
+        y,
+        weights,
+        design.basis = "weighted.qr.drop",
+        design.drop.tol = 1e-10,
+        ridge.multiplier.grid = c(0, 1e-12, 1e-8, 1e-4, 1e-2),
+        ridge.condition.max = 1e6
+    )
+
+    expect_false(isTRUE(strict$ok))
+    expect_true(isTRUE(guarded$ok))
+    expect_true(guarded$ridge.multiplier %in% c(0, 1e-12, 1e-8, 1e-4, 1e-2))
+    expect_lte(guarded$condition, 1e6)
+})
+
+test_that("fit.lps can avoid unstable weighted QR drop candidates", {
+    set.seed(1704)
+    x <- seq(-1, 1, length.out = 48)
+    X <- cbind(x, x^2 + 1e-6 * rnorm(length(x)))
+    y <- sin(3 * x) + rnorm(length(x), sd = 0.03)
+    foldid <- rep(1:4, length.out = length(y))
+
+    fit <- fit.lps(
+        X,
+        y,
+        foldid = foldid,
+        support.grid = c(8L, 10L, 14L),
+        degree.grid = 2L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = 2L,
+        backend = "auto",
+        design.basis = "weighted.qr.drop",
+        design.drop.tol = 1e-7,
+        ridge.multiplier.grid = c(0, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2),
+        ridge.condition.max = 1e6,
+        unstable.action = "na"
+    )
+
+    expect_equal(fit$backend.used, "R")
+    expect_equal(fit$design.basis, "weighted.qr.drop")
+    expect_true(any(is.finite(fit$cv.table$cv.rmse.observed)))
+    expect_true(is.finite(fit$selected$cv.rmse.observed[[1L]]))
+})
+
+test_that("LPS guarded local failures are not silently converted to means", {
+    design <- cbind(1, matrix(rnorm(6 * 5), 6, 5))
+    y <- seq_len(nrow(design))
+    weights <- rep(1, length(y))
+
+    solved <- .klp.solve.local.wls(
+        design = design,
+        y = y,
+        weights = weights,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = 1
+    )
+    intercept <- .klp.fit.intercept.design(
+        design = design,
+        y = y,
+        weights = weights,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = 1,
+        unstable.action = "na"
+    )
+
+    expect_false(isTRUE(solved$ok))
+    expect_equal(solved$status, "ridge_condition_failed")
+    expect_true(is.na(intercept))
+    expect_false(isTRUE(all.equal(intercept, stats::weighted.mean(y, weights))))
+})
+
+test_that("orthogonal polynomial drop builds a weighted-orthogonal basis", {
+    set.seed(1705)
+    z <- matrix(rnorm(18 * 3), 18, 3)
+    design <- .local.polynomial.design.matrix(z, degree = 2L)
+    design[, ncol(design)] <- design[, ncol(design) - 1L]
+    weights <- runif(nrow(design), 0.2, 1)
+    anchor <- matrix(c(1, rep(0, ncol(design) - 1L)), nrow = 1L)
+
+    transformed <- .klp.orthogonal.polynomial.transform(
+        design = design,
+        weights = weights,
+        prediction.rows = anchor,
+        design.drop.tol = 1e-8
+    )
+    gram <- crossprod(transformed$design * sqrt(weights))
+
+    expect_true(isTRUE(transformed$ok))
+    expect_lt(ncol(transformed$design), ncol(design))
+    expect_equal(gram, diag(ncol(gram)), tolerance = 1e-8)
+    expect_equal(ncol(transformed$prediction.rows), ncol(transformed$design))
+})
+
+test_that("LPS orthogonal polynomial drop agrees with monomial span without ridge", {
+    set.seed(1706)
+    x <- seq(-1, 1, length.out = 54)
+    X <- cbind(x, x^2 + 0.02 * rnorm(length(x)))
+    y <- sin(2 * pi * x) + rnorm(length(x), sd = 0.02)
+    foldid <- rep(1:3, length.out = length(y))
+
+    common <- list(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = 18L,
+        degree.grid = 2L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = 2L,
+        backend = "R",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "na"
+    )
+    monomial <- do.call(fit.lps, c(common, list(design.basis = "monomial")))
+    orthogonal <- do.call(fit.lps, c(common, list(
+        design.basis = "orthogonal.polynomial.drop",
+        design.drop.tol = 1e-10
+    )))
+
+    expect_equal(orthogonal$design.basis, "orthogonal.polynomial.drop")
+    expect_equal(orthogonal$fitted.values, monomial$fitted.values,
+                 tolerance = 1e-8)
+    expect_equal(orthogonal$cv.table$cv.rmse.observed,
+                 monomial$cv.table$cv.rmse.observed,
+                 tolerance = 1e-8)
+})
+
+test_that("LPS default backend policy uses orthogonal adaptive tiny guard", {
+    set.seed(1707)
+    x <- seq(-1, 1, length.out = 42)
+    X <- cbind(x, x^2 + 0.01 * rnorm(length(x)))
+    y <- cos(2 * pi * x) + rnorm(length(x), sd = 0.03)
+    foldid <- rep(1:3, length.out = length(y))
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = 16L,
+        degree.grid = 2L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = 2L
+    )
+
+    expect_equal(fit$backend.used, "R")
+    expect_equal(fit$design.basis, "orthogonal.polynomial.drop")
+    expect_equal(fit$design.drop.tol, 1e-8)
+    expect_equal(fit$ridge.multiplier.grid, c(0, 1e-10, 1e-8))
+    expect_equal(fit$ridge.condition.max, 1e12)
+    expect_true(all(is.finite(fit$fitted.values)))
 })
 
 test_that("K12 local-PCA contract excludes experimental second-order charts", {
@@ -415,7 +938,10 @@ test_that("K12 explicit local-PCA native opt-in is reported as opt-in", {
         kernel.grid = "gaussian",
         coordinate.method = "local.pca",
         chart.dim = 1L,
-        backend = "cpp.local.pca"
+        backend = "cpp.local.pca",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
     )
     diag <- lps.backend.diagnostics(fit)
 
@@ -476,7 +1002,11 @@ test_that("K10 high-dimensional local-PCA LPS retains R/native parity", {
         kernel.grid = c("gaussian", "tricube"),
         coordinate.method = "local.pca",
         local.chart.method = "pca",
-        chart.dim = 3L
+        chart.dim = 3L,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
     )
 
     fit.r <- do.call(fit.lps, c(common.args, list(backend = "R")))

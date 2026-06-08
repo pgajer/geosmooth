@@ -36,7 +36,10 @@ test_that("PS-LPS with zero synchronization and zero ridge reproduces ordinary L
         kernel.grid = "gaussian",
         coordinate.method = "local.pca",
         chart.dim = 2L,
-        backend = "R"
+        backend = "R",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
     )
     ps <- fit.ps.lps(
         X = X,
@@ -48,11 +51,135 @@ test_that("PS-LPS with zero synchronization and zero ridge reproduces ordinary L
         chart.dim = 2L,
         lambda.sync.grid = 0,
         lambda.ridge = 0,
-        sync.neighbor.size = 3L
+        sync.neighbor.size = 3L,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
     )
     expect_equal(ps$selected$lambda.ridge[[1L]], 0)
     expect_equal(max(abs(lps$fitted.values - ps$fitted.values)), 0,
                  tolerance = 1e-10)
+})
+
+test_that("PS-LPS weighted QR drop and adaptive ridge return telemetry", {
+    set.seed(291)
+    X <- matrix(runif(36 * 3), 36, 3)
+    y <- sin(2 * pi * X[, 1]) + rnorm(nrow(X), sd = 0.03)
+    foldid <- rep(1:4, length.out = length(y))
+
+    fit <- fit.ps.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.size = 8L,
+        degree = 2L,
+        kernel = "tricube",
+        chart.dim = 3L,
+        lambda.sync.grid = c(0, 1e-3),
+        lambda.sync.search = "grid",
+        lambda.ridge = 0,
+        design.basis = "weighted.qr.drop",
+        design.drop.tol = 1e-7,
+        ridge.multiplier.grid = c(0, 1e-10, 1e-8, 1e-6, 1e-4),
+        ridge.condition.max = 1e8
+    )
+
+    kept <- fit$frame.design.summary$design.columns.kept
+    original <- fit$frame.design.summary$design.columns.original
+    expect_true(any(kept < original))
+    expect_true(all(is.finite(fit$fitted.values)))
+    expect_true("ridge.status" %in% names(fit$cv.table))
+    expect_true(all(nzchar(fit$cv.table$ridge.status)))
+})
+
+test_that("PS-LPS zero-sync local failures are not weighted-mean rescues", {
+    set.seed(292)
+    X <- matrix(runif(10 * 3), 10, 3)
+    y <- seq_len(nrow(X))
+    frames <- .ps.lps.prepare.frames(
+        X = X,
+        y = y,
+        support.size = 5L,
+        degree = 2L,
+        kernel = "tricube",
+        chart.dim.by.anchor = rep(3L, nrow(X)),
+        design.basis = "monomial"
+    )
+    solved <- .ps.lps.solve.independent(
+        frames = frames,
+        y = y,
+        response.weights = rep(1, length(y)),
+        lambda.ridge = 0,
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = 1
+    )
+
+    expect_true(any(grepl("^unstable_", solved$ridge.status)))
+    expect_true(any(!is.finite(solved$fitted.values)))
+    expect_false(any(grepl("fallback_mean", solved$ridge.status)))
+})
+
+test_that("PS-LPS orthogonal polynomial frames use transformed chart designs", {
+    set.seed(293)
+    X <- matrix(runif(40 * 3), 40, 3)
+    y <- sin(X[, 1])
+    frames <- .ps.lps.prepare.frames(
+        X = X,
+        y = y,
+        support.size = 8L,
+        degree = 2L,
+        kernel = "tricube",
+        chart.dim.by.anchor = rep(3L, nrow(X)),
+        design.basis = "orthogonal.polynomial.drop",
+        design.drop.tol = 1e-8
+    )
+
+    expect_true(all(vapply(frames, `[[`, character(1L),
+                           "solver.design.basis") ==
+                    "orthogonal.polynomial.transformed"))
+    expect_true(any(vapply(frames, `[[`, integer(1L), "q") <
+                    vapply(frames, `[[`, integer(1L),
+                           "design.columns.original")))
+})
+
+test_that("PS-LPS zero synchronization matches LPS with orthogonal basis", {
+    set.seed(294)
+    X <- matrix(runif(90 * 3), 90, 3)
+    y <- cos(3 * X[, 1]) + X[, 2]^2
+    foldid <- rep(seq_len(5L), length.out = nrow(X))
+    lps <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = 26L,
+        degree.grid = 2L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim = 3L,
+        backend = "R",
+        design.basis = "orthogonal.polynomial.drop",
+        design.drop.tol = 1e-8,
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "na"
+    )
+    ps <- fit.ps.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.size = 26L,
+        degree = 2L,
+        kernel = "tricube",
+        chart.dim = 3L,
+        lambda.sync.grid = 0,
+        lambda.ridge = 0,
+        design.basis = "orthogonal.polynomial.drop",
+        design.drop.tol = 1e-8,
+        sync.neighbor.size = 3L
+    )
+
+    expect_equal(ps$fitted.values, lps$fitted.values, tolerance = 1e-8)
+    expect_true(is.finite(ps$cv.table$cv.rmse.observed[[1L]]))
 })
 
 test_that("PS-LPS zero synchronization and zero ridge reproduces LPS local.auto vector-chart fitted values", {
@@ -105,7 +232,8 @@ test_that("PS-LPS chart.dim auto matches explicit resolved scalar dimension", {
         chart.dim = "auto",
         lambda.sync.grid = c(0, 0.1),
         lambda.ridge = 0,
-        sync.neighbor.size = 3L
+        sync.neighbor.size = 3L,
+        local.candidate.search = "full"
     )
     fit.explicit <- fit.ps.lps(
         X = X,
@@ -222,6 +350,43 @@ test_that("PS-LPS local grid selection matches explicit fixed-candidate search",
                  explicit.best$cv.rmse.observed)
     expect_equal(grid.fit$selected$lambda.sync[[1L]],
                  explicit.best$lambda.sync)
+})
+
+test_that("PS-LPS support-grid default uses screened routine search", {
+    set.seed(2301)
+    X <- matrix(runif(150), ncol = 3)
+    y <- cos(3 * X[, 1]) + X[, 2] - 0.25 * X[, 3]^2
+    ps <- fit.ps.lps(
+        X = X,
+        y = y,
+        foldid = rep(seq_len(5L), length.out = length(y)),
+        support.grid = 10:16,
+        degree.grid = 2L,
+        kernel.grid = c("gaussian", "tricube"),
+        chart.dim = 2L,
+        lambda.sync.grid = c(0, 0.1, 1),
+        lambda.sync.search = "guarded",
+        lambda.sync.search.control = list(max.candidates = 3L,
+                                          boundary.expand = FALSE),
+        local.candidate.search.control = list(
+            top.n = 2L,
+            max.candidates = 4L,
+            neighbor.radius = 0L,
+            guard.support.quantiles = c(0, 1)
+        ),
+        lambda.ridge = 1e-8,
+        sync.neighbor.size = 3L
+    )
+
+    evaluated <- ps$local.candidate.table$local.candidate.status ==
+        "evaluated"
+    expect_equal(ps$local.candidate.search, "screened")
+    expect_equal(ps$selection.contract,
+                 "screened_lps_cv_then_materialized_fold_cv_with_lambda_sync")
+    expect_lt(sum(evaluated), nrow(ps$local.candidate.table))
+    expect_lte(sum(evaluated), 4L)
+    expect_true(all(ps$lambda.cv.table$local.candidate.id %in%
+                    ps$local.candidate.table$local.candidate.id[evaluated]))
 })
 
 test_that("PS-LPS with positive ridge and zero synchronization nests ridge-LPS", {
@@ -812,4 +977,112 @@ test_that("fit.ps.lps guarded lambda search returns telemetry", {
     expect_true(all(c("stage", "lambda.sync", "boundary", "expansion",
                       "selected.after.stage") %in%
                     names(ps$lambda.sync.search.telemetry)))
+})
+
+test_that("fit.ps.lps screened local search evaluates an auditable subset", {
+    set.seed(24)
+    X <- matrix(runif(180), ncol = 3)
+    y <- sin(2 * X[, 1]) + X[, 2]^2 - 0.5 * X[, 3]
+    ps <- fit.ps.lps(
+        X = X,
+        y = y,
+        foldid = rep(seq_len(5L), length.out = length(y)),
+        support.grid = 10:16,
+        degree.grid = 2L,
+        kernel.grid = c("gaussian", "tricube"),
+        chart.dim = 2L,
+        lambda.sync.grid = c(0, 0.1, 1),
+        lambda.sync.search = "guarded",
+        lambda.sync.search.control = list(max.candidates = 3L,
+                                          boundary.expand = FALSE),
+        local.candidate.search = "screened",
+        local.candidate.search.control = list(
+            top.n = 2L,
+            max.candidates = 4L,
+            neighbor.radius = 0L,
+            guard.support.quantiles = c(0, 1)
+        ),
+        lambda.ridge = 1e-8,
+        sync.neighbor.size = 3L
+    )
+
+    expect_equal(ps$local.candidate.search, "screened")
+    expect_equal(ps$selection.contract,
+                 "screened_lps_cv_then_materialized_fold_cv_with_lambda_sync")
+    expect_equal(nrow(ps$local.candidate.table), 14L)
+    expect_lte(sum(ps$local.candidate.table$local.candidate.status ==
+                       "evaluated"), 4L)
+    evaluated <- ps$local.candidate.table[
+        ps$local.candidate.table$local.candidate.status == "evaluated",
+        ,
+        drop = FALSE
+    ]
+    expect_true(all(c("local.candidate.elapsed.sec",
+                      "lambda.search.elapsed.sec",
+                      "unique.lambda.count",
+                      "system.cache.elapsed.sec") %in%
+                    names(ps$local.candidate.table)))
+    expect_true(all(is.finite(evaluated$local.candidate.elapsed.sec)))
+    expect_true(all(is.finite(evaluated$lambda.search.elapsed.sec)))
+    expect_true(all(evaluated$unique.lambda.count > 0L))
+    expect_true(is.list(ps$ps.lps.local.grid.timing))
+    expect_equal(ps$ps.lps.local.grid.timing$evaluated_local_candidate_count,
+                 nrow(evaluated))
+    expect_true(any(ps$local.candidate.table$local.candidate.status ==
+                        "screened_out"))
+    expect_true(all(is.finite(
+        ps$local.candidate.table$screening.cv.rmse.observed
+    )))
+    expect_true(ps$selected$local.candidate.id[[1L]] %in%
+                    ps$local.candidate.table$local.candidate.id[
+                        ps$local.candidate.table$local.candidate.status ==
+                            "evaluated"
+                    ])
+    expect_true(all(ps$lambda.cv.table$local.candidate.id %in%
+                    ps$local.candidate.table$local.candidate.id[
+                        ps$local.candidate.table$local.candidate.status ==
+                            "evaluated"
+                    ]))
+})
+
+test_that("fit.ps.lps subgrid local search skips LPS screening pass", {
+    set.seed(25)
+    X <- matrix(runif(180), ncol = 3)
+    y <- cos(2 * X[, 1]) - X[, 2] + 0.25 * X[, 3]^2
+    ps <- fit.ps.lps(
+        X = X,
+        y = y,
+        foldid = rep(seq_len(5L), length.out = length(y)),
+        support.grid = 10:16,
+        degree.grid = 2L,
+        kernel.grid = c("gaussian", "tricube"),
+        chart.dim = 2L,
+        lambda.sync.grid = c(0, 0.1, 1),
+        lambda.sync.search = "guarded",
+        lambda.sync.search.control = list(max.candidates = 3L,
+                                          boundary.expand = FALSE),
+        local.candidate.search = "subgrid",
+        local.candidate.search.control = list(
+            max.candidates = 4L,
+            guard.support.quantiles = c(0, 0.5, 1)
+        ),
+        lambda.ridge = 1e-8,
+        sync.neighbor.size = 3L
+    )
+
+    expect_equal(ps$local.candidate.search, "subgrid")
+    expect_equal(ps$selection.contract,
+                 "subgrid_then_materialized_fold_cv_with_lambda_sync")
+    expect_null(ps$local.candidate.screen.lps.selected)
+    expect_equal(nrow(ps$local.candidate.table), 14L)
+    expect_lte(sum(ps$local.candidate.table$local.candidate.status ==
+                       "evaluated"), 4L)
+    expect_true(all(c("local.candidate.elapsed.sec",
+                      "lambda.search.elapsed.sec",
+                      "unique.lambda.count") %in%
+                    names(ps$local.candidate.table)))
+    expect_true(any(ps$local.candidate.table$screening.reason ==
+                        "subgrid_guard"))
+    expect_true(any(ps$local.candidate.table$local.candidate.status ==
+                        "screened_out"))
 })

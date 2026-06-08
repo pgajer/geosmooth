@@ -19,7 +19,14 @@ fit.lps(
   local.chart.method = c("pca", "second.order.svd"),
   auto.chart.support.metric = c("coordinates", "operator", "both"),
   auto.chart.selection.metric = c("coordinates", "operator"),
-  backend = c("auto", "R", "cpp", "cpp.local.pca")
+  backend = c("auto", "R", "cpp", "cpp.local.pca"),
+  design.basis = c("orthogonal.polynomial.drop", "monomial", "weighted.qr",
+    "weighted.qr.drop"),
+  design.drop.tol = 1e-08,
+  ridge.multiplier.grid = c(0, 1e-10, 1e-08),
+  ridge.condition.max = 1e+12,
+  unstable.action = c("na", "mean"),
+  outcome.family = c("gaussian", "bernoulli", "binomial")
 )
 }
 \arguments{
@@ -78,12 +85,60 @@ reference implementation. \code{"cpp"} requires ambient coordinates.
 \code{"cpp.local.pca"} is an opt-in prototype backend for
 \code{coordinate.method = "local.pca"} with
 \code{local.chart.method = "pca"}.}
+
+\item{design.basis}{Local polynomial design backend. \code{"monomial"} uses
+the ordinary raw monomial design. \code{"weighted.qr"} solves the same
+design using an explicit weighted-QR numerical path. \code{"weighted.qr.drop"}
+first drops numerically dependent local design columns by weighted QR before
+solving. \code{"orthogonal.polynomial.drop"} replaces the local monomial
+design by a weighted-orthogonal basis spanning its estimable polynomial
+directions, dropping numerically rank-deficient directions first.}
+
+\item{design.drop.tol}{Relative QR tolerance used by
+\code{design.basis = "weighted.qr.drop"} or
+\code{design.basis = "orthogonal.polynomial.drop"}.}
+
+\item{ridge.multiplier.grid}{Nonnegative scale-relative ridge multipliers
+tried by the R local-solve backend. The smallest multiplier whose
+penalized local normal equations pass \code{ridge.condition.max} is used.}
+
+\item{ridge.condition.max}{Maximum allowed condition number for the
+penalized local normal equations. Use \code{Inf} to disable this guard.}
+
+\item{unstable.action}{Action when no local solve passes the rank and
+condition guards. \code{"mean"} preserves the historical weighted-mean
+fallback. \code{"na"} returns \code{NA}, causing CV candidates with
+unstable predictions to be avoided.}
+
+\item{outcome.family}{Response family. \code{"gaussian"} preserves the
+ordinary numeric-response LPS behavior. \code{"bernoulli"} treats
+\code{0/1} responses as numeric conditional-expectation targets for
+\eqn{\Pr(Y=1\mid X)}, keeps the same local least-squares fitting core,
+clips reported response-scale probabilities to \code{[0,1]}, and records
+Brier/log-loss probability diagnostics. \code{"binomial"} uses local
+weighted logistic polynomial fits, selects candidates by observed CV log
+loss, and reports probability diagnostics on the fitted probabilities.}
 }
 \value{
-A list of class \code{"lps"} with fitted values, selected
-parameters, a candidate CV table, the requested
-\code{local.chart.method}, and the effective chart method used for
-reporting.
+A list of class \code{"lps"} with response-scale
+\code{fitted.values}, unmodified local least-squares
+\code{fitted.values.raw}, selected parameters, a candidate CV table, the
+requested \code{local.chart.method}, and the effective chart method used
+for reporting.  In \code{outcome.family = "bernoulli"} or
+\code{"binomial"} mode, \code{fitted.values} are response-scale
+probabilities in \code{[0,1]},
+\code{fitted.values.raw} are the un-clipped conditional-expectation
+estimates for \code{"bernoulli"} and the fitted probabilities for
+\code{"binomial"}, \code{cv.table$cv.brier.observed} is
+\code{cv.table$cv.rmse.observed^2}, and
+\code{probability.diagnostics} records raw/clipped probability ranges,
+out-of-range fractions, and Brier/log-loss diagnostics.  The Brier and
+log-loss diagnostics are defined only when the fitted predictions have the
+same length as the training response, which is the default
+\code{X.eval = X} path.  In \code{"binomial"} mode,
+\code{logistic.diagnostics} records local logistic solve attempts,
+convergence statuses, fallback-path counts, event-rate fallback counts,
+and \code{NA} failure counts separately for CV and final fitting.
 }
 \description{
 Fits a local polynomial smoother (LPS) and selects its support size,
