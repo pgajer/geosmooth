@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0164__SYN_RANK_BLOCKS_N600_P100__local_auto__lps__weighted_qr_drop_tiny",
+  "dataset_id": "SYN-RANK-BLOCKS-N600-P100",
+  "method": "lps",
+  "chart_dim_rule": "local.auto",
+  "backend_variant": "weighted_qr_drop_tiny",
+  "status": "ok",
+  "started_at": "2026-06-07 02:17:53 EDT",
+  "finished_at": "2026-06-07 02:19:11 EDT",
+  "elapsed_sec": 78.33500000000001,
+  "hostname": "pgajerm4-osx",
+  "pid": 66576,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0164__SYN_RANK_BLOCKS_N600_P100__local_auto__lps__weighted_qr_drop_tiny.rds",
+  "error_message": null,
+  "error_class": null
+}

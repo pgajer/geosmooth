@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0168__SYN_RANK_BLOCKS_N600_P100__local_auto__ps_lps__orthogonal_drop_adaptive_tiny",
+  "dataset_id": "SYN-RANK-BLOCKS-N600-P100",
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "backend_variant": "orthogonal_drop_adaptive_tiny",
+  "status": "error",
+  "started_at": null,
+  "finished_at": "2026-06-07 03:59:51 EDT",
+  "elapsed_sec": null,
+  "hostname": "pgajerm4-osx",
+  "pid": null,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0168__SYN_RANK_BLOCKS_N600_P100__local_auto__ps_lps__orthogonal_drop_adaptive_tiny.rds",
+  "error_message": "worker process exited nonzero or was killed; see task log",
+  "error_class": "worker_exit_-15"
+}

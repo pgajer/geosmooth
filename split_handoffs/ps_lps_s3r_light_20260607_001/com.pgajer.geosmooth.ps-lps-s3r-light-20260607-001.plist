@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.pgajer.geosmooth.ps-lps-s3r-light-20260607-001</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/bin/python3</string>
+		<string>/Users/pgajer/current_projects/geosmooth/scripts/launch_ps_lps_s3r_light_run.py</string>
+		<string>--run_dir</string>
+		<string>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001</string>
+		<string>--workers</string>
+		<string>10</string>
+		<string>--task_timeout_sec</string>
+		<string>7200</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/pgajer/current_projects/geosmooth</string>
+	<key>StandardOutPath</key>
+	<string>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/logs/launchd_stdout.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/logs/launchd_stderr.log</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>R_LIBS_USER</key>
+		<string>/Users/pgajer/Library/R/arm64/4.5/library</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>

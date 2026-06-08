@@ -1,0 +1,3 @@
+"scope","attempted","converged","failed","fallback.path.count","event.rate.fallback.count","na.failure.count","convergence.fraction","fallback.path.fraction","event.rate.fallback.fraction","na.failure.fraction","status.counts"
+"cv",2240,2012,228,228,228,0,0.898214285714286,0.101785714285714,0.101785714285714,0,"not_converged=223; ok=2012; ridge_condition_failed=5"
+"final",140,140,0,0,0,0,1,0,0,0,"ok=140"

@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>LPS Design Basis Guarded Ridge Comparison</title>
+<script src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js'></script>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:1100px;margin:36px auto;line-height:1.45;color:#1f2933}
+h1,h2{line-height:1.15} table{border-collapse:collapse;width:100%;font-size:13px} th,td{border:1px solid #d8dee4;padding:6px 8px;text-align:left} th{background:#f3f4f6} .meta{color:#59636e;font-size:14px}.note{background:#f8fafc;border-left:4px solid #547aa5;padding:10px 14px}
+</style></head><body>
+<h1>LPS Design Basis Guarded Ridge Comparison</h1>
+<p class='meta'>Report build: 2026-06-06 21:38:49 EDT. Result CSV: <code>split_handoffs/lps_design_basis_guarded_ridge_2026-06-06/lps_design_basis_guarded_ridge_results.csv</code>.</p>
+<h2>Purpose</h2>
+<p>This smoke comparison checks the new local polynomial numerical backend in three configurations requested for LPS: weighted QR with rank-deficient columns dropped and no ridge, weighted QR with column dropping plus a tiny ridge grid, and the current monomial design with a tiny ridge.</p>
+<p>The guarded configurations first drop columns that are rank-deficient in the weighted local design, then use the smallest ridge multiplier in the supplied grid that satisfies the condition-number cap (set to 1e12 in this smoke comparison). Candidates whose local fits cannot satisfy the cap are assigned non-finite validation error so support and degree selection can avoid them.</p>
+<p>The main score here is synthetic Truth RMSE, \(\sqrt{n^{-1}\sum_i (\hat f_i-f_i)^2}\). CV RMSE is the observed fold score used to select a candidate; Truth RMSE is shown only because these are synthetic tests.</p>
+<h2>Truth RMSE By Dataset</h2>
+<svg viewBox="0 0 920 430" role="img" aria-label="Truth RMSE comparison">
+<line x1="170" y1="365" x2="890" y2="365" stroke="#333"/>
+<line x1="170" y1="35" x2="170" y2="365" stroke="#333"/>
+<line x1="165" y1="365.0" x2="890" y2="365.0" stroke="#ddd"/>
+<text x="155" y="369.0" text-anchor="end" font-size="12">0.000</text>
+<line x1="165" y1="281.1" x2="890" y2="281.1" stroke="#ddd"/>
+<text x="155" y="285.1" text-anchor="end" font-size="12">0.010</text>
+<line x1="165" y1="197.3" x2="890" y2="197.3" stroke="#ddd"/>
+<text x="155" y="201.3" text-anchor="end" font-size="12">0.020</text>
+<line x1="165" y1="113.4" x2="890" y2="113.4" stroke="#ddd"/>
+<text x="155" y="117.4" text-anchor="end" font-size="12">0.030</text>
+<text x="170.0" y="400" text-anchor="middle" font-size="12">near_collinear_curve</text>
+<line x1="119.0" y1="355" x2="131.0" y2="375" stroke="#0072B2" stroke-width="2"/>
+<line x1="119.0" y1="375" x2="131.0" y2="355" stroke="#0072B2" stroke-width="2"><title>QR drop, ridge 0: unstable/no finite CV candidates</title></line>
+<line x1="170.0" y1="365" x2="170.0" y2="243.8" stroke="#aaa"/>
+<circle cx="170.0" cy="243.8" r="5" fill="#009E73"><title>QR drop, tiny: Truth RMSE 0.01445</title></circle>
+<line x1="215.0" y1="365" x2="215.0" y2="243.8" stroke="#aaa"/>
+<circle cx="215.0" cy="243.8" r="5" fill="#D55E00"><title>Monomial, tiny: Truth RMSE 0.01445</title></circle>
+<text x="530.0" y="400" text-anchor="middle" font-size="12">redundant_two_bump_surface</text>
+<line x1="479.0" y1="355" x2="491.0" y2="375" stroke="#0072B2" stroke-width="2"/>
+<line x1="479.0" y1="375" x2="491.0" y2="355" stroke="#0072B2" stroke-width="2"><title>QR drop, ridge 0: unstable/no finite CV candidates</title></line>
+<line x1="530.0" y1="365" x2="530.0" y2="78.0" stroke="#aaa"/>
+<circle cx="530.0" cy="78.0" r="5" fill="#009E73"><title>QR drop, tiny: Truth RMSE 0.03422</title></circle>
+<line x1="575.0" y1="365" x2="575.0" y2="78.0" stroke="#aaa"/>
+<circle cx="575.0" cy="78.0" r="5" fill="#D55E00"><title>Monomial, tiny: Truth RMSE 0.03422</title></circle>
+<text x="890.0" y="400" text-anchor="middle" font-size="12">mixed_line_sheet</text>
+<line x1="839.0" y1="355" x2="851.0" y2="375" stroke="#0072B2" stroke-width="2"/>
+<line x1="839.0" y1="375" x2="851.0" y2="355" stroke="#0072B2" stroke-width="2"><title>QR drop, ridge 0: unstable/no finite CV candidates</title></line>
+<line x1="890.0" y1="365" x2="890.0" y2="98.2" stroke="#aaa"/>
+<circle cx="890.0" cy="98.2" r="5" fill="#009E73"><title>QR drop, tiny: Truth RMSE 0.03182</title></circle>
+<line x1="935.0" y1="365" x2="935.0" y2="98.2" stroke="#aaa"/>
+<circle cx="935.0" cy="98.2" r="5" fill="#D55E00"><title>Monomial, tiny: Truth RMSE 0.03182</title></circle>
+<circle cx="650" cy="45" r="5" fill="#0072B2"/>
+<text x="662" y="49" font-size="12">QR drop, ridge 0</text>
+<circle cx="650" cy="65" r="5" fill="#009E73"/>
+<text x="662" y="69" font-size="12">QR drop, tiny</text>
+<circle cx="650" cy="85" r="5" fill="#D55E00"/>
+<text x="662" y="89" font-size="12">Monomial, tiny</text>
+</svg>
+<p class='note'>Cross marks indicate a configuration for which all candidate CV scores were non-finite after the guard. In this stress panel, zero-ridge weighted-QR/drop is too strict, while weighted-QR/drop plus a tiny ridge grid agrees numerically with the monomial tiny-ridge reference on the repairable candidates.</p>
+<h2>Result Table</h2>
+<table><tr><th>dataset</th><th>label</th><th>selected.support</th><th>selected.cv.rmse</th><th>truth.rmse</th><th>observed.rmse</th><th>finite.cv.candidates</th><th>total.cv.candidates</th><th>elapsed.sec</th></tr><tr><td>near_collinear_curve</td><td>weighted.qr.drop, ridge = 0, guarded</td><td>12</td><td>Inf</td><td>Inf</td><td>Inf</td><td>0</td><td>3</td><td>0.119</td></tr>
+<tr><td>near_collinear_curve</td><td>weighted.qr.drop, tiny ridge, guarded</td><td>20</td><td>0.03295</td><td>0.01445</td><td>0.02526</td><td>3</td><td>3</td><td>0.138</td></tr>
+<tr><td>near_collinear_curve</td><td>monomial, tiny ridge, current</td><td>20</td><td>0.03294</td><td>0.01445</td><td>0.02526</td><td>3</td><td>3</td><td>0.052</td></tr>
+<tr><td>redundant_two_bump_surface</td><td>weighted.qr.drop, ridge = 0, guarded</td><td>14</td><td>Inf</td><td>Inf</td><td>Inf</td><td>0</td><td>3</td><td>0.093</td></tr>
+<tr><td>redundant_two_bump_surface</td><td>weighted.qr.drop, tiny ridge, guarded</td><td>24</td><td>0.06818</td><td>0.03422</td><td>0.04201</td><td>3</td><td>3</td><td>0.091</td></tr>
+<tr><td>redundant_two_bump_surface</td><td>monomial, tiny ridge, current</td><td>24</td><td>0.06818</td><td>0.03422</td><td>0.04201</td><td>3</td><td>3</td><td>0.073</td></tr>
+<tr><td>mixed_line_sheet</td><td>weighted.qr.drop, ridge = 0, guarded</td><td>12</td><td>Inf</td><td>Inf</td><td>Inf</td><td>0</td><td>3</td><td>0.07</td></tr>
+<tr><td>mixed_line_sheet</td><td>weighted.qr.drop, tiny ridge, guarded</td><td>22</td><td>0.08097</td><td>0.03182</td><td>0.03618</td><td>3</td><td>3</td><td>0.075</td></tr>
+<tr><td>mixed_line_sheet</td><td>monomial, tiny ridge, current</td><td>22</td><td>0.08097</td><td>0.03182</td><td>0.03618</td><td>3</td><td>3</td><td>0.057</td></tr></table>
+<h2>Interpretation</h2>
+<p>The comparison exercises the intended engineering behavior: <code>weighted.qr.drop</code> can make rank-deficient local degree-two designs estimable before ridge is considered, while the tiny-ridge variant gives the guard a second repair mechanism. The monomial path remains the compatibility baseline, but it does not distinguish true column redundancy from ordinary ill-conditioning.</p>
+<p>This is not a performance claim for P7X-scale experiments. It is a focused numerical smoke test showing that the new API paths run, select finite candidates when the guarded problem is repairable, and expose unstable candidates through non-finite CV scores.</p>
+<h2>Reproducibility</h2>
+<p>Regenerate with <code>Rscript scripts/lps_design_basis_guarded_ridge_comparison.R</code> from the geosmooth repository root.</p>
+</body></html>

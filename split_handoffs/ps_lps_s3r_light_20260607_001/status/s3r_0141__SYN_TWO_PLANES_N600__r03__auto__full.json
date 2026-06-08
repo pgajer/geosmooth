@@ -1,0 +1,17 @@
+{
+  "task_id": "s3r_0141__SYN_TWO_PLANES_N600__r03__auto__full",
+  "dataset_id": "SYN-TWO-PLANES-N600",
+  "repetition": 3,
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "search_policy": "full",
+  "status": "stopped_by_user",
+  "started_at": "2026-06-07 15:30:58 EDT",
+  "finished_at": "2026-06-07 15:32:09 EDT",
+  "elapsed_sec": null,
+  "hostname": "pgajerm4-osx",
+  "pid": 3454,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/results/s3r_0141__SYN_TWO_PLANES_N600__r03__auto__full.rds",
+  "error_message": "stopped intentionally after audit found paired-design seed mismatch; profiling-only run",
+  "error_class": "stopped_after_audit_seed_mismatch"
+}

@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0061__LA_D2_RAW_N500__auto__lps__monomial_tiny_ridge",
+  "dataset_id": "LA-D2-RAW-N500",
+  "method": "lps",
+  "chart_dim_rule": "auto",
+  "backend_variant": "monomial_tiny_ridge",
+  "status": "nonfinite_fit",
+  "started_at": "2026-06-06 23:06:29 EDT",
+  "finished_at": "2026-06-06 23:06:52 EDT",
+  "elapsed_sec": 22.757,
+  "hostname": "pgajerm4-osx",
+  "pid": 56146,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0061__LA_D2_RAW_N500__auto__lps__monomial_tiny_ridge.rds",
+  "error_message": "fit completed but selected fit or observed CV score was nonfinite",
+  "error_class": "nonfinite_fit"
+}

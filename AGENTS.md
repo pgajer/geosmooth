@@ -26,6 +26,22 @@ from `gflow`.
   - Full CRAN-style QA: `make check`
 - Keep local build products, check directories, and logs out of commits.
 
+## Benchmark Design
+
+- For controlled method-evaluation benchmark design, especially when building
+  synthetic smoother/regression suites with interpretable stress axes, consider
+  `/Users/pgajer/.codex/notes/references/evaluation_datasets/frank_friedman_style_factorial_design_for_method_evaluation.md`.
+
+## Research Reports
+
+- Every phase HTML report should follow
+  `/Users/pgajer/.codex/notes/agent_instructions/reports/html_report_style_guide.md`.
+- For figure/table readability and report polishing, follow
+  `/Users/pgajer/.codex/notes/agent_instructions/reports/report_figure_table_qc.md`.
+- Prefer self-contained report sections with stated questions, definitions,
+  formulas when relevant, numbered figure captions, interpretation paragraphs,
+  compact visible tables, and linked full CSV/RDS/log artifacts.
+
 ## Split Discipline
 
 - GE0 is the skeleton and native support scaffold.

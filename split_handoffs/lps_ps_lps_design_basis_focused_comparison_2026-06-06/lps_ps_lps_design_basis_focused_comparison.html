@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>LPS / PS-LPS Focused Design-Basis Backend Comparison</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       color: #222b35; margin: 0; background: #fbfbfc; }
+main { max-width: 1120px; margin: 0 auto; padding: 32px 28px 52px; }
+h1 { font-size: 34px; margin: 0 0 10px; }
+h2 { margin-top: 34px; border-top: 1px solid #d8dce1; padding-top: 20px; }
+p, li { line-height: 1.55; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0 18px;
+        font-size: 13px; }
+th, td { border-bottom: 1px solid #dfe3e8; padding: 7px 8px;
+         text-align: left; vertical-align: top; }
+th { background: #eef1f5; position: sticky; top: 0; }
+code { background: #eef1f5; padding: 1px 4px; border-radius: 4px; }
+.note { background: #eef6ff; border-left: 4px solid #2c7fb8;
+        padding: 12px 14px; }
+.warn { background: #fff5e6; border-left: 4px solid #d55e00;
+        padding: 12px 14px; }
+a { color: #1f6feb; }
+</style>
+</head>
+<body>
+<main>
+<h1>LPS / PS-LPS Focused Design-Basis Backend Comparison</h1>
+<p><strong>Generated:</strong> 2026-06-06 22:28:43 EDT</p>
+
+<h2>Purpose</h2>
+<p>This focused backend comparison checks whether the new guarded local
+polynomial design backends behave sensibly on a small set of frozen
+non-manifold fixtures. The comparison is intentionally small: it is a backend
+audit exercise, not a performance claim about final model defaults.</p>
+
+<p>The synthetic target is Truth RMSE,</p>
+<p style="text-align:center;">TruthRMSE =
+sqrt{ n^{-1} sum_i (hat f_i - f_i)^2 }.</p>
+<p>Observed CV RMSE is used only as the non-oracle selection score inside each
+method; Truth RMSE is used after fitting to audit how well the selected fit
+recovered the known synthetic function.</p>
+
+<h2>Methods</h2>
+<p>The run uses deterministic subsamples of four frozen first-batch assets:
+<code>LA-D1-RAW-N500.rds</code>, <code>LA-D1-HC-Li-N500.rds</code>, <code>SYN-PARA-LINE-N500.rds</code>, <code>SYN-RANK-BLOCKS-N600-P100.rds</code>. Each fit uses <code>chart.dim = "auto"</code>, local PCA coordinates,
+degree 2, tricube kernel, and support grid <code>{15, 25}</code>.
+PS-LPS uses <code>lambda.sync.grid = {0, 0.01, 0.1}</code> with grid search and
+the normal-cache solver.</p>
+
+<p>The backend variants are:</p>
+<ul>
+<li><code>monomial_tiny_ridge</code>: standard monomial design with fixed tiny
+scale-relative ridge.</li>
+<li><code>weighted_qr_drop_tiny</code>: weighted-QR rank/drop guard followed by
+zero or tiny ridge subject to a condition cap.</li>
+<li><code>orthogonal_drop_ridge0</code>: orthogonalized local polynomial basis
+with dropped rank-deficient columns and no ridge.</li>
+<li><code>orthogonal_drop_adaptive_tiny</code>: the same orthogonal basis plus
+zero-or-tiny adaptive ridge subject to a condition cap.</li>
+</ul>
+
+<h2>Truth RMSE Overview</h2>
+<p>The figure shows selected-fit Truth RMSE for each dataset. Circles denote
+LPS and squares denote PS-LPS. Lower values are better.</p><svg viewBox="0 0 1100 520" role="img" aria-label="Truth RMSE by backend variant">
+<line x1="190" y1="425" x2="1060" y2="425" stroke="#333"/>
+<line x1="190" y1="45" x2="190" y2="425" stroke="#333"/>
+<line x1="190" y1="425.0" x2="1060" y2="425.0" stroke="#e3e5e8"/>
+<text x="180" y="429.0" text-anchor="end" font-size="12">0.000</text>
+<line x1="190" y1="353.8" x2="1060" y2="353.8" stroke="#e3e5e8"/>
+<text x="180" y="357.8" text-anchor="end" font-size="12">0.020</text>
+<line x1="190" y1="282.6" x2="1060" y2="282.6" stroke="#e3e5e8"/>
+<text x="180" y="286.6" text-anchor="end" font-size="12">0.040</text>
+<line x1="190" y1="211.5" x2="1060" y2="211.5" stroke="#e3e5e8"/>
+<text x="180" y="215.5" text-anchor="end" font-size="12">0.060</text>
+<line x1="190" y1="140.3" x2="1060" y2="140.3" stroke="#e3e5e8"/>
+<text x="180" y="144.3" text-anchor="end" font-size="12">0.080</text>
+<line x1="190" y1="69.1" x2="1060" y2="69.1" stroke="#e3e5e8"/>
+<text x="180" y="73.1" text-anchor="end" font-size="12">0.100</text>
+<text x="190.0" y="465" text-anchor="middle" font-size="11">LA-D1-RAW-N500</text>
+<line x1="128.0" y1="425" x2="128.0" y2="209.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="128.0" cy="209.4" r="5" fill="#0072B2"><title>LA-D1-RAW-N500 / LPS / monomial_tiny_ridge: Truth RMSE 0.06057</title></circle>
+<line x1="142.0" y1="425" x2="142.0" y2="262.3" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="137.0" y="257.3" width="10" height="10" fill="#0072B2"><title>LA-D1-RAW-N500 / PS-LPS / monomial_tiny_ridge: Truth RMSE 0.04572</title></rect>
+<line x1="164.7" y1="425" x2="164.7" y2="208.8" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="164.7" cy="208.8" r="5" fill="#D55E00"><title>LA-D1-RAW-N500 / LPS / orthogonal_drop_ridge0: Truth RMSE 0.06075</title></circle>
+<line x1="178.7" y1="425" x2="178.7" y2="237.0" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="173.7" y="232.0" width="10" height="10" fill="#D55E00"><title>LA-D1-RAW-N500 / PS-LPS / orthogonal_drop_ridge0: Truth RMSE 0.05283</title></rect>
+<line x1="201.3" y1="425" x2="201.3" y2="208.8" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="201.3" cy="208.8" r="5" fill="#CC79A7"><title>LA-D1-RAW-N500 / LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.06075</title></circle>
+<line x1="215.3" y1="425" x2="215.3" y2="237.0" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="210.3" y="232.0" width="10" height="10" fill="#CC79A7"><title>LA-D1-RAW-N500 / PS-LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.05283</title></rect>
+<line x1="252.0" y1="425" x2="252.0" y2="250.3" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="247.0" y="245.3" width="10" height="10" fill="#009E73"><title>LA-D1-RAW-N500 / PS-LPS / weighted_qr_drop_tiny: Truth RMSE 0.0491</title></rect>
+<text x="480.0" y="465" text-anchor="middle" font-size="11">LA-D1-HC-Li-N500</text>
+<line x1="432.0" y1="425" x2="432.0" y2="283.5" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="427.0" y="278.5" width="10" height="10" fill="#0072B2"><title>LA-D1-HC-Li-N500 / PS-LPS / monomial_tiny_ridge: Truth RMSE 0.03975</title></rect>
+<line x1="454.7" y1="425" x2="454.7" y2="238.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="454.7" cy="238.4" r="5" fill="#D55E00"><title>LA-D1-HC-Li-N500 / LPS / orthogonal_drop_ridge0: Truth RMSE 0.05242</title></circle>
+<line x1="468.7" y1="425" x2="468.7" y2="257.8" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="463.7" y="252.8" width="10" height="10" fill="#D55E00"><title>LA-D1-HC-Li-N500 / PS-LPS / orthogonal_drop_ridge0: Truth RMSE 0.04698</title></rect>
+<line x1="491.3" y1="425" x2="491.3" y2="238.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="491.3" cy="238.4" r="5" fill="#CC79A7"><title>LA-D1-HC-Li-N500 / LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.05242</title></circle>
+<line x1="505.3" y1="425" x2="505.3" y2="257.8" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="500.3" y="252.8" width="10" height="10" fill="#CC79A7"><title>LA-D1-HC-Li-N500 / PS-LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.04698</title></rect>
+<line x1="542.0" y1="425" x2="542.0" y2="273.8" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="537.0" y="268.8" width="10" height="10" fill="#009E73"><title>LA-D1-HC-Li-N500 / PS-LPS / weighted_qr_drop_tiny: Truth RMSE 0.04248</title></rect>
+<text x="770.0" y="465" text-anchor="middle" font-size="11">SYN-PARA-LINE-N500</text>
+<line x1="708.0" y1="425" x2="708.0" y2="223.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="708.0" cy="223.4" r="5" fill="#0072B2"><title>SYN-PARA-LINE-N500 / LPS / monomial_tiny_ridge: Truth RMSE 0.05665</title></circle>
+<line x1="722.0" y1="425" x2="722.0" y2="248.1" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="717.0" y="243.1" width="10" height="10" fill="#0072B2"><title>SYN-PARA-LINE-N500 / PS-LPS / monomial_tiny_ridge: Truth RMSE 0.0497</title></rect>
+<line x1="744.7" y1="425" x2="744.7" y2="223.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="744.7" cy="223.4" r="5" fill="#D55E00"><title>SYN-PARA-LINE-N500 / LPS / orthogonal_drop_ridge0: Truth RMSE 0.05665</title></circle>
+<line x1="758.7" y1="425" x2="758.7" y2="248.1" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="753.7" y="243.1" width="10" height="10" fill="#D55E00"><title>SYN-PARA-LINE-N500 / PS-LPS / orthogonal_drop_ridge0: Truth RMSE 0.04971</title></rect>
+<line x1="781.3" y1="425" x2="781.3" y2="223.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="781.3" cy="223.4" r="5" fill="#CC79A7"><title>SYN-PARA-LINE-N500 / LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.05665</title></circle>
+<line x1="795.3" y1="425" x2="795.3" y2="248.1" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="790.3" y="243.1" width="10" height="10" fill="#CC79A7"><title>SYN-PARA-LINE-N500 / PS-LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.04971</title></rect>
+<line x1="818.0" y1="425" x2="818.0" y2="223.4" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="818.0" cy="223.4" r="5" fill="#009E73"><title>SYN-PARA-LINE-N500 / LPS / weighted_qr_drop_tiny: Truth RMSE 0.05665</title></circle>
+<line x1="832.0" y1="425" x2="832.0" y2="248.1" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="827.0" y="243.1" width="10" height="10" fill="#009E73"><title>SYN-PARA-LINE-N500 / PS-LPS / weighted_qr_drop_tiny: Truth RMSE 0.04971</title></rect>
+<text x="1060.0" y="465" text-anchor="middle" font-size="11">SYN-RANK-BLOCKS-N600-P100</text>
+<line x1="998.0" y1="425" x2="998.0" y2="85.7" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="998.0" cy="85.7" r="5" fill="#0072B2"><title>SYN-RANK-BLOCKS-N600-P100 / LPS / monomial_tiny_ridge: Truth RMSE 0.09534</title></circle>
+<line x1="1012.0" y1="425" x2="1012.0" y2="142.6" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="1007.0" y="137.6" width="10" height="10" fill="#0072B2"><title>SYN-RANK-BLOCKS-N600-P100 / PS-LPS / monomial_tiny_ridge: Truth RMSE 0.07935</title></rect>
+<line x1="1034.7" y1="425" x2="1034.7" y2="85.7" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="1034.7" cy="85.7" r="5" fill="#D55E00"><title>SYN-RANK-BLOCKS-N600-P100 / LPS / orthogonal_drop_ridge0: Truth RMSE 0.09534</title></circle>
+<line x1="1048.7" y1="425" x2="1048.7" y2="99.9" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="1043.7" y="94.9" width="10" height="10" fill="#D55E00"><title>SYN-RANK-BLOCKS-N600-P100 / PS-LPS / orthogonal_drop_ridge0: Truth RMSE 0.09135</title></rect>
+<line x1="1071.3" y1="425" x2="1071.3" y2="85.7" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="1071.3" cy="85.7" r="5" fill="#CC79A7"><title>SYN-RANK-BLOCKS-N600-P100 / LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.09534</title></circle>
+<line x1="1085.3" y1="425" x2="1085.3" y2="99.9" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="1080.3" y="94.9" width="10" height="10" fill="#CC79A7"><title>SYN-RANK-BLOCKS-N600-P100 / PS-LPS / orthogonal_drop_adaptive_tiny: Truth RMSE 0.09135</title></rect>
+<line x1="1108.0" y1="425" x2="1108.0" y2="85.7" stroke="#b6bbc2" stroke-width="1"/>
+<circle cx="1108.0" cy="85.7" r="5" fill="#009E73"><title>SYN-RANK-BLOCKS-N600-P100 / LPS / weighted_qr_drop_tiny: Truth RMSE 0.09534</title></circle>
+<line x1="1122.0" y1="425" x2="1122.0" y2="99.9" stroke="#b6bbc2" stroke-width="1"/>
+<rect x="1117.0" y="94.9" width="10" height="10" fill="#009E73"><title>SYN-RANK-BLOCKS-N600-P100 / PS-LPS / weighted_qr_drop_tiny: Truth RMSE 0.09135</title></rect>
+<circle cx="650" cy="35" r="5" fill="#0072B2"/>
+<text x="662" y="39" font-size="12">monomial + tiny ridge</text>
+<circle cx="650" cy="53" r="5" fill="#D55E00"/>
+<text x="662" y="57" font-size="12">orthogonal polynomial drop, ridge 0</text>
+<circle cx="650" cy="71" r="5" fill="#CC79A7"/>
+<text x="662" y="75" font-size="12">orthogonal polynomial drop + tiny/adaptive ridge</text>
+<circle cx="650" cy="89" r="5" fill="#009E73"/>
+<text x="662" y="93" font-size="12">weighted QR drop + tiny/adaptive ridge</text>
+<circle cx="650" cy="127" r="5" fill="#333"/>
+<text x="662" y="131" font-size="12">LPS</text>
+<rect x="645" y="144" width="10" height="10" fill="#333"/>
+<text x="662" y="153" font-size="12">PS-LPS</text>
+<text x="25" y="30" font-size="14" font-weight="700">Truth RMSE</text>
+</svg>
+<h2>Best Row Per Dataset</h2><table><tr><th>dataset.id</th><th>method</th><th>variant.id</th><th>truth.rmse</th><th>observed.rmse</th><th>cv.rmse.observed</th><th>elapsed.sec</th></tr><tr><td>LA-D1-HC-Li-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>0.03975</td><td>0.08755</td><td>0.1098</td><td>0.449</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>0.04572</td><td>0.08851</td><td>0.1252</td><td>0.841</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>0.0497</td><td>0.08034</td><td>0.1134</td><td>0.565</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>0.07935</td><td>0.03168</td><td>0.4736</td><td>3.846</td></tr></table>
+<h2>Compact Result Table</h2>
+<p>The full CSV is written to
+<a href="tables/lps_ps_lps_design_basis_summary.csv">tables/lps_ps_lps_design_basis_summary.csv</a>.
+This compact table keeps the key fit and numerical diagnostics visible.</p><table><tr><th>dataset.id</th><th>method</th><th>variant.id</th><th>status</th><th>truth.rmse</th><th>observed.rmse</th><th>cv.rmse.observed</th><th>selected.support</th><th>selected.lambda.sync</th><th>ridge.multiplier.selected</th><th>ridge.condition</th><th>ridge.status</th><th>finite.cv.candidates</th><th>total.cv.candidates</th><th>elapsed.sec</th><th>message</th></tr><tr><td>LA-D1-RAW-N500</td><td>LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.06057</td><td>0.08026</td><td>1.292</td><td>   25</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.252</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>LPS</td><td>weighted_qr_drop_tiny</td><td>nonfinite_fit</td><td>NA</td><td>NA</td><td>Inf</td><td>   15</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>0</td><td>    2</td><td>0.228</td><td>No finite selected fit or CV score was available under this backend/guard configuration.</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.06075</td><td>0.08025</td><td>2.427</td><td>   25</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.168</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.06075</td><td>0.08025</td><td>2.427</td><td>   25</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td>0.158</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.04572</td><td>0.08851</td><td>0.1252</td><td>   25</td><td>  0.1</td><td>0.00000001</td><td>NA</td><td>unguarded</td><td>    3</td><td>    3</td><td>0.841</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>PS-LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.0491</td><td>0.08765</td><td>0.1239</td><td>   25</td><td>  0.1</td><td>0.0000000001</td><td>20100373765</td><td>ok</td><td>    2</td><td>    3</td><td>1.406</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>PS-LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.05283</td><td>0.08487</td><td>0.1229</td><td>   25</td><td>  0.1</td><td>0</td><td>NA</td><td>unguarded</td><td>    3</td><td>    3</td><td> 0.62</td><td></td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>PS-LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.05283</td><td>0.08487</td><td>0.1229</td><td>   25</td><td>  0.1</td><td>0</td><td>597.4</td><td>ok</td><td>    3</td><td>    3</td><td>0.882</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>LPS</td><td>monomial_tiny_ridge</td><td>nonfinite_fit</td><td>NA</td><td>NA</td><td>Inf</td><td>   15</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>0</td><td>    2</td><td>0.123</td><td>No finite selected fit or CV score was available under this backend/guard configuration.</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>LPS</td><td>weighted_qr_drop_tiny</td><td>nonfinite_fit</td><td>NA</td><td>NA</td><td>Inf</td><td>   15</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>0</td><td>    2</td><td>0.142</td><td>No finite selected fit or CV score was available under this backend/guard configuration.</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.05242</td><td>0.08222</td><td>2.023</td><td>   25</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.136</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.05242</td><td>0.08222</td><td>2.023</td><td>   25</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td>0.135</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.03975</td><td>0.08755</td><td>0.1098</td><td>   25</td><td> 0.01</td><td>0.00000001</td><td>NA</td><td>unguarded</td><td>    2</td><td>    3</td><td>0.449</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>PS-LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.04248</td><td>0.0864</td><td>0.1116</td><td>   25</td><td> 0.01</td><td>0.0000000001</td><td>11700940711</td><td>ok</td><td>    2</td><td>    3</td><td> 0.63</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>PS-LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.04698</td><td>0.08362</td><td>0.1111</td><td>   25</td><td> 0.01</td><td>0</td><td>NA</td><td>unguarded</td><td>    3</td><td>    3</td><td>0.437</td><td></td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>PS-LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.04698</td><td>0.08362</td><td>0.1111</td><td>   25</td><td> 0.01</td><td>0</td><td>21335</td><td>ok</td><td>    3</td><td>    3</td><td> 0.55</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.05665</td><td>0.0779</td><td>0.1171</td><td>   25</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.126</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.05665</td><td>0.0779</td><td>0.1171</td><td>   25</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td>0.132</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.05665</td><td>0.0779</td><td>0.1171</td><td>   25</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.141</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.05665</td><td>0.0779</td><td>0.1171</td><td>   25</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td> 0.14</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.0497</td><td>0.08034</td><td>0.1134</td><td>   25</td><td>  0.1</td><td>0.00000001</td><td>NA</td><td>unguarded</td><td>    3</td><td>    3</td><td>0.565</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>PS-LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.04971</td><td>0.08034</td><td>0.1134</td><td>   25</td><td>  0.1</td><td>0</td><td>1000159395</td><td>ok</td><td>    3</td><td>    3</td><td>1.074</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>PS-LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.04971</td><td>0.08034</td><td>0.1134</td><td>   25</td><td>  0.1</td><td>0</td><td>NA</td><td>unguarded</td><td>    3</td><td>    3</td><td>0.579</td><td></td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>PS-LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.04971</td><td>0.08034</td><td>0.1134</td><td>   25</td><td>  0.1</td><td>0</td><td>35.74</td><td>ok</td><td>    3</td><td>    3</td><td>0.834</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.09534</td><td>0.0008153</td><td>11.98</td><td>   15</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.486</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.09534</td><td>0.0008153</td><td>20.48</td><td>   15</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td>0.485</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.09534</td><td>0.0008153</td><td>20.48</td><td>   15</td><td>NA</td><td>NA</td><td>Inf</td><td>NA</td><td>    2</td><td>    2</td><td>0.508</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.09534</td><td>0.0008153</td><td>20.48</td><td>   15</td><td>NA</td><td>NA</td><td>1000000000000</td><td>NA</td><td>    2</td><td>    2</td><td>0.508</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>PS-LPS</td><td>monomial_tiny_ridge</td><td>ok</td><td>0.07935</td><td>0.03168</td><td>0.4736</td><td>   15</td><td>  0.1</td><td>0.00000001</td><td>NA</td><td>unguarded</td><td>    2</td><td>    3</td><td>3.846</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>PS-LPS</td><td>weighted_qr_drop_tiny</td><td>ok</td><td>0.09135</td><td>0.007692</td><td>1.181</td><td>   15</td><td> 0.01</td><td>0</td><td>94555321469</td><td>ok</td><td>    3</td><td>    3</td><td>10.12</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>PS-LPS</td><td>orthogonal_drop_ridge0</td><td>ok</td><td>0.09135</td><td>0.007692</td><td>1.181</td><td>   15</td><td> 0.01</td><td>0</td><td>NA</td><td>unguarded</td><td>    2</td><td>    3</td><td> 3.36</td><td></td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>PS-LPS</td><td>orthogonal_drop_adaptive_tiny</td><td>ok</td><td>0.09135</td><td>0.007692</td><td>1.181</td><td>   15</td><td> 0.01</td><td>0</td><td> 3807</td><td>ok</td><td>    2</td><td>    3</td><td>7.255</td><td></td></tr></table>
+<h2>Interpretation</h2>
+<p>This run asks whether the backend choices are numerically explicit and
+auditable. A successful result is not necessarily the lowest Truth RMSE; it is
+also important that failures are reported as failures, rank drops are visible,
+and ridge choices are recorded.</p>
+<p>The orthogonal basis with zero ridge should be interpreted as a change of
+basis for the same local polynomial prediction space after rank-deficient
+directions are dropped. Once a ridge is added, the penalty is applied in the
+orthogonalized coefficient coordinates, so it is not algebraically identical
+to ridge on raw monomial coefficients. For prediction this is usually the
+more stable numerical target, but the distinction should be audited before
+promoting defaults.</p><div class="warn"><strong>Failures or non-finite fits were observed.</strong> See <a href="tables/lps_ps_lps_design_basis_failures.csv">tables/lps_ps_lps_design_basis_failures.csv</a>.</div>
+<h2>Assets</h2>
+<ul>
+<li><a href="tables/lps_ps_lps_design_basis_summary.csv">Summary CSV</a></li>
+<li><a href="tables/lps_ps_lps_design_basis_failures.csv">Failure CSV</a></li>
+<li>Script: <code>scripts/lps_ps_lps_design_basis_focused_comparison.R</code></li>
+</ul>
+</main>
+</body>
+</html>
+

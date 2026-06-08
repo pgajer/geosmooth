@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0152__SYN_SIMPLEX_FACES_N600__local_auto__lps__weighted_qr_drop_tiny",
+  "dataset_id": "SYN-SIMPLEX-FACES-N600",
+  "method": "lps",
+  "chart_dim_rule": "local.auto",
+  "backend_variant": "weighted_qr_drop_tiny",
+  "status": "nonfinite_fit",
+  "started_at": "2026-06-07 01:38:59 EDT",
+  "finished_at": "2026-06-07 01:39:32 EDT",
+  "elapsed_sec": 33.241,
+  "hostname": "pgajerm4-osx",
+  "pid": 65051,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0152__SYN_SIMPLEX_FACES_N600__local_auto__lps__weighted_qr_drop_tiny.rds",
+  "error_message": "fit completed but selected fit or observed CV score was nonfinite",
+  "error_class": "nonfinite_fit"
+}

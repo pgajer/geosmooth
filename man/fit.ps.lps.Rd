@@ -19,8 +19,15 @@ fit.ps.lps(
   auto.chart.selection.metric = c("coordinates", "operator"),
   lambda.sync.grid = c(0, 0.001, 0.01, 0.1, 1, 10),
   lambda.sync.search = c("grid", "guarded"),
+  local.candidate.search = c("screened", "full", "subgrid"),
+  local.candidate.search.control = list(),
   lambda.sync.search.control = list(),
   lambda.ridge = 1e-08,
+  design.basis = c("monomial", "weighted.qr", "weighted.qr.drop",
+    "orthogonal.polynomial.drop"),
+  design.drop.tol = sqrt(.Machine$double.eps),
+  ridge.multiplier.grid = NULL,
+  ridge.condition.max = Inf,
   sync.neighbor.size = NULL,
   overlap.weight = c("normalized.product", "product"),
   cv.folds = 5L,
@@ -77,6 +84,23 @@ select when both diagnostics are requested.}
 supplied grid exactly.  \code{"guarded"} uses an experimental guarded
 coarse-to-refine search with boundary expansion.}
 
+\item{local.candidate.search}{Local-candidate search policy when
+\code{support.grid}, \code{degree.grid}, or \code{kernel.grid} contains
+more than one candidate. \code{"screened"} is the routine default: it first
+ranks candidates by ordinary LPS materialized-fold CV, then runs PS-LPS only
+on a screened subset plus guard candidates. \code{"full"} evaluates PS-LPS
+lambda search for every local candidate and is the exact audit/reference
+path. \code{"subgrid"} skips the ordinary-LPS screening pass and evaluates
+only a deterministic support/kernel guard subgrid; this is intended for
+high-dimensional preflight runs where the screening pass is itself too
+expensive.}
+
+\item{local.candidate.search.control}{Optional list controlling screened
+local-candidate search. Supported fields are \code{top.n} (default
+\code{8}), \code{max.candidates} (default \code{12}),
+\code{neighbor.radius} (default \code{1}), and
+\code{guard.support.quantiles} (default \code{c(0, 0.5, 1)}).}
+
 \item{lambda.sync.search.control}{Optional list controlling guarded search.
 Supported fields are \code{coarse.size} (default \code{5}),
 \code{refine.radius} (default \code{2}), \code{rel.tol} (default
@@ -90,6 +114,26 @@ very small cap can prevent local refinement or boundary expansion.}
 
 \item{lambda.ridge}{Nonnegative scale-relative ridge used in the chart
 coefficient solve. Use \code{0} for the unregularized least-squares model.}
+
+\item{design.basis}{Local polynomial design backend. See
+\code{\link{fit.lps}}. In PS-LPS, \code{"weighted.qr.drop"} drops
+numerically dependent columns separately in each anchor chart before the
+synchronized system is assembled, and
+\code{"orthogonal.polynomial.drop"} builds each synchronized chart in a
+weighted-orthogonal polynomial basis.}
+
+\item{design.drop.tol}{Relative QR tolerance used by
+\code{design.basis = "weighted.qr.drop"} or
+\code{design.basis = "orthogonal.polynomial.drop"}.}
+
+\item{ridge.multiplier.grid}{Optional nonnegative ridge multipliers for
+adaptive scale-relative ridge selection. When supplied, the solver uses the
+smallest multiplier whose penalized normal equations pass
+\code{ridge.condition.max}. If \code{NULL}, \code{lambda.ridge} is used as
+the single multiplier for backward compatibility.}
+
+\item{ridge.condition.max}{Maximum allowed condition number for adaptive
+ridge selection. Use \code{Inf} to disable the condition-number guard.}
 
 \item{sync.neighbor.size}{Number of nearby anchor pairs considered for
 synchronization from each anchor support.}

@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0123__SYN_SADDLE_LINE_N500__auto__lps__orthogonal_drop_adaptive_tiny",
+  "dataset_id": "SYN-SADDLE-LINE-N500",
+  "method": "lps",
+  "chart_dim_rule": "auto",
+  "backend_variant": "orthogonal_drop_adaptive_tiny",
+  "status": "ok",
+  "started_at": "2026-06-07 01:01:21 EDT",
+  "finished_at": "2026-06-07 01:01:32 EDT",
+  "elapsed_sec": 10.752,
+  "hostname": "pgajerm4-osx",
+  "pid": 63033,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0123__SYN_SADDLE_LINE_N500__auto__lps__orthogonal_drop_adaptive_tiny.rds",
+  "error_message": null,
+  "error_class": null
+}

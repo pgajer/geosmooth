@@ -1,0 +1,339 @@
+[2026-06-07 16:02:31 EDT] start workers=10 pending=168 total=168
+[2026-06-07 16:02:31 EDT] launched s3r_0001__LA_D1_RAW_N500__r01__auto__full pid=48447
+[2026-06-07 16:02:31 EDT] launched s3r_0002__LA_D1_RAW_N500__r01__auto__screened pid=48448
+[2026-06-07 16:02:31 EDT] launched s3r_0003__LA_D1_RAW_N500__r01__local_auto__full pid=48449
+[2026-06-07 16:02:31 EDT] launched s3r_0004__LA_D1_RAW_N500__r01__local_auto__screened pid=48450
+[2026-06-07 16:02:31 EDT] launched s3r_0005__LA_D1_RAW_N500__r02__auto__full pid=48451
+[2026-06-07 16:02:31 EDT] launched s3r_0006__LA_D1_RAW_N500__r02__auto__screened pid=48452
+[2026-06-07 16:02:31 EDT] launched s3r_0007__LA_D1_RAW_N500__r02__local_auto__full pid=48453
+[2026-06-07 16:02:31 EDT] launched s3r_0008__LA_D1_RAW_N500__r02__local_auto__screened pid=48458
+[2026-06-07 16:02:31 EDT] launched s3r_0009__LA_D1_RAW_N500__r03__auto__full pid=48463
+[2026-06-07 16:02:31 EDT] launched s3r_0010__LA_D1_RAW_N500__r03__auto__screened pid=48467
+[2026-06-07 16:02:45 EDT] finished s3r_0002__LA_D1_RAW_N500__r01__auto__screened rc=0 elapsed_sec=14.0
+[2026-06-07 16:02:45 EDT] finished s3r_0006__LA_D1_RAW_N500__r02__auto__screened rc=0 elapsed_sec=14.0
+[2026-06-07 16:02:45 EDT] finished s3r_0010__LA_D1_RAW_N500__r03__auto__screened rc=0 elapsed_sec=14.0
+[2026-06-07 16:02:47 EDT] launched s3r_0011__LA_D1_RAW_N500__r03__local_auto__full pid=48613
+[2026-06-07 16:02:47 EDT] launched s3r_0012__LA_D1_RAW_N500__r03__local_auto__screened pid=48614
+[2026-06-07 16:02:47 EDT] launched s3r_0013__LA_D1_HC_Li_N500__r01__auto__full pid=48615
+[2026-06-07 16:02:53 EDT] finished s3r_0004__LA_D1_RAW_N500__r01__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:02:55 EDT] launched s3r_0014__LA_D1_HC_Li_N500__r01__auto__screened pid=48654
+[2026-06-07 16:02:55 EDT] finished s3r_0008__LA_D1_RAW_N500__r02__local_auto__screened rc=0 elapsed_sec=24.1
+[2026-06-07 16:02:57 EDT] launched s3r_0015__LA_D1_HC_Li_N500__r01__local_auto__full pid=48662
+[2026-06-07 16:03:05 EDT] finished s3r_0014__LA_D1_HC_Li_N500__r01__auto__screened rc=0 elapsed_sec=10.0
+[2026-06-07 16:03:07 EDT] launched s3r_0016__LA_D1_HC_Li_N500__r01__local_auto__screened pid=48674
+[2026-06-07 16:03:11 EDT] finished s3r_0012__LA_D1_RAW_N500__r03__local_auto__screened rc=0 elapsed_sec=24.1
+[2026-06-07 16:03:13 EDT] launched s3r_0017__LA_D1_HC_Li_N500__r02__auto__full pid=48689
+[2026-06-07 16:03:17 EDT] finished s3r_0009__LA_D1_RAW_N500__r03__auto__full rc=0 elapsed_sec=46.1
+[2026-06-07 16:03:17 EDT] finished s3r_0013__LA_D1_HC_Li_N500__r01__auto__full rc=0 elapsed_sec=30.1
+[2026-06-07 16:03:19 EDT] launched s3r_0018__LA_D1_HC_Li_N500__r02__auto__screened pid=48711
+[2026-06-07 16:03:19 EDT] launched s3r_0019__LA_D1_HC_Li_N500__r02__local_auto__full pid=48712
+[2026-06-07 16:03:19 EDT] finished s3r_0001__LA_D1_RAW_N500__r01__auto__full rc=0 elapsed_sec=48.2
+[2026-06-07 16:03:19 EDT] finished s3r_0005__LA_D1_RAW_N500__r02__auto__full rc=0 elapsed_sec=48.1
+[2026-06-07 16:03:21 EDT] launched s3r_0020__LA_D1_HC_Li_N500__r02__local_auto__screened pid=48732
+[2026-06-07 16:03:21 EDT] launched s3r_0021__LA_D1_HC_Li_N500__r03__auto__full pid=48733
+[2026-06-07 16:03:27 EDT] finished s3r_0016__LA_D1_HC_Li_N500__r01__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:03:29 EDT] launched s3r_0022__LA_D1_HC_Li_N500__r03__auto__screened pid=48800
+[2026-06-07 16:03:29 EDT] finished s3r_0003__LA_D1_RAW_N500__r01__local_auto__full rc=0 elapsed_sec=58.2
+[2026-06-07 16:03:29 EDT] finished s3r_0007__LA_D1_RAW_N500__r02__local_auto__full rc=0 elapsed_sec=58.2
+[2026-06-07 16:03:29 EDT] finished s3r_0018__LA_D1_HC_Li_N500__r02__auto__screened rc=0 elapsed_sec=10.0
+[2026-06-07 16:03:31 EDT] launched s3r_0023__LA_D1_HC_Li_N500__r03__local_auto__full pid=48808
+[2026-06-07 16:03:31 EDT] launched s3r_0024__LA_D1_HC_Li_N500__r03__local_auto__screened pid=48809
+[2026-06-07 16:03:31 EDT] launched s3r_0025__LA_D1_HC_Lc_N500__r01__auto__full pid=48810
+[2026-06-07 16:03:39 EDT] finished s3r_0022__LA_D1_HC_Li_N500__r03__auto__screened rc=0 elapsed_sec=10.0
+[2026-06-07 16:03:41 EDT] launched s3r_0026__LA_D1_HC_Lc_N500__r01__auto__screened pid=48929
+[2026-06-07 16:03:41 EDT] finished s3r_0015__LA_D1_HC_Li_N500__r01__local_auto__full rc=0 elapsed_sec=44.1
+[2026-06-07 16:03:41 EDT] finished s3r_0020__LA_D1_HC_Li_N500__r02__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:03:43 EDT] launched s3r_0027__LA_D1_HC_Lc_N500__r01__local_auto__full pid=48940
+[2026-06-07 16:03:43 EDT] launched s3r_0028__LA_D1_HC_Lc_N500__r01__local_auto__screened pid=48941
+[2026-06-07 16:03:43 EDT] finished s3r_0017__LA_D1_HC_Li_N500__r02__auto__full rc=0 elapsed_sec=30.1
+[2026-06-07 16:03:45 EDT] launched s3r_0029__LA_D1_HC_Lc_N500__r02__auto__full pid=48958
+[2026-06-07 16:03:45 EDT] finished s3r_0011__LA_D1_RAW_N500__r03__local_auto__full rc=0 elapsed_sec=58.2
+[2026-06-07 16:03:47 EDT] launched s3r_0030__LA_D1_HC_Lc_N500__r02__auto__screened pid=49002
+[2026-06-07 16:03:51 EDT] finished s3r_0021__LA_D1_HC_Li_N500__r03__auto__full rc=0 elapsed_sec=30.1
+[2026-06-07 16:03:51 EDT] finished s3r_0024__LA_D1_HC_Li_N500__r03__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:03:53 EDT] launched s3r_0031__LA_D1_HC_Lc_N500__r02__local_auto__full pid=49016
+[2026-06-07 16:03:53 EDT] launched s3r_0032__LA_D1_HC_Lc_N500__r02__local_auto__screened pid=49017
+[2026-06-07 16:03:53 EDT] finished s3r_0026__LA_D1_HC_Lc_N500__r01__auto__screened rc=0 elapsed_sec=12.0
+[2026-06-07 16:03:55 EDT] launched s3r_0033__LA_D1_HC_Lc_N500__r03__auto__full pid=49032
+[2026-06-07 16:03:59 EDT] finished s3r_0030__LA_D1_HC_Lc_N500__r02__auto__screened rc=0 elapsed_sec=12.0
+[2026-06-07 16:04:01 EDT] launched s3r_0034__LA_D1_HC_Lc_N500__r03__auto__screened pid=49043
+[2026-06-07 16:04:01 EDT] finished s3r_0019__LA_D1_HC_Li_N500__r02__local_auto__full rc=0 elapsed_sec=42.1
+[2026-06-07 16:04:03 EDT] launched s3r_0035__LA_D1_HC_Lc_N500__r03__local_auto__full pid=49051
+[2026-06-07 16:04:05 EDT] finished s3r_0028__LA_D1_HC_Lc_N500__r01__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:04:07 EDT] launched s3r_0036__LA_D1_HC_Lc_N500__r03__local_auto__screened pid=49098
+[2026-06-07 16:04:13 EDT] finished s3r_0025__LA_D1_HC_Lc_N500__r01__auto__full rc=0 elapsed_sec=42.1
+[2026-06-07 16:04:13 EDT] finished s3r_0034__LA_D1_HC_Lc_N500__r03__auto__screened rc=0 elapsed_sec=12.0
+[2026-06-07 16:04:15 EDT] launched s3r_0037__LA_D1_HC_Gv_N500__r01__auto__full pid=49155
+[2026-06-07 16:04:15 EDT] launched s3r_0038__LA_D1_HC_Gv_N500__r01__auto__screened pid=49156
+[2026-06-07 16:04:15 EDT] finished s3r_0023__LA_D1_HC_Li_N500__r03__local_auto__full rc=0 elapsed_sec=44.1
+[2026-06-07 16:04:15 EDT] finished s3r_0032__LA_D1_HC_Lc_N500__r02__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:04:17 EDT] launched s3r_0039__LA_D1_HC_Gv_N500__r01__local_auto__full pid=49171
+[2026-06-07 16:04:17 EDT] launched s3r_0040__LA_D1_HC_Gv_N500__r01__local_auto__screened pid=49172
+[2026-06-07 16:04:27 EDT] finished s3r_0029__LA_D1_HC_Lc_N500__r02__auto__full rc=0 elapsed_sec=42.1
+[2026-06-07 16:04:27 EDT] finished s3r_0038__LA_D1_HC_Gv_N500__r01__auto__screened rc=0 elapsed_sec=12.0
+[2026-06-07 16:04:29 EDT] launched s3r_0041__LA_D1_HC_Gv_N500__r02__auto__full pid=49549
+[2026-06-07 16:04:29 EDT] launched s3r_0042__LA_D1_HC_Gv_N500__r02__auto__screened pid=49550
+[2026-06-07 16:04:29 EDT] finished s3r_0036__LA_D1_HC_Lc_N500__r03__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:04:31 EDT] launched s3r_0043__LA_D1_HC_Gv_N500__r02__local_auto__full pid=49751
+[2026-06-07 16:04:37 EDT] finished s3r_0033__LA_D1_HC_Lc_N500__r03__auto__full rc=0 elapsed_sec=42.1
+[2026-06-07 16:04:37 EDT] finished s3r_0040__LA_D1_HC_Gv_N500__r01__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:04:39 EDT] launched s3r_0044__LA_D1_HC_Gv_N500__r02__local_auto__screened pid=50377
+[2026-06-07 16:04:39 EDT] launched s3r_0045__LA_D1_HC_Gv_N500__r03__auto__full pid=50378
+[2026-06-07 16:04:39 EDT] finished s3r_0027__LA_D1_HC_Lc_N500__r01__local_auto__full rc=0 elapsed_sec=56.2
+[2026-06-07 16:04:41 EDT] launched s3r_0046__LA_D1_HC_Gv_N500__r03__auto__screened pid=50420
+[2026-06-07 16:04:41 EDT] finished s3r_0042__LA_D1_HC_Gv_N500__r02__auto__screened rc=0 elapsed_sec=12.1
+[2026-06-07 16:04:43 EDT] launched s3r_0047__LA_D1_HC_Gv_N500__r03__local_auto__full pid=50483
+[2026-06-07 16:04:51 EDT] finished s3r_0031__LA_D1_HC_Lc_N500__r02__local_auto__full rc=0 elapsed_sec=58.2
+[2026-06-07 16:04:53 EDT] launched s3r_0048__LA_D1_HC_Gv_N500__r03__local_auto__screened pid=50704
+[2026-06-07 16:04:53 EDT] finished s3r_0037__LA_D1_HC_Gv_N500__r01__auto__full rc=0 elapsed_sec=38.1
+[2026-06-07 16:04:53 EDT] finished s3r_0046__LA_D1_HC_Gv_N500__r03__auto__screened rc=0 elapsed_sec=12.0
+[2026-06-07 16:04:55 EDT] launched s3r_0049__LA_D1_HC_Bv_N500__r01__auto__full pid=50715
+[2026-06-07 16:04:55 EDT] launched s3r_0050__LA_D1_HC_Bv_N500__r01__auto__screened pid=50716
+[2026-06-07 16:04:59 EDT] finished s3r_0044__LA_D1_HC_Gv_N500__r02__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:05:01 EDT] launched s3r_0051__LA_D1_HC_Bv_N500__r01__local_auto__full pid=50752
+[2026-06-07 16:05:01 EDT] finished s3r_0035__LA_D1_HC_Lc_N500__r03__local_auto__full rc=0 elapsed_sec=58.2
+[2026-06-07 16:05:01 EDT] finished s3r_0039__LA_D1_HC_Gv_N500__r01__local_auto__full rc=0 elapsed_sec=44.2
+[2026-06-07 16:05:03 EDT] launched s3r_0052__LA_D1_HC_Bv_N500__r01__local_auto__screened pid=50791
+[2026-06-07 16:05:03 EDT] launched s3r_0053__LA_D1_HC_Bv_N500__r02__auto__full pid=50792
+[2026-06-07 16:05:05 EDT] finished s3r_0041__LA_D1_HC_Gv_N500__r02__auto__full rc=0 elapsed_sec=36.1
+[2026-06-07 16:05:07 EDT] launched s3r_0054__LA_D1_HC_Bv_N500__r02__auto__screened pid=50822
+[2026-06-07 16:05:09 EDT] finished s3r_0050__LA_D1_HC_Bv_N500__r01__auto__screened rc=0 elapsed_sec=14.0
+[2026-06-07 16:05:11 EDT] launched s3r_0055__LA_D1_HC_Bv_N500__r02__local_auto__full pid=50858
+[2026-06-07 16:05:13 EDT] finished s3r_0045__LA_D1_HC_Gv_N500__r03__auto__full rc=0 elapsed_sec=34.1
+[2026-06-07 16:05:13 EDT] finished s3r_0048__LA_D1_HC_Gv_N500__r03__local_auto__screened rc=0 elapsed_sec=20.1
+[2026-06-07 16:05:15 EDT] launched s3r_0056__LA_D1_HC_Bv_N500__r02__local_auto__screened pid=50870
+[2026-06-07 16:05:15 EDT] launched s3r_0057__LA_D1_HC_Bv_N500__r03__auto__full pid=50871
+[2026-06-07 16:05:15 EDT] finished s3r_0043__LA_D1_HC_Gv_N500__r02__local_auto__full rc=0 elapsed_sec=44.2
+[2026-06-07 16:05:17 EDT] launched s3r_0058__LA_D1_HC_Bv_N500__r03__auto__screened pid=50950
+[2026-06-07 16:05:21 EDT] finished s3r_0054__LA_D1_HC_Bv_N500__r02__auto__screened rc=0 elapsed_sec=14.0
+[2026-06-07 16:05:23 EDT] launched s3r_0059__LA_D1_HC_Bv_N500__r03__local_auto__full pid=51427
+[2026-06-07 16:05:25 EDT] finished s3r_0052__LA_D1_HC_Bv_N500__r01__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:05:27 EDT] launched s3r_0060__LA_D1_HC_Bv_N500__r03__local_auto__screened pid=51749
+[2026-06-07 16:05:27 EDT] finished s3r_0047__LA_D1_HC_Gv_N500__r03__local_auto__full rc=0 elapsed_sec=44.2
+[2026-06-07 16:05:29 EDT] launched s3r_0061__LA_D2_RAW_N500__r01__auto__full pid=51784
+[2026-06-07 16:05:33 EDT] finished s3r_0058__LA_D1_HC_Bv_N500__r03__auto__screened rc=0 elapsed_sec=16.1
+[2026-06-07 16:05:35 EDT] launched s3r_0062__LA_D2_RAW_N500__r01__auto__screened pid=51819
+[2026-06-07 16:05:37 EDT] finished s3r_0056__LA_D1_HC_Bv_N500__r02__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:05:39 EDT] launched s3r_0063__LA_D2_RAW_N500__r01__local_auto__full pid=51830
+[2026-06-07 16:05:45 EDT] finished s3r_0049__LA_D1_HC_Bv_N500__r01__auto__full rc=0 elapsed_sec=50.2
+[2026-06-07 16:05:47 EDT] launched s3r_0064__LA_D2_RAW_N500__r01__local_auto__screened pid=51856
+[2026-06-07 16:05:49 EDT] finished s3r_0060__LA_D1_HC_Bv_N500__r03__local_auto__screened rc=0 elapsed_sec=22.1
+[2026-06-07 16:05:51 EDT] launched s3r_0065__LA_D2_RAW_N500__r02__auto__full pid=52238
+[2026-06-07 16:05:55 EDT] finished s3r_0051__LA_D1_HC_Bv_N500__r01__local_auto__full rc=0 elapsed_sec=54.2
+[2026-06-07 16:05:55 EDT] finished s3r_0053__LA_D1_HC_Bv_N500__r02__auto__full rc=0 elapsed_sec=52.2
+[2026-06-07 16:05:57 EDT] launched s3r_0066__LA_D2_RAW_N500__r02__auto__screened pid=52745
+[2026-06-07 16:05:57 EDT] launched s3r_0067__LA_D2_RAW_N500__r02__local_auto__full pid=52746
+[2026-06-07 16:06:05 EDT] finished s3r_0055__LA_D1_HC_Bv_N500__r02__local_auto__full rc=0 elapsed_sec=54.2
+[2026-06-07 16:06:07 EDT] launched s3r_0068__LA_D2_RAW_N500__r02__local_auto__screened pid=52846
+[2026-06-07 16:06:09 EDT] finished s3r_0057__LA_D1_HC_Bv_N500__r03__auto__full rc=0 elapsed_sec=54.2
+[2026-06-07 16:06:11 EDT] launched s3r_0069__LA_D2_RAW_N500__r03__auto__full pid=52856
+[2026-06-07 16:06:17 EDT] finished s3r_0059__LA_D1_HC_Bv_N500__r03__local_auto__full rc=0 elapsed_sec=54.2
+[2026-06-07 16:06:19 EDT] launched s3r_0070__LA_D2_RAW_N500__r03__auto__screened pid=52879
+[2026-06-07 16:07:05 EDT] finished s3r_0064__LA_D2_RAW_N500__r01__local_auto__screened rc=0 elapsed_sec=78.2
+[2026-06-07 16:07:07 EDT] launched s3r_0071__LA_D2_RAW_N500__r03__local_auto__full pid=53079
+[2026-06-07 16:07:25 EDT] finished s3r_0068__LA_D2_RAW_N500__r02__local_auto__screened rc=0 elapsed_sec=78.2
+[2026-06-07 16:07:27 EDT] launched s3r_0072__LA_D2_RAW_N500__r03__local_auto__screened pid=53154
+[2026-06-07 16:08:06 EDT] finished s3r_0062__LA_D2_RAW_N500__r01__auto__screened rc=0 elapsed_sec=150.3
+[2026-06-07 16:08:08 EDT] launched s3r_0073__LA_D2_HC_TOP1_N500__r01__auto__full pid=53450
+[2026-06-07 16:08:36 EDT] finished s3r_0070__LA_D2_RAW_N500__r03__auto__screened rc=0 elapsed_sec=136.3
+[2026-06-07 16:08:38 EDT] launched s3r_0074__LA_D2_HC_TOP1_N500__r01__auto__screened pid=54007
+[2026-06-07 16:08:40 EDT] finished s3r_0066__LA_D2_RAW_N500__r02__auto__screened rc=0 elapsed_sec=162.3
+[2026-06-07 16:08:42 EDT] launched s3r_0075__LA_D2_HC_TOP1_N500__r01__local_auto__full pid=54054
+[2026-06-07 16:08:48 EDT] finished s3r_0072__LA_D2_RAW_N500__r03__local_auto__screened rc=0 elapsed_sec=80.2
+[2026-06-07 16:08:50 EDT] launched s3r_0076__LA_D2_HC_TOP1_N500__r01__local_auto__screened pid=54108
+[2026-06-07 16:09:20 EDT] finished s3r_0074__LA_D2_HC_TOP1_N500__r01__auto__screened rc=0 elapsed_sec=42.1
+[2026-06-07 16:09:22 EDT] launched s3r_0077__LA_D2_HC_TOP1_N500__r02__auto__full pid=54887
+[2026-06-07 16:09:56 EDT] finished s3r_0076__LA_D2_HC_TOP1_N500__r01__local_auto__screened rc=0 elapsed_sec=66.2
+[2026-06-07 16:09:58 EDT] launched s3r_0078__LA_D2_HC_TOP1_N500__r02__auto__screened pid=56020
+[2026-06-07 16:10:42 EDT] finished s3r_0078__LA_D2_HC_TOP1_N500__r02__auto__screened rc=0 elapsed_sec=44.2
+[2026-06-07 16:10:44 EDT] launched s3r_0079__LA_D2_HC_TOP1_N500__r02__local_auto__full pid=57849
+[2026-06-07 16:10:48 EDT] finished s3r_0063__LA_D2_RAW_N500__r01__local_auto__full rc=0 elapsed_sec=308.8
+[2026-06-07 16:10:50 EDT] launched s3r_0080__LA_D2_HC_TOP1_N500__r02__local_auto__screened pid=57862
+[2026-06-07 16:11:02 EDT] finished s3r_0073__LA_D2_HC_TOP1_N500__r01__auto__full rc=0 elapsed_sec=174.6
+[2026-06-07 16:11:04 EDT] launched s3r_0081__LA_D2_HC_TOP1_N500__r03__auto__full pid=57921
+[2026-06-07 16:11:14 EDT] finished s3r_0061__LA_D2_RAW_N500__r01__auto__full rc=0 elapsed_sec=345.0
+[2026-06-07 16:11:16 EDT] launched s3r_0082__LA_D2_HC_TOP1_N500__r03__auto__screened pid=58573
+[2026-06-07 16:11:42 EDT] finished s3r_0067__LA_D2_RAW_N500__r02__local_auto__full rc=0 elapsed_sec=345.0
+[2026-06-07 16:11:44 EDT] launched s3r_0083__LA_D2_HC_TOP1_N500__r03__local_auto__full pid=58953
+[2026-06-07 16:11:52 EDT] finished s3r_0080__LA_D2_HC_TOP1_N500__r02__local_auto__screened rc=0 elapsed_sec=62.3
+[2026-06-07 16:11:54 EDT] launched s3r_0084__LA_D2_HC_TOP1_N500__r03__local_auto__screened pid=59379
+[2026-06-07 16:11:56 EDT] finished s3r_0065__LA_D2_RAW_N500__r02__auto__full rc=0 elapsed_sec=365.1
+[2026-06-07 16:11:56 EDT] finished s3r_0082__LA_D2_HC_TOP1_N500__r03__auto__screened rc=0 elapsed_sec=40.2
+[2026-06-07 16:11:58 EDT] launched s3r_0085__LA_D3_RAW_N500__r01__auto__full pid=59422
+[2026-06-07 16:11:58 EDT] launched s3r_0086__LA_D3_RAW_N500__r01__auto__screened pid=59423
+[2026-06-07 16:12:16 EDT] finished s3r_0069__LA_D2_RAW_N500__r03__auto__full rc=0 elapsed_sec=365.1
+[2026-06-07 16:12:18 EDT] launched s3r_0087__LA_D3_RAW_N500__r01__local_auto__full pid=60315
+[2026-06-07 16:12:29 EDT] finished s3r_0077__LA_D2_HC_TOP1_N500__r02__auto__full rc=0 elapsed_sec=186.8
+[2026-06-07 16:12:31 EDT] launched s3r_0088__LA_D3_RAW_N500__r01__local_auto__screened pid=60379
+[2026-06-07 16:12:41 EDT] finished s3r_0075__LA_D2_HC_TOP1_N500__r01__local_auto__full rc=0 elapsed_sec=238.9
+[2026-06-07 16:12:43 EDT] launched s3r_0089__LA_D3_RAW_N500__r02__auto__full pid=60416
+[2026-06-07 16:12:51 EDT] finished s3r_0071__LA_D2_RAW_N500__r03__local_auto__full rc=0 elapsed_sec=343.2
+[2026-06-07 16:12:53 EDT] launched s3r_0090__LA_D3_RAW_N500__r02__auto__screened pid=60544
+[2026-06-07 16:12:57 EDT] finished s3r_0084__LA_D2_HC_TOP1_N500__r03__local_auto__screened rc=0 elapsed_sec=62.3
+[2026-06-07 16:12:59 EDT] launched s3r_0091__LA_D3_RAW_N500__r02__local_auto__full pid=60556
+[2026-06-07 16:13:09 EDT] finished s3r_0086__LA_D3_RAW_N500__r01__auto__screened rc=0 elapsed_sec=70.3
+[2026-06-07 16:13:11 EDT] launched s3r_0092__LA_D3_RAW_N500__r02__local_auto__screened pid=60566
+[2026-06-07 16:13:49 EDT] finished s3r_0088__LA_D3_RAW_N500__r01__local_auto__screened rc=0 elapsed_sec=78.3
+[2026-06-07 16:13:51 EDT] launched s3r_0093__LA_D3_RAW_N500__r03__auto__full pid=60764
+[2026-06-07 16:13:55 EDT] finished s3r_0081__LA_D2_HC_TOP1_N500__r03__auto__full rc=0 elapsed_sec=170.8
+[2026-06-07 16:13:57 EDT] launched s3r_0094__LA_D3_RAW_N500__r03__auto__screened pid=60836
+[2026-06-07 16:13:59 EDT] finished s3r_0090__LA_D3_RAW_N500__r02__auto__screened rc=0 elapsed_sec=66.3
+[2026-06-07 16:14:01 EDT] launched s3r_0095__LA_D3_RAW_N500__r03__local_auto__full pid=60857
+[2026-06-07 16:14:17 EDT] finished s3r_0079__LA_D2_HC_TOP1_N500__r02__local_auto__full rc=0 elapsed_sec=212.9
+[2026-06-07 16:14:19 EDT] launched s3r_0096__LA_D3_RAW_N500__r03__local_auto__screened pid=60881
+[2026-06-07 16:14:29 EDT] finished s3r_0092__LA_D3_RAW_N500__r02__local_auto__screened rc=0 elapsed_sec=78.3
+[2026-06-07 16:14:31 EDT] launched s3r_0097__LA_13K_SUB_N500__r01__auto__full pid=60920
+[2026-06-07 16:15:13 EDT] finished s3r_0094__LA_D3_RAW_N500__r03__auto__screened rc=0 elapsed_sec=76.3
+[2026-06-07 16:15:15 EDT] launched s3r_0098__LA_13K_SUB_N500__r01__auto__screened pid=60995
+[2026-06-07 16:15:17 EDT] finished s3r_0083__LA_D2_HC_TOP1_N500__r03__local_auto__full rc=0 elapsed_sec=213.0
+[2026-06-07 16:15:19 EDT] launched s3r_0099__LA_13K_SUB_N500__r01__local_auto__full pid=61009
+[2026-06-07 16:15:33 EDT] finished s3r_0096__LA_D3_RAW_N500__r03__local_auto__screened rc=0 elapsed_sec=74.3
+[2026-06-07 16:15:35 EDT] launched s3r_0100__LA_13K_SUB_N500__r01__local_auto__screened pid=61051
+[2026-06-07 16:15:55 EDT] finished s3r_0085__LA_D3_RAW_N500__r01__auto__full rc=0 elapsed_sec=237.1
+[2026-06-07 16:15:57 EDT] launched s3r_0101__LA_13K_SUB_N500__r02__auto__full pid=61096
+[2026-06-07 16:16:32 EDT] finished s3r_0089__LA_D3_RAW_N500__r02__auto__full rc=0 elapsed_sec=229.0
+[2026-06-07 16:16:34 EDT] launched s3r_0102__LA_13K_SUB_N500__r02__auto__screened pid=61157
+[2026-06-07 16:17:12 EDT] finished s3r_0087__LA_D3_RAW_N500__r01__local_auto__full rc=0 elapsed_sec=293.3
+[2026-06-07 16:17:14 EDT] launched s3r_0103__LA_13K_SUB_N500__r02__local_auto__full pid=61229
+[2026-06-07 16:18:14 EDT] finished s3r_0091__LA_D3_RAW_N500__r02__local_auto__full rc=0 elapsed_sec=315.4
+[2026-06-07 16:18:16 EDT] launched s3r_0104__LA_13K_SUB_N500__r02__local_auto__screened pid=61362
+[2026-06-07 16:18:18 EDT] finished s3r_0093__LA_D3_RAW_N500__r03__auto__full rc=0 elapsed_sec=267.2
+[2026-06-07 16:18:20 EDT] launched s3r_0105__LA_13K_SUB_N500__r03__auto__full pid=61373
+[2026-06-07 16:19:12 EDT] finished s3r_0095__LA_D3_RAW_N500__r03__local_auto__full rc=0 elapsed_sec=311.4
+[2026-06-07 16:19:14 EDT] launched s3r_0106__LA_13K_SUB_N500__r03__auto__screened pid=61494
+[2026-06-07 16:23:09 EDT] finished s3r_0100__LA_13K_SUB_N500__r01__local_auto__screened rc=0 elapsed_sec=454.0
+[2026-06-07 16:23:11 EDT] launched s3r_0107__LA_13K_SUB_N500__r03__local_auto__full pid=61969
+[2026-06-07 16:23:19 EDT] finished s3r_0098__LA_13K_SUB_N500__r01__auto__screened rc=0 elapsed_sec=484.1
+[2026-06-07 16:23:21 EDT] launched s3r_0108__LA_13K_SUB_N500__r03__local_auto__screened pid=62029
+[2026-06-07 16:25:08 EDT] finished s3r_0104__LA_13K_SUB_N500__r02__local_auto__screened rc=0 elapsed_sec=411.8
+[2026-06-07 16:25:10 EDT] launched s3r_0109__SYN_PARA_LINE_N500__r01__auto__full pid=62266
+[2026-06-07 16:25:14 EDT] finished s3r_0099__LA_13K_SUB_N500__r01__local_auto__full rc=0 elapsed_sec=594.7
+[2026-06-07 16:25:16 EDT] launched s3r_0110__SYN_PARA_LINE_N500__r01__auto__screened pid=62287
+[2026-06-07 16:25:32 EDT] finished s3r_0102__LA_13K_SUB_N500__r02__auto__screened rc=0 elapsed_sec=538.4
+[2026-06-07 16:25:34 EDT] launched s3r_0111__SYN_PARA_LINE_N500__r01__local_auto__full pid=62337
+[2026-06-07 16:25:36 EDT] finished s3r_0097__LA_13K_SUB_N500__r01__auto__full rc=0 elapsed_sec=665.0
+[2026-06-07 16:25:38 EDT] launched s3r_0112__SYN_PARA_LINE_N500__r01__local_auto__screened pid=62347
+[2026-06-07 16:25:48 EDT] finished s3r_0110__SYN_PARA_LINE_N500__r01__auto__screened rc=0 elapsed_sec=32.2
+[2026-06-07 16:25:50 EDT] launched s3r_0113__SYN_PARA_LINE_N500__r02__auto__full pid=62357
+[2026-06-07 16:26:02 EDT] finished s3r_0109__SYN_PARA_LINE_N500__r01__auto__full rc=0 elapsed_sec=52.3
+[2026-06-07 16:26:04 EDT] launched s3r_0114__SYN_PARA_LINE_N500__r02__auto__screened pid=62394
+[2026-06-07 16:26:20 EDT] finished s3r_0112__SYN_PARA_LINE_N500__r01__local_auto__screened rc=0 elapsed_sec=42.2
+[2026-06-07 16:26:22 EDT] launched s3r_0115__SYN_PARA_LINE_N500__r02__local_auto__full pid=62443
+[2026-06-07 16:26:32 EDT] finished s3r_0111__SYN_PARA_LINE_N500__r01__local_auto__full rc=0 elapsed_sec=58.3
+[2026-06-07 16:26:34 EDT] launched s3r_0116__SYN_PARA_LINE_N500__r02__local_auto__screened pid=62458
+[2026-06-07 16:26:34 EDT] finished s3r_0114__SYN_PARA_LINE_N500__r02__auto__screened rc=0 elapsed_sec=30.1
+[2026-06-07 16:26:36 EDT] launched s3r_0117__SYN_PARA_LINE_N500__r03__auto__full pid=62466
+[2026-06-07 16:26:40 EDT] finished s3r_0113__SYN_PARA_LINE_N500__r02__auto__full rc=0 elapsed_sec=50.2
+[2026-06-07 16:26:42 EDT] launched s3r_0118__SYN_PARA_LINE_N500__r03__auto__screened pid=62498
+[2026-06-07 16:27:02 EDT] finished s3r_0106__LA_13K_SUB_N500__r03__auto__screened rc=0 elapsed_sec=468.1
+[2026-06-07 16:27:05 EDT] launched s3r_0119__SYN_PARA_LINE_N500__r03__local_auto__full pid=62572
+[2026-06-07 16:27:13 EDT] finished s3r_0101__LA_13K_SUB_N500__r02__auto__full rc=0 elapsed_sec=675.1
+[2026-06-07 16:27:15 EDT] launched s3r_0120__SYN_PARA_LINE_N500__r03__local_auto__screened pid=62586
+[2026-06-07 16:27:15 EDT] finished s3r_0118__SYN_PARA_LINE_N500__r03__auto__screened rc=0 elapsed_sec=32.2
+[2026-06-07 16:27:17 EDT] launched s3r_0121__SYN_SADDLE_LINE_N500__r01__auto__full pid=62598
+[2026-06-07 16:27:19 EDT] finished s3r_0115__SYN_PARA_LINE_N500__r02__local_auto__full rc=0 elapsed_sec=56.3
+[2026-06-07 16:27:19 EDT] finished s3r_0116__SYN_PARA_LINE_N500__r02__local_auto__screened rc=0 elapsed_sec=44.2
+[2026-06-07 16:27:21 EDT] launched s3r_0122__SYN_SADDLE_LINE_N500__r01__auto__screened pid=62608
+[2026-06-07 16:27:21 EDT] launched s3r_0123__SYN_SADDLE_LINE_N500__r01__local_auto__full pid=62609
+[2026-06-07 16:27:25 EDT] finished s3r_0103__LA_13K_SUB_N500__r02__local_auto__full rc=0 elapsed_sec=610.8
+[2026-06-07 16:27:27 EDT] launched s3r_0124__SYN_SADDLE_LINE_N500__r01__local_auto__screened pid=62661
+[2026-06-07 16:27:27 EDT] finished s3r_0117__SYN_PARA_LINE_N500__r03__auto__full rc=0 elapsed_sec=50.3
+[2026-06-07 16:27:29 EDT] launched s3r_0125__SYN_SADDLE_LINE_N500__r02__auto__full pid=62669
+[2026-06-07 16:27:51 EDT] finished s3r_0122__SYN_SADDLE_LINE_N500__r01__auto__screened rc=0 elapsed_sec=30.1
+[2026-06-07 16:27:53 EDT] launched s3r_0126__SYN_SADDLE_LINE_N500__r02__auto__screened pid=62723
+[2026-06-07 16:27:57 EDT] finished s3r_0120__SYN_PARA_LINE_N500__r03__local_auto__screened rc=0 elapsed_sec=42.2
+[2026-06-07 16:27:59 EDT] launched s3r_0127__SYN_SADDLE_LINE_N500__r02__local_auto__full pid=62733
+[2026-06-07 16:27:59 EDT] finished s3r_0119__SYN_PARA_LINE_N500__r03__local_auto__full rc=0 elapsed_sec=54.3
+[2026-06-07 16:28:01 EDT] launched s3r_0128__SYN_SADDLE_LINE_N500__r02__local_auto__screened pid=62742
+[2026-06-07 16:28:07 EDT] finished s3r_0121__SYN_SADDLE_LINE_N500__r01__auto__full rc=0 elapsed_sec=50.2
+[2026-06-07 16:28:07 EDT] finished s3r_0124__SYN_SADDLE_LINE_N500__r01__local_auto__screened rc=0 elapsed_sec=40.2
+[2026-06-07 16:28:09 EDT] launched s3r_0129__SYN_SADDLE_LINE_N500__r03__auto__full pid=62807
+[2026-06-07 16:28:09 EDT] launched s3r_0130__SYN_SADDLE_LINE_N500__r03__auto__screened pid=62808
+[2026-06-07 16:28:15 EDT] finished s3r_0123__SYN_SADDLE_LINE_N500__r01__local_auto__full rc=0 elapsed_sec=54.3
+[2026-06-07 16:28:17 EDT] launched s3r_0131__SYN_SADDLE_LINE_N500__r03__local_auto__full pid=62896
+[2026-06-07 16:28:19 EDT] finished s3r_0125__SYN_SADDLE_LINE_N500__r02__auto__full rc=0 elapsed_sec=50.2
+[2026-06-07 16:28:21 EDT] launched s3r_0132__SYN_SADDLE_LINE_N500__r03__local_auto__screened pid=62940
+[2026-06-07 16:28:23 EDT] finished s3r_0126__SYN_SADDLE_LINE_N500__r02__auto__screened rc=0 elapsed_sec=30.2
+[2026-06-07 16:28:25 EDT] launched s3r_0133__SYN_TWO_PLANES_N600__r01__auto__full pid=62976
+[2026-06-07 16:28:41 EDT] finished s3r_0128__SYN_SADDLE_LINE_N500__r02__local_auto__screened rc=0 elapsed_sec=40.2
+[2026-06-07 16:28:41 EDT] finished s3r_0130__SYN_SADDLE_LINE_N500__r03__auto__screened rc=0 elapsed_sec=32.2
+[2026-06-07 16:28:43 EDT] launched s3r_0134__SYN_TWO_PLANES_N600__r01__auto__screened pid=63015
+[2026-06-07 16:28:43 EDT] launched s3r_0135__SYN_TWO_PLANES_N600__r01__local_auto__full pid=63016
+[2026-06-07 16:28:53 EDT] finished s3r_0127__SYN_SADDLE_LINE_N500__r02__local_auto__full rc=0 elapsed_sec=54.3
+[2026-06-07 16:28:55 EDT] launched s3r_0136__SYN_TWO_PLANES_N600__r01__local_auto__screened pid=63069
+[2026-06-07 16:28:59 EDT] finished s3r_0129__SYN_SADDLE_LINE_N500__r03__auto__full rc=0 elapsed_sec=50.3
+[2026-06-07 16:29:01 EDT] launched s3r_0137__SYN_TWO_PLANES_N600__r02__auto__full pid=63080
+[2026-06-07 16:29:01 EDT] finished s3r_0132__SYN_SADDLE_LINE_N500__r03__local_auto__screened rc=0 elapsed_sec=40.2
+[2026-06-07 16:29:03 EDT] launched s3r_0138__SYN_TWO_PLANES_N600__r02__auto__screened pid=63088
+[2026-06-07 16:29:13 EDT] finished s3r_0131__SYN_SADDLE_LINE_N500__r03__local_auto__full rc=0 elapsed_sec=56.3
+[2026-06-07 16:29:15 EDT] launched s3r_0139__SYN_TWO_PLANES_N600__r02__local_auto__full pid=63100
+[2026-06-07 16:29:17 EDT] finished s3r_0134__SYN_TWO_PLANES_N600__r01__auto__screened rc=0 elapsed_sec=34.2
+[2026-06-07 16:29:19 EDT] launched s3r_0140__SYN_TWO_PLANES_N600__r02__local_auto__screened pid=63110
+[2026-06-07 16:29:25 EDT] finished s3r_0133__SYN_TWO_PLANES_N600__r01__auto__full rc=0 elapsed_sec=60.3
+[2026-06-07 16:29:27 EDT] launched s3r_0141__SYN_TWO_PLANES_N600__r03__auto__full pid=63147
+[2026-06-07 16:29:37 EDT] finished s3r_0105__LA_13K_SUB_N500__r03__auto__full rc=0 elapsed_sec=677.2
+[2026-06-07 16:29:39 EDT] launched s3r_0142__SYN_TWO_PLANES_N600__r03__auto__screened pid=63166
+[2026-06-07 16:29:39 EDT] finished s3r_0138__SYN_TWO_PLANES_N600__r02__auto__screened rc=0 elapsed_sec=36.2
+[2026-06-07 16:29:41 EDT] launched s3r_0143__SYN_TWO_PLANES_N600__r03__local_auto__full pid=63175
+[2026-06-07 16:29:51 EDT] finished s3r_0136__SYN_TWO_PLANES_N600__r01__local_auto__screened rc=0 elapsed_sec=56.3
+[2026-06-07 16:29:53 EDT] launched s3r_0144__SYN_TWO_PLANES_N600__r03__local_auto__screened pid=63211
+[2026-06-07 16:29:55 EDT] finished s3r_0108__LA_13K_SUB_N500__r03__local_auto__screened rc=0 elapsed_sec=394.0
+[2026-06-07 16:29:57 EDT] launched s3r_0145__SYN_SIMPLEX_FACES_N600__r01__auto__full pid=63220
+[2026-06-07 16:30:01 EDT] finished s3r_0137__SYN_TWO_PLANES_N600__r02__auto__full rc=0 elapsed_sec=60.3
+[2026-06-07 16:30:03 EDT] launched s3r_0146__SYN_SIMPLEX_FACES_N600__r01__auto__screened pid=63232
+[2026-06-07 16:30:05 EDT] finished s3r_0135__SYN_TWO_PLANES_N600__r01__local_auto__full rc=0 elapsed_sec=82.4
+[2026-06-07 16:30:07 EDT] launched s3r_0147__SYN_SIMPLEX_FACES_N600__r01__local_auto__full pid=63244
+[2026-06-07 16:30:16 EDT] finished s3r_0142__SYN_TWO_PLANES_N600__r03__auto__screened rc=0 elapsed_sec=36.2
+[2026-06-07 16:30:18 EDT] launched s3r_0148__SYN_SIMPLEX_FACES_N600__r01__local_auto__screened pid=63261
+[2026-06-07 16:30:18 EDT] finished s3r_0140__SYN_TWO_PLANES_N600__r02__local_auto__screened rc=0 elapsed_sec=58.3
+[2026-06-07 16:30:20 EDT] launched s3r_0149__SYN_SIMPLEX_FACES_N600__r02__auto__full pid=63269
+[2026-06-07 16:30:26 EDT] finished s3r_0141__SYN_TWO_PLANES_N600__r03__auto__full rc=0 elapsed_sec=58.3
+[2026-06-07 16:30:28 EDT] launched s3r_0150__SYN_SIMPLEX_FACES_N600__r02__auto__screened pid=63304
+[2026-06-07 16:30:34 EDT] finished s3r_0146__SYN_SIMPLEX_FACES_N600__r01__auto__screened rc=0 elapsed_sec=30.2
+[2026-06-07 16:30:36 EDT] launched s3r_0151__SYN_SIMPLEX_FACES_N600__r02__local_auto__full pid=63317
+[2026-06-07 16:30:36 EDT] finished s3r_0139__SYN_TWO_PLANES_N600__r02__local_auto__full rc=0 elapsed_sec=80.4
+[2026-06-07 16:30:38 EDT] launched s3r_0152__SYN_SIMPLEX_FACES_N600__r02__local_auto__screened pid=63330
+[2026-06-07 16:30:48 EDT] finished s3r_0144__SYN_TWO_PLANES_N600__r03__local_auto__screened rc=0 elapsed_sec=54.3
+[2026-06-07 16:30:50 EDT] launched s3r_0153__SYN_SIMPLEX_FACES_N600__r03__auto__full pid=63343
+[2026-06-07 16:30:56 EDT] finished s3r_0148__SYN_SIMPLEX_FACES_N600__r01__local_auto__screened rc=0 elapsed_sec=38.2
+[2026-06-07 16:30:58 EDT] launched s3r_0154__SYN_SIMPLEX_FACES_N600__r03__auto__screened pid=63391
+[2026-06-07 16:30:58 EDT] finished s3r_0150__SYN_SIMPLEX_FACES_N600__r02__auto__screened rc=0 elapsed_sec=30.2
+[2026-06-07 16:31:00 EDT] launched s3r_0155__SYN_SIMPLEX_FACES_N600__r03__local_auto__full pid=63403
+[2026-06-07 16:31:00 EDT] finished s3r_0143__SYN_TWO_PLANES_N600__r03__local_auto__full rc=0 elapsed_sec=78.4
+[2026-06-07 16:31:02 EDT] launched s3r_0156__SYN_SIMPLEX_FACES_N600__r03__local_auto__screened pid=63418
+[2026-06-07 16:31:16 EDT] finished s3r_0152__SYN_SIMPLEX_FACES_N600__r02__local_auto__screened rc=0 elapsed_sec=38.2
+[2026-06-07 16:31:18 EDT] launched s3r_0157__SYN_RANK_BLOCKS_N600_P100__r01__auto__full pid=63443
+[2026-06-07 16:31:30 EDT] finished s3r_0154__SYN_SIMPLEX_FACES_N600__r03__auto__screened rc=0 elapsed_sec=32.1
+[2026-06-07 16:31:32 EDT] launched s3r_0158__SYN_RANK_BLOCKS_N600_P100__r01__auto__screened pid=63489
+[2026-06-07 16:31:42 EDT] finished s3r_0156__SYN_SIMPLEX_FACES_N600__r03__local_auto__screened rc=0 elapsed_sec=40.2
+[2026-06-07 16:31:44 EDT] launched s3r_0159__SYN_RANK_BLOCKS_N600_P100__r01__local_auto__full pid=63515
+[2026-06-07 16:32:08 EDT] finished s3r_0145__SYN_SIMPLEX_FACES_N600__r01__auto__full rc=0 elapsed_sec=130.7
+[2026-06-07 16:32:10 EDT] launched s3r_0160__SYN_RANK_BLOCKS_N600_P100__r01__local_auto__screened pid=63580
+[2026-06-07 16:32:24 EDT] finished s3r_0147__SYN_SIMPLEX_FACES_N600__r01__local_auto__full rc=0 elapsed_sec=136.7
+[2026-06-07 16:32:26 EDT] launched s3r_0161__SYN_RANK_BLOCKS_N600_P100__r02__auto__full pid=63634
+[2026-06-07 16:32:32 EDT] finished s3r_0149__SYN_SIMPLEX_FACES_N600__r02__auto__full rc=0 elapsed_sec=132.7
+[2026-06-07 16:32:34 EDT] launched s3r_0162__SYN_RANK_BLOCKS_N600_P100__r02__auto__screened pid=63646
+[2026-06-07 16:32:44 EDT] finished s3r_0107__LA_13K_SUB_N500__r03__local_auto__full rc=0 elapsed_sec=572.9
+[2026-06-07 16:32:46 EDT] launched s3r_0163__SYN_RANK_BLOCKS_N600_P100__r02__local_auto__full pid=63667
+[2026-06-07 16:32:54 EDT] finished s3r_0151__SYN_SIMPLEX_FACES_N600__r02__local_auto__full rc=0 elapsed_sec=138.7
+[2026-06-07 16:32:56 EDT] launched s3r_0164__SYN_RANK_BLOCKS_N600_P100__r02__local_auto__screened pid=63703
+[2026-06-07 16:32:58 EDT] finished s3r_0153__SYN_SIMPLEX_FACES_N600__r03__auto__full rc=0 elapsed_sec=128.6
+[2026-06-07 16:33:00 EDT] launched s3r_0165__SYN_RANK_BLOCKS_N600_P100__r03__auto__full pid=63712
+[2026-06-07 16:33:16 EDT] finished s3r_0155__SYN_SIMPLEX_FACES_N600__r03__local_auto__full rc=0 elapsed_sec=136.7
+[2026-06-07 16:33:18 EDT] launched s3r_0166__SYN_RANK_BLOCKS_N600_P100__r03__auto__screened pid=63736
+[2026-06-07 17:01:23 EDT] finished s3r_0160__SYN_RANK_BLOCKS_N600_P100__r01__local_auto__screened rc=0 elapsed_sec=1752.5
+[2026-06-07 17:01:25 EDT] launched s3r_0167__SYN_RANK_BLOCKS_N600_P100__r03__local_auto__full pid=65957
+[2026-06-07 17:03:45 EDT] finished s3r_0164__SYN_RANK_BLOCKS_N600_P100__r02__local_auto__screened rc=0 elapsed_sec=1848.7
+[2026-06-07 17:03:47 EDT] launched s3r_0168__SYN_RANK_BLOCKS_N600_P100__r03__local_auto__screened pid=66544
+[2026-06-07 17:08:32 EDT] finished s3r_0162__SYN_RANK_BLOCKS_N600_P100__r02__auto__screened rc=0 elapsed_sec=2157.4
+[2026-06-07 17:08:46 EDT] finished s3r_0158__SYN_RANK_BLOCKS_N600_P100__r01__auto__screened rc=0 elapsed_sec=2233.8
+[2026-06-07 17:09:14 EDT] finished s3r_0159__SYN_RANK_BLOCKS_N600_P100__r01__local_auto__full rc=0 elapsed_sec=2249.8
+[2026-06-07 17:11:14 EDT] finished s3r_0166__SYN_RANK_BLOCKS_N600_P100__r03__auto__screened rc=0 elapsed_sec=2275.6
+[2026-06-07 17:11:26 EDT] finished s3r_0163__SYN_RANK_BLOCKS_N600_P100__r02__local_auto__full rc=0 elapsed_sec=2319.8
+[2026-06-07 17:15:19 EDT] finished s3r_0157__SYN_RANK_BLOCKS_N600_P100__r01__auto__full rc=0 elapsed_sec=2640.8
+[2026-06-07 17:16:17 EDT] finished s3r_0161__SYN_RANK_BLOCKS_N600_P100__r02__auto__full rc=0 elapsed_sec=2630.6
+[2026-06-07 17:16:49 EDT] finished s3r_0165__SYN_RANK_BLOCKS_N600_P100__r03__auto__full rc=0 elapsed_sec=2628.5
+[2026-06-07 17:25:48 EDT] finished s3r_0168__SYN_RANK_BLOCKS_N600_P100__r03__local_auto__screened rc=0 elapsed_sec=1320.9
+[2026-06-07 17:29:32 EDT] finished s3r_0167__SYN_RANK_BLOCKS_N600_P100__r03__local_auto__full rc=0 elapsed_sec=1687.7
+[2026-06-07 17:29:34 EDT] all workers complete; merging
+[2026-06-07 17:29:36 EDT] complete

@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0620__LA_D3_RAW_N500__r15__local_auto__screened",
+  "pair_id": "LA_D3_RAW_N500__r15__local_auto",
+  "dataset_id": "LA-D3-RAW-N500",
+  "repetition": 15,
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "search_policy": "screened",
+  "status": "error",
+  "started_at": "2026-06-07 21:35:23 EDT",
+  "finished_at": "2026-06-07 21:35:24 EDT",
+  "elapsed_sec": 1.198,
+  "hostname": "pgajerm4-osx",
+  "pid": 7970,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_20260607_001/results/s3r_0620__LA_D3_RAW_N500__r15__local_auto__screened.rds",
+  "pair_response_seed": 21075709,
+  "pair_fold_seed": 21075708,
+  "error_message": "unused argument (logistic.telemetry = logistic.cv.telemetry)",
+  "error_class": "simpleError/error/condition"
+}

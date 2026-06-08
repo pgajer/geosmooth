@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0148__SYN_SIMPLEX_FACES_N600__auto__ps_lps__monomial_tiny_ridge",
+  "dataset_id": "SYN-SIMPLEX-FACES-N600",
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "backend_variant": "monomial_tiny_ridge",
+  "status": "ok",
+  "started_at": "2026-06-07 01:34:30 EDT",
+  "finished_at": "2026-06-07 01:38:11 EDT",
+  "elapsed_sec": 221.494,
+  "hostname": "pgajerm4-osx",
+  "pid": 64910,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0148__SYN_SIMPLEX_FACES_N600__auto__ps_lps__monomial_tiny_ridge.rds",
+  "error_message": null,
+  "error_class": null
+}

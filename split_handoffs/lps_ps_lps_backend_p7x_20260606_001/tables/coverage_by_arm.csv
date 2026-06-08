@@ -1,0 +1,13 @@
+"method","chart_dim_rule","backend_variant","planned","ok","nonfinite_fit","error","missing","median_elapsed_sec","max_elapsed_sec"
+"lps","auto","monomial_tiny_ridge",14,5,9,0,0,12.522,132.16
+"lps","auto","weighted_qr_drop_tiny",14,4,10,0,0,12.3735,51.677
+"lps","auto","orthogonal_drop_adaptive_tiny",14,14,0,0,0,11.5785,52.502
+"ps_lps","auto","monomial_tiny_ridge",14,14,0,0,0,95.3145,4099.116
+"ps_lps","auto","weighted_qr_drop_tiny",14,12,0,2,0,929.8255,16395.743
+"ps_lps","auto","orthogonal_drop_adaptive_tiny",14,12,0,2,0,607.2995,12011.024
+"lps","local.auto","monomial_tiny_ridge",14,5,9,0,0,26.961,80.337
+"lps","local.auto","weighted_qr_drop_tiny",14,4,10,0,0,28.0535,78.335
+"lps","local.auto","orthogonal_drop_adaptive_tiny",14,14,0,0,0,32.651,82.355
+"ps_lps","local.auto","monomial_tiny_ridge",14,14,0,0,0,143.071,3324.267
+"ps_lps","local.auto","weighted_qr_drop_tiny",14,12,0,2,0,1086.6795,10965.506
+"ps_lps","local.auto","orthogonal_drop_adaptive_tiny",14,12,0,2,0,642.0395,5114.594

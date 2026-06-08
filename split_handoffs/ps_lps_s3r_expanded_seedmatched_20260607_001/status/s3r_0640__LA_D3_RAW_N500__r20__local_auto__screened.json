@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0640__LA_D3_RAW_N500__r20__local_auto__screened",
+  "pair_id": "LA_D3_RAW_N500__r20__local_auto",
+  "dataset_id": "LA-D3-RAW-N500",
+  "repetition": 20,
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "search_policy": "screened",
+  "status": "error",
+  "started_at": "2026-06-07 21:41:06 EDT",
+  "finished_at": "2026-06-07 21:41:32 EDT",
+  "elapsed_sec": 26.184,
+  "hostname": "pgajerm4-osx",
+  "pid": 20853,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_20260607_001/results/s3r_0640__LA_D3_RAW_N500__r20__local_auto__screened.rds",
+  "pair_response_seed": 21080709,
+  "pair_fold_seed": 21080708,
+  "error_message": "No candidate has a finite selection score in 'cv.rmse.observed'.  Check local-design conditioning, support sizes, degree, backend, and unstable.action.",
+  "error_class": "simpleError/error/condition"
+}

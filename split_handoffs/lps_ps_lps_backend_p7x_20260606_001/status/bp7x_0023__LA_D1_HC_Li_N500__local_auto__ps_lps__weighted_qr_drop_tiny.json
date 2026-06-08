@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0023__LA_D1_HC_Li_N500__local_auto__ps_lps__weighted_qr_drop_tiny",
+  "dataset_id": "LA-D1-HC-Li-N500",
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "backend_variant": "weighted_qr_drop_tiny",
+  "status": "ok",
+  "started_at": "2026-06-06 23:00:52 EDT",
+  "finished_at": "2026-06-06 23:09:35 EDT",
+  "elapsed_sec": 522.4499999999999,
+  "hostname": "pgajerm4-osx",
+  "pid": 54362,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0023__LA_D1_HC_Li_N500__local_auto__ps_lps__weighted_qr_drop_tiny.rds",
+  "error_message": null,
+  "error_class": null
+}

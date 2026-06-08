@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0018__LA_D1_HC_Li_N500__auto__ps_lps__orthogonal_drop_adaptive_tiny",
+  "dataset_id": "LA-D1-HC-Li-N500",
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "backend_variant": "orthogonal_drop_adaptive_tiny",
+  "status": "ok",
+  "started_at": "2026-06-06 23:00:36 EDT",
+  "finished_at": "2026-06-06 23:02:22 EDT",
+  "elapsed_sec": 105.929,
+  "hostname": "pgajerm4-osx",
+  "pid": 54098,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0018__LA_D1_HC_Li_N500__auto__ps_lps__orthogonal_drop_adaptive_tiny.rds",
+  "error_message": null,
+  "error_class": null
+}

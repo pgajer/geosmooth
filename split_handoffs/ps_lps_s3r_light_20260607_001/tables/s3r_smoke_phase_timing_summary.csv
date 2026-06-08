@@ -1,0 +1,5 @@
+"search_policy","chart_dim_rule","n","median_total.elapsed.sec","median_phase_frames_sec","median_phase_sync_rows_sec","median_phase_system_cache_sec","median_phase_fold_component_cache_sec","median_phase_full_component_cache_sec","median_phase_lambda_search_sec","median_phase_final_solve_sec","median_evaluated_lambda_count","median_unique_lambda_count","median_boundary_expansion_count"
+"full","auto",34,6.1955,0.287999999999998,0.174999999999966,0.016000000000048,1.09249999999999,0.217500000000001,4.29600000000001,0.107499999999998,8,8,2
+"screened","auto",34,6.608,0.264500000000002,0.167499999999996,0.0215000000000014,1.1655,0.239500000000001,4.8545,0.0960000000000001,8,8,2
+"full","local.auto",32,6.865,0.295000000000003,0.158999999999995,0.014999999999997,1.02799999999999,0.198,4.508,0.0930000000000035,8,8,2
+"screened","local.auto",32,7.2925,0.259499999999992,0.170500000000001,0.0164999999999971,1.1335,0.244,4.822,0.101500000000001,8,8,2

@@ -1,0 +1,16 @@
+{
+  "task_id": "bp7x_0119__SYN_PARA_LINE_N500__local_auto__ps_lps__weighted_qr_drop_tiny",
+  "dataset_id": "SYN-PARA-LINE-N500",
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "backend_variant": "weighted_qr_drop_tiny",
+  "status": "ok",
+  "started_at": "2026-06-07 00:59:18 EDT",
+  "finished_at": "2026-06-07 01:19:27 EDT",
+  "elapsed_sec": 1208.495,
+  "hostname": "pgajerm4-osx",
+  "pid": 62800,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/results/bp7x_0119__SYN_PARA_LINE_N500__local_auto__ps_lps__weighted_qr_drop_tiny.rds",
+  "error_message": null,
+  "error_class": null
+}

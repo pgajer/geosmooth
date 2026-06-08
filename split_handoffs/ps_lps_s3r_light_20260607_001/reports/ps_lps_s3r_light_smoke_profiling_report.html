@@ -1,0 +1,151 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>PS-LPS S3R-light Smoke/Profiling Report</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;line-height:1.48;color:#202832;max-width:1180px}
+h1,h2,h3{line-height:1.15} .meta{background:#f3f6fa;border-left:4px solid #607d9c;padding:12px 16px;margin:16px 0}
+.warn{background:#fff6e5;border-left:4px solid #e69f00;padding:12px 16px;margin:16px 0}
+.good{background:#eef8f2;border-left:4px solid #009e73;padding:12px 16px;margin:16px 0}
+table{border-collapse:collapse;margin:12px 0 24px 0;font-size:13px} th,td{border:1px solid #d8dde6;padding:6px 8px;text-align:right} th:first-child,td:first-child{text-align:left}
+figure{margin:22px 0 30px 0} img{max-width:100%;height:auto;border:1px solid #e2e6ee} figcaption{font-size:13px;color:#4c5663;margin-top:8px}
+code{background:#f2f4f8;padding:1px 4px;border-radius:3px}
+</style></head><body>
+<h1>PS-LPS S3R-light Smoke/Profiling Report</h1>
+<div class='meta'><strong>Build time:</strong> 2026-06-07 15:39:19 EDT<br><strong>Run directory:</strong> /Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001<br><strong>Purpose:</strong> profile the stopped S3R-light run; do not use this report for paired accuracy claims.</div>
+<div class='warn'><strong>Validity boundary.</strong> This run is not valid as paired screened-versus-full accuracy evidence because the audited manifest did not consistently match response and fold seeds within full/screened pairs. The report below uses the run only as a smoke/profiling artifact: task accounting, runtime tails, timeout/error behavior, candidate-count behavior, and instrumentation gaps.</div>
+<h2>Main Findings</h2>
+<p>The scripts and supervisor survived until manual stop: 132 of 168 planned tasks completed with status <code>ok</code>, 9 active tasks were intentionally marked <code>stopped_by_user</code>, and 27 tasks were not started. No task recorded <code>error</code>, <code>nonfinite_fit</code>, or timeout status before the stop.</p>
+<p>Runtime tails were substantial. Among completed tasks, median elapsed time was   132 seconds and the maximum completed elapsed time was  2038 seconds. The slowest completed rows came from the VALENCIA 13k subset and high-support full-search rows.</p>
+<p>Memory was not continuously instrumented in the run artifacts. The report can say that logs/statuses did not show OOM, killed, timeout, or memory-error events, but it cannot reconstruct per-task peak RSS. The corrected S3R run should add explicit memory telemetry.</p>
+<h2>Design And Accounting</h2>
+<p>Each planned task is one PS-LPS fit on a frozen P7X first-batch asset, with factors for repetition, chart-dimension rule, and local-candidate search policy. Because this report is manifest-backed, rows without a status file are counted as <code>not_started</code>.</p>
+<table><tr><th>status</th><th>n</th></tr><tr><td>not_started</td><td>   27</td></tr>
+<tr><td>ok</td><td>  132</td></tr>
+<tr><td>stopped_by_user</td><td>    9</td></tr></table>
+<figure><img src="figures_s3r_smoke/task_accounting_by_dataset.svg" alt="Figure 1. Manifest-backed task accounting by dataset. Green rows completed successfully; orange rows were stopped intentionally after the audit; gray rows were not started."><figcaption>Figure 1. Manifest-backed task accounting by dataset. Green rows completed successfully; orange rows were stopped intentionally after the audit; gray rows were not started.</figcaption></figure>
+<h3>Task Accounting By Search Policy And Chart Rule</h3>
+<table><tr><th>search_policy</th><th>chart_dim_rule</th><th>status</th><th>n</th></tr><tr><td>full</td><td>auto</td><td>not_started</td><td>    6</td></tr>
+<tr><td>screened</td><td>auto</td><td>not_started</td><td>    7</td></tr>
+<tr><td>full</td><td>local.auto</td><td>not_started</td><td>    7</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>not_started</td><td>    7</td></tr>
+<tr><td>full</td><td>auto</td><td>ok</td><td>   34</td></tr>
+<tr><td>screened</td><td>auto</td><td>ok</td><td>   34</td></tr>
+<tr><td>full</td><td>local.auto</td><td>ok</td><td>   32</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>ok</td><td>   32</td></tr>
+<tr><td>full</td><td>auto</td><td>stopped_by_user</td><td>    2</td></tr>
+<tr><td>screened</td><td>auto</td><td>stopped_by_user</td><td>    1</td></tr>
+<tr><td>full</td><td>local.auto</td><td>stopped_by_user</td><td>    3</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>stopped_by_user</td><td>    3</td></tr></table>
+<h2>Runtime Tails</h2>
+<p>Elapsed time is wall-clock task duration in seconds from each task status JSON or completed result summary. These timings are useful for sizing the corrected seed-matched S3R run even though accuracy deltas from this run are not valid.</p>
+<figure><img src="figures_s3r_smoke/runtime_by_policy_chart.svg" alt="Figure 2. Completed task runtimes by search policy and chart-dimension rule. The y-axis is logarithmic because full-search and VALENCIA rows create long runtime tails."><figcaption>Figure 2. Completed task runtimes by search policy and chart-dimension rule. The y-axis is logarithmic because full-search and VALENCIA rows create long runtime tails.</figcaption></figure>
+<figure><img src="figures_s3r_smoke/median_runtime_by_dataset_policy.svg" alt="Figure 3. Median completed runtime by dataset and search policy. Lines connect the median full and screened runtime for each dataset when both are available."><figcaption>Figure 3. Median completed runtime by dataset and search policy. Lines connect the median full and screened runtime for each dataset when both are available.</figcaption></figure>
+<figure><img src="figures_s3r_smoke/runtime_tail_top20.svg" alt="Figure 4. Top 20 completed runtime tails. The largest completed rows are useful for timeout planning in the corrected S3R run."><figcaption>Figure 4. Top 20 completed runtime tails. The largest completed rows are useful for timeout planning in the corrected S3R run.</figcaption></figure>
+<h3>Top Runtime Tail Rows</h3>
+<table><tr><th>task_id</th><th>dataset_id</th><th>repetition</th><th>chart_dim_rule</th><th>search_policy</th><th>selected_cv_rmse_observed</th><th>selected_support_size</th><th>selected_lambda_sync</th><th>local_candidates_evaluated</th><th>elapsed_sec</th></tr><tr><td>s3r_0105__LA_13K_SUB_N500__r03__auto__full</td><td>LA-13K-SUB-N500</td><td>    3</td><td>auto</td><td>full</td><td> 0.11</td><td>   35</td><td>   90</td><td>   21</td><td> 2038</td></tr>
+<tr><td>s3r_0101__LA_13K_SUB_N500__r02__auto__full</td><td>LA-13K-SUB-N500</td><td>    2</td><td>auto</td><td>full</td><td>0.1064</td><td>   26</td><td>   90</td><td>   21</td><td> 2012</td></tr>
+<tr><td>s3r_0097__LA_13K_SUB_N500__r01__auto__full</td><td>LA-13K-SUB-N500</td><td>    1</td><td>auto</td><td>full</td><td>0.1082</td><td>   35</td><td>   90</td><td>   21</td><td> 1938</td></tr>
+<tr><td>s3r_0103__LA_13K_SUB_N500__r02__local_auto__full</td><td>LA-13K-SUB-N500</td><td>    2</td><td>local.auto</td><td>full</td><td>0.1081</td><td>   26</td><td>   90</td><td>   21</td><td> 1844</td></tr>
+<tr><td>s3r_0099__LA_13K_SUB_N500__r01__local_auto__full</td><td>LA-13K-SUB-N500</td><td>    1</td><td>local.auto</td><td>full</td><td>0.1099</td><td>   25</td><td>   90</td><td>   21</td><td> 1748</td></tr>
+<tr><td>s3r_0106__LA_13K_SUB_N500__r03__auto__screened</td><td>LA-13K-SUB-N500</td><td>    3</td><td>auto</td><td>screened</td><td>0.1111</td><td>   35</td><td>   90</td><td>   21</td><td> 1623</td></tr>
+<tr><td>s3r_0102__LA_13K_SUB_N500__r02__auto__screened</td><td>LA-13K-SUB-N500</td><td>    2</td><td>auto</td><td>screened</td><td>0.1096</td><td>   34</td><td>   90</td><td>   21</td><td> 1591</td></tr>
+<tr><td>s3r_0098__LA_13K_SUB_N500__r01__auto__screened</td><td>LA-13K-SUB-N500</td><td>    1</td><td>auto</td><td>screened</td><td>0.1111</td><td>   35</td><td>   90</td><td>   21</td><td> 1415</td></tr>
+<tr><td>s3r_0104__LA_13K_SUB_N500__r02__local_auto__screened</td><td>LA-13K-SUB-N500</td><td>    2</td><td>local.auto</td><td>screened</td><td>0.1081</td><td>   26</td><td>   90</td><td>   21</td><td> 1272</td></tr>
+<tr><td>s3r_0100__LA_13K_SUB_N500__r01__local_auto__screened</td><td>LA-13K-SUB-N500</td><td>    1</td><td>local.auto</td><td>screened</td><td>0.1114</td><td>   26</td><td>   90</td><td>   21</td><td> 1262</td></tr>
+<tr><td>s3r_0069__LA_D2_RAW_N500__r03__auto__full</td><td>LA-D2-RAW-N500</td><td>    3</td><td>auto</td><td>full</td><td>0.112</td><td>   34</td><td>   30</td><td>   21</td><td>941.1</td></tr>
+<tr><td>s3r_0065__LA_D2_RAW_N500__r02__auto__full</td><td>LA-D2-RAW-N500</td><td>    2</td><td>auto</td><td>full</td><td>0.1056</td><td>   30</td><td>   30</td><td>   21</td><td>939.1</td></tr>
+<tr><td>s3r_0061__LA_D2_RAW_N500__r01__auto__full</td><td>LA-D2-RAW-N500</td><td>    1</td><td>auto</td><td>full</td><td>0.1166</td><td>   31</td><td>   30</td><td>   21</td><td>879.1</td></tr>
+<tr><td>s3r_0071__LA_D2_RAW_N500__r03__local_auto__full</td><td>LA-D2-RAW-N500</td><td>    3</td><td>local.auto</td><td>full</td><td>0.1612</td><td>   30</td><td>0.0003333</td><td>   21</td><td>  865</td></tr>
+<tr><td>s3r_0067__LA_D2_RAW_N500__r02__local_auto__full</td><td>LA-D2-RAW-N500</td><td>    2</td><td>local.auto</td><td>full</td><td>0.148</td><td>   30</td><td>0.0003333</td><td>   21</td><td>855.1</td></tr>
+<tr><td>s3r_0095__LA_D3_RAW_N500__r03__local_auto__full</td><td>LA-D3-RAW-N500</td><td>    3</td><td>local.auto</td><td>full</td><td>0.154</td><td>   16</td><td>   30</td><td>   21</td><td>823.2</td></tr>
+<tr><td>s3r_0091__LA_D3_RAW_N500__r02__local_auto__full</td><td>LA-D3-RAW-N500</td><td>    2</td><td>local.auto</td><td>full</td><td>0.1597</td><td>   25</td><td>0.001</td><td>   21</td><td>811.4</td></tr>
+<tr><td>s3r_0063__LA_D2_RAW_N500__r01__local_auto__full</td><td>LA-D2-RAW-N500</td><td>    1</td><td>local.auto</td><td>full</td><td>0.1884</td><td>   26</td><td>0.001</td><td>   21</td><td>785.3</td></tr>
+<tr><td>s3r_0087__LA_D3_RAW_N500__r01__local_auto__full</td><td>LA-D3-RAW-N500</td><td>    1</td><td>local.auto</td><td>full</td><td>0.1554</td><td>   23</td><td> 0.01</td><td>   21</td><td>776.4</td></tr>
+<tr><td>s3r_0093__LA_D3_RAW_N500__r03__auto__full</td><td>LA-D3-RAW-N500</td><td>    3</td><td>auto</td><td>full</td><td>0.1464</td><td>   17</td><td>   90</td><td>   21</td><td>705.6</td></tr>
+<tr><td>s3r_0085__LA_D3_RAW_N500__r01__auto__full</td><td>LA-D3-RAW-N500</td><td>    1</td><td>auto</td><td>full</td><td>0.137</td><td>   17</td><td>   90</td><td>   21</td><td>634.4</td></tr>
+<tr><td>s3r_0075__LA_D2_HC_TOP1_N500__r01__local_auto__full</td><td>LA-D2-HC-TOP1-N500</td><td>    1</td><td>local.auto</td><td>full</td><td>0.1319</td><td>   22</td><td>    1</td><td>   21</td><td>602.3</td></tr>
+<tr><td>s3r_0089__LA_D3_RAW_N500__r02__auto__full</td><td>LA-D3-RAW-N500</td><td>    2</td><td>auto</td><td>full</td><td>0.1255</td><td>   16</td><td>   10</td><td>   21</td><td>602.3</td></tr>
+<tr><td>s3r_0083__LA_D2_HC_TOP1_N500__r03__local_auto__full</td><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>local.auto</td><td>full</td><td>0.1332</td><td>   27</td><td>    1</td><td>   21</td><td>562.6</td></tr>
+<tr><td>s3r_0079__LA_D2_HC_TOP1_N500__r02__local_auto__full</td><td>LA-D2-HC-TOP1-N500</td><td>    2</td><td>local.auto</td><td>full</td><td>0.1262</td><td>   35</td><td>  0.1</td><td>   21</td><td>550.9</td></tr></table>
+<h2>Timeouts, Stops, And Script Survival</h2>
+<p>Timeout count detected from status/error fields: <strong>0</strong>. Worker-level error/nonfinite count: <strong>0</strong>. Manual stop count: <strong>9</strong>.</p>
+<p>The Python supervisor log contains 0 timeout lines and 0 kill/memory/OOM-like lines. Worker logs were quiet except for the intentional stopped status updates. This supports the narrow conclusion that the worker/supervisor design survived normal completed rows until manual stop.</p>
+<h2>Candidate And Phase Timing Diagnostics</h2>
+<p>The completed result RDS files contain local-candidate counts and per-fit timing telemetry. Candidate counts distinguish the exact full support search from screened search, while phase timings help identify where future profiling should focus. These diagnostics are descriptive only because the run was stopped and seed pairing was flawed.</p>
+<h3>Runtime Summary By Dataset, Policy, And Chart Rule</h3>
+<table><tr><th>search_policy</th><th>chart_dim_rule</th><th>dataset_id</th><th>n</th><th>median_elapsed_sec</th><th>p90_elapsed_sec</th><th>max_elapsed_sec</th><th>median_candidates_evaluated</th></tr><tr><td>full</td><td>auto</td><td>LA-13K-SUB-N500</td><td>    3</td><td> 2012</td><td> 2033</td><td> 2038</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-13K-SUB-N500</td><td>    3</td><td> 1591</td><td> 1617</td><td> 1623</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-13K-SUB-N500</td><td>    2</td><td> 1796</td><td> 1834</td><td> 1844</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-13K-SUB-N500</td><td>    2</td><td> 1267</td><td> 1271</td><td> 1272</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>126.4</td><td>  128</td><td>128.4</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>33.66</td><td>34.06</td><td>34.16</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>133.9</td><td>134.5</td><td>134.7</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>52.22</td><td>52.73</td><td>52.86</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>86.36</td><td>87.58</td><td>87.89</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>26.54</td><td>26.65</td><td>26.67</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>106.9</td><td>107.5</td><td>107.7</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>48.78</td><td>49.19</td><td>49.29</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>105.4</td><td>106.5</td><td>106.7</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>29.61</td><td>30.37</td><td>30.56</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>142.8</td><td>143.3</td><td>143.4</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>54.71</td><td>55.36</td><td>55.53</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D1-HC-Li-N500</td><td>    3</td><td>84.98</td><td>85.64</td><td> 85.8</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D1-HC-Li-N500</td><td>    3</td><td>25.31</td><td>26.42</td><td> 26.7</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D1-HC-Li-N500</td><td>    3</td><td>110.2</td><td>116.9</td><td>118.6</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D1-HC-Li-N500</td><td>    3</td><td>48.29</td><td>55.63</td><td>57.47</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D1-RAW-N500</td><td>    3</td><td>124.1</td><td>127.6</td><td>128.5</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D1-RAW-N500</td><td>    3</td><td>14.59</td><td>14.68</td><td> 14.7</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D1-RAW-N500</td><td>    3</td><td>156.1</td><td>157.3</td><td>157.6</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D1-RAW-N500</td><td>    3</td><td>25.28</td><td>57.33</td><td>65.35</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>441.5</td><td>458.5</td><td>462.7</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>103.2</td><td>103.9</td><td>  104</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>562.6</td><td>594.4</td><td>602.3</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>156.5</td><td>162.2</td><td>163.6</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D2-RAW-N500</td><td>    3</td><td>939.1</td><td>940.7</td><td>941.1</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D2-RAW-N500</td><td>    3</td><td>415.5</td><td>416.3</td><td>416.4</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D2-RAW-N500</td><td>    3</td><td>855.1</td><td>  863</td><td>  865</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D2-RAW-N500</td><td>    3</td><td>202.9</td><td>209.6</td><td>211.3</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>LA-D3-RAW-N500</td><td>    3</td><td>634.4</td><td>691.3</td><td>705.6</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>LA-D3-RAW-N500</td><td>    3</td><td>204.7</td><td>236.6</td><td>244.6</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>LA-D3-RAW-N500</td><td>    3</td><td>811.4</td><td>820.9</td><td>823.2</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>LA-D3-RAW-N500</td><td>    3</td><td>202.7</td><td>  204</td><td>204.3</td><td>   21</td></tr>
+<tr><td>full</td><td>auto</td><td>SYN-PARA-LINE-N500</td><td>    3</td><td>170.8</td><td>173.9</td><td>174.7</td><td>   21</td></tr>
+<tr><td>screened</td><td>auto</td><td>SYN-PARA-LINE-N500</td><td>    3</td><td>106.6</td><td>  115</td><td>117.1</td><td>   21</td></tr>
+<tr><td>full</td><td>local.auto</td><td>SYN-PARA-LINE-N500</td><td>    3</td><td>194.5</td><td>203.4</td><td>205.6</td><td>   21</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>SYN-PARA-LINE-N500</td><td>    3</td><td>145.1</td><td>  165</td><td>169.9</td><td>   21</td></tr></table>
+<h3>PS-LPS Phase Timing Summary</h3>
+<table><tr><th>search_policy</th><th>chart_dim_rule</th><th>n</th><th>median_total.elapsed.sec</th><th>median_phase_frames_sec</th><th>median_phase_sync_rows_sec</th><th>median_phase_system_cache_sec</th><th>median_phase_fold_component_cache_sec</th><th>median_phase_full_component_cache_sec</th><th>median_phase_lambda_search_sec</th><th>median_phase_final_solve_sec</th><th>median_evaluated_lambda_count</th><th>median_unique_lambda_count</th><th>median_boundary_expansion_count</th></tr><tr><td>full</td><td>auto</td><td>   34</td><td>6.196</td><td>0.288</td><td>0.175</td><td>0.016</td><td>1.092</td><td>0.2175</td><td>4.296</td><td>0.1075</td><td>    8</td><td>    8</td><td>    2</td></tr>
+<tr><td>screened</td><td>auto</td><td>   34</td><td>6.608</td><td>0.2645</td><td>0.1675</td><td>0.0215</td><td>1.165</td><td>0.2395</td><td>4.854</td><td>0.096</td><td>    8</td><td>    8</td><td>    2</td></tr>
+<tr><td>full</td><td>local.auto</td><td>   32</td><td>6.865</td><td>0.295</td><td>0.159</td><td>0.015</td><td>1.028</td><td>0.198</td><td>4.508</td><td>0.093</td><td>    8</td><td>    8</td><td>    2</td></tr>
+<tr><td>screened</td><td>local.auto</td><td>   32</td><td>7.292</td><td>0.2595</td><td>0.1705</td><td>0.0165</td><td>1.133</td><td>0.244</td><td>4.822</td><td>0.1015</td><td>    8</td><td>    8</td><td>    2</td></tr></table>
+<h2>Memory Diagnostics</h2>
+<p>The run did not record per-task maximum RSS, peak system memory, swap pressure, or sampled memory over time. The only artifact-backed memory statement is negative evidence: no status/log entries indicated OOM, killed workers, jetsam, or timeout before manual stop. The corrected S3R run should add either <code>/usr/bin/time -l</code> around worker tasks or a supervisor-side periodic <code>ps</code> sampler that records PID, RSS, CPU, task id, and timestamp.</p>
+<h2>What This Smoke Run Can Still Be Used For</h2>
+<ul>
+<li>Estimating runtime tails and choosing a conservative timeout for the corrected S3R-light run.</li>
+<li>Confirming that one-task workers, status JSONs, result RDS outputs, and the Python supervisor can process a large fraction of the manifest without ordinary numerical failures.</li>
+<li>Identifying that VALENCIA-derived rows are a runtime stressor and should be represented in timeout planning.</li>
+<li>Identifying missing instrumentation: manifest-backed pair accounting and memory telemetry are required before a larger S3R-expanded run.</li>
+</ul>
+<h2>What This Smoke Run Must Not Be Used For</h2>
+<ul>
+<li>Do not use full-versus-screened Truth RMSE deltas from this run as paired support-search evidence.</li>
+<li>Do not decide the screened-search default from this run.</li>
+<li>Do not infer memory safety beyond the absence of logged OOM/killed events.</li>
+</ul>
+<h2>Reproducibility And Linked Assets</h2>
+<p>Generated tables are in <code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables</code>. Figures are in <code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/reports/figures_s3r_smoke</code>.</p>
+<ul>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables/s3r_smoke_manifest_backed_status.csv</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables/s3r_smoke_completed_task_summary.csv</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables/s3r_smoke_runtime_summary_by_dataset_policy.csv</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables/s3r_smoke_runtime_tail_top25.csv</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/tables/s3r_smoke_phase_timing_summary.csv</code></li>
+</ul>
+<p>Relevant audit context:</p>
+<ul>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/p7x_s3r_audit_2026-06-07.md</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/p7x_s3r_audit_response_2026-06-07.md</code></li>
+<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/STOPPED_PROFILING_ONLY_2026-06-07.md</code></li>
+</ul>
+</body></html>

@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0161__SYN_RANK_BLOCKS_N600_P100__r02__auto__full",
+  "pair_id": "SYN_RANK_BLOCKS_N600_P100__r02__auto",
+  "dataset_id": "SYN-RANK-BLOCKS-N600-P100",
+  "repetition": 2,
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "search_policy": "full",
+  "status": "ok",
+  "started_at": "2026-06-07 16:32:26 EDT",
+  "finished_at": "2026-06-07 17:16:15 EDT",
+  "elapsed_sec": 2628.804,
+  "hostname": "pgajerm4-osx",
+  "pid": 63634,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/results/s3r_0161__SYN_RANK_BLOCKS_N600_P100__r02__auto__full.rds",
+  "pair_response_seed": 21662609,
+  "pair_fold_seed": 21662608,
+  "error_message": null,
+  "error_class": null
+}

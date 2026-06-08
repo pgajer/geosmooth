@@ -1,0 +1,17 @@
+{
+  "task_id": "s3r_0027__LA_D1_HC_Lc_N500__r01__local_auto__full",
+  "dataset_id": "LA-D1-HC-Lc-N500",
+  "repetition": 1,
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "search_policy": "full",
+  "status": "ok",
+  "started_at": "2026-06-07 14:19:34 EDT",
+  "finished_at": "2026-06-07 14:21:55 EDT",
+  "elapsed_sec": 141.894,
+  "hostname": "pgajerm4-osx",
+  "pid": 69902,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/results/s3r_0027__LA_D1_HC_Lc_N500__r01__local_auto__full.rds",
+  "error_message": null,
+  "error_class": null
+}

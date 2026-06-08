@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0140__SYN_TWO_PLANES_N600__r02__local_auto__screened",
+  "pair_id": "SYN_TWO_PLANES_N600__r02__local_auto",
+  "dataset_id": "SYN-TWO-PLANES-N600",
+  "repetition": 2,
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "search_policy": "screened",
+  "status": "ok",
+  "started_at": "2026-06-07 16:29:19 EDT",
+  "finished_at": "2026-06-07 16:30:16 EDT",
+  "elapsed_sec": 56.254,
+  "hostname": "pgajerm4-osx",
+  "pid": 63110,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/results/s3r_0140__SYN_TWO_PLANES_N600__r02__local_auto__screened.rds",
+  "pair_response_seed": 21462709,
+  "pair_fold_seed": 21462708,
+  "error_message": null,
+  "error_class": null
+}

@@ -1,0 +1,8 @@
+S3R-expanded manifest pre-launch QA
+run_id: ps_lps_s3r_expanded_seedmatched_20260607_001
+run_dir: /Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_20260607_001
+planned_tasks: 1120
+planned_pairs: 560
+seed_matched_pairs: 560
+mismatched_pairs: 0
+qa_passed: TRUE

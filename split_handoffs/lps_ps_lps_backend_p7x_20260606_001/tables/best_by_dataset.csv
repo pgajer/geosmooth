@@ -1,0 +1,15 @@
+"dataset_id","geometry_family","method","chart_dim_rule","backend_variant","truth_rmse","observed_rmse","selected_cv_rmse_observed","elapsed_sec"
+"LA-13K-SUB-N500","VALENCIA full phylotype matrix","ps_lps","auto","monomial_tiny_ridge",0.034326533009444,0.0921867145824358,0.10962069553411,1124.551
+"LA-D1-HC-Bv-N500","VALENCIA depth-1 hypercube","ps_lps","auto","monomial_tiny_ridge",0.0260814661470651,0.0969766943308587,0.103946468081168,73.503
+"LA-D1-HC-Gv-N500","VALENCIA depth-1 hypercube","ps_lps","auto","monomial_tiny_ridge",0.0278587172842025,0.0975008417205034,0.104907356135028,51.969
+"LA-D1-HC-Lc-N500","VALENCIA depth-1 hypercube","ps_lps","local.auto","monomial_tiny_ridge",0.024711690145121,0.0987599314000356,0.104602350870816,78.014
+"LA-D1-HC-Li-N500","VALENCIA depth-1 hypercube","ps_lps","local.auto","orthogonal_drop_adaptive_tiny",0.0332798242894604,0.0982939711181741,0.115989682359047,147.469
+"LA-D1-RAW-N500","VALENCIA depth-1 dCST","ps_lps","local.auto","weighted_qr_drop_tiny",0.0245762433502856,0.0997216038397047,0.104712808761243,964.838
+"LA-D2-HC-TOP1-N500","VALENCIA depth-2 hypercube","ps_lps","auto","orthogonal_drop_adaptive_tiny",0.0539478995143922,0.100769398053083,0.149468682388948,2874.378
+"LA-D2-RAW-N500","VALENCIA depth2 dCST","ps_lps","auto","monomial_tiny_ridge",0.0315544440051374,0.0939123851552393,0.113887833607556,527.622
+"LA-D3-RAW-N500","VALENCIA depth3 dCST","ps_lps","auto","weighted_qr_drop_tiny",0.028223493140445,0.0965334871111174,0.158162194490278,11928.01
+"SYN-PARA-LINE-N500","synthetic stratified surface/curve","ps_lps","auto","weighted_qr_drop_tiny",0.0236878562836863,0.0978164770223397,0.104369356606476,1255.286
+"SYN-RANK-BLOCKS-N600-P100","synthetic high-dimensional rank strata","ps_lps","auto","monomial_tiny_ridge",0.044208026373249,0.086314350704311,0.117205858273123,4098.577
+"SYN-SADDLE-LINE-N500","synthetic stratified surface/curve","ps_lps","local.auto","monomial_tiny_ridge",0.0251125119587745,0.0966513978740417,0.103025106267818,101.692
+"SYN-SIMPLEX-FACES-N600","synthetic compositional strata","ps_lps","local.auto","monomial_tiny_ridge",0.0226008649159552,0.0960533542883839,0.102075486951465,251.924
+"SYN-TWO-PLANES-N600","synthetic singular sheet union","ps_lps","local.auto","monomial_tiny_ridge",0.025410228809614,0.0975106404779627,0.104067179413316,142.906

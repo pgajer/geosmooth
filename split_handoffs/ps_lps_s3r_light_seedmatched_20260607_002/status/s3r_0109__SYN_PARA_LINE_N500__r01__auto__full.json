@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0109__SYN_PARA_LINE_N500__r01__auto__full",
+  "pair_id": "SYN_PARA_LINE_N500__r01__auto",
+  "dataset_id": "SYN-PARA-LINE-N500",
+  "repetition": 1,
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "search_policy": "full",
+  "status": "ok",
+  "started_at": "2026-06-07 16:25:10 EDT",
+  "finished_at": "2026-06-07 16:26:01 EDT",
+  "elapsed_sec": 50.487,
+  "hostname": "pgajerm4-osx",
+  "pid": 62266,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/results/s3r_0109__SYN_PARA_LINE_N500__r01__auto__full.rds",
+  "pair_response_seed": 21261609,
+  "pair_fold_seed": 21261608,
+  "error_message": null,
+  "error_class": null
+}

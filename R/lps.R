@@ -57,10 +57,52 @@
 #'   \code{"cpp.local.pca"} is an opt-in prototype backend for
 #'   \code{coordinate.method = "local.pca"} with
 #'   \code{local.chart.method = "pca"}.
-#' @return A list of class \code{"lps"} with fitted values, selected
-#'   parameters, a candidate CV table, the requested
-#'   \code{local.chart.method}, and the effective chart method used for
-#'   reporting.
+#' @param design.basis Local polynomial design backend. \code{"monomial"} uses
+#'   the ordinary raw monomial design. \code{"weighted.qr"} solves the same
+#'   design using an explicit weighted-QR numerical path. \code{"weighted.qr.drop"}
+#'   first drops numerically dependent local design columns by weighted QR before
+#'   solving. \code{"orthogonal.polynomial.drop"} replaces the local monomial
+#'   design by a weighted-orthogonal basis spanning its estimable polynomial
+#'   directions, dropping numerically rank-deficient directions first.
+#' @param design.drop.tol Relative QR tolerance used by
+#'   \code{design.basis = "weighted.qr.drop"} or
+#'   \code{design.basis = "orthogonal.polynomial.drop"}.
+#' @param ridge.multiplier.grid Nonnegative scale-relative ridge multipliers
+#'   tried by the R local-solve backend. The smallest multiplier whose
+#'   penalized local normal equations pass \code{ridge.condition.max} is used.
+#' @param ridge.condition.max Maximum allowed condition number for the
+#'   penalized local normal equations. Use \code{Inf} to disable this guard.
+#' @param unstable.action Action when no local solve passes the rank and
+#'   condition guards. \code{"mean"} preserves the historical weighted-mean
+#'   fallback. \code{"na"} returns \code{NA}, causing CV candidates with
+#'   unstable predictions to be avoided.
+#' @param outcome.family Response family. \code{"gaussian"} preserves the
+#'   ordinary numeric-response LPS behavior. \code{"bernoulli"} treats
+#'   \code{0/1} responses as numeric conditional-expectation targets for
+#'   \eqn{\Pr(Y=1\mid X)}, keeps the same local least-squares fitting core,
+#'   clips reported response-scale probabilities to \code{[0,1]}, and records
+#'   Brier/log-loss probability diagnostics. \code{"binomial"} uses local
+#'   weighted logistic polynomial fits, selects candidates by observed CV log
+#'   loss, and reports probability diagnostics on the fitted probabilities.
+#' @return A list of class \code{"lps"} with response-scale
+#'   \code{fitted.values}, unmodified local least-squares
+#'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
+#'   requested \code{local.chart.method}, and the effective chart method used
+#'   for reporting.  In \code{outcome.family = "bernoulli"} or
+#'   \code{"binomial"} mode, \code{fitted.values} are response-scale
+#'   probabilities in \code{[0,1]},
+#'   \code{fitted.values.raw} are the un-clipped conditional-expectation
+#'   estimates for \code{"bernoulli"} and the fitted probabilities for
+#'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is
+#'   \code{cv.table$cv.rmse.observed^2}, and
+#'   \code{probability.diagnostics} records raw/clipped probability ranges,
+#'   out-of-range fractions, and Brier/log-loss diagnostics.  The Brier and
+#'   log-loss diagnostics are defined only when the fitted predictions have the
+#'   same length as the training response, which is the default
+#'   \code{X.eval = X} path.  In \code{"binomial"} mode,
+#'   \code{logistic.diagnostics} records local logistic solve attempts,
+#'   convergence statuses, fallback-path counts, event-rate fallback counts,
+#'   and \code{NA} failure counts separately for CV and final fitting.
 #' @export
 fit.lps <- function(
     X, y, foldid = NULL,
@@ -75,10 +117,18 @@ fit.lps <- function(
     local.chart.method = c("pca", "second.order.svd"),
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
-    backend = c("auto", "R", "cpp", "cpp.local.pca")) {
+    backend = c("auto", "R", "cpp", "cpp.local.pca"),
+    design.basis = c("orthogonal.polynomial.drop", "monomial",
+                     "weighted.qr", "weighted.qr.drop"),
+    design.drop.tol = 1e-8,
+    ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+    ridge.condition.max = 1e12,
+    unstable.action = c("na", "mean"),
+    outcome.family = c("gaussian", "bernoulli", "binomial")) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
+    outcome.family <- match.arg(outcome.family)
     if (!is.numeric(X) || !length(X) || any(!is.finite(X))) {
         stop("'X' must be a finite numeric matrix.", call. = FALSE)
     }
@@ -86,6 +136,7 @@ fit.lps <- function(
         stop("'y' must be a finite numeric vector with length nrow(X).",
              call. = FALSE)
     }
+    .klp.validate.outcome.family(y, outcome.family)
     X.eval <- if (is.null(X.eval)) X else as.matrix(X.eval)
     if (ncol(X.eval) != ncol(X) || any(!is.finite(X.eval))) {
         stop("'X.eval' must be a finite matrix with ncol(X.eval) = ncol(X).",
@@ -105,13 +156,38 @@ fit.lps <- function(
         local.chart.method
     }
     backend <- match.arg(backend)
+    design.basis <- match.arg(design.basis)
+    unstable.action <- match.arg(unstable.action)
+    design.drop.tol <- .klp.validate.nonnegative.scalar(
+        design.drop.tol,
+        "design.drop.tol"
+    )
+    ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
+        ridge.multiplier.grid
+    )
+    ridge.condition.max <- .klp.validate.positive.scalar(
+        ridge.condition.max,
+        "ridge.condition.max",
+        allow.infinite = TRUE
+    )
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     backend.used <- .klp.resolve.backend(
         coordinate.method,
         backend,
-        local.chart.method.effective
+        local.chart.method.effective,
+        design.basis,
+        ridge.multiplier.grid,
+        ridge.condition.max
     )
+    if (identical(outcome.family, "binomial") &&
+        identical(backend, "auto")) {
+        backend.used <- "R"
+    } else if (identical(outcome.family, "binomial") &&
+        !identical(backend.used, "R")) {
+        stop("'outcome.family = \"binomial\"' currently uses the R backend; ",
+             "use backend = 'R' or backend = 'auto'.", call. = FALSE)
+    }
     if (.klp.is.local.auto.chart.dim(chart.dim)) {
         if (!identical(coordinate.method, "local.pca")) {
             stop("'chart.dim = \"local.auto\"' requires ",
@@ -139,6 +215,8 @@ fit.lps <- function(
         KEEP.OUT.ATTRS = FALSE,
         stringsAsFactors = FALSE
     )
+    logistic.cv.telemetry <- .klp.logistic.telemetry.new(outcome.family)
+    logistic.final.telemetry <- .klp.logistic.telemetry.new(outcome.family)
     cv.result <- .klp.cv.table(
         X = X,
         y = y,
@@ -149,10 +227,19 @@ fit.lps <- function(
         local.chart.method = local.chart.method.effective,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
-        backend = backend.used
+        backend = backend.used,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action,
+        outcome.family = outcome.family,
+        logistic.telemetry = logistic.cv.telemetry
     )
     cv.table <- cv.result$cv.table
-    best.idx <- .klp.select.best.idx(cv.table)
+    cv.table <- .klp.decorate.outcome.cv.table(cv.table, outcome.family)
+    score.column <- .klp.selection.score.column(outcome.family)
+    best.idx <- .klp.select.best.idx(cv.table, score.column = score.column)
     selected <- cv.table[best.idx, , drop = FALSE]
     selected.dim <- .klp.resolve.chart.dim(
         X = X,
@@ -186,6 +273,13 @@ fit.lps <- function(
         chart.dim.by.eval = selected.pred.dim$chart.dim.by.eval,
         local.chart.method = local.chart.method.effective,
         backend = backend.used,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action,
+        outcome.family = outcome.family,
+        logistic.telemetry = logistic.final.telemetry,
         return.chart.diagnostics = identical(local.chart.method.effective,
                                              "second.order.svd")
     )
@@ -194,6 +288,22 @@ fit.lps <- function(
         fitted.result$predictions
     } else {
         fitted.result
+    }
+    fitted.raw <- as.numeric(fitted)
+    fitted.response <- .klp.response.scale(fitted.raw, outcome.family)
+    probability.diagnostics <- .klp.probability.diagnostics(
+        y = y,
+        fitted.raw = fitted.raw,
+        fitted.response = fitted.response,
+        outcome.family = outcome.family
+    )
+    logistic.diagnostics <- if (identical(outcome.family, "binomial")) {
+        list(
+            cv = .klp.logistic.telemetry.summary(logistic.cv.telemetry),
+            final = .klp.logistic.telemetry.summary(logistic.final.telemetry)
+        )
+    } else {
+        NULL
     }
     chart.diagnostics <- if (is.list(fitted.result)) {
         fitted.result$chart.diagnostics
@@ -215,7 +325,8 @@ fit.lps <- function(
         X = X,
         y = y,
         X.eval = X.eval,
-        fitted.values = fitted,
+        fitted.values = fitted.response,
+        fitted.values.raw = fitted.raw,
         selected = selected,
         cv.table = cv.table,
         foldid = foldid,
@@ -235,20 +346,42 @@ fit.lps <- function(
         auto.chart.selection.metric = auto.chart.selection.metric,
         backend = backend,
         backend.used = backend.used,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action,
+        outcome.family = outcome.family,
+        probability.diagnostics = probability.diagnostics,
+        logistic.diagnostics = logistic.diagnostics,
         call = match.call()
     )
     class(out) <- c("lps", "list")
     out
 }
 
+#' Predict from an LPS Fit
+#'
+#' @param object A fitted \code{"lps"} object.
+#' @param newdata Optional prediction matrix. Defaults to the fitted object's
+#'   stored \code{X.eval}.
+#' @param type Prediction scale. \code{"response"} returns response-scale
+#'   predictions; for \code{outcome.family = "bernoulli"} or
+#'   \code{"binomial"} these are probabilities in \code{[0,1]}. \code{"raw"}
+#'   returns the unmodified local least-squares predictions for
+#'   \code{"bernoulli"} and the fitted probabilities for \code{"binomial"}.
+#' @param ... Unused.
+#' @return A numeric vector of predictions.
 #' @method predict lps
 #' @export
-predict.lps <- function(object, newdata = NULL, ...) {
+predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
+                        ...) {
     dots <- list(...)
     if (length(dots)) {
         stop("Unused arguments: ", paste(names(dots), collapse = ", "),
              call. = FALSE)
     }
+    type <- match.arg(type)
     X.eval <- if (is.null(newdata)) object$X.eval else as.matrix(newdata)
     local.chart.method.effective <- if (!is.null(
         object$local.chart.method.effective
@@ -274,7 +407,7 @@ predict.lps <- function(object, newdata = NULL, ...) {
             "coordinates",
         summary.dim = object$chart.dim
     )
-    .klp.predict.local.polynomial(
+    pred <- .klp.predict.local.polynomial(
         X.train = object$X,
         y.train = object$y,
         X.eval = X.eval,
@@ -285,8 +418,18 @@ predict.lps <- function(object, newdata = NULL, ...) {
         chart.dim = pred.dim$chart.dim,
         chart.dim.by.eval = pred.dim$chart.dim.by.eval,
         local.chart.method = local.chart.method.effective,
-        backend = if (is.null(object$backend.used)) "R" else object$backend.used
+        backend = if (is.null(object$backend.used)) "R" else object$backend.used,
+        design.basis = object$design.basis %||% "monomial",
+        design.drop.tol = object$design.drop.tol %||% sqrt(.Machine$double.eps),
+        ridge.multiplier.grid = object$ridge.multiplier.grid %||% 0,
+        ridge.condition.max = object$ridge.condition.max %||% Inf,
+        unstable.action = object$unstable.action %||% "mean",
+        outcome.family = object$outcome.family %||% "gaussian"
     )
+    if (identical(type, "raw")) {
+        return(pred)
+    }
+    .klp.response.scale(pred, object$outcome.family %||% "gaussian")
 }
 
 #' @method print lps
@@ -305,11 +448,25 @@ print.lps <- function(x, ...) {
             "\n")
     }
     cat("  backend:", if (is.null(x$backend.used)) "R" else x$backend.used, "\n")
+    if (!is.null(x$outcome.family) &&
+        !identical(x$outcome.family, "gaussian")) {
+        cat("  outcome family:", x$outcome.family, "\n")
+    }
     cat("  selected support.size:", x$selected$support.size[[1L]], "\n")
     cat("  selected degree:", x$selected$degree[[1L]], "\n")
     cat("  selected kernel:", x$selected$kernel[[1L]], "\n")
     cat("  selected CV RMSE:",
         signif(x$selected$cv.rmse.observed[[1L]], 5), "\n")
+    if (identical(x$outcome.family, "bernoulli") &&
+        "cv.brier.observed" %in% names(x$selected)) {
+        cat("  selected CV Brier:",
+            signif(x$selected$cv.brier.observed[[1L]], 5), "\n")
+    }
+    if (identical(x$outcome.family, "binomial") &&
+        "cv.logloss.observed" %in% names(x$selected)) {
+        cat("  selected CV log loss:",
+            signif(x$selected$cv.logloss.observed[[1L]], 5), "\n")
+    }
     invisible(x)
 }
 
@@ -380,7 +537,11 @@ lps.backend.diagnostics <- function(object) {
         identical(selection.metric, "operator")
     backend.auto.policy <- if (identical(backend.requested, "auto")) {
         if (identical(coord.method, "coordinates")) {
-            "auto_coordinates_cpp"
+            if (identical(backend.used, "cpp")) {
+                "auto_coordinates_cpp"
+            } else {
+                "auto_coordinates_R_guarded_design"
+            }
         } else if (identical(coord.method, "local.pca")) {
             "auto_local_pca_R_reference"
         } else {
@@ -394,6 +555,7 @@ lps.backend.diagnostics <- function(object) {
     auto.summary <- object$auto.chart.dim.diagnostics$summary
     data.frame(
         method.id = object$method.id %||% "lps",
+        outcome.family = object$outcome.family %||% "gaussian",
         coordinate.method = coord.method,
         local.chart.method = local.chart.method,
         local.chart.method.effective = local.chart.method.effective,
@@ -436,6 +598,17 @@ lps.backend.diagnostics <- function(object) {
         selected.kernel = as.character(selected.value("kernel", NA_character_)),
         selected.cv.rmse.observed =
             as.numeric(selected.value("cv.rmse.observed", NA_real_)),
+        selected.cv.brier.observed =
+            as.numeric(selected.value("cv.brier.observed", NA_real_)),
+        selected.cv.logloss.observed =
+            as.numeric(selected.value("cv.logloss.observed", NA_real_)),
+        design.basis = object$design.basis %||% "monomial",
+        design.drop.tol = as.numeric(object$design.drop.tol %||% NA_real_),
+        ridge.multiplier.grid = paste(object$ridge.multiplier.grid %||% NA,
+                                      collapse = ";"),
+        ridge.condition.max =
+            as.numeric(object$ridge.condition.max %||% NA_real_),
+        unstable.action = object$unstable.action %||% NA_character_,
         candidate.count = if (is.null(object$cv.table)) {
             NA_integer_
         } else {
@@ -446,31 +619,229 @@ lps.backend.diagnostics <- function(object) {
     )
 }
 
-.klp.rmse <- function(x, y) {
-    sqrt(mean((as.numeric(x) - as.numeric(y))^2, na.rm = TRUE))
+.klp.validate.outcome.family <- function(y, outcome.family) {
+    if (!outcome.family %in% c("bernoulli", "binomial")) {
+        return(invisible(TRUE))
+    }
+    ok <- y %in% c(0, 1)
+    if (!all(ok)) {
+        stop("'outcome.family = \"", outcome.family,
+             "\"' requires y values in {0, 1}.",
+             call. = FALSE)
+    }
+    if (length(unique(y)) < 2L) {
+        warning("'outcome.family = \"", outcome.family,
+                "\"' received only one observed ",
+                "class; fitted probabilities are still computed as numeric ",
+                "probability estimates.", call. = FALSE)
+    }
+    invisible(TRUE)
 }
 
-.klp.select.best.idx <- function(cv.table, tolerance = 1e-12) {
-    finite <- is.finite(cv.table$cv.rmse.observed)
-    if (!any(finite)) {
-        return(order(
-            cv.table$cv.rmse.observed,
-            cv.table$support.size,
-            cv.table$degree,
-            cv.table$kernel
-        )[[1L]])
+.klp.clip.probability <- function(p, eps = 1e-15) {
+    p <- as.numeric(p)
+    pmin(1 - eps, pmax(eps, p))
+}
+
+.klp.response.scale <- function(pred, outcome.family) {
+    pred <- as.numeric(pred)
+    if (!outcome.family %in% c("bernoulli", "binomial")) {
+        return(pred)
     }
-    best <- min(cv.table$cv.rmse.observed[finite])
+    pmin(1, pmax(0, pred))
+}
+
+.klp.brier <- function(y, p) {
+    if (length(y) != length(p)) return(NA_real_)
+    ok <- is.finite(y) & is.finite(p)
+    if (!any(ok)) return(NA_real_)
+    mean((y[ok] - p[ok])^2)
+}
+
+.klp.logloss <- function(y, p) {
+    if (length(y) != length(p)) return(NA_real_)
+    ok <- is.finite(y) & is.finite(p)
+    if (!any(ok)) return(NA_real_)
+    p <- .klp.clip.probability(p[ok])
+    -mean(y[ok] * log(p) + (1 - y[ok]) * log1p(-p))
+}
+
+.klp.probability.diagnostics <- function(y, fitted.raw, fitted.response,
+                                         outcome.family) {
+    if (!outcome.family %in% c("bernoulli", "binomial")) {
+        return(NULL)
+    }
+    finite.raw <- is.finite(fitted.raw)
+    n <- length(fitted.raw)
+    below <- finite.raw & fitted.raw < 0
+    above <- finite.raw & fitted.raw > 1
+    list(
+        diagnostic.scope = if (length(y) == length(fitted.raw)) {
+            "labeled_predictions"
+        } else {
+            "unlabeled_eval_predictions"
+        },
+        n.labels = length(y),
+        n.predictions = length(fitted.raw),
+        brier.denominator = if (length(y) == length(fitted.raw)) {
+            sum(is.finite(y) & is.finite(fitted.response))
+        } else {
+            NA_integer_
+        },
+        raw.min = if (any(finite.raw)) min(fitted.raw[finite.raw]) else NA_real_,
+        raw.max = if (any(finite.raw)) max(fitted.raw[finite.raw]) else NA_real_,
+        clipped.min = if (any(is.finite(fitted.response))) {
+            min(fitted.response[is.finite(fitted.response)])
+        } else {
+            NA_real_
+        },
+        clipped.max = if (any(is.finite(fitted.response))) {
+            max(fitted.response[is.finite(fitted.response)])
+        } else {
+            NA_real_
+        },
+        n.below.zero = sum(below),
+        n.above.one = sum(above),
+        fraction.below.zero = if (n) mean(below) else NA_real_,
+        fraction.above.one = if (n) mean(above) else NA_real_,
+        brier.raw = .klp.brier(y, fitted.raw),
+        brier.clipped = .klp.brier(y, fitted.response),
+        logloss.clipped = .klp.logloss(y, fitted.response)
+    )
+}
+
+.klp.logistic.telemetry.new <- function(outcome.family) {
+    if (!identical(outcome.family, "binomial")) {
+        return(NULL)
+    }
+    env <- new.env(parent = emptyenv())
+    env$attempted <- 0L
+    env$converged <- 0L
+    env$fallback.path <- 0L
+    env$event.rate.fallback <- 0L
+    env$na.failure <- 0L
+    env$status <- list()
+    env
+}
+
+.klp.logistic.telemetry.record <- function(telemetry, status,
+                                           fallback.path = FALSE,
+                                           event.rate.fallback = FALSE,
+                                           na.failure = FALSE) {
+    if (is.null(telemetry)) {
+        return(invisible(NULL))
+    }
+    status <- as.character(status %||% "unknown")[[1L]]
+    telemetry$attempted <- as.integer(telemetry$attempted %||% 0L) + 1L
+    if (identical(status, "ok") && !isTRUE(fallback.path)) {
+        telemetry$converged <- as.integer(telemetry$converged %||% 0L) + 1L
+    }
+    if (isTRUE(fallback.path)) {
+        telemetry$fallback.path <-
+            as.integer(telemetry$fallback.path %||% 0L) + 1L
+    }
+    if (isTRUE(event.rate.fallback)) {
+        telemetry$event.rate.fallback <-
+            as.integer(telemetry$event.rate.fallback %||% 0L) + 1L
+    }
+    if (isTRUE(na.failure)) {
+        telemetry$na.failure <-
+            as.integer(telemetry$na.failure %||% 0L) + 1L
+    }
+    old <- telemetry$status[[status]] %||% 0L
+    telemetry$status[[status]] <- as.integer(old) + 1L
+    invisible(NULL)
+}
+
+.klp.logistic.telemetry.summary <- function(telemetry) {
+    if (is.null(telemetry)) {
+        return(NULL)
+    }
+    status <- telemetry$status %||% list()
+    status.counts <- if (length(status)) {
+        counts <- unlist(status, use.names = TRUE)
+        counts[order(names(counts))]
+    } else {
+        integer(0L)
+    }
+    attempted <- as.integer(telemetry$attempted %||% 0L)
+    converged <- as.integer(telemetry$converged %||% 0L)
+    fallback.path <- as.integer(telemetry$fallback.path %||% 0L)
+    event.rate.fallback <-
+        as.integer(telemetry$event.rate.fallback %||% 0L)
+    na.failure <- as.integer(telemetry$na.failure %||% 0L)
+    list(
+        attempted = attempted,
+        converged = converged,
+        failed = max(0L, attempted - converged),
+        fallback.path.count = fallback.path,
+        event.rate.fallback.count = event.rate.fallback,
+        na.failure.count = na.failure,
+        convergence.fraction = if (attempted > 0L) converged / attempted else NA_real_,
+        fallback.path.fraction = if (attempted > 0L) fallback.path / attempted else NA_real_,
+        event.rate.fallback.fraction = if (attempted > 0L) {
+            event.rate.fallback / attempted
+        } else {
+            NA_real_
+        },
+        na.failure.fraction = if (attempted > 0L) na.failure / attempted else NA_real_,
+        status.counts = status.counts
+    )
+}
+
+.klp.decorate.outcome.cv.table <- function(cv.table, outcome.family) {
+    if (!outcome.family %in% c("bernoulli", "binomial")) {
+        return(cv.table)
+    }
+    cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
+    if (identical(outcome.family, "binomial") &&
+        !"cv.logloss.observed" %in% names(cv.table)) {
+        cv.table$cv.logloss.observed <- NA_real_
+    }
+    cv.table
+}
+
+.klp.selection.score.column <- function(outcome.family) {
+    if (identical(outcome.family, "binomial")) {
+        "cv.logloss.observed"
+    } else {
+        "cv.rmse.observed"
+    }
+}
+
+.klp.rmse <- function(x, y) {
+    x <- as.numeric(x)
+    y <- as.numeric(y)
+    ok <- is.finite(x) & is.finite(y)
+    if (!all(ok) || !any(ok)) return(Inf)
+    sqrt(mean((x - y)^2))
+}
+
+.klp.select.best.idx <- function(cv.table, tolerance = 1e-12,
+                                 score.column = "cv.rmse.observed") {
+    if (!score.column %in% names(cv.table)) {
+        stop("CV table does not contain selection score column '",
+             score.column, "'.", call. = FALSE)
+    }
+    score <- cv.table[[score.column]]
+    finite <- is.finite(score)
+    if (!any(finite)) {
+        stop("No candidate has a finite selection score in '",
+             score.column, "'.  Check local-design conditioning, ",
+             "support sizes, degree, backend, and unstable.action.",
+             call. = FALSE)
+    }
+    best <- min(score[finite])
     eligible <- which(
         finite &
-            cv.table$cv.rmse.observed <=
+            score <=
                 best + max(tolerance, tolerance * abs(best))
     )
     eligible[order(
         cv.table$support.size[eligible],
         cv.table$degree[eligible],
         cv.table$kernel[eligible],
-        cv.table$cv.rmse.observed[eligible]
+        score[eligible]
     )[[1L]]]
 }
 
@@ -478,7 +849,14 @@ lps.backend.diagnostics <- function(object) {
                           local.chart.method = "pca",
                           auto.chart.support.metric,
                           auto.chart.selection.metric,
-                          backend = "R") {
+                          backend = "R",
+                          design.basis = "monomial",
+                          design.drop.tol = sqrt(.Machine$double.eps),
+                          ridge.multiplier.grid = 0,
+                          ridge.condition.max = Inf,
+                          unstable.action = "mean",
+                          outcome.family = "gaussian",
+                          logistic.telemetry = NULL) {
     cand$chart.dim <- NA_integer_
     local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
     if (identical(coordinate.method, "coordinates") &&
@@ -604,7 +982,14 @@ lps.backend.diagnostics <- function(object) {
                             weights = w,
                             degree = cand$degree[[rr]],
                             chart.dim = fit.chart.dim,
-                            design.cache = design.cache
+                            design.cache = design.cache,
+                            design.basis = design.basis,
+                            design.drop.tol = design.drop.tol,
+                            ridge.multiplier.grid = ridge.multiplier.grid,
+                            ridge.condition.max = ridge.condition.max,
+                            unstable.action = unstable.action,
+                            outcome.family = outcome.family,
+                            logistic.telemetry = logistic.telemetry
                         )
                     }
                 } else {
@@ -628,7 +1013,14 @@ lps.backend.diagnostics <- function(object) {
                             weights = w,
                             degree = cand$degree[[rr]],
                             chart.dim = fit.chart.dim,
-                            design.cache = new.env(parent = emptyenv())
+                            design.cache = new.env(parent = emptyenv()),
+                            design.basis = design.basis,
+                            design.drop.tol = design.drop.tol,
+                            ridge.multiplier.grid = ridge.multiplier.grid,
+                            ridge.condition.max = ridge.condition.max,
+                            unstable.action = unstable.action,
+                            outcome.family = outcome.family,
+                            logistic.telemetry = logistic.telemetry
                         )
                     }
                 }
@@ -641,6 +1033,18 @@ lps.backend.diagnostics <- function(object) {
         function(j) .klp.rmse(pred[, j], y),
         numeric(1L)
     )
+    if (identical(outcome.family, "binomial")) {
+        cv.table$cv.brier.observed <- vapply(
+            seq_len(ncol(pred)),
+            function(j) .klp.brier(y, pred[, j]),
+            numeric(1L)
+        )
+        cv.table$cv.logloss.observed <- vapply(
+            seq_len(ncol(pred)),
+            function(j) .klp.logloss(y, pred[, j]),
+            numeric(1L)
+        )
+    }
     list(cv.table = cv.table, predictions = pred)
 }
 
@@ -693,14 +1097,31 @@ lps.backend.diagnostics <- function(object) {
 }
 
 .klp.resolve.backend <- function(coordinate.method, backend,
-                                 local.chart.method = "none") {
+                                 local.chart.method = "none",
+                                 design.basis = "monomial",
+                                 ridge.multiplier.grid = 0,
+                                 ridge.condition.max = Inf) {
+    needs.r.backend <- !identical(design.basis, "monomial") ||
+        length(ridge.multiplier.grid) != 1L ||
+        !identical(as.numeric(ridge.multiplier.grid[[1L]]), 0) ||
+        is.finite(ridge.condition.max)
     if (identical(backend, "auto")) {
-        return(if (identical(coordinate.method, "coordinates")) "cpp" else "R")
+        return(if (identical(coordinate.method, "coordinates") &&
+                   !needs.r.backend) {
+            "cpp"
+        } else {
+            "R"
+        })
     }
     if (identical(backend, "cpp")) {
         if (!identical(coordinate.method, "coordinates")) {
             stop("'backend = \"cpp\"' currently supports only ",
                  "coordinate.method = 'coordinates'.", call. = FALSE)
+        }
+        if (needs.r.backend) {
+            stop("'backend = \"cpp\"' does not support non-monomial design ",
+                 "bases or guarded ridge solves; use backend = 'auto' or 'R'.",
+                 call. = FALSE)
         }
     }
     if (identical(backend, "cpp.local.pca")) {
@@ -709,6 +1130,11 @@ lps.backend.diagnostics <- function(object) {
             stop("'backend = \"cpp.local.pca\"' requires ",
                  "coordinate.method = 'local.pca' and ",
                  "local.chart.method = 'pca'.", call. = FALSE)
+        }
+        if (needs.r.backend) {
+            stop("'backend = \"cpp.local.pca\"' does not support non-monomial ",
+                 "design bases or guarded ridge solves; use backend = 'auto' ",
+                 "or 'R'.", call. = FALSE)
         }
     }
     backend
@@ -845,6 +1271,14 @@ lps.backend.diagnostics <- function(object) {
                                           chart.dim.by.eval = NULL,
                                           local.chart.method = "pca",
                                           backend = "R",
+                                          design.basis = "monomial",
+                                          design.drop.tol =
+                                              sqrt(.Machine$double.eps),
+                                          ridge.multiplier.grid = 0,
+                                          ridge.condition.max = Inf,
+                                          unstable.action = "mean",
+                                          outcome.family = "gaussian",
+                                          logistic.telemetry = NULL,
                                           return.chart.diagnostics = FALSE) {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
@@ -895,26 +1329,19 @@ lps.backend.diagnostics <- function(object) {
         } else {
             z <- local.coords
         }
-        design <- .local.polynomial.design.matrix(z, degree)
-        design.ok <- rowSums(is.finite(design)) == ncol(design)
-        ok <- is.finite(y.train[idx]) & is.finite(weights) &
-            weights > 0 & design.ok
-        if (sum(ok) < ncol(design)) {
-            out[[i]] <- stats::weighted.mean(y.train[idx], weights,
-                                             na.rm = TRUE)
-            next
-        }
-        fit <- tryCatch(
-            stats::lm.wfit(design[ok, , drop = FALSE],
-                           y.train[idx][ok], weights[ok]),
-            error = function(e) NULL
+        out[[i]] <- .klp.fit.intercept(
+            z = z,
+            y = y.train[idx],
+            weights = weights,
+            degree = degree,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
+            unstable.action = unstable.action,
+            outcome.family = outcome.family,
+            logistic.telemetry = logistic.telemetry
         )
-        out[[i]] <- if (is.null(fit) || !length(fit$coefficients) ||
-                         !is.finite(fit$coefficients[[1L]])) {
-            stats::weighted.mean(y.train[idx], weights, na.rm = TRUE)
-        } else {
-            fit$coefficients[[1L]]
-        }
     }
     if (!return.chart.diagnostics) return(out)
     diagnostics <- do.call(rbind, diagnostics)
@@ -992,56 +1419,314 @@ lps.backend.diagnostics <- function(object) {
     )
 }
 
-.klp.fit.intercept <- function(z, y, weights, degree) {
+.klp.fit.intercept <- function(z, y, weights, degree,
+                               design.basis = "monomial",
+                               design.drop.tol = sqrt(.Machine$double.eps),
+                               ridge.multiplier.grid = 0,
+                               ridge.condition.max = Inf,
+                               unstable.action = "mean",
+                               outcome.family = "gaussian",
+                               logistic.telemetry = NULL) {
     .klp.fit.intercept.lazy(
         z = z,
         y = y,
         weights = weights,
         degree = degree,
         chart.dim = ncol(z),
-        design.cache = new.env(parent = emptyenv())
+        design.cache = new.env(parent = emptyenv()),
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action,
+        outcome.family = outcome.family,
+        logistic.telemetry = logistic.telemetry
     )
 }
 
 .klp.fit.intercept.lazy <- function(z, y, weights, degree, chart.dim,
-                                    design.cache) {
+                                    design.cache,
+                                    design.basis = "monomial",
+                                    design.drop.tol = sqrt(.Machine$double.eps),
+                                    ridge.multiplier.grid = 0,
+                                    ridge.condition.max = Inf,
+                                    unstable.action = "mean",
+                                    outcome.family = "gaussian",
+                                    logistic.telemetry = NULL) {
     ok <- is.finite(y) & is.finite(weights) & weights > 0
     if (!any(weights > 0)) {
         weights[] <- 1
         ok <- is.finite(y) & is.finite(weights) & weights > 0
     }
     n.design <- .klp.design.ncol(degree, chart.dim)
-    if (sum(ok) < n.design) {
-        return(stats::weighted.mean(y, weights, na.rm = TRUE))
+    if (!identical(outcome.family, "binomial") &&
+        !design.basis %in% c("weighted.qr.drop", "orthogonal.polynomial.drop") &&
+        sum(ok) < n.design) {
+        return(if (identical(unstable.action, "na")) {
+            NA_real_
+        } else {
+            stats::weighted.mean(y, weights, na.rm = TRUE)
+        })
     }
     design <- .klp.get.local.design(z, degree, chart.dim, design.cache)
-    .klp.fit.intercept.design(design, y, weights)
+    if (identical(outcome.family, "binomial")) {
+        return(.klp.fit.logistic.prob.design(
+            design,
+            y,
+            weights,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
+            unstable.action = unstable.action,
+            logistic.telemetry = logistic.telemetry
+        ))
+    }
+    .klp.fit.intercept.design(
+        design,
+        y,
+        weights,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action
+    )
 }
 
-.klp.fit.intercept.design <- function(design, y, weights) {
+.klp.fit.intercept.design <- function(design, y, weights,
+                                      design.basis = "monomial",
+                                      design.drop.tol =
+                                          sqrt(.Machine$double.eps),
+                                      ridge.multiplier.grid = 0,
+                                      ridge.condition.max = Inf,
+                                      unstable.action = "mean") {
     design.ok <- rowSums(is.finite(design)) == ncol(design)
     ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     if (!any(weights > 0)) {
         weights[] <- 1
         ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     }
-    if (sum(ok) < ncol(design)) {
-        return(stats::weighted.mean(y, weights, na.rm = TRUE))
+    fallback <- function() {
+        if (identical(unstable.action, "na")) {
+            NA_real_
+        } else {
+            stats::weighted.mean(y, weights, na.rm = TRUE)
+        }
     }
-    if (!.klp.local.design.is.safe(design[ok, , drop = FALSE],
-                                   weights[ok])) {
-        return(stats::weighted.mean(y, weights, na.rm = TRUE))
-    }
-    fit <- tryCatch(
-        stats::lm.wfit(design[ok, , drop = FALSE], y[ok], weights[ok]),
-        error = function(e) NULL
+    if (sum(ok) < 1L) return(fallback())
+    prediction.row <- matrix(c(1, rep(0, ncol(design) - 1L)), nrow = 1L)
+    solved <- .klp.solve.local.wls(
+        design = design[ok, , drop = FALSE],
+        y = y[ok],
+        weights = weights[ok],
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        prediction.row = prediction.row
     )
-    if (is.null(fit) || !length(fit$coefficients) ||
-        !is.finite(fit$coefficients[[1L]])) {
-        stats::weighted.mean(y, weights, na.rm = TRUE)
-    } else {
-        fit$coefficients[[1L]]
+    if (!is.null(solved) && isTRUE(solved$ok) &&
+        length(solved$prediction) && is.finite(solved$prediction[[1L]])) {
+        return(solved$prediction[[1L]])
     }
+    if (!is.null(solved) && isTRUE(solved$ok) &&
+        length(solved$coefficients) && is.finite(solved$coefficients[[1L]])) {
+        return(solved$coefficients[[1L]])
+    }
+    fallback()
+}
+
+.klp.fit.logistic.prob.design <- function(design, y, weights,
+                                          design.basis = "monomial",
+                                          design.drop.tol =
+                                              sqrt(.Machine$double.eps),
+                                          ridge.multiplier.grid = 0,
+                                          ridge.condition.max = Inf,
+                                          unstable.action = "mean",
+                                          logistic.telemetry = NULL) {
+    design.ok <- rowSums(is.finite(design)) == ncol(design)
+    ok <- is.finite(y) & y %in% c(0, 1) &
+        is.finite(weights) & weights > 0 & design.ok
+    if (!any(weights > 0)) {
+        weights[] <- 1
+        ok <- is.finite(y) & y %in% c(0, 1) &
+            is.finite(weights) & weights > 0 & design.ok
+    }
+    fallback <- function(status) {
+        .klp.logistic.telemetry.record(
+            logistic.telemetry,
+            status = status,
+            fallback.path = TRUE,
+            event.rate.fallback = !identical(unstable.action, "na"),
+            na.failure = identical(unstable.action, "na")
+        )
+        if (identical(unstable.action, "na")) {
+            NA_real_
+        } else {
+            .klp.response.scale(stats::weighted.mean(y, weights, na.rm = TRUE),
+                                "binomial")
+        }
+    }
+    if (sum(ok) < 1L) return(fallback("no_valid_rows"))
+    prediction.row <- matrix(c(1, rep(0, ncol(design) - 1L)), nrow = 1L)
+    solved <- .klp.solve.local.logistic(
+        design = design[ok, , drop = FALSE],
+        y = y[ok],
+        weights = weights[ok],
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        prediction.row = prediction.row
+    )
+    if (!is.null(solved) && isTRUE(solved$ok) &&
+        length(solved$prediction) && is.finite(solved$prediction[[1L]])) {
+        .klp.logistic.telemetry.record(
+            logistic.telemetry,
+            status = solved$status %||% "ok",
+            fallback.path = FALSE
+        )
+        return(solved$prediction[[1L]])
+    }
+    fallback(if (!is.null(solved)) solved$status else "solve_failed")
+}
+
+.klp.solve.local.logistic <- function(design, y, weights,
+                                      design.basis = "monomial",
+                                      design.drop.tol =
+                                          sqrt(.Machine$double.eps),
+                                      ridge.multiplier.grid = 0,
+                                      ridge.condition.max = Inf,
+                                      prediction.row = NULL,
+                                      max.iter = 50L,
+                                      tolerance = 1e-7) {
+    design <- as.matrix(design)
+    y <- as.numeric(y)
+    weights <- as.numeric(weights)
+    prediction.row <- if (is.null(prediction.row)) {
+        NULL
+    } else {
+        as.matrix(prediction.row)
+    }
+    original.ncol <- ncol(design)
+    kept.columns <- seq_len(original.ncol)
+    if (!nrow(design) || ncol(design) < 1L) {
+        return(list(ok = FALSE, status = "empty_design"))
+    }
+    if (identical(design.basis, "weighted.qr.drop")) {
+        keep <- .klp.weighted.qr.keep.columns(design, weights,
+                                              design.drop.tol)
+        if (!length(keep)) {
+            return(list(ok = FALSE, status = "rank_zero"))
+        }
+        kept.columns <- keep
+        design <- design[, keep, drop = FALSE]
+        if (!is.null(prediction.row)) {
+            prediction.row <- prediction.row[, keep, drop = FALSE]
+        }
+    }
+    orthogonal.basis <- design.basis %in%
+        c("orthogonal.polynomial.drop", "orthogonal.polynomial.transformed")
+    if (identical(design.basis, "orthogonal.polynomial.drop")) {
+        transformed <- .klp.orthogonal.polynomial.transform(
+            design = design,
+            weights = weights,
+            prediction.rows = prediction.row,
+            design.drop.tol = design.drop.tol
+        )
+        if (!isTRUE(transformed$ok)) {
+            return(list(ok = FALSE,
+                        status = transformed$status %||%
+                            "orthogonal_transform_failed"))
+        }
+        design <- transformed$design
+        prediction.row <- transformed$prediction.rows
+        kept.columns <- seq_len(ncol(design))
+    }
+    if (nrow(design) < ncol(design)) {
+        return(list(ok = FALSE, status = "underdetermined"))
+    }
+    ybar <- stats::weighted.mean(y, weights, na.rm = TRUE)
+    ybar <- .klp.clip.probability(ybar, eps = 1e-6)
+    beta0 <- rep(0, ncol(design))
+    beta0[[1L]] <- stats::qlogis(ybar)
+    penalty.base <- if (isTRUE(orthogonal.basis)) {
+        diag(1, nrow = ncol(design))
+    } else {
+        diag(c(0, rep(1, max(0L, ncol(design) - 1L))),
+             nrow = ncol(design))
+    }
+    last.status <- "not_run"
+    for (rho in ridge.multiplier.grid) {
+        beta <- beta0
+        converged <- FALSE
+        ridge.used <- NA_real_
+        cond.used <- NA_real_
+        for (iter in seq_len(as.integer(max.iter))) {
+            eta <- as.numeric(design %*% beta)
+            mu <- stats::plogis(pmax(-35, pmin(35, eta)))
+            variance <- pmax(mu * (1 - mu), 1e-8)
+            working.weights <- weights * variance
+            z <- eta + (y - mu) / variance
+            xw <- design * sqrt(working.weights)
+            zw <- z * sqrt(working.weights)
+            cross <- crossprod(xw)
+            rhs <- crossprod(xw, zw)
+            scale <- .klp.local.ridge.scale(cross)
+            ridge <- as.numeric(rho) * scale
+            normal <- cross + ridge * penalty.base
+            cond <- .klp.local.design.condition(normal)
+            ridge.used <- ridge
+            cond.used <- cond
+            if (is.finite(ridge.condition.max) &&
+                (!is.finite(cond) || cond > ridge.condition.max)) {
+                last.status <- "ridge_condition_failed"
+                break
+            }
+            beta.new <- tryCatch(
+                as.numeric(solve(normal, rhs)),
+                error = function(e) rep(NA_real_, ncol(normal))
+            )
+            if (!length(beta.new) || any(!is.finite(beta.new))) {
+                last.status <- "logistic_solve_failed"
+                break
+            }
+            if (max(abs(beta.new - beta)) <
+                tolerance * (1 + max(abs(beta)))) {
+                beta <- beta.new
+                converged <- TRUE
+                last.status <- "ok"
+                break
+            }
+            beta <- beta.new
+            last.status <- "not_converged"
+        }
+        if (isTRUE(converged) && all(is.finite(beta))) {
+            pred <- if (is.null(prediction.row)) {
+                NA_real_
+            } else {
+                stats::plogis(as.numeric(prediction.row %*% beta))
+            }
+            return(list(
+                ok = length(pred) && is.finite(pred[[1L]]),
+                status = "ok",
+                coefficients = beta,
+                ridge.multiplier = rho,
+                ridge.lambda = ridge.used,
+                condition = cond.used,
+                prediction = pred,
+                kept.columns = kept.columns,
+                original.ncol = original.ncol
+            ))
+        }
+    }
+    list(
+        ok = FALSE,
+        status = last.status,
+        kept.columns = kept.columns,
+        original.ncol = original.ncol
+    )
 }
 
 .klp.local.design.is.safe <- function(design, weights,
@@ -1065,6 +1750,300 @@ lps.backend.diagnostics <- function(object) {
     if (!is.finite(smallest) || smallest <= 0) return(FALSE)
     condition <- max(sv) / smallest
     is.finite(condition) && condition <= max.condition
+}
+
+.klp.validate.nonnegative.scalar <- function(x, name) {
+    x <- as.numeric(x[[1L]])
+    if (!is.finite(x) || x < 0) {
+        stop("'", name, "' must be a finite nonnegative scalar.",
+             call. = FALSE)
+    }
+    x
+}
+
+.klp.validate.positive.scalar <- function(x, name,
+                                          allow.infinite = FALSE) {
+    x <- as.numeric(x[[1L]])
+    ok <- if (allow.infinite) {
+        (is.finite(x) && x > 0) || identical(x, Inf)
+    } else {
+        is.finite(x) && x > 0
+    }
+    if (!ok) {
+        stop("'", name, "' must be a positive",
+             if (allow.infinite) " scalar or Inf." else " finite scalar.",
+             call. = FALSE)
+    }
+    x
+}
+
+.klp.clean.ridge.multiplier.grid <- function(x) {
+    out <- sort(unique(as.numeric(x)))
+    out <- out[is.finite(out) & out >= 0]
+    if (!length(out)) {
+        stop("'ridge.multiplier.grid' must contain at least one finite ",
+             "nonnegative value.", call. = FALSE)
+    }
+    out
+}
+
+.klp.local.design.condition <- function(cross) {
+    sv <- tryCatch(svd(as.matrix(cross), nu = 0L, nv = 0L)$d,
+                   error = function(e) numeric(0))
+    if (!length(sv) || any(!is.finite(sv))) return(Inf)
+    positive <- sv[sv > max(dim(cross)) * max(sv) * .Machine$double.eps]
+    if (!length(positive)) return(Inf)
+    max(sv) / min(positive)
+}
+
+.klp.weighted.qr.keep.columns <- function(design, weights,
+                                          design.drop.tol) {
+    xw <- design * sqrt(weights)
+    qr.fit <- tryCatch(qr(xw, LAPACK = TRUE, tol = design.drop.tol),
+                       error = function(e) NULL)
+    if (is.null(qr.fit) || !length(qr.fit$pivot)) {
+        return(integer(0))
+    }
+    rank <- as.integer(qr.fit$rank)
+    if (!is.finite(rank) || rank < 1L) return(integer(0))
+    keep <- qr.fit$pivot[seq_len(min(rank, ncol(design)))]
+    if (!1L %in% keep) {
+        keep <- unique(c(1L, keep))
+    }
+    sort(as.integer(keep))
+}
+
+.klp.orthogonal.polynomial.transform <- function(design, weights,
+                                                 prediction.rows = NULL,
+                                                 design.drop.tol =
+                                                     sqrt(.Machine$double.eps)) {
+    design <- as.matrix(design)
+    weights <- as.numeric(weights)
+    prediction.rows <- if (is.null(prediction.rows)) {
+        NULL
+    } else {
+        as.matrix(prediction.rows)
+    }
+    if (!nrow(design) || !ncol(design)) {
+        return(list(ok = FALSE, status = "empty_design"))
+    }
+    xw <- design * sqrt(weights)
+    sv <- tryCatch(svd(xw, nu = 0L, nv = ncol(xw)),
+                   error = function(e) NULL)
+    if (is.null(sv) || !length(sv$d) || any(!is.finite(sv$d))) {
+        return(list(ok = FALSE, status = "svd_failed"))
+    }
+    cutoff <- max(sv$d) * design.drop.tol
+    rank <- sum(sv$d > cutoff)
+    if (!is.finite(rank) || rank < 1L) {
+        return(list(ok = FALSE, status = "rank_zero"))
+    }
+    V <- sv$v[, seq_len(rank), drop = FALSE]
+    transform <- sweep(V, 2L, sv$d[seq_len(rank)], "/")
+    out.design <- design %*% transform
+    out.pred <- if (is.null(prediction.rows)) {
+        NULL
+    } else {
+        prediction.rows %*% transform
+    }
+    list(
+        ok = TRUE,
+        status = "ok",
+        design = out.design,
+        prediction.rows = out.pred,
+        transform = transform,
+        rank = as.integer(rank),
+        original.ncol = ncol(design),
+        condition = if (rank > 0L) max(sv$d) / min(sv$d[seq_len(rank)]) else Inf
+    )
+}
+
+.klp.local.ridge.scale <- function(cross) {
+    diag.scale <- diag(cross)
+    scale <- if (length(diag.scale) > 1L) {
+        mean(diag.scale[-1L], na.rm = TRUE)
+    } else {
+        mean(diag.scale, na.rm = TRUE)
+    }
+    if (!is.finite(scale) || scale <= 0) {
+        scale <- mean(diag.scale, na.rm = TRUE)
+    }
+    if (!is.finite(scale) || scale <= 0) scale <- 1
+    scale
+}
+
+.klp.solve.local.wls <- function(design, y, weights,
+                                 design.basis = "monomial",
+                                 design.drop.tol = sqrt(.Machine$double.eps),
+                                 ridge.multiplier.grid = 0,
+                                 ridge.condition.max = Inf,
+                                 prediction.row = NULL) {
+    design <- as.matrix(design)
+    y <- as.numeric(y)
+    weights <- as.numeric(weights)
+    prediction.row <- if (is.null(prediction.row)) {
+        NULL
+    } else {
+        as.matrix(prediction.row)
+    }
+    original.ncol <- ncol(design)
+    kept.columns <- seq_len(original.ncol)
+    if (!nrow(design) || ncol(design) < 1L) {
+        return(list(
+            ok = FALSE,
+            status = "empty_design",
+            kept.columns = integer(0),
+            original.ncol = original.ncol
+        ))
+    }
+    if (identical(design.basis, "weighted.qr.drop")) {
+        keep <- .klp.weighted.qr.keep.columns(design, weights,
+                                              design.drop.tol)
+        if (!length(keep)) {
+            return(list(
+                ok = FALSE,
+                status = "rank_zero",
+                kept.columns = integer(0),
+                original.ncol = original.ncol
+            ))
+        }
+        kept.columns <- keep
+        design <- design[, keep, drop = FALSE]
+        if (!is.null(prediction.row)) {
+            prediction.row <- prediction.row[, keep, drop = FALSE]
+        }
+    }
+    orthogonal.basis <- design.basis %in%
+        c("orthogonal.polynomial.drop", "orthogonal.polynomial.transformed")
+    if (identical(design.basis, "orthogonal.polynomial.drop")) {
+        transformed <- .klp.orthogonal.polynomial.transform(
+            design = design,
+            weights = weights,
+            prediction.rows = prediction.row,
+            design.drop.tol = design.drop.tol
+        )
+        if (!isTRUE(transformed$ok)) {
+            return(list(
+                ok = FALSE,
+                status = transformed$status %||% "orthogonal_transform_failed",
+                kept.columns = integer(0),
+                original.ncol = original.ncol
+            ))
+        }
+        design <- transformed$design
+        prediction.row <- transformed$prediction.rows
+        kept.columns <- seq_len(ncol(design))
+    }
+    if (nrow(design) < ncol(design)) {
+        return(list(
+            ok = FALSE,
+            status = "underdetermined",
+            kept.columns = kept.columns,
+            original.ncol = original.ncol
+        ))
+    }
+    xw <- design * sqrt(weights)
+    yw <- y * sqrt(weights)
+    cross <- crossprod(xw)
+    rhs <- crossprod(xw, yw)
+    if (design.basis %in% c("weighted.qr", "weighted.qr.drop") &&
+        length(ridge.multiplier.grid) == 1L &&
+        ridge.multiplier.grid[[1L]] == 0 &&
+        !is.finite(ridge.condition.max)) {
+        qr.fit <- tryCatch(qr(xw, LAPACK = TRUE, tol = design.drop.tol),
+                           error = function(e) NULL)
+        coef <- if (is.null(qr.fit)) {
+            rep(NA_real_, ncol(design))
+        } else {
+            tryCatch(as.numeric(qr.coef(qr.fit, yw)),
+                     error = function(e) rep(NA_real_, ncol(design)))
+        }
+        return(list(
+            ok = length(coef) && is.finite(coef[[1L]]),
+            status = if (length(coef) && is.finite(coef[[1L]])) "ok" else
+                "weighted_qr_failed",
+            coefficients = coef,
+            ridge.multiplier = 0,
+            ridge.lambda = 0,
+            condition = .klp.local.design.condition(cross),
+            prediction = if (is.null(prediction.row)) {
+                NA_real_
+            } else {
+                as.numeric(prediction.row %*% coef)
+            },
+            kept.columns = kept.columns,
+            original.ncol = original.ncol
+        ))
+    }
+    if (identical(design.basis, "monomial") &&
+        length(ridge.multiplier.grid) == 1L &&
+        ridge.multiplier.grid[[1L]] == 0 &&
+        !is.finite(ridge.condition.max)) {
+        if (!.klp.local.design.is.safe(design, weights)) {
+            return(list(ok = FALSE, status = "unsafe_monomial_design"))
+        }
+        fit <- tryCatch(stats::lm.wfit(design, y, weights),
+                        error = function(e) NULL)
+        coef <- if (is.null(fit)) numeric(0) else fit$coefficients
+        return(list(
+            ok = length(coef) && is.finite(coef[[1L]]),
+            status = if (length(coef) && is.finite(coef[[1L]])) "ok" else
+                "lm_wfit_failed",
+            coefficients = coef,
+            ridge.multiplier = 0,
+            ridge.lambda = 0,
+            condition = .klp.local.design.condition(cross),
+            prediction = if (is.null(prediction.row)) {
+                NA_real_
+            } else {
+                as.numeric(prediction.row %*% coef)
+            },
+            kept.columns = kept.columns,
+            original.ncol = original.ncol
+        ))
+    }
+    scale <- .klp.local.ridge.scale(cross)
+    penalty.base <- if (isTRUE(orthogonal.basis)) {
+        diag(1, nrow = ncol(cross))
+    } else {
+        diag(c(0, rep(1, max(0L, ncol(cross) - 1L))),
+             nrow = ncol(cross))
+    }
+    for (rho in ridge.multiplier.grid) {
+        ridge <- rho * scale
+        normal <- cross + ridge * penalty.base
+        cond <- .klp.local.design.condition(normal)
+        if (is.finite(ridge.condition.max) &&
+            (!is.finite(cond) || cond > ridge.condition.max)) {
+            next
+        }
+        coef <- tryCatch(as.numeric(solve(normal, rhs)),
+                         error = function(e) rep(NA_real_, ncol(normal)))
+        if (length(coef) && all(is.finite(coef)) &&
+            is.finite(coef[[1L]])) {
+            return(list(
+                ok = TRUE,
+                status = "ok",
+                coefficients = coef,
+                ridge.multiplier = rho,
+                ridge.lambda = ridge,
+                condition = cond,
+                prediction = if (is.null(prediction.row)) {
+                    NA_real_
+                } else {
+                    as.numeric(prediction.row %*% coef)
+                },
+                kept.columns = kept.columns,
+                original.ncol = original.ncol
+            ))
+        }
+    }
+    list(
+        ok = FALSE,
+        status = "ridge_condition_failed",
+        kept.columns = kept.columns,
+        original.ncol = original.ncol
+    )
 }
 
 .klp.design.ncol <- function(degree, chart.dim) {

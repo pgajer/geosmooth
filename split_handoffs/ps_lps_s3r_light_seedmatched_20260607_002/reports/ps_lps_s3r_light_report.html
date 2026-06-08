@@ -1,0 +1,113 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>PS-LPS S3R-light Full vs Screened Support Search</title>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]}};</script>
+<script src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;line-height:1.5;color:#202832;max-width:1180px}
+h1,h2,h3{line-height:1.15} .meta{background:#f3f6fa;border-left:4px solid #607d9c;padding:12px 16px;margin:16px 0}
+.note{max-width:980px}.callout{background:#eef8f2;border-left:4px solid #009e73;padding:12px 16px;margin:16px 0}.warn{background:#fff6e5;border-left:4px solid #e69f00;padding:12px 16px;margin:16px 0}
+table{border-collapse:collapse;margin:12px 0 24px 0;font-size:13px;max-width:100%}
+th,td{border:1px solid #d8dde6;padding:6px 8px;text-align:right} th:first-child,td:first-child{text-align:left}
+figure{margin:24px 0 34px 0} img{max-width:100%;height:auto;border:1px solid #e2e6ee;background:white} figcaption{font-size:13px;color:#4c5663;margin-top:8px}
+.small{font-size:13px;color:#4c5663} code{background:#f2f4f8;padding:1px 4px;border-radius:3px}
+ul.artifacts li{margin:4px 0}
+</style></head><body>
+<h1>PS-LPS S3R-light Full vs Screened Support Search</h1>
+<div class='meta'><strong>Report build:</strong> 2026-06-07 19:46:43 EDT<br><strong>Consumed result bundle:</strong> /Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002<br><strong>Result tables updated:</strong> 2026-06-07 19:46:43 EDT</div>
+<h2>Purpose</h2>
+<p>This report evaluates the S3R-light run, which compares the exact <code>full</code> PS-LPS local-candidate search against the faster <code>screened</code> local-candidate search. The scientific question is not whether PS-LPS is useful in general; it is whether screened search preserves the selected fits closely enough, while reducing candidate-search work and runtime, to justify using it in routine prospective experiments.</p>
+<p>The run is paired. For each dataset, repetition, and chart-dimension rule, the <code>full</code> and <code>screened</code> arms use the same synthetic response and the same CV folds. This makes paired differences meaningful.</p>
+<div class='callout'>Current result: 168 of 168 planned tasks have status <code>ok</code>, giving 84 complete full/screened pairs out of 84 planned pairs. Recorded nonfinite fits: 0; errors: 0; timeouts: 0. The median screened-minus-full Truth RMSE delta among complete pairs is <strong>0</strong>, and the median screened/full runtime ratio is <strong>0.3796</strong>.</div>
+<h2>Definitions</h2>
+<p>For a fitted value vector \(\hat f\) and known synthetic truth \(f\), Truth RMSE is</p>
+\[ R(\hat f, f)=\sqrt{\frac{1}{n}\sum_{i=1}^n(\hat f_i-f_i)^2}. \]
+<p>The primary paired accuracy diagnostic is</p>
+\[ \Delta_R = R(\hat f_{\mathrm{screened}},f)-R(\hat f_{\mathrm{full}},f). \]
+<p>Negative \(\Delta_R\) favors screened search; positive \(\Delta_R\) favors full search. Runtime and candidate-count diagnostics use ratios</p>
+\[ \rho_T=\frac{T_{\mathrm{screened}}}{T_{\mathrm{full}}},\qquad \rho_C=\frac{C_{\mathrm{screened}}}{C_{\mathrm{full}}}. \]
+<p>Values below one mean screened search used less time or fewer local candidates. Red intervals in paired figures are Bayesian-bootstrap 95% credible intervals for the paired median. Gray points show individual paired datasets/repetitions.</p>
+<h2>Design Contract And Seed Validation</h2>
+<p>Each intended pair is defined by <code>(dataset_id, repetition, chart_dim_rule)</code>. The <code>search_policy</code> arm does not enter the response or fold seed formula, so the two arms in a pair share the same response and CV folds.</p>
+<table><tr><th>planned_pairs</th><th>seed_matched_pairs</th><th>seed_mismatched_pairs</th></tr><tr><td>   84</td><td>   84</td><td>0</td></tr></table>
+<h2>Task Accounting</h2>
+<p>Status is manifest-backed. <code>timeout</code> means the worker exceeded the task timeout; the exact threshold remains in <code>error_class</code>. Complete task-level detail is linked in the reproducibility section rather than shown as a large table.</p>
+<table><tr><th>status</th><th>n</th></tr><tr><td>ok</td><td>  168</td></tr></table>
+<p>Attempted tasks: 168. Successful tasks: 168. Nonfinite fits: 0. Errors: 0. Timeouts: 0.</p>
+<h2>Pair Accounting</h2>
+<p>Accuracy deltas are computed only for complete <code>ok/ok</code> pairs, while all planned pairs remain in the linked pair table.</p>
+<table><tr><th>chart_dim_rule</th><th>pair_status</th><th>n</th></tr><tr><td>auto</td><td>complete_ok</td><td>   42</td></tr>
+<tr><td>local.auto</td><td>complete_ok</td><td>   42</td></tr></table>
+<p>Complete pairs: 84 of 84.</p>
+<h2>Truth RMSE: Screened Versus Full</h2>
+<p>This figure answers the main accuracy question. Each gray point is one paired case. The red point and interval summarize the paired median by chart-dimension rule. The zero line means screened and full selected fits with equal Truth RMSE.</p>
+<figure><img src='figures_s3r_light/figure_1_truth_rmse_delta.svg' alt='Figure 1. Paired Truth RMSE deltas, screened minus full. Negative values favor screened search. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median. The count at right reports how many paired cases favored screened search.'><figcaption>Figure 1. Paired Truth RMSE deltas, screened minus full. Negative values favor screened search. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median. The count at right reports how many paired cases favored screened search.</figcaption></figure>
+<h2>Runtime: Screened Versus Full</h2>
+<p>This figure asks whether screened search reduces end-to-end task runtime. The plotted runtime is the task-level elapsed time recorded by the worker, including candidate search and final fit for that task.</p>
+<figure><img src='figures_s3r_light/figure_2_runtime_ratio.svg' alt='Figure 2. Paired runtime ratios, screened divided by full, on a log scale. Values below one favor screened search. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median.'><figcaption>Figure 2. Paired runtime ratios, screened divided by full, on a log scale. Values below one favor screened search. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median.</figcaption></figure>
+<h2>Candidate-Search Work</h2>
+<p>This figure measures the intended computational mechanism: screened search should evaluate fewer local candidates than full search. The ratio is computed from the number of top-level local candidates evaluated in each paired arm. If the points sit near one, then the observed runtime difference is not explained by this coarse candidate-count diagnostic.</p>
+<figure><img src='figures_s3r_light/figure_3_candidate_count_ratio.svg' alt='Figure 3. Paired local-candidate count ratios, screened divided by full, on a log scale. Values below one mean screened search evaluated fewer local candidates. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median.'><figcaption>Figure 3. Paired local-candidate count ratios, screened divided by full, on a log scale. Values below one mean screened search evaluated fewer local candidates. Gray points are individual paired cases; red intervals are Bayesian-bootstrap 95% credible intervals for the paired median.</figcaption></figure>
+<h2>Candidate Inclusion Diagnostics</h2>
+<p>Figure 4 checks whether screened search looked in the right neighborhood of the local-candidate space. The local candidate key is <code>support.size|degree|kernel</code>. The first two rows ask: did screened search even evaluate the model that full search eventually selected? The last two rows ask a stricter question: after doing its own CV optimization, did screened search choose the same support size and the same synchronization penalty as full search?</p>
+<p>In this run, degree and kernel are fixed, so candidate-key inclusion is essentially support-size inclusion. This is why the first two rows can look the same. Inclusion rates should be interpreted together with Figure 1: even when the exact support differs, the selected fit may have nearly the same Truth RMSE. The lambda-match row asks whether the two arms agree on the synchronization penalty after their respective support searches.</p>
+<figure><img src='figures_s3r_light/figure_4_candidate_inclusion.svg' alt='Figure 4. Screened-search inclusion and match diagnostics. Points show rates across complete pairs, separated by chart-dimension rule. Candidate-key inclusion is stricter than support inclusion because it also requires matching degree and kernel.'><figcaption>Figure 4. Screened-search inclusion and match diagnostics. Points show rates across complete pairs, separated by chart-dimension rule. Candidate-key inclusion is stricter than support inclusion because it also requires matching degree and kernel.</figcaption></figure>
+<h2>Runtime Tails</h2>
+<p>This figure shows all successful task runtimes by dataset, search policy, and chart rule. It is useful for planning S3R-expanded timeouts and worker counts. The y-axis uses datasets; the x-axis is log-scaled elapsed seconds.</p>
+<figure><img src='figures_s3r_light/figure_5_runtime_tail.svg' alt='Figure 5. Task runtime tails by dataset, search policy, and chart-dimension rule. Full and screened policies are colored separately; point shape distinguishes global auto and local.auto chart dimension. The rank-block synthetic dataset and VALENCIA-derived high-dimensional datasets drive the long tail.'><figcaption>Figure 5. Task runtime tails by dataset, search policy, and chart-dimension rule. Full and screened policies are colored separately; point shape distinguishes global auto and local.auto chart dimension. The rank-block synthetic dataset and VALENCIA-derived high-dimensional datasets drive the long tail.</figcaption></figure>
+<h2>Summary By Chart Rule</h2>
+<p>The compact table below is a reader-facing summary. Full task and pair-level tables are linked in the appendix.</p>
+<table><tr><th>chart rule</th><th>planned pairs</th><th>complete pairs</th><th>mean delta Truth RMSE</th><th>95% CI low</th><th>95% CI high</th><th>median delta Truth RMSE</th><th>median runtime ratio</th><th>median screened candidates</th><th>median full candidates</th><th>support inclusion rate</th><th>candidate-key inclusion rate</th></tr><tr><td>auto</td><td>   42</td><td>   42</td><td>0.003944</td><td>0.0003388</td><td>0.007548</td><td>0</td><td>0.3178</td><td>  4.5</td><td>   21</td><td>0.381</td><td>0.381</td></tr>
+<tr><td>local.auto</td><td>   42</td><td>   42</td><td>0.0002781</td><td>-0.0002039</td><td>0.0007601</td><td>0</td><td>0.4146</td><td>    4</td><td>   21</td><td>0.3095</td><td>0.3095</td></tr></table>
+<h2>Interim And Full Repetition Summaries</h2>
+<p>The predeclared interim readout is repetitions 1--10. The full summary uses all complete repetitions available in this result bundle. During an in-progress run, the all-available row is a monitoring summary rather than a final policy result.</p>
+<table><tr><th>subset</th><th>complete_pairs</th><th>max_repetition</th><th>mean_delta_truth_rmse</th><th>ci95_lo</th><th>ci95_hi</th><th>median_delta_truth_rmse</th><th>median_elapsed_ratio_screened_full</th><th>median_candidates_screened</th><th>median_candidates_full</th><th>support_inclusion_rate</th><th>lambda_match_rate</th></tr><tr><td>repetitions_1_to_10</td><td>   84</td><td>    3</td><td>0.002111</td><td>0.0002609</td><td>0.003961</td><td>0</td><td>0.3796</td><td>    4</td><td>   21</td><td>0.3452</td><td>0.6905</td></tr>
+<tr><td>all_available_repetitions</td><td>   84</td><td>    3</td><td>0.002111</td><td>0.0002609</td><td>0.003961</td><td>0</td><td>0.3796</td><td>    4</td><td>   21</td><td>0.3452</td><td>0.6905</td></tr></table>
+<h2>Summary By Dataset</h2>
+<p>This table helps identify whether screened search is stable across individual frozen P7X assets. Long tables remain linked below for reproducibility.</p>
+<table><tr><th>dataset_id</th><th>planned_pairs</th><th>complete_pairs</th><th>mean_delta_truth_rmse</th><th>ci95_lo</th><th>ci95_hi</th><th>median_delta_truth_rmse</th><th>median_elapsed_ratio_screened_full</th><th>median_candidates_screened</th><th>median_candidates_full</th><th>support_inclusion_rate</th><th>lambda_match_rate</th></tr><tr><td>LA-13K-SUB-N500</td><td>    6</td><td>    6</td><td>0.0006016</td><td>-0.0007265</td><td>0.00193</td><td>0.00007706</td><td>0.7099</td><td>   12</td><td>   21</td><td>0.1667</td><td>    1</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    6</td><td>    6</td><td>-0.0001836</td><td>-0.000726</td><td>0.0003588</td><td>0</td><td>0.3228</td><td>    4</td><td>   21</td><td>  0.5</td><td>0.6667</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    6</td><td>    6</td><td>-0.0007229</td><td>-0.001118</td><td>-0.0003278</td><td>-0.0008175</td><td> 0.37</td><td>    4</td><td>   21</td><td>0.1667</td><td>0.6667</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    6</td><td>    6</td><td>-0.00003615</td><td>-0.001183</td><td>0.00111</td><td>-0.00001456</td><td>0.3227</td><td>    4</td><td>   21</td><td>0.1667</td><td>0.6667</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    6</td><td>    6</td><td>0.005916</td><td>-0.004928</td><td>0.01676</td><td>0.0009788</td><td>0.3812</td><td>    4</td><td>   21</td><td>0</td><td>0.8333</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    6</td><td>    6</td><td>-0.0004108</td><td>-0.001543</td><td>0.0007219</td><td>0</td><td>0.338</td><td>    4</td><td>   21</td><td>0.3333</td><td>0.6667</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    6</td><td>    6</td><td>0.009476</td><td>-0.008537</td><td>0.02749</td><td>0</td><td>0.2546</td><td>    4</td><td>   21</td><td>0.3333</td><td>0.8333</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    6</td><td>    6</td><td>0.000171</td><td>-0.0009673</td><td>0.001309</td><td>0.0001694</td><td>0.3087</td><td>    5</td><td>   21</td><td>0.3333</td><td>    1</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    6</td><td>    6</td><td>0.01355</td><td>0.001284</td><td>0.02582</td><td>0.008351</td><td>0.2737</td><td>  4.5</td><td>   21</td><td>0.3333</td><td>0.3333</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    6</td><td>    6</td><td>-0.0004646</td><td>-0.001277</td><td>0.0003477</td><td>-0.0002904</td><td>0.6648</td><td>   11</td><td>   21</td><td>0.1667</td><td>0.1667</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>    6</td><td>    6</td><td>0.001543</td><td>0.0001083</td><td>0.002978</td><td>0.001007</td><td>0.8088</td><td>   12</td><td>   21</td><td>  0.5</td><td>  0.5</td></tr>
+<tr><td>SYN-SADDLE-LINE-N500</td><td>    6</td><td>    6</td><td>-0.00006994</td><td>-0.000207</td><td>0.00006715</td><td>0</td><td>0.659</td><td>   11</td><td>   21</td><td>0.8333</td><td>0.8333</td></tr>
+<tr><td>SYN-SIMPLEX-FACES-N600</td><td>    6</td><td>    6</td><td>0.0005102</td><td>-0.0005914</td><td>0.001612</td><td>0.0001073</td><td>0.2565</td><td>    4</td><td>   21</td><td>0.1667</td><td>0.6667</td></tr>
+<tr><td>SYN-TWO-PLANES-N600</td><td>    6</td><td>    6</td><td>-0.0003324</td><td>-0.000984</td><td>0.0003191</td><td>0</td><td>0.6343</td><td>   11</td><td>   21</td><td>0.8333</td><td>0.8333</td></tr></table>
+<h2>Summary By Geometry Family</h2>
+<p>This table groups paired deltas by geometry family. It is intended to show whether any geometry class behaves differently enough to require a policy exception.</p>
+<table><tr><th>geometry_family</th><th>planned_pairs</th><th>complete_pairs</th><th>mean_delta_truth_rmse</th><th>ci95_lo</th><th>ci95_hi</th><th>median_delta_truth_rmse</th><th>median_elapsed_ratio_screened_full</th><th>median_candidates_screened</th><th>median_candidates_full</th><th>support_inclusion_rate</th><th>lambda_match_rate</th></tr><tr><td>synthetic compositional strata</td><td>    6</td><td>    6</td><td>0.0005102</td><td>-0.0005914</td><td>0.001612</td><td>0.0001073</td><td>0.2565</td><td>    4</td><td>   21</td><td>0.1667</td><td>0.6667</td></tr>
+<tr><td>synthetic high-dimensional rank strata</td><td>    6</td><td>    6</td><td>0.001543</td><td>0.0001083</td><td>0.002978</td><td>0.001007</td><td>0.8088</td><td>   12</td><td>   21</td><td>  0.5</td><td>  0.5</td></tr>
+<tr><td>synthetic singular sheet union</td><td>    6</td><td>    6</td><td>-0.0003324</td><td>-0.000984</td><td>0.0003191</td><td>0</td><td>0.6343</td><td>   11</td><td>   21</td><td>0.8333</td><td>0.8333</td></tr>
+<tr><td>synthetic stratified surface/curve</td><td>   12</td><td>   12</td><td>-0.0002673</td><td>-0.000677</td><td>0.0001424</td><td>0</td><td>0.6648</td><td>   11</td><td>   21</td><td>  0.5</td><td>  0.5</td></tr>
+<tr><td>VALENCIA depth-1 dCST</td><td>    6</td><td>    6</td><td>-0.0004108</td><td>-0.001543</td><td>0.0007219</td><td>0</td><td>0.338</td><td>    4</td><td>   21</td><td>0.3333</td><td>0.6667</td></tr>
+<tr><td>VALENCIA depth-1 hypercube</td><td>   24</td><td>   24</td><td>0.001243</td><td>-0.001534</td><td>0.004021</td><td>0</td><td>0.3456</td><td>    4</td><td>   21</td><td>0.2083</td><td>0.7083</td></tr>
+<tr><td>VALENCIA depth-2 hypercube</td><td>    6</td><td>    6</td><td>0.009476</td><td>-0.008537</td><td>0.02749</td><td>0</td><td>0.2546</td><td>    4</td><td>   21</td><td>0.3333</td><td>0.8333</td></tr>
+<tr><td>VALENCIA depth2 dCST</td><td>    6</td><td>    6</td><td>0.000171</td><td>-0.0009673</td><td>0.001309</td><td>0.0001694</td><td>0.3087</td><td>    5</td><td>   21</td><td>0.3333</td><td>    1</td></tr>
+<tr><td>VALENCIA depth3 dCST</td><td>    6</td><td>    6</td><td>0.01355</td><td>0.001284</td><td>0.02582</td><td>0.008351</td><td>0.2737</td><td>  4.5</td><td>   21</td><td>0.3333</td><td>0.3333</td></tr>
+<tr><td>VALENCIA full phylotype matrix</td><td>    6</td><td>    6</td><td>0.0006016</td><td>-0.0007265</td><td>0.00193</td><td>0.00007706</td><td>0.7099</td><td>   12</td><td>   21</td><td>0.1667</td><td>    1</td></tr></table>
+<h2>What We Learned</h2>
+<p>This S3R-light result bundle currently has 168 successful tasks, 84 complete pairs, 0 nonfinite fits, 0 errors, and 0 timeouts. These counts are manifest-backed and should be used as the first report-readiness gate.</p>
+<p>Accuracy evidence is paired for complete <code>ok/ok</code> pairs. The median screened-minus-full Truth RMSE delta is 0; values close to zero indicate screened search is preserving the selected fit well on the completed paired cases.</p>
+<p>The median screened/full runtime ratio was 0.3796 and the median screened/full candidate-count ratio was 0.1905. These two quantities separate realized wall-time savings from the intended candidate-search reduction mechanism. In this run screened search usually evaluated only a subset of the 21 full-search local candidates, which is consistent with the observed runtime speedup.</p>
+<p>The next decision should be made after audit of this report: whether S3R-expanded should run, and if so whether it should use 10 or 20 repetitions.</p>
+<h2>Reproducibility And Linked Artifacts</h2>
+<p>Report build timestamp: 2026-06-07 19:46:43 EDT. Consumed result table timestamp: 2026-06-07 19:46:43 EDT.</p>
+<ul class='artifacts'>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/task_status.csv'><code>task_status.csv</code></a>: manifest-backed status for every planned task.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/task_summary.csv'><code>task_summary.csv</code></a>: one row per completed task summary.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/full_vs_screened_pairs.csv'><code>full_vs_screened_pairs.csv</code></a>: one row per planned full/screened pair.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/local_candidate_details.csv'><code>local_candidate_details.csv</code></a>: local candidate details used for inclusion diagnostics.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/paired_summary_by_chart_rule.csv'><code>paired_summary_by_chart_rule.csv</code></a>: chart-rule summary table.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/paired_summary_by_dataset.csv'><code>paired_summary_by_dataset.csv</code></a>: dataset summary table.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/paired_summary_by_geometry_family.csv'><code>paired_summary_by_geometry_family.csv</code></a>: geometry-family summary table.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/paired_summary_by_repetition_subset.csv'><code>paired_summary_by_repetition_subset.csv</code></a>: interim 10-repetition and all-available summaries.</li>
+<li><a href='/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_20260607_002/tables/candidate_inclusion_diagnostics.csv'><code>candidate_inclusion_diagnostics.csv</code></a>: candidate inclusion rates.</li>
+</ul>
+<p class='small'>The previous stopped S3R-light run remains smoke/profiling only and is not used here for paired accuracy evidence.</p>
+</body></html>

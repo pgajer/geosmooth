@@ -1,0 +1,17 @@
+{
+  "task_id": "s3r_0127__SYN_SADDLE_LINE_N500__r02__local_auto__full",
+  "dataset_id": "SYN-SADDLE-LINE-N500",
+  "repetition": 2,
+  "method": "ps_lps",
+  "chart_dim_rule": "local.auto",
+  "search_policy": "full",
+  "status": "ok",
+  "started_at": "2026-06-07 15:27:25 EDT",
+  "finished_at": "2026-06-07 15:29:49 EDT",
+  "elapsed_sec": 143.822,
+  "hostname": "pgajerm4-osx",
+  "pid": 1276,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/results/s3r_0127__SYN_SADDLE_LINE_N500__r02__local_auto__full.rds",
+  "error_message": null,
+  "error_class": null
+}

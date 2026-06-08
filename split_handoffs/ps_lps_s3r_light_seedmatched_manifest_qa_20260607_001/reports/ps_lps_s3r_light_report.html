@@ -1,0 +1,214 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>PS-LPS S3R-light Full vs Screened</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:32px;line-height:1.45;color:#202832;max-width:1180px}
+h1,h2{line-height:1.15} table{border-collapse:collapse;margin:12px 0 24px 0;font-size:13px}
+th,td{border:1px solid #d8dde6;padding:6px 8px;text-align:right} th:first-child,td:first-child{text-align:left}
+.note{max-width:980px}.ok{color:#007f5f;font-weight:700}.warn{background:#fff6e5;border-left:4px solid #e69f00;padding:12px 16px;margin:16px 0}
+code{background:#f2f4f8;padding:1px 4px;border-radius:3px}
+</style></head><body>
+<h1>PS-LPS S3R-light Full vs Screened Support Search</h1>
+<p class='note'>This corrected report is manifest-backed. It keeps planned, running, stopped, failed, missing, and complete rows in the accounting before computing any complete-pair accuracy deltas.</p>
+<p><strong>Run directory:</strong> /Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_seedmatched_manifest_qa_20260607_001</p>
+<h2>Design Contract And Seed Validation</h2>
+<p>Each intended pair is defined by <code>(dataset_id, repetition, chart_dim_rule)</code>. The <code>search_policy</code> arm must not enter the response or fold seed formula. Therefore the <code>full</code> and <code>screened</code> arms should share the same synthetic response and CV folds.</p>
+<table><tr><th>planned_pairs</th><th>seed_matched_pairs</th><th>seed_mismatched_pairs</th></tr><tr><td>   84</td><td>   84</td><td>0</td></tr></table>
+<h2>Task Accounting</h2>
+<p>Status is manifest-backed. <code>not_started</code> means no status file and no result file. <code>running</code> is preserved when present. <code>timeout</code> means the worker exceeded the task timeout; the exact threshold remains in <code>error_class</code>. <code>missing_or_corrupt_status</code> means the status file could not be parsed or a result exists without a usable status file.</p>
+<table><tr><th>status</th><th>n</th></tr><tr><td>not_started</td><td>  166</td></tr>
+<tr><td>ok</td><td>    2</td></tr></table>
+<h3>Task Accounting By Dataset, Chart Rule, Search Policy</h3>
+<table><tr><th>dataset_id</th><th>chart_dim_rule</th><th>search_policy</th><th>status</th><th>n</th></tr><tr><td>LA-13K-SUB-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    2</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SADDLE-LINE-N500</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SIMPLEX-FACES-N600</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-TWO-PLANES-N600</td><td>auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SADDLE-LINE-N500</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SIMPLEX-FACES-N600</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-TWO-PLANES-N600</td><td>local.auto</td><td>full</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    2</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SADDLE-LINE-N500</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SIMPLEX-FACES-N600</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-TWO-PLANES-N600</td><td>auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-RANK-BLOCKS-N600-P100</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SADDLE-LINE-N500</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-SIMPLEX-FACES-N600</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>SYN-TWO-PLANES-N600</td><td>local.auto</td><td>screened</td><td>not_started</td><td>    3</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>auto</td><td>full</td><td>ok</td><td>    1</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>auto</td><td>screened</td><td>ok</td><td>    1</td></tr></table>
+<h2>Pair Accounting</h2>
+<p>Accuracy deltas are computed only for <code>complete_ok</code> pairs, but incomplete pairs remain visible below and in <code>full_vs_screened_pairs.csv</code>.</p>
+<table><tr><th>chart_dim_rule</th><th>pair_status</th><th>n</th></tr><tr><td>auto</td><td>complete_ok</td><td>    1</td></tr>
+<tr><td>local.auto</td><td>complete_ok</td><td>0</td></tr>
+<tr><td>auto</td><td>incomplete</td><td>   41</td></tr>
+<tr><td>local.auto</td><td>incomplete</td><td>   42</td></tr></table>
+<h2>Paired Summary by Chart-Dimension Rule</h2>
+<table><tr><th>chart_dim_rule</th><th>planned_pairs</th><th>complete_pairs</th><th>mean_delta_truth_rmse</th><th>ci95_lo</th><th>ci95_hi</th><th>median_delta_truth_rmse</th><th>median_elapsed_ratio_screened_full</th><th>median_candidates_screened</th><th>median_candidates_full</th><th>support_inclusion_rate</th><th>candidate_key_inclusion_rate</th></tr><tr><td>auto</td><td>   42</td><td>    1</td><td>0</td><td>NA</td><td>NA</td><td>0</td><td>0.2726</td><td>   21</td><td>   21</td><td>    1</td><td>    1</td></tr></table>
+<h2>Candidate Inclusion Diagnostics</h2>
+<p><code>full_candidate_key</code> is <code>support.size|degree|kernel</code>. Candidate-key inclusion asks whether the screened arm evaluated the same local-candidate identity selected by the full arm. Support inclusion is also reported because it remains computable even if exact candidate-key metadata is unavailable in older artifacts.</p>
+<table><tr><th>dataset_id</th><th>repetition</th><th>chart_dim_rule</th><th>pair_status</th><th>support_full</th><th>support_screened</th><th>full_support_in_screened_evaluated_supports</th><th>full_candidate_key</th><th>full_candidate_key_in_screened_evaluated_candidates</th><th>lambda_full</th><th>lambda_screened</th><th>support_match</th><th>lambda_match</th></tr><tr><td>LA-D1-RAW-N500</td><td>    1</td><td>auto</td><td>complete_ok</td><td>   25</td><td>   25</td><td>TRUE</td><td>25|2|tricube</td><td>TRUE</td><td>   10</td><td>   10</td><td>TRUE</td><td>TRUE</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td><td>FALSE</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr></table>
+<h2>Full vs Screened Pair Preview</h2>
+<table><tr><th>dataset_id</th><th>repetition</th><th>chart_dim_rule</th><th>pair_status</th><th>pair_exclusion_reason</th><th>delta_truth_rmse</th><th>elapsed_ratio_screened_full</th><th>full_candidates_evaluated</th><th>screened_candidates_evaluated</th></tr><tr><td>LA-D1-RAW-N500</td><td>    1</td><td>auto</td><td>complete_ok</td><td>NA</td><td>0</td><td>0.2726</td><td>   21</td><td>   21</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Li-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Lc-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Gv-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D1-HC-Bv-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D2-HC-TOP1-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-D3-RAW-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>LA-13K-SUB-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    1</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    1</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    2</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    2</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    3</td><td>auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr>
+<tr><td>SYN-PARA-LINE-N500</td><td>    3</td><td>local.auto</td><td>incomplete</td><td>full=not_started; screened=not_started</td><td>NA</td><td>NA</td><td>NA</td><td>NA</td></tr></table>
+<h2>Limitations</h2>
+<p>If this report is generated on the old stopped run, it should be used only for smoke/profiling. The old run is not valid as paired full-versus-screened accuracy evidence because full and screened response/fold seeds were not consistently matched.</p>
+<p>For corrected runs, S3R-expanded remains gated on re-audit of the seed-matched S3R-light manifest and report.</p>
+</body></html>

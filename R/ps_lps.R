@@ -40,6 +40,21 @@
 #' @param lambda.sync.search Lambda-search policy.  \code{"grid"} evaluates the
 #'   supplied grid exactly.  \code{"guarded"} uses an experimental guarded
 #'   coarse-to-refine search with boundary expansion.
+#' @param local.candidate.search Local-candidate search policy when
+#'   \code{support.grid}, \code{degree.grid}, or \code{kernel.grid} contains
+#'   more than one candidate. \code{"screened"} is the routine default: it first
+#'   ranks candidates by ordinary LPS materialized-fold CV, then runs PS-LPS only
+#'   on a screened subset plus guard candidates. \code{"full"} evaluates PS-LPS
+#'   lambda search for every local candidate and is the exact audit/reference
+#'   path. \code{"subgrid"} skips the ordinary-LPS screening pass and evaluates
+#'   only a deterministic support/kernel guard subgrid; this is intended for
+#'   high-dimensional preflight runs where the screening pass is itself too
+#'   expensive.
+#' @param local.candidate.search.control Optional list controlling screened
+#'   local-candidate search. Supported fields are \code{top.n} (default
+#'   \code{8}), \code{max.candidates} (default \code{12}),
+#'   \code{neighbor.radius} (default \code{1}), and
+#'   \code{guard.support.quantiles} (default \code{c(0, 0.5, 1)}).
 #' @param lambda.sync.search.control Optional list controlling guarded search.
 #'   Supported fields are \code{coarse.size} (default \code{5}),
 #'   \code{refine.radius} (default \code{2}), \code{rel.tol} (default
@@ -52,6 +67,22 @@
 #'   very small cap can prevent local refinement or boundary expansion.
 #' @param lambda.ridge Nonnegative scale-relative ridge used in the chart
 #'   coefficient solve. Use \code{0} for the unregularized least-squares model.
+#' @param design.basis Local polynomial design backend. See
+#'   \code{\link{fit.lps}}. In PS-LPS, \code{"weighted.qr.drop"} drops
+#'   numerically dependent columns separately in each anchor chart before the
+#'   synchronized system is assembled, and
+#'   \code{"orthogonal.polynomial.drop"} builds each synchronized chart in a
+#'   weighted-orthogonal polynomial basis.
+#' @param design.drop.tol Relative QR tolerance used by
+#'   \code{design.basis = "weighted.qr.drop"} or
+#'   \code{design.basis = "orthogonal.polynomial.drop"}.
+#' @param ridge.multiplier.grid Optional nonnegative ridge multipliers for
+#'   adaptive scale-relative ridge selection. When supplied, the solver uses the
+#'   smallest multiplier whose penalized normal equations pass
+#'   \code{ridge.condition.max}. If \code{NULL}, \code{lambda.ridge} is used as
+#'   the single multiplier for backward compatibility.
+#' @param ridge.condition.max Maximum allowed condition number for adaptive
+#'   ridge selection. Use \code{Inf} to disable the condition-number guard.
 #' @param sync.neighbor.size Number of nearby anchor pairs considered for
 #'   synchronization from each anchor support.
 #' @param overlap.weight Overlap weighting rule.
@@ -74,8 +105,15 @@ fit.ps.lps <- function(
     auto.chart.selection.metric = c("coordinates", "operator"),
     lambda.sync.grid = c(0, 1e-3, 1e-2, 1e-1, 1, 10),
     lambda.sync.search = c("grid", "guarded"),
+    local.candidate.search = c("screened", "full", "subgrid"),
+    local.candidate.search.control = list(),
     lambda.sync.search.control = list(),
     lambda.ridge = 1e-8,
+    design.basis = c("monomial", "weighted.qr", "weighted.qr.drop",
+                     "orthogonal.polynomial.drop"),
+    design.drop.tol = sqrt(.Machine$double.eps),
+    ridge.multiplier.grid = NULL,
+    ridge.condition.max = Inf,
     sync.neighbor.size = NULL,
     overlap.weight = c("normalized.product", "product"),
     cv.folds = 5L,
@@ -92,7 +130,18 @@ fit.ps.lps <- function(
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     lambda.sync.search <- match.arg(lambda.sync.search)
+    local.candidate.search <- match.arg(local.candidate.search)
     overlap.weight <- match.arg(overlap.weight)
+    design.basis <- match.arg(design.basis)
+    design.drop.tol <- .klp.validate.nonnegative.scalar(
+        design.drop.tol,
+        "design.drop.tol"
+    )
+    ridge.condition.max <- .klp.validate.positive.scalar(
+        ridge.condition.max,
+        "ridge.condition.max",
+        allow.infinite = TRUE
+    )
     lambda.sync.grid <- sort(unique(as.numeric(lambda.sync.grid)))
     if (!length(lambda.sync.grid) || any(!is.finite(lambda.sync.grid)) ||
         any(lambda.sync.grid < 0)) {
@@ -104,6 +153,12 @@ fit.ps.lps <- function(
         stop("'lambda.ridge' must be a finite nonnegative scalar.",
              call. = FALSE)
     }
+    if (is.null(ridge.multiplier.grid)) {
+        ridge.multiplier.grid <- lambda.ridge
+    }
+    ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
+        ridge.multiplier.grid
+    )
     foldid <- .klp.prepare.foldid(nrow(X), foldid, cv.folds, cv.seed)
     local.grid <- .ps.lps.resolve.local.grid(
         support.size = support.size,
@@ -125,8 +180,14 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            local.candidate.search = local.candidate.search,
+            local.candidate.search.control = local.candidate.search.control,
             lambda.sync.search.control = lambda.sync.search.control,
             lambda.ridge = lambda.ridge,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
             sync.neighbor.size = sync.neighbor.size,
             overlap.weight = overlap.weight,
             cv.folds = cv.folds,
@@ -140,6 +201,8 @@ fit.ps.lps <- function(
         sync.neighbor.size,
         support.size
     )
+    timing.start <- proc.time()
+    elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
     chart.dim.info <- .ps.lps.resolve.chart.dim(
         X = X,
         support.size = support.size,
@@ -149,26 +212,38 @@ fit.ps.lps <- function(
         auto.chart.selection.metric = auto.chart.selection.metric
     )
     chart.dim.by.anchor <- chart.dim.info$chart.dim.by.anchor
+    t.frames <- proc.time()
     frames <- .ps.lps.prepare.frames(
         X = X,
         y = y,
         support.size = support.size,
         degree = degree,
         kernel = kernel,
-        chart.dim.by.anchor = chart.dim.by.anchor
+        chart.dim.by.anchor = chart.dim.by.anchor,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol
     )
+    phase.frames.sec <- elapsed(t.frames)
+    t.sync.rows <- proc.time()
     sync.rows <- .ps.lps.prepare.sync.rows(
         frames = frames,
         sync.neighbor.size = sync.neighbor.size,
         overlap.weight = overlap.weight
     )
+    phase.sync.rows.sec <- elapsed(t.sync.rows)
     folds <- sort(unique(foldid))
     has.positive.sync <- any(lambda.sync.grid > 0)
     fold.component.caches <- vector("list", length(folds))
     names(fold.component.caches) <- as.character(folds)
     full.component.cache <- NULL
+    phase.system.cache.sec <- 0
+    phase.fold.component.cache.sec <- 0
+    phase.full.component.cache.sec <- 0
     if (has.positive.sync) {
+        t.system <- proc.time()
         system.cache <- .ps.lps.prepare.system.cache(frames, sync.rows)
+        phase.system.cache.sec <- elapsed(t.system)
+        t.fold.cache <- proc.time()
         for (fold in folds) {
             response.weights <- as.numeric(foldid != fold)
             fold.component.caches[[as.character(fold)]] <-
@@ -178,22 +253,30 @@ fit.ps.lps <- function(
                     response.weights = response.weights
                 )
         }
+        phase.fold.component.cache.sec <- elapsed(t.fold.cache)
+        t.full.cache <- proc.time()
         full.component.cache <- .ps.lps.prepare.component.cache(
             cache = system.cache,
             y = y,
             response.weights = rep(1, length(y))
         )
+        phase.full.component.cache.sec <- elapsed(t.full.cache)
     }
 
     evaluate.lambda <- function(lambda) {
+        t.eval <- proc.time()
         pred <- rep(NA_real_, length(y))
+        fold.solve.elapsed <- 0
         for (fold in folds) {
             response.weights <- as.numeric(foldid != fold)
+            t.fold.solve <- proc.time()
             fit.fold <- if (lambda > 0) {
                 .ps.lps.solve.component.cached(
                     component.cache = fold.component.caches[[as.character(fold)]],
                     lambda.sync = lambda,
-                    lambda.ridge = lambda.ridge
+                    lambda.ridge = lambda.ridge,
+                    ridge.multiplier.grid = ridge.multiplier.grid,
+                    ridge.condition.max = ridge.condition.max
                 )
             } else {
                 .ps.lps.solve(
@@ -202,17 +285,23 @@ fit.ps.lps <- function(
                     response.weights = response.weights,
                     lambda.sync = lambda,
                     lambda.ridge = lambda.ridge,
+                    ridge.multiplier.grid = ridge.multiplier.grid,
+                    ridge.condition.max = ridge.condition.max,
                     sync.rows = sync.rows
                 )
             }
+            fold.solve.elapsed <- fold.solve.elapsed + elapsed(t.fold.solve)
             pred[foldid == fold] <- fit.fold$fitted.values[foldid == fold]
         }
         cv.rmse <- .klp.rmse(pred, y)
+        t.diag <- proc.time()
         fit.diag <- if (lambda > 0) {
             .ps.lps.solve.component.cached(
                 component.cache = full.component.cache,
                 lambda.sync = lambda,
                 lambda.ridge = lambda.ridge,
+                ridge.multiplier.grid = ridge.multiplier.grid,
+                ridge.condition.max = ridge.condition.max,
                 coefficients.only = TRUE
             )
         } else {
@@ -222,10 +311,13 @@ fit.ps.lps <- function(
                 response.weights = rep(1, length(y)),
                 lambda.sync = lambda,
                 lambda.ridge = lambda.ridge,
+                ridge.multiplier.grid = ridge.multiplier.grid,
+                ridge.condition.max = ridge.condition.max,
                 sync.rows = sync.rows,
                 coefficients.only = TRUE
             )
         }
+        diag.elapsed <- elapsed(t.diag)
         data.frame(
             lambda.sync = lambda,
             lambda.ridge = lambda.ridge,
@@ -236,10 +328,18 @@ fit.ps.lps <- function(
                 fit.diag$mean.sync.squared.disagreement,
             ridge.median = fit.diag$ridge.median,
             ridge.max = fit.diag$ridge.max,
+            ridge.multiplier.selected =
+                fit.diag$ridge.multiplier.selected %||% lambda.ridge,
+            ridge.condition = fit.diag$ridge.condition %||% NA_real_,
+            ridge.status = fit.diag$ridge.status %||% NA_character_,
+            evaluation.elapsed.sec = elapsed(t.eval),
+            fold.solve.elapsed.sec = fold.solve.elapsed,
+            diagnostic.elapsed.sec = diag.elapsed,
             stringsAsFactors = FALSE
         )
     }
 
+    t.lambda.search <- proc.time()
     if (identical(lambda.sync.search, "guarded")) {
         search.out <- .ps.lps.search.lambda.sync(
             evaluate = evaluate.lambda,
@@ -255,12 +355,16 @@ fit.ps.lps <- function(
         selected <- .ps.lps.select.lambda.table(cv.table, rel.tol = 0)
         search.telemetry <- .ps.lps.grid.search.telemetry(lambda.sync.grid)
     }
+    phase.lambda.search.sec <- elapsed(t.lambda.search)
 
+    t.final <- proc.time()
     final <- if (selected$lambda.sync[[1L]] > 0) {
         .ps.lps.solve.component.cached(
             component.cache = full.component.cache,
             lambda.sync = selected$lambda.sync[[1L]],
-            lambda.ridge = lambda.ridge
+            lambda.ridge = lambda.ridge,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max
         )
     } else {
         .ps.lps.solve(
@@ -269,9 +373,26 @@ fit.ps.lps <- function(
             response.weights = rep(1, length(y)),
             lambda.sync = selected$lambda.sync[[1L]],
             lambda.ridge = lambda.ridge,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
             sync.rows = sync.rows
         )
     }
+    phase.final.solve.sec <- elapsed(t.final)
+    timing <- list(
+        total.elapsed.sec = elapsed(timing.start),
+        phase_frames_sec = phase.frames.sec,
+        phase_sync_rows_sec = phase.sync.rows.sec,
+        phase_system_cache_sec = phase.system.cache.sec,
+        phase_fold_component_cache_sec = phase.fold.component.cache.sec,
+        phase_full_component_cache_sec = phase.full.component.cache.sec,
+        phase_lambda_search_sec = phase.lambda.search.sec,
+        phase_final_solve_sec = phase.final.solve.sec,
+        evaluated_lambda_count = nrow(cv.table),
+        unique_lambda_count = length(unique(cv.table$lambda.sync)),
+        boundary_expansion_count = sum(grepl("^boundary_expand_",
+                                             search.telemetry$stage))
+    )
     out <- c(
         list(
             method.id = "ps_lps",
@@ -299,8 +420,14 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            local.candidate.search = local.candidate.search,
+            local.candidate.search.control = local.candidate.search.control,
             lambda.sync.search.telemetry = search.telemetry,
             lambda.ridge = lambda.ridge,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
             selected = selected,
             cv.table = cv.table,
             foldid = foldid,
@@ -310,7 +437,9 @@ fit.ps.lps <- function(
                 "component"
             } else {
                 "independent"
-            }
+            },
+            ps.lps.timing = timing,
+            frame.design.summary = .ps.lps.frame.design.summary(frames)
         ),
         final
     )
@@ -365,17 +494,295 @@ fit.ps.lps <- function(
     sync.neighbor.size
 }
 
+.ps.lps.local.search.control <- function(control) {
+    defaults <- list(
+        top.n = 8L,
+        max.candidates = 12L,
+        neighbor.radius = 1L,
+        guard.support.quantiles = c(0, 0.5, 1)
+    )
+    if (is.null(control)) control <- list()
+    if (!is.list(control)) {
+        stop("'local.candidate.search.control' must be a list.",
+             call. = FALSE)
+    }
+    unknown <- setdiff(names(control), names(defaults))
+    if (length(unknown)) {
+        stop("Unknown local candidate search control field(s): ",
+             paste(unknown, collapse = ", "), call. = FALSE)
+    }
+    out <- utils::modifyList(defaults, control)
+    out$top.n <- as.integer(out$top.n[[1L]])
+    out$max.candidates <- as.integer(out$max.candidates[[1L]])
+    out$neighbor.radius <- as.integer(out$neighbor.radius[[1L]])
+    out$guard.support.quantiles <-
+        as.numeric(out$guard.support.quantiles)
+    if (!is.finite(out$top.n) || out$top.n < 1L) {
+        stop("'top.n' must be a positive integer.", call. = FALSE)
+    }
+    if (!is.finite(out$max.candidates) || out$max.candidates < 1L) {
+        stop("'max.candidates' must be a positive integer.", call. = FALSE)
+    }
+    if (!is.finite(out$neighbor.radius) || out$neighbor.radius < 0L) {
+        stop("'neighbor.radius' must be a nonnegative integer.",
+             call. = FALSE)
+    }
+    if (!length(out$guard.support.quantiles) ||
+        any(!is.finite(out$guard.support.quantiles)) ||
+        any(out$guard.support.quantiles < 0 | out$guard.support.quantiles > 1)) {
+        stop("'guard.support.quantiles' must contain values in [0, 1].",
+             call. = FALSE)
+    }
+    out
+}
+
+.ps.lps.local.grid.key <- function(support.size, degree, kernel) {
+    paste(as.integer(support.size), as.integer(degree),
+          as.character(kernel), sep = "\r")
+}
+
+.ps.lps.screen.local.grid <- function(
+    X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
+    auto.chart.selection.metric, local.candidate.search,
+    local.candidate.search.control, cv.folds, cv.seed,
+    design.basis = "monomial",
+    design.drop.tol = sqrt(.Machine$double.eps),
+    ridge.multiplier.grid = 0,
+    ridge.condition.max = Inf) {
+
+    out <- local.grid
+    out$local.candidate.id <- seq_len(nrow(out))
+    out$screening.cv.rmse.observed <- NA_real_
+    out$screening.rank <- NA_integer_
+    out$screening.reason <- "full_search"
+    if (identical(local.candidate.search, "full") || nrow(local.grid) <= 1L) {
+        return(list(
+            active.ids = seq_len(nrow(local.grid)),
+            table = out,
+            control = list(),
+            lps.screen = NULL
+        ))
+    }
+
+    ctl <- .ps.lps.local.search.control(local.candidate.search.control)
+    if (identical(local.candidate.search, "subgrid")) {
+        guard.supports <- sort(unique(local.grid$support.size))
+        guard.supports <- as.integer(stats::quantile(
+            guard.supports,
+            probs = unique(ctl$guard.support.quantiles),
+            type = 1,
+            names = FALSE
+        ))
+        guard <- out[out$support.size %in% guard.supports, , drop = FALSE]
+        guard$kernel.order <- match(guard$kernel, unique(local.grid$kernel))
+        guard <- guard[order(guard$support.size, guard$degree,
+                             guard$kernel.order), , drop = FALSE]
+        active.ids <- head(guard$local.candidate.id,
+                           min(ctl$max.candidates, nrow(guard)))
+        out$screening.reason <- "screened_out"
+        out$screening.reason[out$local.candidate.id %in% active.ids] <-
+            "subgrid_guard"
+        out$screening.rank[out$local.candidate.id %in% active.ids] <-
+            seq_along(active.ids)
+        return(list(
+            active.ids = as.integer(active.ids),
+            table = out,
+            control = ctl,
+            lps.screen = NULL
+        ))
+    }
+
+    if (!(identical(chart.dim, "auto") ||
+          .klp.is.local.auto.chart.dim(chart.dim) ||
+          (length(chart.dim) == 1L && is.numeric(chart.dim)))) {
+        stop("'local.candidate.search = \"screened\"' supports scalar, ",
+             "'auto', or 'local.auto' chart dimensions.", call. = FALSE)
+    }
+    lps.screen <- fit.lps(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = sort(unique(local.grid$support.size)),
+        degree.grid = sort(unique(local.grid$degree)),
+        kernel.grid = unique(local.grid$kernel),
+        cv.folds = cv.folds,
+        cv.seed = cv.seed,
+        coordinate.method = "local.pca",
+        chart.dim = chart.dim,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        backend = "auto"
+    )
+    screen.tab <- lps.screen$cv.table
+    screen.tab$screening.key <- .ps.lps.local.grid.key(
+        screen.tab$support.size,
+        screen.tab$degree,
+        screen.tab$kernel
+    )
+    out$screening.key <- .ps.lps.local.grid.key(out$support.size, out$degree,
+                                                out$kernel)
+    m <- match(out$screening.key, screen.tab$screening.key)
+    out$screening.cv.rmse.observed <- screen.tab$cv.rmse.observed[m]
+    finite <- is.finite(out$screening.cv.rmse.observed)
+    ranked <- order(out$screening.cv.rmse.observed[finite],
+                    out$support.size[finite],
+                    out$degree[finite],
+                    out$kernel[finite])
+    finite.ids <- which(finite)
+    ranked.ids <- finite.ids[ranked]
+    out$screening.rank[ranked.ids] <- seq_along(ranked.ids)
+
+    selected.key <- .ps.lps.local.grid.key(
+        lps.screen$selected$support.size[[1L]],
+        lps.screen$selected$degree[[1L]],
+        lps.screen$selected$kernel[[1L]]
+    )
+    selected.id <- out$local.candidate.id[out$screening.key == selected.key]
+    top.ids <- head(ranked.ids, min(ctl$top.n, length(ranked.ids)))
+    seed.ids <- unique(c(selected.id, top.ids))
+
+    neighbor.ids <- integer(0)
+    if (ctl$neighbor.radius > 0L && length(seed.ids)) {
+        for (id in seed.ids) {
+            row <- out[id, , drop = FALSE]
+            neighbor.ids <- c(neighbor.ids, out$local.candidate.id[
+                out$degree == row$degree[[1L]] &
+                    out$kernel == row$kernel[[1L]] &
+                    abs(out$support.size - row$support.size[[1L]]) <=
+                    ctl$neighbor.radius
+            ])
+        }
+    }
+
+    guard.supports <- sort(unique(local.grid$support.size))
+    guard.supports <- as.integer(stats::quantile(
+        guard.supports,
+        probs = unique(ctl$guard.support.quantiles),
+        type = 1,
+        names = FALSE
+    ))
+    guard.ids <- out$local.candidate.id[
+        out$support.size %in% guard.supports
+    ]
+
+    reason <- rep("not_selected", nrow(out))
+    reason[selected.id] <- "lps_selected"
+    reason[top.ids] <- ifelse(reason[top.ids] == "lps_selected",
+                              "lps_selected_top", "top_lps_cv")
+    reason[neighbor.ids] <- ifelse(
+        reason[neighbor.ids] %in% c("lps_selected", "lps_selected_top",
+                                    "top_lps_cv"),
+        paste(reason[neighbor.ids], "neighbor", sep = "+"),
+        "neighbor"
+    )
+    reason[guard.ids] <- ifelse(
+        reason[guard.ids] != "not_selected",
+        paste(reason[guard.ids], "guard", sep = "+"),
+        "guard"
+    )
+
+    active.ids <- unique(c(selected.id, top.ids, neighbor.ids, guard.ids))
+    priority <- data.frame(
+        id = active.ids,
+        selected = ifelse(active.ids %in% selected.id, 0L, 1L),
+        top = ifelse(active.ids %in% top.ids, 0L, 1L),
+        neighbor = ifelse(active.ids %in% neighbor.ids, 0L, 1L),
+        guard = ifelse(active.ids %in% guard.ids, 0L, 1L),
+        rank = out$screening.rank[active.ids],
+        stringsAsFactors = FALSE
+    )
+    priority$rank[!is.finite(priority$rank)] <- Inf
+    priority <- priority[order(priority$selected, priority$top,
+                               priority$neighbor, priority$guard,
+                               priority$rank, priority$id), , drop = FALSE]
+    active.ids <- head(priority$id, min(ctl$max.candidates,
+                                       nrow(priority)))
+    out$screening.reason <- reason
+    out$screening.reason[!out$local.candidate.id %in% active.ids] <-
+        "screened_out"
+    out$screening.key <- NULL
+    list(
+        active.ids = as.integer(active.ids),
+        table = out,
+        control = ctl,
+        lps.screen = lps.screen
+    )
+}
+
 .ps.lps.fit.local.grid <- function(
     X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
     auto.chart.selection.metric, lambda.sync.grid, lambda.sync.search,
-    lambda.sync.search.control, lambda.ridge, sync.neighbor.size,
-    overlap.weight, cv.folds, cv.seed) {
+    local.candidate.search, local.candidate.search.control,
+    lambda.sync.search.control, lambda.ridge, design.basis,
+    design.drop.tol, ridge.multiplier.grid, ridge.condition.max,
+    sync.neighbor.size, overlap.weight, cv.folds, cv.seed) {
 
+    local.grid.timing.start <- proc.time()
+    elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
+    t.screen <- proc.time()
+    screen <- .ps.lps.screen.local.grid(
+        X = X,
+        y = y,
+        foldid = foldid,
+        local.grid = local.grid,
+        chart.dim = chart.dim,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        local.candidate.search = local.candidate.search,
+        local.candidate.search.control = local.candidate.search.control,
+        cv.folds = cv.folds,
+        cv.seed = cv.seed,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max
+    )
+    phase.screening.sec <- elapsed(t.screen)
+    active.ids <- screen$active.ids
     fits <- vector("list", nrow(local.grid))
     candidate.rows <- vector("list", nrow(local.grid))
     lambda.rows <- vector("list", nrow(local.grid))
     for (ii in seq_len(nrow(local.grid))) {
         row <- local.grid[ii, , drop = FALSE]
+        screen.row <- screen$table[screen$table$local.candidate.id == ii, ,
+                                   drop = FALSE]
+        if (!ii %in% active.ids) {
+            candidate.rows[[ii]] <- data.frame(
+                local.candidate.id = ii,
+                support.size = row$support.size[[1L]],
+                degree = row$degree[[1L]],
+                kernel = row$kernel[[1L]],
+                chart.dim = NA_real_,
+                chart.dim.mode = NA_character_,
+                selected.lambda.sync = NA_real_,
+                selected.lambda.ridge = NA_real_,
+                selected.cv.rmse.observed = NA_real_,
+                selected.total.local.gcv.ps = NA_real_,
+                selected.sync.energy = NA_real_,
+                selected.mean.sync.squared.disagreement = NA_real_,
+                evaluated.lambda.count = 0L,
+                unique.lambda.count = 0L,
+                boundary.expansion.count = 0L,
+                local.candidate.elapsed.sec = NA_real_,
+                lambda.search.elapsed.sec = NA_real_,
+                frame.prep.elapsed.sec = NA_real_,
+                system.cache.elapsed.sec = NA_real_,
+                fold.component.cache.elapsed.sec = NA_real_,
+                final.solve.elapsed.sec = NA_real_,
+                local.candidate.status = "screened_out",
+                screening.cv.rmse.observed =
+                    screen.row$screening.cv.rmse.observed[[1L]],
+                screening.rank = screen.row$screening.rank[[1L]],
+                screening.reason = screen.row$screening.reason[[1L]],
+                stringsAsFactors = FALSE
+            )
+            next
+        }
+        t.candidate <- proc.time()
         fit <- fit.ps.lps(
             X = X,
             y = y,
@@ -391,15 +798,23 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            local.candidate.search = "full",
+            local.candidate.search.control = list(),
             lambda.sync.search.control = lambda.sync.search.control,
             lambda.ridge = lambda.ridge,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
             sync.neighbor.size = sync.neighbor.size,
             overlap.weight = overlap.weight,
             cv.folds = cv.folds,
             cv.seed = cv.seed
         )
+        candidate.elapsed <- elapsed(t.candidate)
         fits[[ii]] <- fit
         selected <- fit$selected[1L, , drop = FALSE]
+        timing <- fit$ps.lps.timing %||% list()
         candidate.rows[[ii]] <- data.frame(
             local.candidate.id = ii,
             support.size = fit$support.size,
@@ -415,9 +830,27 @@ fit.ps.lps <- function(
             selected.mean.sync.squared.disagreement =
                 selected$mean.sync.squared.disagreement[[1L]],
             evaluated.lambda.count = nrow(fit$cv.table),
+            unique.lambda.count =
+                length(unique(fit$cv.table$lambda.sync)),
             boundary.expansion.count =
                 sum(grepl("^boundary_expand_",
                           fit$lambda.sync.search.telemetry$stage)),
+            local.candidate.elapsed.sec = candidate.elapsed,
+            lambda.search.elapsed.sec =
+                as.numeric(timing$phase_lambda_search_sec %||% NA_real_),
+            frame.prep.elapsed.sec =
+                as.numeric(timing$phase_frames_sec %||% NA_real_),
+            system.cache.elapsed.sec =
+                as.numeric(timing$phase_system_cache_sec %||% NA_real_),
+            fold.component.cache.elapsed.sec =
+                as.numeric(timing$phase_fold_component_cache_sec %||% NA_real_),
+            final.solve.elapsed.sec =
+                as.numeric(timing$phase_final_solve_sec %||% NA_real_),
+            local.candidate.status = "evaluated",
+            screening.cv.rmse.observed =
+                screen.row$screening.cv.rmse.observed[[1L]],
+            screening.rank = screen.row$screening.rank[[1L]],
+            screening.reason = screen.row$screening.reason[[1L]],
             stringsAsFactors = FALSE
         )
         tab <- fit$cv.table
@@ -456,10 +889,40 @@ fit.ps.lps <- function(
     best.fit$kernel.grid <- sort(unique(local.grid$kernel))
     best.fit$local.candidate.table <- candidate.table
     best.fit$lambda.cv.table <- do.call(rbind, lambda.rows)
+    best.fit$ps.lps.local.grid.timing <- list(
+        total.elapsed.sec = elapsed(local.grid.timing.start),
+        phase_screening_sec = phase.screening.sec,
+        phase_candidate_loop_sec = sum(
+            candidate.table$local.candidate.elapsed.sec[
+                is.finite(candidate.table$local.candidate.elapsed.sec)
+            ],
+            na.rm = TRUE
+        ),
+        planned_local_candidate_count = nrow(local.grid),
+        evaluated_local_candidate_count = sum(
+            candidate.table$local.candidate.status == "evaluated",
+            na.rm = TRUE
+        ),
+        total_lambda_rows = nrow(best.fit$lambda.cv.table),
+        total_unique_lambda_rows = length(unique(
+            best.fit$lambda.cv.table$lambda.sync
+        ))
+    )
+    best.fit$local.candidate.search <- local.candidate.search
+    best.fit$local.candidate.search.control <- screen$control
+    best.fit$local.candidate.screen.table <- screen$table
+    best.fit$local.candidate.screen.lps.selected <-
+        if (is.null(screen$lps.screen)) NULL else screen$lps.screen$selected
     best.fit$selected.local.candidate <-
         candidate.table[best.idx, , drop = FALSE]
     best.fit$selection.contract <-
-        "materialized_fold_cv_over_support_kernel_degree_with_lambda_sync"
+        if (identical(local.candidate.search, "screened")) {
+            "screened_lps_cv_then_materialized_fold_cv_with_lambda_sync"
+        } else if (identical(local.candidate.search, "subgrid")) {
+            "subgrid_then_materialized_fold_cv_with_lambda_sync"
+        } else {
+            "materialized_fold_cv_over_support_kernel_degree_with_lambda_sync"
+        }
     best.fit$selected <- cbind(
         candidate.table[best.idx, c("local.candidate.id", "support.size",
                                     "degree", "kernel", "chart.dim",
@@ -845,7 +1308,10 @@ fit.ps.lps <- function(
 }
 
 .ps.lps.prepare.frames <- function(X, y, support.size, degree, kernel,
-                                   chart.dim.by.anchor) {
+                                   chart.dim.by.anchor,
+                                   design.basis = "monomial",
+                                   design.drop.tol =
+                                       sqrt(.Machine$double.eps)) {
     n <- nrow(X)
     frames <- vector("list", n)
     for (ii in seq_len(n)) {
@@ -868,11 +1334,44 @@ fit.ps.lps <- function(
             weights = weights,
             return.chart = FALSE
         )
-        design <- .local.polynomial.design.matrix(coords, degree)
-        anchor.design <- .local.polynomial.design.matrix(
+        raw.design <- .local.polynomial.design.matrix(coords, degree)
+        raw.anchor.design <- .local.polynomial.design.matrix(
             matrix(0, nrow = 1L, ncol = d),
             degree
         )
+        keep <- seq_len(ncol(raw.design))
+        solver.design.basis <- design.basis
+        if (identical(design.basis, "orthogonal.polynomial.drop")) {
+            transformed <- .klp.orthogonal.polynomial.transform(
+                design = raw.design,
+                weights = weights,
+                prediction.rows = raw.anchor.design,
+                design.drop.tol = design.drop.tol
+            )
+            if (isTRUE(transformed$ok)) {
+                design <- transformed$design
+                anchor.design <- transformed$prediction.rows
+                keep <- seq_len(ncol(design))
+                solver.design.basis <- "orthogonal.polynomial.transformed"
+            } else {
+                design <- raw.design[, 1L, drop = FALSE]
+                anchor.design <- raw.anchor.design[, 1L, drop = FALSE]
+                keep <- 1L
+                solver.design.basis <- "monomial"
+            }
+        } else if (identical(design.basis, "weighted.qr.drop")) {
+            keep <- .klp.weighted.qr.keep.columns(
+                raw.design,
+                weights,
+                design.drop.tol
+            )
+            if (!length(keep)) keep <- 1L
+            design <- raw.design[, keep, drop = FALSE]
+            anchor.design <- raw.anchor.design[, keep, drop = FALSE]
+        } else {
+            design <- raw.design[, keep, drop = FALSE]
+            anchor.design <- raw.anchor.design[, keep, drop = FALSE]
+        }
         row.names <- as.character(idx)
         row.by.point <- seq_along(idx)
         names(row.by.point) <- row.names
@@ -886,6 +1385,11 @@ fit.ps.lps <- function(
             design = design,
             anchor.design = anchor.design,
             chart.dim = d,
+            design.basis = design.basis,
+            solver.design.basis = solver.design.basis,
+            design.drop.tol = design.drop.tol,
+            design.columns.original = ncol(raw.design),
+            design.columns.kept = keep,
             q = ncol(design),
             rank = as.integer(rank),
             row.by.point = row.by.point
@@ -896,6 +1400,18 @@ fit.ps.lps <- function(
     for (ii in seq_along(frames)) frames[[ii]]$offset <- offsets[[ii]]
     attr(frames, "ncoef") <- sum(q)
     frames
+}
+
+.ps.lps.frame.design.summary <- function(frames) {
+    data.frame(
+        anchor = vapply(frames, `[[`, integer(1L), "anchor"),
+        chart.dim = vapply(frames, `[[`, integer(1L), "chart.dim"),
+        design.columns.original =
+            vapply(frames, `[[`, integer(1L), "design.columns.original"),
+        design.columns.kept = vapply(frames, `[[`, integer(1L), "q"),
+        design.rank = vapply(frames, `[[`, integer(1L), "rank"),
+        stringsAsFactors = FALSE
+    )
 }
 
 .ps.lps.prepare.sync.rows <- function(frames, sync.neighbor.size,
@@ -1216,8 +1732,81 @@ fit.ps.lps <- function(
     )
 }
 
+.ps.lps.matrix.condition <- function(M) {
+    rc <- tryCatch(
+        rcond(as.matrix(M)),
+        error = function(e) NA_real_
+    )
+    rc <- as.numeric(rc[[1L]])
+    if (!is.finite(rc) || rc <= 0) return(Inf)
+    1 / rc
+}
+
+.ps.lps.choose.global.ridge <- function(cross, scale,
+                                        ridge.multiplier.grid,
+                                        ridge.condition.max,
+                                        sparse = TRUE) {
+    ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
+        ridge.multiplier.grid
+    )
+    scale <- as.numeric(scale[[1L]])
+    if (!is.finite(scale) || scale <= 0) scale <- 1
+    ncoef <- ncol(cross)
+    if (!is.finite(ridge.condition.max)) {
+        rho <- ridge.multiplier.grid[[1L]]
+        ridge <- rho * scale
+        normal <- if (isTRUE(sparse)) {
+            cross + Matrix::Diagonal(ncoef, x = ridge)
+        } else {
+            cross + diag(ridge, ncoef)
+        }
+        return(list(
+            ridge.multiplier = rho,
+            ridge = ridge,
+            normal = normal,
+            condition = NA_real_,
+            status = "unguarded"
+        ))
+    }
+    for (rho in ridge.multiplier.grid) {
+        ridge <- rho * scale
+        normal <- if (isTRUE(sparse)) {
+            cross + Matrix::Diagonal(ncoef, x = ridge)
+        } else {
+            cross + diag(ridge, ncoef)
+        }
+        cond <- .ps.lps.matrix.condition(normal)
+        if (!is.finite(ridge.condition.max) ||
+            (is.finite(cond) && cond <= ridge.condition.max)) {
+            return(list(
+                ridge.multiplier = rho,
+                ridge = ridge,
+                normal = normal,
+                condition = cond,
+                status = "ok"
+            ))
+        }
+    }
+    rho <- tail(ridge.multiplier.grid, 1L)
+    ridge <- rho * scale
+    normal <- if (isTRUE(sparse)) {
+        cross + Matrix::Diagonal(ncoef, x = ridge)
+    } else {
+        cross + diag(ridge, ncoef)
+    }
+    list(
+        ridge.multiplier = rho,
+        ridge = ridge,
+        normal = normal,
+        condition = .ps.lps.matrix.condition(normal),
+        status = "condition_not_met"
+    )
+}
+
 .ps.lps.solve.component.cached <- function(component.cache, lambda.sync,
                                           lambda.ridge = 1e-8,
+                                          ridge.multiplier.grid = lambda.ridge,
+                                          ridge.condition.max = Inf,
                                           coefficients.only = FALSE) {
     normal.cache <- .ps.lps.component.normal.cache(
         component.cache = component.cache,
@@ -1226,12 +1815,16 @@ fit.ps.lps <- function(
     .ps.lps.solve.normal.cached(
         normal.cache = normal.cache,
         lambda.ridge = lambda.ridge,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
         coefficients.only = coefficients.only
     )
 }
 
 .ps.lps.solve.cached <- function(cache, y, response.weights, lambda.sync,
                                  lambda.ridge = 1e-8,
+                                 ridge.multiplier.grid = lambda.ridge,
+                                 ridge.condition.max = Inf,
                                  coefficients.only = FALSE) {
     if (!inherits(cache, "ps_lps_system_cache")) {
         stop("'cache' must be a PS-LPS system cache.", call. = FALSE)
@@ -1246,7 +1839,9 @@ fit.ps.lps <- function(
             frames = frames,
             y = y,
             response.weights = response.weights,
-            lambda.ridge = lambda.ridge
+            lambda.ridge = lambda.ridge,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max
         )
         diagnostics <- .ps.lps.diagnostics(
             frames = frames,
@@ -1255,6 +1850,10 @@ fit.ps.lps <- function(
             sync.rows = sync.rows,
             ridge.values = independent$ridge.values
         )
+        diagnostics$ridge.multiplier.selected <-
+            independent$ridge.multiplier.selected
+        diagnostics$ridge.condition <- independent$ridge.condition
+        diagnostics$ridge.status <- independent$ridge.status
         timings <- list(
             phase_count_sec = NA_real_,
             phase_fill_triplets_sec = NA_real_,
@@ -1281,11 +1880,15 @@ fit.ps.lps <- function(
     .ps.lps.solve.normal.cached(
         normal.cache = normal.cache,
         lambda.ridge = lambda.ridge,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
         coefficients.only = coefficients.only
     )
 }
 
 .ps.lps.solve.normal.cached <- function(normal.cache, lambda.ridge = 1e-8,
+                                        ridge.multiplier.grid = lambda.ridge,
+                                        ridge.condition.max = Inf,
                                         coefficients.only = FALSE) {
     if (!inherits(normal.cache, "ps_lps_normal_cache")) {
         stop("'normal.cache' must be a PS-LPS normal cache.", call. = FALSE)
@@ -1300,8 +1903,14 @@ fit.ps.lps <- function(
     n <- length(frames)
     t.ridge <- proc.time()
     scale <- normal.cache$scale
-    ridge <- lambda.ridge * scale
-    normal <- cross + Matrix::Diagonal(ncoef, x = ridge)
+    ridge.choice <- .ps.lps.choose.global.ridge(
+        cross = cross,
+        scale = scale,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max
+    )
+    ridge <- ridge.choice$ridge
+    normal <- ridge.choice$normal
     phase.ridge.sec <- elapsed(t.ridge)
     t.solve <- proc.time()
     fallback.sec <- 0
@@ -1316,6 +1925,9 @@ fit.ps.lps <- function(
         normal <- cross + Matrix::Diagonal(ncoef, x = ridge)
         beta <- as.numeric(Matrix::solve(normal, rhs.cross))
         fallback.sec <- elapsed(t.fallback)
+        ridge.choice$status <- "fallback_ridge"
+        ridge.choice$ridge.multiplier <- sqrt(.Machine$double.eps)
+        ridge.choice$condition <- .ps.lps.matrix.condition(normal)
     }
     t.diagnostics <- proc.time()
     diagnostics <- .ps.lps.diagnostics(
@@ -1333,6 +1945,9 @@ fit.ps.lps <- function(
     timings$phase_diagnostics_sec <- phase.diagnostics.sec
     timings$phase_fitted_sec <- NA_real_
     diagnostics <- c(diagnostics, list(solve.phase.timings = timings))
+    diagnostics$ridge.multiplier.selected <- ridge.choice$ridge.multiplier
+    diagnostics$ridge.condition <- ridge.choice$condition
+    diagnostics$ridge.status <- ridge.choice$status
     if (coefficients.only) return(diagnostics)
     t.fitted <- proc.time()
     fitted <- vapply(seq_len(n), function(ii) {
@@ -1341,7 +1956,7 @@ fit.ps.lps <- function(
         sum(fr$anchor.design[1L, ] * beta[idx])
     }, numeric(1L))
     diagnostics$solve.phase.timings$phase_fitted_sec <- elapsed(t.fitted)
-    c(
+    out <- c(
         list(
             coefficients = beta,
             fitted.values = fitted,
@@ -1351,10 +1966,16 @@ fit.ps.lps <- function(
         ),
         diagnostics
     )
+    out$ridge.multiplier.selected <- ridge.choice$ridge.multiplier
+    out$ridge.condition <- ridge.choice$condition
+    out$ridge.status <- ridge.choice$status
+    out
 }
 
 .ps.lps.solve <- function(frames, y, response.weights, lambda.sync, sync.rows,
                           lambda.ridge = 1e-8,
+                          ridge.multiplier.grid = lambda.ridge,
+                          ridge.condition.max = Inf,
                           coefficients.only = FALSE) {
     elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
     if (lambda.sync == 0) {
@@ -1363,7 +1984,9 @@ fit.ps.lps <- function(
             frames = frames,
             y = y,
             response.weights = response.weights,
-            lambda.ridge = lambda.ridge
+            lambda.ridge = lambda.ridge,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max
         )
         diagnostics <- .ps.lps.diagnostics(
             frames = frames,
@@ -1372,6 +1995,10 @@ fit.ps.lps <- function(
             sync.rows = sync.rows,
             ridge.values = independent$ridge.values
         )
+        diagnostics$ridge.multiplier.selected <-
+            independent$ridge.multiplier.selected
+        diagnostics$ridge.condition <- independent$ridge.condition
+        diagnostics$ridge.status <- independent$ridge.status
         timings <- list(
             phase_count_sec = NA_real_,
             phase_fill_triplets_sec = NA_real_,
@@ -1493,8 +2120,14 @@ fit.ps.lps <- function(
     t.ridge <- proc.time()
     scale <- max(Matrix::diag(cross), na.rm = TRUE)
     if (!is.finite(scale) || scale <= 0) scale <- 1
-    ridge <- lambda.ridge * scale
-    normal <- cross + Matrix::Diagonal(ncoef, x = ridge)
+    ridge.choice <- .ps.lps.choose.global.ridge(
+        cross = cross,
+        scale = scale,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max
+    )
+    ridge <- ridge.choice$ridge
+    normal <- ridge.choice$normal
     phase.ridge.sec <- elapsed(t.ridge)
     t.rhs <- proc.time()
     rhs.cross <- Matrix::crossprod(A, rhs)
@@ -1512,6 +2145,9 @@ fit.ps.lps <- function(
         normal <- cross + Matrix::Diagonal(ncoef, x = ridge)
         beta <- as.numeric(Matrix::solve(normal, rhs.cross))
         fallback.sec <- elapsed(t.fallback)
+        ridge.choice$status <- "fallback_ridge"
+        ridge.choice$ridge.multiplier <- sqrt(.Machine$double.eps)
+        ridge.choice$condition <- .ps.lps.matrix.condition(normal)
     }
     t.diagnostics <- proc.time()
     diagnostics <- .ps.lps.diagnostics(
@@ -1536,6 +2172,9 @@ fit.ps.lps <- function(
         phase_fitted_sec = NA_real_
     )
     diagnostics <- c(diagnostics, list(solve.phase.timings = timings))
+    diagnostics$ridge.multiplier.selected <- ridge.choice$ridge.multiplier
+    diagnostics$ridge.condition <- ridge.choice$condition
+    diagnostics$ridge.status <- ridge.choice$status
     if (coefficients.only) return(diagnostics)
     t.fitted <- proc.time()
     fitted <- vapply(seq_len(n), function(ii) {
@@ -1544,7 +2183,7 @@ fit.ps.lps <- function(
         sum(fr$anchor.design[1L, ] * beta[idx])
     }, numeric(1L))
     diagnostics$solve.phase.timings$phase_fitted_sec <- elapsed(t.fitted)
-    c(
+    out <- c(
         list(
             coefficients = beta,
             fitted.values = fitted,
@@ -1554,14 +2193,23 @@ fit.ps.lps <- function(
         ),
         diagnostics
     )
+    out$ridge.multiplier.selected <- ridge.choice$ridge.multiplier
+    out$ridge.condition <- ridge.choice$condition
+    out$ridge.status <- ridge.choice$status
+    out
 }
 
 .ps.lps.solve.independent <- function(frames, y, response.weights,
-                                      lambda.ridge = 0) {
+                                      lambda.ridge = 0,
+                                      ridge.multiplier.grid = lambda.ridge,
+                                      ridge.condition.max = Inf) {
     n <- length(frames)
     ncoef <- attr(frames, "ncoef")
     beta <- rep(0, ncoef)
     ridge.values <- numeric(n)
+    ridge.multiplier.values <- rep(NA_real_, n)
+    ridge.condition.values <- rep(NA_real_, n)
+    ridge.status.values <- rep(NA_character_, n)
     for (ii in seq_len(n)) {
         fr <- frames[[ii]]
         qseq <- seq_len(fr$q)
@@ -1570,40 +2218,62 @@ fit.ps.lps <- function(
         if (!any(ok)) {
             beta[fr$offset + qseq] <- 0
             ridge.values[[ii]] <- 0
+            ridge.multiplier.values[[ii]] <- 0
+            ridge.status.values[[ii]] <- "empty"
             next
         }
         design <- fr$design[ok, , drop = FALSE]
         yy <- y[fr$index][ok]
         ww <- w[ok]
-        if (lambda.ridge == 0) {
-            fit <- tryCatch(
-                stats::lm.wfit(design, yy, ww),
-                error = function(e) NULL
-            )
-            coef <- if (is.null(fit) || !length(fit$coefficients)) {
-                c(stats::weighted.mean(yy, ww), rep(0, fr$q - 1L))
-            } else {
-                fit$coefficients
-            }
-            coef[!is.finite(coef)] <- 0
+        solved <- .klp.solve.local.wls(
+            design = design,
+            y = yy,
+            weights = ww,
+            design.basis = fr$solver.design.basis %||%
+                fr$design.basis %||% "monomial",
+            design.drop.tol = fr$design.drop.tol %||%
+                sqrt(.Machine$double.eps),
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max
+        )
+        if (!is.null(solved) && isTRUE(solved$ok) &&
+            length(solved$coefficients) && all(is.finite(solved$coefficients))) {
+            coef <- rep(0, fr$q)
+            keep <- solved$kept.columns %||% seq_along(solved$coefficients)
+            keep <- keep[keep >= 1L & keep <= fr$q]
+            coef[keep] <- solved$coefficients[seq_along(keep)]
             beta[fr$offset + qseq] <- coef
-            ridge.values[[ii]] <- 0
+            ridge.values[[ii]] <- solved$ridge.lambda %||% 0
+            ridge.multiplier.values[[ii]] <- solved$ridge.multiplier %||% 0
+            ridge.condition.values[[ii]] <- solved$condition %||% NA_real_
+            ridge.status.values[[ii]] <- solved$status %||% "ok"
         } else {
-            xw <- design * sqrt(ww)
-            yw <- yy * sqrt(ww)
-            cross <- crossprod(xw)
-            scale <- max(diag(cross), na.rm = TRUE)
-            if (!is.finite(scale) || scale <= 0) scale <- 1
-            ridge <- lambda.ridge * scale
-            coef <- tryCatch(
-                as.numeric(solve(cross + diag(ridge, fr$q), crossprod(xw, yw))),
-                error = function(e) rep(NA_real_, fr$q)
-            )
-            if (any(!is.finite(coef))) {
-                coef <- c(stats::weighted.mean(yy, ww), rep(0, fr$q - 1L))
+            legacy.unguarded <- identical(fr$design.basis %||% "monomial",
+                                           "monomial") &&
+                length(ridge.multiplier.grid) == 1L &&
+                ridge.multiplier.grid[[1L]] == 0 &&
+                !is.finite(ridge.condition.max)
+            if (isTRUE(legacy.unguarded)) {
+                coef <- c(stats::weighted.mean(yy, ww),
+                          rep(0, fr$q - 1L))
+                beta[fr$offset + qseq] <- coef
+                ridge.values[[ii]] <- 0
+                ridge.multiplier.values[[ii]] <- 0
+                ridge.condition.values[[ii]] <- solved$condition %||% NA_real_
+                ridge.status.values[[ii]] <- paste0(
+                    "legacy_mean_fallback_",
+                    solved$status %||% "local_solve_failed"
+                )
+            } else {
+                beta[fr$offset + qseq] <- NA_real_
+                ridge.values[[ii]] <- NA_real_
+                ridge.multiplier.values[[ii]] <- NA_real_
+                ridge.condition.values[[ii]] <- solved$condition %||% NA_real_
+                ridge.status.values[[ii]] <- paste0(
+                    "unstable_",
+                    solved$status %||% "local_solve_failed"
+                )
             }
-            beta[fr$offset + qseq] <- coef
-            ridge.values[[ii]] <- ridge
         }
     }
     fitted <- vapply(seq_len(n), function(ii) {
@@ -1618,7 +2288,17 @@ fit.ps.lps <- function(
                                    integer(1L))),
         n.system.cols = ncoef,
         lambda.ridge = lambda.ridge,
-        ridge.values = ridge.values
+        ridge.values = ridge.values,
+        ridge.multiplier.selected = {
+            mult <- ridge.multiplier.values[is.finite(ridge.multiplier.values)]
+            if (length(mult)) max(mult) else NA_real_
+        },
+        ridge.condition = {
+            cond <- ridge.condition.values[is.finite(ridge.condition.values)]
+            if (length(cond)) max(cond) else NA_real_
+        },
+        ridge.status = paste(unique(stats::na.omit(ridge.status.values)),
+                             collapse = ";")
     )
 }
 

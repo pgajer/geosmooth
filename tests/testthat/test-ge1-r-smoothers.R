@@ -33,7 +33,11 @@ test_that("GE2 LPS coordinate C++ backend fits and predicts", {
         degree.grid = 0:1,
         kernel.grid = "gaussian",
         cv.folds = 3L,
-        backend = "cpp"
+        backend = "cpp",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
     )
 
     expect_s3_class(fit, "lps")

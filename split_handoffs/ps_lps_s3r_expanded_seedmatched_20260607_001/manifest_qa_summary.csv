@@ -1,0 +1,11 @@
+"check","observed","expected","passed"
+"planned_task_count",1120,1120,TRUE
+"planned_pair_count",560,560,TRUE
+"two_arms_per_pair",560,560,TRUE
+"one_full_arm_per_pair",560,560,TRUE
+"one_screened_arm_per_pair",560,560,TRUE
+"response_seed_matched_per_pair",560,560,TRUE
+"fold_seed_matched_per_pair",560,560,TRUE
+"asset_paths_present",1120,1120,TRUE
+"source_hashes_malformed",0,0,TRUE
+"balanced_dataset_rep_chart_search_counts",1120,1120,TRUE

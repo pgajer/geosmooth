@@ -1,0 +1,20 @@
+{
+  "task_id": "s3r_0294__LA_D1_HC_Gv_N500__r14__auto__screened",
+  "pair_id": "LA_D1_HC_Gv_N500__r14__auto",
+  "dataset_id": "LA-D1-HC-Gv-N500",
+  "repetition": 14,
+  "method": "ps_lps",
+  "chart_dim_rule": "auto",
+  "search_policy": "screened",
+  "status": "ok",
+  "started_at": "2026-06-07 20:15:31 EDT",
+  "finished_at": "2026-06-07 20:15:42 EDT",
+  "elapsed_sec": 11.667,
+  "hostname": "pgajerm4-osx",
+  "pid": 54291,
+  "result_path": "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_20260607_001/results/s3r_0294__LA_D1_HC_Gv_N500__r14__auto__screened.rds",
+  "pair_response_seed": 20674609,
+  "pair_fold_seed": 20674608,
+  "error_message": null,
+  "error_class": null
+}
