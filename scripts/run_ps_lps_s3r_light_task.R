@@ -98,6 +98,27 @@ make.foldid <- function(n, folds, seed) {
     sample(rep(seq_len(folds), length.out = n))
 }
 
+screening.status.from.error <- function(search.policy, error.class,
+                                        error.message) {
+    if (!identical(search.policy, "screened")) return(NA_character_)
+    error.class <- as.character(error.class %||% "")
+    error.message <- as.character(error.message %||% "")
+    if (grepl("ps_lps_lps_screen_failed", error.class, fixed = TRUE) ||
+        grepl("LPS screening prefilter failed:", error.message,
+              fixed = TRUE)) {
+        return("lps_screen_failed")
+    }
+    if (grepl("No candidate has a finite selection score",
+              error.message, fixed = TRUE)) {
+        return("lps_screen_failed")
+    }
+    if (grepl("could not find function", error.message, fixed = TRUE) ||
+        grepl("unused argument", error.message, fixed = TRUE)) {
+        return("worker_api_mismatch")
+    }
+    "screened_task_failed"
+}
+
 summarize.chart.dim <- function(fit) {
     vals <- fit$chart.dim.by.anchor %||% fit$chart.dim.by.eval %||% fit$chart.dim
     vals <- suppressWarnings(as.numeric(vals))
@@ -208,7 +229,8 @@ write.status(status.path, list(
     pair_response_seed = as.integer(row$pair_response_seed[[1L]]),
     pair_fold_seed = as.integer(row$pair_fold_seed[[1L]]),
     error_message = NA_character_,
-    error_class = NA_character_
+    error_class = NA_character_,
+    screening_status = NA_character_
 ))
 
 result <- tryCatch({
@@ -362,7 +384,12 @@ result <- tryCatch({
     summary
 }, error = function(e) {
     structure(list(message = conditionMessage(e),
-                   class = paste(class(e), collapse = "/")),
+                   class = paste(class(e), collapse = "/"),
+                   screening.stage = e$screening.stage %||% NA_character_,
+                   screening.table = e$screening.table %||% NULL,
+                   screening.control = e$screening.control %||% NULL,
+                   screening.active.ids = e$screening.active.ids %||%
+                       integer(0)),
               class = "task_error")
 })
 
@@ -370,6 +397,42 @@ elapsed <- proc.time()[["elapsed"]] - start.time
 finished.at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
 
 if (inherits(result, "task_error")) {
+    screening.status <- screening.status.from.error(
+        row$search_policy[[1L]],
+        result$class,
+        result$message
+    )
+    error.summary <- data.frame(
+        task_id = task.id,
+        pair_id = row$pair_id[[1L]],
+        batch_id = row$batch_id[[1L]],
+        dataset_id = row$dataset_id[[1L]],
+        geometry_family = row$geometry_family[[1L]],
+        repetition = as.integer(row$repetition[[1L]]),
+        method = row$method[[1L]],
+        chart_dim_rule = row$chart_dim_rule[[1L]],
+        search_policy = row$search_policy[[1L]],
+        status = "error",
+        screening_status = screening.status,
+        error_class = result$class,
+        error_message = result$message,
+        elapsed_sec = elapsed,
+        stringsAsFactors = FALSE
+    )
+    try(saveRDS(list(
+        task = row,
+        error.summary = error.summary,
+        status = list(
+            status = "error",
+            screening_status = screening.status,
+            error_class = result$class,
+            error_message = result$message
+        ),
+        local.candidate.table = result$screening.table,
+        screening.control = result$screening.control,
+        screening.active.ids = result$screening.active.ids,
+        screening.stage = result$screening.stage
+    ), result.path, compress = "xz"), silent = TRUE)
     write.status(status.path, list(
         task_id = task.id,
         pair_id = row$pair_id[[1L]],
@@ -388,9 +451,17 @@ if (inherits(result, "task_error")) {
         pair_response_seed = as.integer(row$pair_response_seed[[1L]]),
         pair_fold_seed = as.integer(row$pair_fold_seed[[1L]]),
         error_message = result$message,
-        error_class = result$class
+        error_class = result$class,
+        screening_status = screening.status
     ))
     quit(status = 0L)
+}
+
+screening.status <- if (identical(row$search_policy[[1L]], "screened")) {
+    if (identical(result$status[[1L]], "ok")) "screened_ok" else
+        "screened_nonfinite_fit"
+} else {
+    NA_character_
 }
 
 write.status(status.path, list(
@@ -419,7 +490,8 @@ write.status(status.path, list(
         NA_character_
     } else {
         "nonfinite_fit"
-    }
+    },
+    screening_status = screening.status
 ))
 
 quit(status = 0L)

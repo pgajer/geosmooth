@@ -408,6 +408,8 @@ test_that("PS-LPS with positive ridge and zero synchronization nests ridge-LPS",
         response.weights = rep(1, length(y)),
         lambda.sync = 0,
         lambda.ridge = lambda.ridge,
+        ridge.multiplier.grid = lambda.ridge,
+        ridge.condition.max = 1e12,
         sync.rows = list()
     )
     ps <- fit.ps.lps(
@@ -420,6 +422,8 @@ test_that("PS-LPS with positive ridge and zero synchronization nests ridge-LPS",
         chart.dim = 2L,
         lambda.sync.grid = 0,
         lambda.ridge = lambda.ridge,
+        ridge.multiplier.grid = lambda.ridge,
+        ridge.condition.max = 1e12,
         sync.neighbor.size = 3L
     )
     expect_equal(ps$fitted.values, ridge.lps$fitted.values,
@@ -807,7 +811,7 @@ test_that("PS-LPS reports synchronization energy even when lambda.sync is zero",
         X = X,
         y = y,
         foldid = rep(seq_len(4L), length.out = nrow(X)),
-        support.size = 12L,
+        support.size = 15L,
         degree = 2L,
         kernel = "gaussian",
         chart.dim = 2L,
@@ -1033,6 +1037,11 @@ test_that("fit.ps.lps screened local search evaluates an auditable subset", {
     expect_true(all(is.finite(
         ps$local.candidate.table$screening.cv.rmse.observed
     )))
+    expect_true(all(ps$local.candidate.table$screening.design.basis ==
+                        "orthogonal.polynomial.drop"))
+    expect_true(all(ps$local.candidate.table$screening.ridge.condition.max ==
+                        1e12))
+    expect_false(any(ps$local.candidate.table$screening.fallback.used))
     expect_true(ps$selected$local.candidate.id[[1L]] %in%
                     ps$local.candidate.table$local.candidate.id[
                         ps$local.candidate.table$local.candidate.status ==
@@ -1043,6 +1052,41 @@ test_that("fit.ps.lps screened local search evaluates an auditable subset", {
                         ps$local.candidate.table$local.candidate.status ==
                             "evaluated"
                     ]))
+})
+
+test_that("fit.ps.lps screened local search classifies LPS prefilter failure", {
+    calls <- 0L
+    testthat::local_mocked_bindings(
+        fit.lps = function(...) {
+            calls <<- calls + 1L
+            stop("mock LPS screen failure", call. = FALSE)
+        },
+        .package = "geosmooth"
+    )
+    set.seed(241)
+    X <- matrix(1, 30, 2)
+    y <- stats::rnorm(nrow(X))
+    foldid <- rep(seq_len(5L), length.out = length(y))
+
+    err <- tryCatch(
+        fit.ps.lps(
+            X = X,
+            y = y,
+            foldid = foldid,
+            support.grid = 10:12,
+            degree.grid = 2L,
+            kernel.grid = "tricube",
+            chart.dim = 1L,
+            lambda.sync.grid = c(0, 1),
+            local.candidate.search = "screened",
+            ridge.multiplier.grid = 0,
+            ridge.condition.max = Inf
+        ),
+        error = identity
+    )
+    expect_s3_class(err, "ps_lps_lps_screen_failed")
+    expect_equal(calls, 2L)
+    expect_match(conditionMessage(err), "degree-1 fallback also failed")
 })
 
 test_that("fit.ps.lps subgrid local search skips LPS screening pass", {

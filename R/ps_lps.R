@@ -43,13 +43,16 @@
 #' @param local.candidate.search Local-candidate search policy when
 #'   \code{support.grid}, \code{degree.grid}, or \code{kernel.grid} contains
 #'   more than one candidate. \code{"screened"} is the routine default: it first
-#'   ranks candidates by ordinary LPS materialized-fold CV, then runs PS-LPS only
-#'   on a screened subset plus guard candidates. \code{"full"} evaluates PS-LPS
-#'   lambda search for every local candidate and is the exact audit/reference
-#'   path. \code{"subgrid"} skips the ordinary-LPS screening pass and evaluates
-#'   only a deterministic support/kernel guard subgrid; this is intended for
-#'   high-dimensional preflight runs where the screening pass is itself too
-#'   expensive.
+#'   ranks candidates by ordinary LPS materialized-fold CV using the guarded
+#'   \code{orthogonal.polynomial.drop} LPS backend, then runs PS-LPS only on a
+#'   screened subset plus guard candidates. If the guarded degree-2 screen has
+#'   no finite CV score and the requested screen is degree 2 only, PS-LPS retries
+#'   the screen with degree 1 and uses those support/kernel scores only for
+#'   screening. \code{"full"} evaluates PS-LPS lambda search for every local
+#'   candidate and is the exact audit/reference path. \code{"subgrid"} skips
+#'   the ordinary-LPS screening pass and evaluates only a deterministic
+#'   support/kernel guard subgrid; this is intended for high-dimensional
+#'   preflight runs where the screening pass is itself too expensive.
 #' @param local.candidate.search.control Optional list controlling screened
 #'   local-candidate search. Supported fields are \code{top.n} (default
 #'   \code{8}), \code{max.candidates} (default \code{12}),
@@ -109,11 +112,11 @@ fit.ps.lps <- function(
     local.candidate.search.control = list(),
     lambda.sync.search.control = list(),
     lambda.ridge = 1e-8,
-    design.basis = c("monomial", "weighted.qr", "weighted.qr.drop",
-                     "orthogonal.polynomial.drop"),
-    design.drop.tol = sqrt(.Machine$double.eps),
-    ridge.multiplier.grid = NULL,
-    ridge.condition.max = Inf,
+    design.basis = c("orthogonal.polynomial.drop", "monomial",
+                     "weighted.qr", "weighted.qr.drop"),
+    design.drop.tol = 1e-8,
+    ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+    ridge.condition.max = 1e12,
     sync.neighbor.size = NULL,
     overlap.weight = c("normalized.product", "product"),
     cv.folds = 5L,
@@ -153,9 +156,7 @@ fit.ps.lps <- function(
         stop("'lambda.ridge' must be a finite nonnegative scalar.",
              call. = FALSE)
     }
-    if (is.null(ridge.multiplier.grid)) {
-        ridge.multiplier.grid <- lambda.ridge
-    }
+    if (is.null(ridge.multiplier.grid)) ridge.multiplier.grid <- lambda.ridge
     ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
         ridge.multiplier.grid
     )
@@ -541,20 +542,125 @@ fit.ps.lps <- function(
           as.character(kernel), sep = "\r")
 }
 
+.ps.lps.local.grid.support.kernel.key <- function(support.size, kernel) {
+    paste(as.integer(support.size), as.character(kernel), sep = "\r")
+}
+
+.ps.lps.screen.ridge.grid <- function(ridge.multiplier.grid) {
+    x <- c(0, 1e-10, 1e-8, as.numeric(ridge.multiplier.grid))
+    x <- x[is.finite(x) & x >= 0]
+    sort(unique(x))
+}
+
+.ps.lps.screen.condition.max <- function(ridge.condition.max) {
+    if (is.finite(ridge.condition.max)) ridge.condition.max else 1e12
+}
+
+.ps.lps.fit.lps.screen <- function(
+    X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
+    auto.chart.selection.metric, cv.folds, cv.seed, design.drop.tol,
+    ridge.multiplier.grid, ridge.condition.max) {
+
+    support.grid <- sort(unique(local.grid$support.size))
+    degree.grid <- sort(unique(local.grid$degree))
+    kernel.grid <- unique(local.grid$kernel)
+    screen.design.basis <- "orthogonal.polynomial.drop"
+    screen.ridge.grid <- .ps.lps.screen.ridge.grid(ridge.multiplier.grid)
+    screen.condition.max <- .ps.lps.screen.condition.max(ridge.condition.max)
+    fit.screen <- function(degrees) {
+        fit.lps(
+            X = X,
+            y = y,
+            foldid = foldid,
+            support.grid = support.grid,
+            degree.grid = degrees,
+            kernel.grid = kernel.grid,
+            cv.folds = cv.folds,
+            cv.seed = cv.seed,
+            coordinate.method = "local.pca",
+            chart.dim = chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            design.basis = screen.design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = screen.ridge.grid,
+            ridge.condition.max = screen.condition.max,
+            backend = "auto"
+        )
+    }
+
+    primary <- tryCatch(
+        list(fit = fit.screen(degree.grid), error = NULL),
+        error = function(e) list(fit = NULL, error = e)
+    )
+    if (is.null(primary$error)) {
+        return(list(
+            fit = primary$fit,
+            fallback.used = FALSE,
+            match.degree = TRUE,
+            degree.used = degree.grid,
+            primary.error.message = NA_character_,
+            fallback.error.message = NA_character_,
+            design.basis = screen.design.basis,
+            ridge.multiplier.grid = screen.ridge.grid,
+            ridge.condition.max = screen.condition.max
+        ))
+    }
+
+    can.fallback <- length(degree.grid) == 1L && identical(degree.grid, 2L)
+    if (can.fallback) {
+        fallback <- tryCatch(
+            list(fit = fit.screen(1L), error = NULL),
+            error = function(e) list(fit = NULL, error = e)
+        )
+        if (is.null(fallback$error)) {
+            return(list(
+                fit = fallback$fit,
+                fallback.used = TRUE,
+                match.degree = FALSE,
+                degree.used = 1L,
+                primary.error.message = conditionMessage(primary$error),
+                fallback.error.message = NA_character_,
+                design.basis = screen.design.basis,
+                ridge.multiplier.grid = screen.ridge.grid,
+                ridge.condition.max = screen.condition.max
+            ))
+        }
+        stop(
+            "guarded degree-2 LPS screen failed: ",
+            conditionMessage(primary$error),
+            "; degree-1 fallback also failed: ",
+            conditionMessage(fallback$error),
+            call. = FALSE
+        )
+    }
+
+    stop(
+        "guarded LPS screen failed: ",
+        conditionMessage(primary$error),
+        call. = FALSE
+    )
+}
+
 .ps.lps.screen.local.grid <- function(
     X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
     auto.chart.selection.metric, local.candidate.search,
     local.candidate.search.control, cv.folds, cv.seed,
-    design.basis = "monomial",
-    design.drop.tol = sqrt(.Machine$double.eps),
-    ridge.multiplier.grid = 0,
-    ridge.condition.max = Inf) {
+    design.basis = "orthogonal.polynomial.drop",
+    design.drop.tol = 1e-8,
+    ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+    ridge.condition.max = 1e12) {
 
     out <- local.grid
     out$local.candidate.id <- seq_len(nrow(out))
     out$screening.cv.rmse.observed <- NA_real_
     out$screening.rank <- NA_integer_
     out$screening.reason <- "full_search"
+    out$screening.design.basis <- NA_character_
+    out$screening.degree.used <- NA_integer_
+    out$screening.ridge.multiplier.grid <- NA_character_
+    out$screening.ridge.condition.max <- NA_real_
+    out$screening.fallback.used <- FALSE
     if (identical(local.candidate.search, "full") || nrow(local.grid) <= 1L) {
         return(list(
             active.ids = seq_len(nrow(local.grid)),
@@ -598,33 +704,85 @@ fit.ps.lps <- function(
         stop("'local.candidate.search = \"screened\"' supports scalar, ",
              "'auto', or 'local.auto' chart dimensions.", call. = FALSE)
     }
-    lps.screen <- fit.lps(
-        X = X,
-        y = y,
-        foldid = foldid,
-        support.grid = sort(unique(local.grid$support.size)),
-        degree.grid = sort(unique(local.grid$degree)),
-        kernel.grid = unique(local.grid$kernel),
-        cv.folds = cv.folds,
-        cv.seed = cv.seed,
-        coordinate.method = "local.pca",
-        chart.dim = chart.dim,
-        auto.chart.support.metric = auto.chart.support.metric,
-        auto.chart.selection.metric = auto.chart.selection.metric,
-        design.basis = design.basis,
-        design.drop.tol = design.drop.tol,
-        ridge.multiplier.grid = ridge.multiplier.grid,
-        ridge.condition.max = ridge.condition.max,
-        backend = "auto"
+    screen.info <- tryCatch(
+        .ps.lps.fit.lps.screen(
+            X = X,
+            y = y,
+            foldid = foldid,
+            local.grid = local.grid,
+            chart.dim = chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            cv.folds = cv.folds,
+            cv.seed = cv.seed,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max
+        ),
+        error = function(e) {
+            screen.table <- out
+            screen.table$local.candidate.status <- "screening_failed"
+            screen.table$selected.cv.rmse.observed <- NA_real_
+            screen.table$screening.reason <- "lps_screen_failed"
+            screen.table$screening.error.message <- conditionMessage(e)
+            screen.table$screening.design.basis <- "orthogonal.polynomial.drop"
+            screen.table$screening.ridge.multiplier.grid <- paste(
+                .ps.lps.screen.ridge.grid(ridge.multiplier.grid),
+                collapse = ";"
+            )
+            screen.table$screening.ridge.condition.max <-
+                .ps.lps.screen.condition.max(ridge.condition.max)
+            stop(structure(
+                list(
+                    message = paste0(
+                        "LPS screening prefilter failed: ",
+                        conditionMessage(e)
+                    ),
+                    call = NULL,
+                    screening.stage = "lps_prefilter",
+                    screening.table = screen.table,
+                    screening.control = ctl,
+                    screening.active.ids = integer(0)
+                ),
+                class = c("ps_lps_lps_screen_failed", "error", "condition")
+            ))
+        }
     )
+    lps.screen <- screen.info$fit
+    out$screening.design.basis <- screen.info$design.basis
+    out$screening.ridge.condition.max <- screen.info$ridge.condition.max
+    out$screening.ridge.multiplier.grid <- paste(
+        screen.info$ridge.multiplier.grid,
+        collapse = ";"
+    )
+    out$screening.fallback.used <- isTRUE(screen.info$fallback.used)
+    out$screening.degree.used <- if (isTRUE(screen.info$match.degree)) {
+        out$degree
+    } else {
+        as.integer(screen.info$degree.used[[1L]])
+    }
     screen.tab <- lps.screen$cv.table
-    screen.tab$screening.key <- .ps.lps.local.grid.key(
-        screen.tab$support.size,
-        screen.tab$degree,
-        screen.tab$kernel
-    )
-    out$screening.key <- .ps.lps.local.grid.key(out$support.size, out$degree,
-                                                out$kernel)
+    if (isTRUE(screen.info$match.degree)) {
+        screen.tab$screening.key <- .ps.lps.local.grid.key(
+            screen.tab$support.size,
+            screen.tab$degree,
+            screen.tab$kernel
+        )
+        out$screening.key <- .ps.lps.local.grid.key(
+            out$support.size,
+            out$degree,
+            out$kernel
+        )
+    } else {
+        screen.tab$screening.key <- .ps.lps.local.grid.support.kernel.key(
+            screen.tab$support.size,
+            screen.tab$kernel
+        )
+        out$screening.key <- .ps.lps.local.grid.support.kernel.key(
+            out$support.size,
+            out$kernel
+        )
+    }
     m <- match(out$screening.key, screen.tab$screening.key)
     out$screening.cv.rmse.observed <- screen.tab$cv.rmse.observed[m]
     finite <- is.finite(out$screening.cv.rmse.observed)
@@ -641,7 +799,15 @@ fit.ps.lps <- function(
         lps.screen$selected$degree[[1L]],
         lps.screen$selected$kernel[[1L]]
     )
-    selected.id <- out$local.candidate.id[out$screening.key == selected.key]
+    if (isTRUE(screen.info$match.degree)) {
+        selected.id <- out$local.candidate.id[out$screening.key == selected.key]
+    } else {
+        selected.key <- .ps.lps.local.grid.support.kernel.key(
+            lps.screen$selected$support.size[[1L]],
+            lps.screen$selected$kernel[[1L]]
+        )
+        selected.id <- out$local.candidate.id[out$screening.key == selected.key]
+    }
     top.ids <- head(ranked.ids, min(ctl$top.n, length(ranked.ids)))
     seed.ids <- unique(c(selected.id, top.ids))
 
@@ -778,6 +944,16 @@ fit.ps.lps <- function(
                     screen.row$screening.cv.rmse.observed[[1L]],
                 screening.rank = screen.row$screening.rank[[1L]],
                 screening.reason = screen.row$screening.reason[[1L]],
+                screening.design.basis =
+                    screen.row$screening.design.basis[[1L]],
+                screening.degree.used =
+                    screen.row$screening.degree.used[[1L]],
+                screening.ridge.multiplier.grid =
+                    screen.row$screening.ridge.multiplier.grid[[1L]],
+                screening.ridge.condition.max =
+                    screen.row$screening.ridge.condition.max[[1L]],
+                screening.fallback.used =
+                    screen.row$screening.fallback.used[[1L]],
                 stringsAsFactors = FALSE
             )
             next
@@ -851,6 +1027,16 @@ fit.ps.lps <- function(
                 screen.row$screening.cv.rmse.observed[[1L]],
             screening.rank = screen.row$screening.rank[[1L]],
             screening.reason = screen.row$screening.reason[[1L]],
+            screening.design.basis =
+                screen.row$screening.design.basis[[1L]],
+            screening.degree.used =
+                screen.row$screening.degree.used[[1L]],
+            screening.ridge.multiplier.grid =
+                screen.row$screening.ridge.multiplier.grid[[1L]],
+            screening.ridge.condition.max =
+                screen.row$screening.ridge.condition.max[[1L]],
+            screening.fallback.used =
+                screen.row$screening.fallback.used[[1L]],
             stringsAsFactors = FALSE
         )
         tab <- fit$cv.table
@@ -1309,9 +1495,10 @@ fit.ps.lps <- function(
 
 .ps.lps.prepare.frames <- function(X, y, support.size, degree, kernel,
                                    chart.dim.by.anchor,
-                                   design.basis = "monomial",
+                                   design.basis =
+                                       "orthogonal.polynomial.drop",
                                    design.drop.tol =
-                                       sqrt(.Machine$double.eps)) {
+                                       1e-8) {
     n <- nrow(X)
     frames <- vector("list", n)
     for (ii in seq_len(n)) {
@@ -1357,7 +1544,7 @@ fit.ps.lps <- function(
                 design <- raw.design[, 1L, drop = FALSE]
                 anchor.design <- raw.anchor.design[, 1L, drop = FALSE]
                 keep <- 1L
-                solver.design.basis <- "monomial"
+                solver.design.basis <- "intercept.fallback"
             }
         } else if (identical(design.basis, "weighted.qr.drop")) {
             keep <- .klp.weighted.qr.keep.columns(
@@ -1803,11 +1990,12 @@ fit.ps.lps <- function(
     )
 }
 
-.ps.lps.solve.component.cached <- function(component.cache, lambda.sync,
-                                          lambda.ridge = 1e-8,
-                                          ridge.multiplier.grid = lambda.ridge,
-                                          ridge.condition.max = Inf,
-                                          coefficients.only = FALSE) {
+.ps.lps.solve.component.cached <- function(
+    component.cache, lambda.sync,
+    lambda.ridge = 1e-8,
+    ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+    ridge.condition.max = 1e12,
+    coefficients.only = FALSE) {
     normal.cache <- .ps.lps.component.normal.cache(
         component.cache = component.cache,
         lambda.sync = lambda.sync
@@ -1823,8 +2011,8 @@ fit.ps.lps <- function(
 
 .ps.lps.solve.cached <- function(cache, y, response.weights, lambda.sync,
                                  lambda.ridge = 1e-8,
-                                 ridge.multiplier.grid = lambda.ridge,
-                                 ridge.condition.max = Inf,
+                                 ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+                                 ridge.condition.max = 1e12,
                                  coefficients.only = FALSE) {
     if (!inherits(cache, "ps_lps_system_cache")) {
         stop("'cache' must be a PS-LPS system cache.", call. = FALSE)
@@ -1887,8 +2075,9 @@ fit.ps.lps <- function(
 }
 
 .ps.lps.solve.normal.cached <- function(normal.cache, lambda.ridge = 1e-8,
-                                        ridge.multiplier.grid = lambda.ridge,
-                                        ridge.condition.max = Inf,
+                                        ridge.multiplier.grid =
+                                            c(0, 1e-10, 1e-8),
+                                        ridge.condition.max = 1e12,
                                         coefficients.only = FALSE) {
     if (!inherits(normal.cache, "ps_lps_normal_cache")) {
         stop("'normal.cache' must be a PS-LPS normal cache.", call. = FALSE)
@@ -1974,8 +2163,8 @@ fit.ps.lps <- function(
 
 .ps.lps.solve <- function(frames, y, response.weights, lambda.sync, sync.rows,
                           lambda.ridge = 1e-8,
-                          ridge.multiplier.grid = lambda.ridge,
-                          ridge.condition.max = Inf,
+                          ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+                          ridge.condition.max = 1e12,
                           coefficients.only = FALSE) {
     elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
     if (lambda.sync == 0) {
@@ -2201,8 +2390,9 @@ fit.ps.lps <- function(
 
 .ps.lps.solve.independent <- function(frames, y, response.weights,
                                       lambda.ridge = 0,
-                                      ridge.multiplier.grid = lambda.ridge,
-                                      ridge.condition.max = Inf) {
+                                      ridge.multiplier.grid =
+                                          c(0, 1e-10, 1e-8),
+                                      ridge.condition.max = 1e12) {
     n <- length(frames)
     ncoef <- attr(frames, "ncoef")
     beta <- rep(0, ncoef)
@@ -2230,9 +2420,8 @@ fit.ps.lps <- function(
             y = yy,
             weights = ww,
             design.basis = fr$solver.design.basis %||%
-                fr$design.basis %||% "monomial",
-            design.drop.tol = fr$design.drop.tol %||%
-                sqrt(.Machine$double.eps),
+                fr$design.basis %||% "orthogonal.polynomial.drop",
+            design.drop.tol = fr$design.drop.tol %||% 1e-8,
             ridge.multiplier.grid = ridge.multiplier.grid,
             ridge.condition.max = ridge.condition.max
         )
@@ -2248,8 +2437,10 @@ fit.ps.lps <- function(
             ridge.condition.values[[ii]] <- solved$condition %||% NA_real_
             ridge.status.values[[ii]] <- solved$status %||% "ok"
         } else {
-            legacy.unguarded <- identical(fr$design.basis %||% "monomial",
-                                           "monomial") &&
+            legacy.unguarded <- identical(
+                fr$design.basis %||% "orthogonal.polynomial.drop",
+                "monomial"
+            ) &&
                 length(ridge.multiplier.grid) == 1L &&
                 ridge.multiplier.grid[[1L]] == 0 &&
                 !is.finite(ridge.condition.max)

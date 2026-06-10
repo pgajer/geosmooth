@@ -76,7 +76,7 @@ read.status <- function(path) {
               "chart_dim_rule", "search_policy", "status", "started_at",
               "finished_at", "elapsed_sec", "hostname", "pid", "result_path",
               "pair_response_seed", "pair_fold_seed",
-              "error_message", "error_class")
+              "error_message", "error_class", "screening_status")
     vals <- lapply(keys, function(key) {
         pattern <- paste0('"', key, '"[[:space:]]*:[[:space:]]*',
                           '("[^"]*"|null|true|false|-?[0-9.]+)')
@@ -101,6 +101,19 @@ read.status <- function(path) {
 safe.read.result <- function(path) {
     if (!file.exists(path)) return(NULL)
     tryCatch(readRDS(path), error = function(e) NULL)
+}
+
+bind.rows.fill <- function(rows) {
+    rows <- rows[vapply(rows, is.data.frame, logical(1L))]
+    rows <- rows[vapply(rows, nrow, integer(1L)) > 0L]
+    if (!length(rows)) return(data.frame())
+    cols <- unique(unlist(lapply(rows, names), use.names = FALSE))
+    rows <- lapply(rows, function(x) {
+        missing <- setdiff(cols, names(x))
+        for (nm in missing) x[[nm]] <- NA
+        x[, cols, drop = FALSE]
+    })
+    do.call(rbind, rows)
 }
 
 ci.normal <- function(x) {
@@ -217,6 +230,7 @@ status.rows <- lapply(seq_len(nrow(tasks)), function(ii) {
             finished_at = NA_character_,
             error_class = NA_character_,
             error_message = NA_character_,
+            screening_status = NA_character_,
             stringsAsFactors = FALSE
         ))
     }
@@ -231,6 +245,7 @@ status.rows <- lapply(seq_len(nrow(tasks)), function(ii) {
             finished_at = NA_character_,
             error_class = "status_parse_failure",
             error_message = "status file existed but could not be parsed",
+            screening_status = NA_character_,
             stringsAsFactors = FALSE
         ))
     }
@@ -244,6 +259,7 @@ status.rows <- lapply(seq_len(nrow(tasks)), function(ii) {
         finished_at = scalar.char(st$finished_at),
         error_class = scalar.char(st$error_class),
         error_message = scalar.char(st$error_message),
+        screening_status = scalar.char(st$screening_status),
         stringsAsFactors = FALSE
     )
 })
@@ -271,7 +287,7 @@ for (ii in seq_len(nrow(tasks))) {
         candidate.details[[length(candidate.details) + 1L]] <- cand
     }
 }
-summary.df <- if (length(summaries)) do.call(rbind, summaries) else data.frame()
+summary.df <- if (length(summaries)) bind.rows.fill(summaries) else data.frame()
 if (!nrow(summary.df)) {
     summary.df <- data.frame(task_id = character(), stringsAsFactors = FALSE)
 }
@@ -289,7 +305,7 @@ if (nrow(summary.df)) {
     }
 }
 candidate.df <- if (length(candidate.details)) {
-    do.call(rbind, candidate.details)
+    bind.rows.fill(candidate.details)
 } else {
     data.frame(task_id = character(), stringsAsFactors = FALSE)
 }
@@ -366,11 +382,52 @@ pair.list <- lapply(pair.ids, function(pid) {
     full <- sub[sub$search_policy_manifest == "full", , drop = FALSE]
     screened <- sub[sub$search_policy_manifest == "screened", , drop = FALSE]
     if (nrow(full) != 1L || nrow(screened) != 1L) {
+        ref <- if (nrow(sub)) sub[1L, , drop = FALSE] else data.frame()
         return(data.frame(
             pair_id = pid,
+            dataset_id = scalar.char(ref$dataset_id_manifest),
+            geometry_family = scalar.char(ref$geometry_family_manifest),
+            repetition = scalar.num(ref$repetition_manifest),
+            chart_dim_rule = scalar.char(ref$chart_dim_rule_manifest),
+            response_seed_match = NA,
+            fold_seed_match = NA,
+            full_status = if (nrow(full)) {
+                scalar.char(full$status_manifest)
+            } else {
+                "missing"
+            },
+            screened_status = if (nrow(screened)) {
+                scalar.char(screened$status_manifest)
+            } else {
+                "missing"
+            },
             pair_status = "malformed_pair",
             pair_complete = FALSE,
             pair_exclusion_reason = "expected exactly one full and one screened arm",
+            truth_rmse_full = NA_real_,
+            truth_rmse_screened = NA_real_,
+            delta_truth_rmse = NA_real_,
+            cv_rmse_full = NA_real_,
+            cv_rmse_screened = NA_real_,
+            delta_cv_rmse = NA_real_,
+            elapsed_full = NA_real_,
+            elapsed_screened = NA_real_,
+            elapsed_ratio_screened_full = NA_real_,
+            support_full = NA_real_,
+            support_screened = NA_real_,
+            lambda_full = NA_real_,
+            lambda_screened = NA_real_,
+            full_candidate_key = NA_character_,
+            screened_candidate_key = NA_character_,
+            screened_evaluated_candidate_keys = NA_character_,
+            screened_evaluated_supports = NA_character_,
+            full_support_in_screened_evaluated_supports = NA,
+            full_candidate_key_in_screened_evaluated_candidates = NA,
+            support_match = NA,
+            lambda_match = NA,
+            full_candidates_evaluated = NA_real_,
+            screened_candidates_evaluated = NA_real_,
+            candidate_key_matching_available = NA,
             stringsAsFactors = FALSE
         ))
     }
@@ -981,7 +1038,10 @@ html <- c(
             fmt(median.delta, 4)),
     sprintf("<p>The median screened/full runtime ratio was %s and the median screened/full candidate-count ratio was %s. These two quantities separate realized wall-time savings from the intended candidate-search reduction mechanism. In this run screened search usually evaluated only a subset of the 21 full-search local candidates, which is consistent with the observed runtime speedup.</p>",
             fmt(median.runtime.ratio, 4), fmt(median.candidate.ratio, 4)),
-    if (identical(run.label, "S3R-expanded")) {
+    if (identical(run.label, "S3R-expanded") &&
+        ok.n == nrow(task.status) && complete.n == planned.n) {
+        "<p>The S3R-expanded policy conclusion is that screened PS-LPS is the routine experimental support-search policy for similar broad sweeps. Full support-grid PS-LPS remains the validation/reference mode for spot checks, new geometry families, publication-critical sensitivity checks, and unusual screening telemetry.</p>"
+    } else if (identical(run.label, "S3R-expanded")) {
         "<p>The final policy question for S3R-expanded is whether screened PS-LPS can replace full support search for routine runs, whether any exception is needed for <code>auto</code> or <code>local.auto</code>, and whether additional profiling or policy modification is needed.</p>"
     } else {
         "<p>The next decision should be made after audit of this report: whether S3R-expanded should run, and if so whether it should use 10 or 20 repetitions.</p>"
