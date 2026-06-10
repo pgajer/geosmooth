@@ -1,5 +1,0 @@
-"dataset.id","truth.id","geometry.family","n","ambient.dimension","profile.sample.policy","profile.sample.n","candidate.count","folds","trees","targets","ann.searches","tie.recoveries","candidate.evals","chart.builds","chart.cache.hits","local.solves"
-"p7d_1d_two_gaussian_v1__noise_sd010_r01","p7d_1d_two_gaussian_v1","controlled_1d",200,1,"full_dataset",200,84,5,5,200,200,200,16800,4200,12600,16800
-"p7d_hd1_latent_two_gaussian_v1__noise_sd010_r01","p7d_hd1_latent_two_gaussian_v1","controlled_highdim",200,100,"full_dataset",200,84,5,5,200,200,200,16800,8400,8400,16800
-"p7d_hd3_latent_four_gaussian_v1__noise_sd010_r01","p7d_hd3_latent_four_gaussian_v1","controlled_highdim",600,99,"full_dataset",600,84,5,5,600,600,600,50400,12600,37800,50400
-"p7d_16s_graph_gaussian_farthest3_v1__noise_sd010_r01","p7d_16s_graph_gaussian_farthest3_v1","real16s",500,178,"deterministic_16s_subset_n500",500,12,5,5,500,500,500,6000,2500,3500,6000

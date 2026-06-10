@@ -1,3 +1,0 @@
-"subset","complete_pairs","max_repetition","mean_delta_truth_rmse","ci95_lo","ci95_hi","median_delta_truth_rmse","median_elapsed_ratio_screened_full","median_candidates_screened","median_candidates_full","support_inclusion_rate","lambda_match_rate"
-"repetitions_1_to_10",84,3,0.00211081439219311,0.00026087432802389,0.00396075445636233,0,0.379584230718093,4,21,0.345238095238095,0.69047619047619
-"all_available_repetitions",84,3,0.00211081439219311,0.00026087432802389,0.00396075445636233,0,0.379584230718093,4,21,0.345238095238095,0.69047619047619

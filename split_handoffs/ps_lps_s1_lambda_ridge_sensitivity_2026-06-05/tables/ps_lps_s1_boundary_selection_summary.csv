@@ -1,9 +1,0 @@
-"chart_dim_rule","lambda_ridge","boundary_selected_count","selected_n","boundary_fraction","boundary_value"
-"auto",0,13,14,0.928571428571429,10
-"local.auto",0,13,14,0.928571428571429,10
-"auto",1e-10,12,14,0.857142857142857,10
-"local.auto",1e-10,13,14,0.928571428571429,10
-"auto",1e-08,12,14,0.857142857142857,10
-"local.auto",1e-08,12,14,0.857142857142857,10
-"auto",1e-06,11,14,0.785714285714286,10
-"local.auto",1e-06,10,14,0.714285714285714,10

@@ -1,9 +1,0 @@
-"chart_dim_rule","diagnostic","rate"
-"auto","full support in screened supports",0.380952380952381
-"auto","full candidate key in screened candidates",0.380952380952381
-"auto","selected support match",0.380952380952381
-"auto","selected lambda match",0.666666666666667
-"local.auto","full support in screened supports",0.30952380952381
-"local.auto","full candidate key in screened candidates",0.30952380952381
-"local.auto","selected support match",0.30952380952381
-"local.auto","selected lambda match",0.714285714285714

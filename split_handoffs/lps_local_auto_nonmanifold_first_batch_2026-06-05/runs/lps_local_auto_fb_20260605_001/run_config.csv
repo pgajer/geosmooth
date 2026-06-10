@@ -1,2 +1,0 @@
-"run_id","repo","freeze_dir","run_dir","n_workers","task_count","created_at"
-"lps_local_auto_fb_20260605_001","/Users/pgajer/current_projects/geosmooth","/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_local_auto_nonmanifold_first_batch_2026-06-05","/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_local_auto_nonmanifold_first_batch_2026-06-05/runs/lps_local_auto_fb_20260605_001",10,28,"2026-06-05 05:59:48 EDT"

@@ -1,9 +1,0 @@
-"chart_dim_rule","lambda_ridge","candidate_fallback_count","candidate_n","selected_fallback_count","selected_n"
-"auto",0,28,112,4,14
-"local.auto",0,7,112,1,14
-"auto",1e-10,0,112,0,14
-"local.auto",1e-10,0,112,0,14
-"auto",1e-08,0,112,0,14
-"local.auto",1e-08,0,112,0,14
-"auto",1e-06,0,112,0,14
-"local.auto",1e-06,0,112,0,14

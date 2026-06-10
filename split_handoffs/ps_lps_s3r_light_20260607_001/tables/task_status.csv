@@ -1,2 +1,0 @@
-"task_id","dataset_id","repetition","method","chart_dim_rule","search_policy","status","started_at","finished_at","elapsed_sec","hostname","pid","result_path","error_message","error_class"
-"s3r_0001__LA_D1_RAW_N500__r01__auto__full","LA-D1-RAW-N500",1,"ps_lps","auto","full","ok","2026-06-07 14:11:43 EDT","2026-06-07 14:12:22 EDT",39.664,"pgajerm4-osx","60806","/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/results/s3r_0001__LA_D1_RAW_N500__r01__auto__full.rds",NA,NA
