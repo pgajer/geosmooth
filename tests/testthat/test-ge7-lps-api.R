@@ -315,6 +315,9 @@ test_that("LPS binomial mode uses local logistic fits and log-loss selection", {
         design = z,
         y = y.small,
         weights = w.small,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
         unstable.action = "na",
         logistic.telemetry = telemetry
     )
@@ -669,7 +672,7 @@ test_that("LPS local auto chart dimensions stay on the R local-PCA path", {
     )
 })
 
-test_that("LPS local WLS falls back on nearly saturated ill-conditioned designs", {
+test_that("LPS guarded local WLS avoids legacy mean fallback", {
     set.seed(1701)
     z <- matrix(rnorm(35 * 6), 35, 6)
     design <- .local.polynomial.design.matrix(z, degree = 2L)
@@ -679,8 +682,22 @@ test_that("LPS local WLS falls back on nearly saturated ill-conditioned designs"
     weights <- rep(1, nrow(design))
 
     expect_false(.klp.local.design.is.safe(design, weights))
+    guarded <- .klp.fit.intercept.design(design, y, weights)
+    expect_true(is.finite(guarded))
+    expect_false(isTRUE(all.equal(
+        guarded,
+        stats::weighted.mean(y, weights),
+        tolerance = 1e-12
+    )))
     expect_equal(
-        .klp.fit.intercept.design(design, y, weights),
+        .klp.fit.intercept.design(
+            design,
+            y,
+            weights,
+            design.basis = "monomial",
+            ridge.multiplier.grid = 0,
+            ridge.condition.max = Inf
+        ),
         stats::weighted.mean(y, weights),
         tolerance = 1e-12
     )

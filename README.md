@@ -57,6 +57,15 @@ Current public payload:
   Use this when you want LPL-TF plus a quadratic synchronization penalty across
   overlapping local predictions.
 
+- **PS-LPS**: prediction-synchronized local polynomial smoothing,
+  `fit.ps.lps()`.
+  Use this when you want LPS-style local charts with a quadratic
+  prediction-synchronization penalty across overlapping chart predictions.  For
+  broad experimental sweeps, screened local-candidate search is the routine
+  support-search policy; exact full-grid search remains the validation/reference
+  mode for spot checks, new geometry families, and publication-critical
+  sensitivity checks.
+
 - **SSRHE**: SSRHE-style Hessian-energy smoothing,
   `fit.ssrhe.hessian.regression()` and
   `fit.ssrhe.hessian.l1.regression()`.
@@ -196,6 +205,14 @@ Native support currently includes:
 - GE8 removed the short-lived `kernel.local.polynomial.cv()` compatibility
   alias so downstream scripts migrate to the new LPS name immediately.
 - GE9 added user-facing docs and runnable quick-start examples.
+
+## Progress Reports
+
+Generated progress reports and audit handoffs are kept in the local
+`split_handoffs/` workspace directory.  That directory is intentionally ignored
+by Git because it contains large run outputs, rendered reports, and transient
+audit bundles.  Durable user-facing briefs that should travel with the package
+live under `project_briefs/`.
 
 ## Validation
 

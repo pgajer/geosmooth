@@ -1,0 +1,89 @@
+name: tier0-gate
+
+# Independent execution leg for the LPS Tier-0 correctness battery.
+# Runs the harness on a clean checkout, enforces the clean-tree + green gate
+# from the manifest, and uploads the full execution artifact for the auditor.
+"on":
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "R/lps.R"
+      - "tests/testthat/test-lps-tier0-correctness.R"
+      - "tests/testthat/test-lps-tier0-correctness-extended.R"
+      - "tests/testthat/test-lps-degenerate.R"
+      - "scripts/ci/**"
+      - ".github/workflows/tier0-gate.yml"
+      - "split_handoffs/lps_tier0_execution_artifact_contract_2026-06-10.md"
+
+jobs:
+  tier0:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        native_backend: ["cpp", "cpp.local.pca"]
+    env:
+      EXECUTOR: "ci:${{ github.actor }}@github-actions"
+      LPS_NATIVE_BACKEND: "${{ matrix.native_backend }}"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgload, any::testthat
+
+      - name: Run Tier-0 execution-artifact harness
+        run: bash scripts/ci/run_tier0_execution_artifact.sh
+
+      - name: Enforce full Tier-0 contract (section 4)
+        run: |
+          set -uo pipefail
+          AID="$(ls -d audit_artifacts/tier0_* | tail -n1)"
+          echo "::group::manifest"; cat "$AID/execution_manifest.txt"; echo "::endgroup::"
+          M="$AID/execution_manifest.txt"; S="$AID/testthat_summary.txt"; H="$AID/headroom_summary.csv"
+          fail(){ echo "FAIL: $1"; exit 1; }
+          # 4.1 clean committed tree + source binding + environment recorded
+          grep -q "tree_clean: true" "$M"     || fail "tree not clean/committed"
+          [ -s "$AID/source_checksums.txt" ]  || fail "missing source_checksums.txt"
+          [ -s "$AID/sessionInfo.txt" ]       || fail "missing sessionInfo.txt"
+          sha256sum R/lps.R \
+            tests/testthat/test-lps-tier0-correctness.R \
+            tests/testthat/test-lps-tier0-correctness-extended.R \
+            tests/testthat/test-lps-degenerate.R > "$AID/source_checksums.recomputed.txt"
+          diff -u "$AID/source_checksums.txt" "$AID/source_checksums.recomputed.txt" \
+            || fail "source checksums do not match reviewed checkout"
+          # 4.3 green: zero failed/error/warning; only the sanctioned E0.3a skip
+          grep -q "failed=0 error=0 warning=0" "$S" || fail "failed/error/warning not all zero"
+          SK="$(sed -n 's/.*skipped=\([0-9]*\).*/\1/p' "$S")"
+          if [ "${SK:-0}" -gt 0 ]; then
+            Rscript -e 'd <- read.csv(commandArgs(TRUE)[[1L]], stringsAsFactors = FALSE); sk <- d[d$skipped > 0, , drop = FALSE]; if (nrow(sk) > 1L) stop("more than one skip"); if (nrow(sk) == 1L && !grepl("E0[.]3a", sk$test[[1L]])) stop("the skipped row is not the sanctioned E0.3a")' "$AID/testthat_results.csv" || exit 1
+          fi
+          # 4.2 coverage: all eight gate labels actually ran
+          for g in E0.1 E0.2 E0.3a E0.4 E0.5 E0.6 E0.7 E0.8; do
+            grep -qx "$g" "$AID/gate_contexts.txt" || fail "missing gate coverage: $g"
+          done
+          # 4.4-4.7 headroom / identity / determinism / parity (probe summary, row 2)
+          [ -s "$H" ] || fail "missing headroom_summary.csv"
+          awk -F, 'NR==2{
+            if ($2 !~ /TRUE/) {print "FAIL: E0.1 not all_pass"; exit 1}
+            if ($4+0 < 10)     {print "FAIL: E0.1 headroom < 10"; exit 1}
+            if ($5 !~ /TRUE/) {print "FAIL: E0.2 identity/df not pass"; exit 1}
+            if ($6+0 > 1e-12)  {print "FAIL: E0.2 identity residual > 1e-12"; exit 1}
+            if ($7+0 > 1e-12)  {print "FAIL: E0.2 df residual > 1e-12"; exit 1}
+            if ($8+0 > 1e-12)  {print "FAIL: determinism > 1e-12"; exit 1}
+            if ($9 !~ /ok/)    {print "FAIL: backend parity not ok"; exit 1}
+            if ($10+0 > 1e-8)  {print "FAIL: backend parity > 1e-8"; exit 1}
+          }' "$H" || exit 1
+          echo "PASS: full Tier-0 contract satisfied for $AID"
+
+      - name: Upload execution artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tier0-execution-artifact-${{ matrix.native_backend }}
+          path: audit_artifacts/
+          if-no-files-found: error
