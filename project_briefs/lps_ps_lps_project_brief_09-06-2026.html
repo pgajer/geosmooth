@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>LPS/PS-LPS Project Brief 09-06-2026</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">LPS/PS-LPS Project Brief 09-06-2026</h1>
+</header>
+<h1 id="lpsps-lps-project-brief">LPS/PS-LPS Project Brief</h1>
+<p>Generated: 09-06-2026 09:46:55 EDT<br />
+Canonical source:
+<code>~/current_projects/geosmooth/project_briefs/lps_ps_lps_project_brief_09-06-2026.md</code><br />
+HTML companion:
+<code>~/current_projects/geosmooth/project_briefs/lps_ps_lps_project_brief_09-06-2026.html</code></p>
+<h2 id="purpose-of-this-brief">Purpose of this brief</h2>
+<p>This is a timestamped orientation brief for the LPS/PS-LPS effort in
+<code>geosmooth</code>. It is intended for another agent or auditor who
+needs enough context to inspect, continue, or challenge the work without
+replaying the whole conversation. It is not a dashboard, phase handoff,
+or final paper-style report. It is a map of the current state of the
+project, the most important ideas, the code and report assets, and the
+open decisions.</p>
+<h2 id="short-project-summary">Short project summary</h2>
+<p>The central applied question is whether local polynomial smoothers
+can become strong general-purpose conditional expectation estimators on
+geometrically complicated data, including nonmanifold and
+microbiome-style state spaces.</p>
+<p>The current two model families are:</p>
+<ul>
+<li><strong>LPS</strong>: local polynomial smoother. It fits local
+polynomial models around each anchor and combines the resulting local
+predictions into a smoother.</li>
+<li><strong>PS-LPS</strong>: prediction-synchronized LPS. It adds a
+prediction-overlap synchronization penalty between local charts, so
+neighboring local models are encouraged to agree on overlapping support
+regions.</li>
+</ul>
+<p>The current practical direction is:</p>
+<ul>
+<li>keep <strong>LPS</strong> as the mature baseline/local
+smoother;</li>
+<li>treat <strong>PS-LPS</strong> as the synchronized extension whose
+routine experimental policy now uses screened support search plus
+guarded lambda search;</li>
+<li>compare both under synthetic truth settings where the true
+conditional mean or probability surface is known.</li>
+</ul>
+<h2 id="repository-and-package-state">Repository and package state</h2>
+<p>Primary package:</p>
+<ul>
+<li><code>~/current_projects/geosmooth</code></li>
+</ul>
+<p>Relevant package files:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/R/lps.R</code></li>
+<li><code>~/current_projects/geosmooth/R/ps_lps.R</code></li>
+<li><code>~/current_projects/geosmooth/tests/testthat/test-lps.R</code></li>
+<li><code>~/current_projects/geosmooth/tests/testthat/test-ps-lps.R</code></li>
+</ul>
+<p>Important implementation conventions:</p>
+<ul>
+<li>public R function names use dot delimiters, for example
+<code>fit.lps()</code> and <code>fit.ps.lps()</code>;</li>
+<li>legacy <code>kernel.local.polynomial.cv()</code> was removed in
+favor of <code>fit.lps()</code>;</li>
+<li>reusable local polynomial code now lives under LPS naming rather
+than kernel-smoother naming;</li>
+<li>generated run artifacts belong under <code>split_handoffs/</code> or
+experiment-specific report folders and should not be mixed with package
+source files.</li>
+</ul>
+<h2 id="model-and-api-snapshot">Model and API snapshot</h2>
+<h3 id="lps">LPS</h3>
+<p>The current <code>fit.lps()</code> implementation supports:</p>
+<ul>
+<li>Gaussian continuous-response mode;</li>
+<li>minimal Bernoulli/Brier mode, where binary responses are treated as
+numeric conditional expectations with probability clipping and
+probability-scale diagnostics;</li>
+<li>binomial/logistic mode, using local logistic polynomial fits;</li>
+<li>global automatic chart dimension,
+<code>chart.dim = "auto"</code>;</li>
+<li>anchor-specific automatic chart dimension,
+<code>chart.dim = "local.auto"</code>;</li>
+<li>stabilized local polynomial designs using
+<code>design.basis = "orthogonal.polynomial.drop"</code>;</li>
+<li>tiny/adaptive ridge guards controlled through ridge multiplier and
+condition cap arguments.</li>
+</ul>
+<p>Current preferred backend policy for routine LPS experiments:</p>
+<ul>
+<li>use <code>design.basis = "orthogonal.polynomial.drop"</code>;</li>
+<li>use a small/tiny ridge grid;</li>
+<li>retain explicit instability telemetry rather than silently falling
+back to weighted means.</li>
+</ul>
+<h3 id="ps-lps">PS-LPS</h3>
+<p>The current <code>fit.ps.lps()</code> implementation supports:</p>
+<ul>
+<li><code>chart.dim = "auto"</code> and
+<code>chart.dim = "local.auto"</code>;</li>
+<li>scalar support size and support grids;</li>
+<li>screened support search for routine experiments;</li>
+<li>full support-grid search as a validation/reference mode;</li>
+<li>guarded default lambda search for synchronization and ridge
+parameters;</li>
+<li>cache-aware synchronized system assembly and solve path;</li>
+<li>explicit telemetry for screened support selection and lambda
+search.</li>
+</ul>
+<p>Current preferred routine experimental policy:</p>
+<ul>
+<li>use screened PS-LPS as the routine policy;</li>
+<li>keep full-grid PS-LPS as a validation/reference mode;</li>
+<li>use <code>monomial_tiny_ridge</code> as the current PS-LPS routine
+backend unless a later audit changes this;</li>
+<li>keep all screening/failure accounting explicit in run reports.</li>
+</ul>
+<h2 id="main-experimental-story-so-far">Main experimental story so
+far</h2>
+<h3 id="1-lps-emerged-as-a-strong-baseline">1. LPS emerged as a strong
+baseline</h3>
+<p>Early P7/P7X comparisons showed that local polynomial smoothing was
+among the best-performing practical smoothers in the controlled
+synthetic suites. This motivated moving the former local script
+implementation into <code>geosmooth</code> as <code>fit.lps()</code> and
+optimizing it.</p>
+<p>Key report:</p>
+<ul>
+<li><code>~/current_projects/trend_filtering/development/slpl_tf/experiments/p7_prospective_synthetic_suite/reports/p7e_kernel_chart_focused_comparison_fast_20260603/p7e_kernel_chart_focused_comparison.html</code></li>
+</ul>
+<h3 id="2-lps-backend-work-narrowed-the-preferred-implementation">2. LPS
+backend work narrowed the preferred implementation</h3>
+<p>The project explored native local-PCA acceleration, chart caching,
+row-Gram backend ideas, and design-basis stabilization. The practical
+conclusion was that backend behavior has to be judged jointly by
+accuracy, runtime, failure rate, and conditioning.</p>
+<p>Important assets:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/k3_8_lps_valencia_scalability_2026-06-04/k3_8_lps_valencia_scalability_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/k9_lps_local_pca_native_phase_profile_2026-06-04/k9_lps_local_pca_native_phase_profile.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/k11_p7_lps_post_k10_backend_panel_2026-06-04/k11_p7_lps_post_k10_backend_panel.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/reports/lps_ps_lps_backend_broader_p7x_comparison.html</code></li>
+</ul>
+<p>Current backend lesson:</p>
+<ul>
+<li>for <strong>LPS</strong>, <code>orthogonal_drop_adaptive_tiny</code>
+/ orthogonal-polynomial dropping is preferred for routine robust
+experiments;</li>
+<li>for <strong>PS-LPS</strong>, <code>monomial_tiny_ridge</code>
+remained the better routine backend in the broad comparison, mostly
+because of implementation-time behavior and synchronized-system
+interactions;</li>
+<li><code>weighted_qr_drop_tiny</code> should be dropped from routine
+broad comparisons.</li>
+</ul>
+<h3 id="3-local-automatic-dimension-became-a-major-modeling-axis">3.
+Local automatic dimension became a major modeling axis</h3>
+<p>The project added <code>chart.dim = "local.auto"</code> because real
+data, especially microbiome-style data, may not have a single
+homogeneous intrinsic dimension.</p>
+<p>Important assets:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_local_auto_nonmanifold_first_batch_2026-06-05/lps_local_auto_nonmanifold_first_batch_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_local_auto_pointwise_decomposition_2026-06-05/lps_local_auto_pointwise_delta_decomposition.pdf</code></li>
+</ul>
+<p>Main idea:</p>
+<ul>
+<li>compare <code>auto</code> versus <code>local.auto</code> using
+pointwise decompositions of the Truth-RMSE delta;</li>
+<li>inspect where local dimension changes help or hurt;</li>
+<li>use color-coded 3D visualizations and pointwise contribution
+diagnostics to localize model differences.</li>
+</ul>
+<h3 id="4-total-local-gcv-alone-was-not-a-good-global-selector">4. Total
+local GCV alone was not a good global selector</h3>
+<p>The project tested whether summing local GCV values could select good
+global candidate settings. The result was not encouraging as a
+standalone global optimization criterion.</p>
+<p>Important assets:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_local_gcv_first_experiment_2026-06-05/lps_local_gcv_first_experiment_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_gcv_synchronized_selection_2026-06-05/lps_gcv_synchronized_selection_design.pdf</code></li>
+</ul>
+<p>Current interpretation:</p>
+<ul>
+<li>local GCV remains useful as a diagnostic and possibly as a local
+screening signal;</li>
+<li>total local GCV should not be treated as a proven replacement for CV
+or external validation;</li>
+<li>PS-LPS may make GCV more meaningful than ordinary independent LPS,
+but that remains an empirical question.</li>
+</ul>
+<h3
+id="5-ps-lps-became-a-serious-candidate-not-only-a-conceptual-model">5.
+PS-LPS became a serious candidate, not only a conceptual model</h3>
+<p>The PS-LPS development produced:</p>
+<ul>
+<li>a mathematical/design report;</li>
+<li>refined implementation after audit;</li>
+<li>lambda/ridge sensitivity experiments;</li>
+<li>cache-aware backend improvements;</li>
+<li>screened support-search policy;</li>
+<li>repaired S3R expanded comparisons.</li>
+</ul>
+<p>Important assets:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/ps_lps_progress_2026-06-05/ps_lps_progress_report.pdf</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/ps_lps_first_batch_refined_experiment_2026-06-05/ps_lps_first_batch_refined_comparison_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/ps_lps_s1_lambda_ridge_sensitivity_2026-06-05/ps_lps_s1_lambda_ridge_sensitivity_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/ps_lps_cache_backend_2026-06-05/</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_repaired_20260608_001/reports/ps_lps_s3r_expanded_repaired_report.html</code></li>
+</ul>
+<p>Current PS-LPS policy:</p>
+<ul>
+<li>screened PS-LPS is promoted to routine experimental policy;</li>
+<li>full-grid PS-LPS remains a validation/reference policy;</li>
+<li>run reports must preserve planned/ok/nonfinite/error/timeout
+accounting and support-screen telemetry.</li>
+</ul>
+<h3 id="6-binary-outcome-lps-is-now-being-tested">6. Binary-outcome LPS
+is now being tested</h3>
+<p>Two binary LPS modes have been implemented:</p>
+<ul>
+<li><strong>Bernoulli/Brier mode</strong>: treats binary
+<code>0/1</code> responses as numeric conditional expectation targets
+and evaluates probability-scale predictions.</li>
+<li><strong>Binomial/logistic mode</strong>: uses local logistic
+polynomial fits and log-loss oriented selection.</li>
+</ul>
+<p>Important design/report assets:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_binary_outcome_progress_2026-06-07/lps_binary_outcome_progress_report.pdf</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_binary_outcome_smoke_2026-06-07/lps_binary_outcome_smoke_report.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/experiment_catalogue_20260608/experiment_catalogue_dashboard.html</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/experiment_catalogue_20260608/lps_binary_gaussian_factorial_design_manifest.csv</code></li>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_runtime_smoke_20260608_001/lps_binary_gm_ff_runtime_smoke_report.html</code></li>
+</ul>
+<p>Current overnight run:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_full_20260608_001/</code></li>
+</ul>
+<p>This run uses:</p>
+<ul>
+<li>14 workers;</li>
+<li>failure-isolated task runner;</li>
+<li>per-task timeout;</li>
+<li>status JSON rows and result CSVs per task;</li>
+<li>full LPS-BIN-GM-FF factorial design with 11,520 planned tasks.</li>
+</ul>
+<p>At the most recent status check on 09-06-2026, the run was still
+active with no recorded errors or timeouts, and roughly three quarters
+of tasks complete. Check the run directory for current status rather
+than relying on this static brief.</p>
+<h2 id="experimental-design-infrastructure">Experimental-design
+infrastructure</h2>
+<p>The project now has an experiment catalogue dashboard for prior and
+proposed method-evaluation designs:</p>
+<ul>
+<li><code>~/current_projects/geosmooth/split_handoffs/experiment_catalogue_20260608/experiment_catalogue_dashboard.html</code></li>
+</ul>
+<p>This dashboard links:</p>
+<ul>
+<li>earlier P7/P7e/P7X controlled synthetic suites;</li>
+<li>LPS/PS-LPS backend comparisons;</li>
+<li>binary-outcome Gaussian-mixture factorial design;</li>
+<li>relevant frozen manifests and report assets.</li>
+</ul>
+<p>The project also adopted Frank/Friedman-style reporting ideas for
+broad method comparisons:</p>
+<ul>
+<li>summarize methods by regret vectors across controlled cases;</li>
+<li>report median regret, median absolute deviation of regret, failure
+rate, median runtime, and runtime variability;</li>
+<li>prefer readable summary figures over large raw tables;</li>
+<li>include backend/color legends and figure captions.</li>
+</ul>
+<p>Related Codex note:</p>
+<ul>
+<li><code>~/.codex/notes/references/experimental_design/frank_friedman_style_factorial_design_for_method_evaluation.md</code></li>
+</ul>
+<h2
+id="important-codedesign-decisions-that-should-not-be-lost">Important
+code/design decisions that should not be lost</h2>
+<ol type="1">
+<li><p><strong>Do not silently fall back to weighted means for
+conditioning failures.</strong> Conditioning failures should be guarded,
+telemetered, and represented in reports.</p></li>
+<li><p><strong>Keep <code>auto</code> and <code>local.auto</code> chart
+dimension policies explicit.</strong> They are modeling choices, not
+invisible implementation details.</p></li>
+<li><p><strong>Use screened PS-LPS as a routine policy only with
+explicit accounting.</strong> Full-grid PS-LPS remains important as a
+validation/reference mode.</p></li>
+<li><p><strong>Keep binary-outcome comparisons paired.</strong>
+Bernoulli/Brier and binomial/logistic modes should share geometry,
+truth/probability surface, binary response realization, folds, and
+repetition when being compared.</p></li>
+<li><p><strong>Do not overinterpret one suite.</strong> P7X, S3R, and
+LPS-BIN-GM-FF answer related but different questions.</p></li>
+<li><p><strong>Generated RDS/results/log files should not become package
+source debt.</strong> Keep generated artifacts out of source-oriented
+commits unless deliberately versioned as small manifest/report
+assets.</p></li>
+</ol>
+<h2 id="current-open-questions">Current open questions</h2>
+<h3 id="binary-lps">Binary LPS</h3>
+<ul>
+<li>Does local logistic LPS materially outperform Bernoulli/Brier LPS on
+probability-profile recovery?</li>
+<li>Does the answer depend on prevalence, profile transform, dimension,
+embedding family, sample size, or number of Gaussian components?</li>
+<li>Are runtime and failure behavior acceptable for logistic mode at the
+larger sample sizes?</li>
+</ul>
+<h3 id="lps-versus-ps-lps">LPS versus PS-LPS</h3>
+<ul>
+<li>Does PS-LPS continue to improve over LPS when support search is
+screened rather than full-grid?</li>
+<li>When PS-LPS improves, is the gain concentrated in
+nonmanifold/high-dimensional examples, or is it broad?</li>
+<li>Is screened PS-LPS robust enough for prospective runs, or does it
+need another support-screening pass?</li>
+</ul>
+<h3 id="local-dimension">Local dimension</h3>
+<ul>
+<li>When does <code>local.auto</code> help over <code>auto</code>?</li>
+<li>Can pointwise Truth-RMSE decomposition and local dimension maps
+predict where local dimension flexibility matters?</li>
+<li>Should local dimension be stabilized spatially or by graph
+neighborhoods in future work?</li>
+</ul>
+<h3 id="backend-and-numerical-policy">Backend and numerical policy</h3>
+<ul>
+<li>Should <code>orthogonal.polynomial.drop</code> become the default
+LPS design backend for all routine runs?</li>
+<li>Should PS-LPS remain on <code>monomial_tiny_ridge</code>, or should
+later cache/backend improvements revisit orthogonal designs for
+synchronized systems?</li>
+<li>Are there remaining monomial paths that should be replaced by
+guarded local polynomial solvers?</li>
+</ul>
+<h2 id="recommended-entry-points-for-a-new-agent">Recommended entry
+points for a new agent</h2>
+<p>For an implementation agent:</p>
+<ol type="1">
+<li>Read <code>~/current_projects/geosmooth/R/lps.R</code>.</li>
+<li>Read <code>~/current_projects/geosmooth/R/ps_lps.R</code>.</li>
+<li>Read
+<code>~/current_projects/geosmooth/tests/testthat/test-lps.R</code>.</li>
+<li>Read
+<code>~/current_projects/geosmooth/tests/testthat/test-ps-lps.R</code>.</li>
+<li>Read the latest binary run directory README:
+<code>~/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_full_20260608_001/README.md</code>.</li>
+</ol>
+<p>For an auditor:</p>
+<ol type="1">
+<li>Start with this brief.</li>
+<li>Inspect the latest PS-LPS repaired S3R report:
+<code>~/current_projects/geosmooth/split_handoffs/ps_lps_s3r_expanded_seedmatched_repaired_20260608_001/reports/ps_lps_s3r_expanded_repaired_report.html</code>.</li>
+<li>Inspect the broad backend comparison:
+<code>~/current_projects/geosmooth/split_handoffs/lps_ps_lps_backend_p7x_20260606_001/reports/lps_ps_lps_backend_broader_p7x_comparison.html</code>.</li>
+<li>Inspect the binary outcome progress report:
+<code>~/current_projects/geosmooth/split_handoffs/lps_binary_outcome_progress_2026-06-07/lps_binary_outcome_progress_report.pdf</code>.</li>
+<li>Inspect the current overnight run after it completes:
+<code>~/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_full_20260608_001/</code>.</li>
+</ol>
+<p>For an analysis/reporting agent:</p>
+<ol type="1">
+<li>Use the HTML report style guide:
+<code>~/.codex/notes/agent_instructions/reports/html_report_style_guide.md</code>.</li>
+<li>Use the figure/table QC guide:
+<code>~/.codex/notes/agent_instructions/reports/report_figure_table_qc.md</code>.</li>
+<li>Use the Frank/Friedman-style method-evaluation note:
+<code>~/.codex/notes/references/experimental_design/frank_friedman_style_factorial_design_for_method_evaluation.md</code>.</li>
+<li>Treat paired design and failure accounting as first-class report
+sections.</li>
+</ol>
+<h2 id="suggested-next-actions-after-the-current-binary-run">Suggested
+next actions after the current binary run</h2>
+<ol type="1">
+<li>Generate a full HTML report for
+<code>lps_binary_gm_ff_full_20260608_001</code>.</li>
+<li>Include method definitions, paired Bernoulli-vs-logistic
+comparisons, probability Truth-RMSE, Brier/log-loss diagnostics, runtime
+and failure accounting, and Frank/Friedman-style summary figures.</li>
+<li>Audit whether the binary run preserved exact pair matching across
+response realization, folds, geometry, probability surface, chart rule,
+and repetition.</li>
+<li>Decide whether binary LPS should proceed to a larger real-geometry
+microbiome-focused suite.</li>
+<li>Update this project brief or create a new dated brief after the
+binary run report and audit are complete.</li>
+</ol>
+<h2 id="maintenance-note">Maintenance note</h2>
+<p>This brief is intentionally static. It should not be edited to keep
+up with every run status update. Instead, create a new dated brief when
+the project enters a new state worth handing to another agent.</p>
+</body>
+</html>

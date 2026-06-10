@@ -42,9 +42,9 @@ common.args <- list(
     kernel.grid = c("gaussian", "tricube"),
     coordinate.method = "coordinates",
     backend = "R",
-    design.basis = "monomial",
-    ridge.multiplier.grid = c(1e-8, 1e-6),
-    ridge.condition.max = 1e10,
+    design.basis = "orthogonal.polynomial.drop",
+    ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+    ridge.condition.max = 1e12,
     unstable.action = "mean"
 )
 

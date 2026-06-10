@@ -1,0 +1,11 @@
+# latexmk configuration for ~/current_projects/geosmooth/project_briefs
+#
+# Build documents in this folder using US Eastern (Florida) time, so that
+# \DTMnow / \today timestamps read in local Florida wall-clock time. The OS
+# time-zone database handles the EST/EDT daylight-saving switch automatically,
+# so the stamp is correct year-round without any hardcoded offset.
+#
+# This affects any `latexmk` build run from this directory. To build a single
+# file by hand with the same behavior, prefix the command, e.g.:
+#     TZ='America/New_York' pdflatex file.tex
+$ENV{'TZ'} = 'America/New_York';
