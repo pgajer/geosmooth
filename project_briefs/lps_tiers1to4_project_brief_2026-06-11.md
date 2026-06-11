@@ -7,7 +7,7 @@ Authoritative documents (read in this order):
 
 1. Frozen science spec: `project_briefs/lps_experimental_plan_2026-06-09.tex` (Tiers 0–4, the DGP library, conventions).
 2. Tier 1–4 contract (the tightening layer): `audit_contracts/lps_tiers1to4/lps_tiers1to4_contract_2026-06-11.md`.
-3. Two-agent workflow + **Audit Charter**: `/Users/pgajer/.codex/notes/workflows/two_agent_research_project_workflow.md`.
+3. Worker-auditor workflow + **Audit Charter**: `/Users/pgajer/.codex/notes/workflows/worker_auditor_workflow.md`.
 4. Tier-0 execution-artifact contract (the pattern to reuse): `audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md`.
 
 ## 0. Roles and the orchestration model

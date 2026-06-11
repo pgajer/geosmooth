@@ -6,7 +6,7 @@ Paste the relevant block into a fresh agent session. The orchestrator assigns th
 - Brief: `/Users/pgajer/current_projects/geosmooth/project_briefs/lps_tiers1to4_project_brief_2026-06-11.md`
 - Contract: `/Users/pgajer/current_projects/geosmooth/project_briefs/lps_tiers1to4_contract_2026-06-11.md`
 - Frozen spec (your gate's section): `/Users/pgajer/current_projects/geosmooth/project_briefs/lps_experimental_plan_2026-06-09.tex`
-- Workflow + **Audit Charter**: `/Users/pgajer/.codex/notes/workflows/two_agent_research_project_workflow.md`
+- Workflow + **Audit Charter**: `/Users/pgajer/.codex/notes/workflows/worker_auditor_workflow.md`
 
 **Shared isolation rule:** to run a gate on a clean tree, **commit unrelated/in-progress work to a WIP branch — never `git stash --include-untracked`** (a dropped stash loses untracked work).
 
