@@ -6,6 +6,10 @@ output:
     toc_depth: 2
     toc_float: true
     self_contained: true
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
@@ -18,9 +22,15 @@ knitr::opts_chunk$set(
   fig.align = "center",
   out.width = "100%",
   dpi = 140,
-  dev = "ragg_png"
+  dev = if (knitr::is_latex_output()) "cairo_pdf" else "ragg_png"
 )
 library(ggplot2)
+
+# LaTeX auto-numbers kable captions ("Table N: ..."); the HTML build keeps
+# the manual visible numbering required by the HTML style guide.
+tab.cap <- function(n, text) {
+  if (knitr::is_latex_output()) text else paste0("Table ", n, ". ", text)
+}
 
 fixture14 <- read.csv("reports/e2_14_fixture.csv")
 prefix14  <- read.csv("reports/e2_14_prefix_newton_overshoot.csv")
@@ -49,10 +59,11 @@ col.flag <- "#D7263D"   # highlighted (flipped) observation
 ```
 
 <div style="border:1px solid #ccc; background:#f8f8f8; padding:0.6em 1em; font-size:90%;">
-**Report build:** `r build.time` &nbsp;|&nbsp;
-**Result generation:** `r mf("results_generated_eastern")` (UTC `r mf("results_generated_utc")`) &nbsp;|&nbsp;
-**Source commit:** `` `r substr(mf("git_head"), 1, 12)` `` (branch `codex/geosmooth-t2-binary-hygiene`) &nbsp;|&nbsp;
-**Input manifest:** [`reports/tier2_report_inputs_manifest.txt`](../../../reports/tier2_report_inputs_manifest.txt) &nbsp;|&nbsp;
+**Report build:** `r build.time`\
+**Result generation:** `r mf("results_generated_eastern")` (UTC `r mf("results_generated_utc")`)\
+**Source commit:** `` `r substr(mf("git_head"), 1, 12)` `` (branch `codex/geosmooth-t2-binary-hygiene`)\
+**Report source:** `~/current_projects/geosmooth-t2/validation/lps_tier2_binary_hygiene_report.Rmd`\
+**Input manifest:** [`reports/tier2_report_inputs_manifest.txt`](../../../reports/tier2_report_inputs_manifest.txt)\
 **Bundle cross-check:** `r mf("bundle_crosscheck")`
 </div>
 
@@ -93,11 +104,13 @@ landed on branch `codex/geosmooth-t2-binary-hygiene`:
 
 Both gates are deterministic `testthat` batteries on constructed fixtures
 (no replication), so all results below are single realized values; no
-uncertainty intervals apply. The committed gates are
-`tests/testthat/test-lps-binary-separation.R` (E2.14, 43 assertions) and
-`tests/testthat/test-lps-binary-metric-consistency.R` (E2.12, 38
-assertions); both pass on the committed tree, alongside the full Tier-0
-battery, inside the bundles named above.
+uncertainty intervals apply. The committed gates, both passing on the
+committed tree alongside the full Tier-0 battery inside the bundles named
+above, are:
+
+- `tests/testthat/test-lps-binary-separation.R` (E2.14, 43 assertions);
+- `tests/testthat/test-lps-binary-metric-consistency.R` (E2.12, 38
+  assertions).
 
 # E2.14 — the constructed separation fixtures
 
@@ -235,19 +248,20 @@ The realized endpoint quantities behind Figure 2:
 ```{r table1}
 t1 <- summary14
 t1$max.deviance.increase <- sprintf("%.2e", t1$max.deviance.increase)
-t1$prediction <- ifelse(is.na(t1$prediction), "—",
+t1$prediction <- ifelse(is.na(t1$prediction), "--",
                         sprintf("%.4f", t1$prediction))
 knitr::kable(
   t1, col.names = c("arm", "status", "converged", "iterations",
-                    "step halvings", "max per-step Δdeviance", "p̂(center)"),
-  caption = paste("Table 1. Post-fix solver summary per fixture arm.",
-                  "Columns: solver status string; whether the coefficient-",
-                  "step criterion (1e-7) was met within the 50-iteration",
-                  "cap; accepted iterations; total step halvings; the",
-                  "largest per-step deviance increase along the accepted",
-                  "trajectory (the gate requires ≤ 1e-8); the fitted center",
-                  "probability ('—' = no converged fit is returned; the",
-                  "fallback layer supplies the prediction, Table 2)."))
+                    "step halvings", "max dev. increase", "p-hat (center)"),
+  caption = tab.cap(1, paste(
+    "Post-fix solver summary per fixture arm.",
+    "Columns: solver status string; whether the coefficient-step",
+    "criterion (1e-7) was met within the 50-iteration",
+    "cap; accepted iterations; total step halvings; the",
+    "largest per-step deviance increase along the accepted",
+    "trajectory (the gate requires it below 1e-8); the fitted center",
+    "probability ('--' = no converged fit is returned; the",
+    "fallback layer supplies the prediction, Table 2).")))
 ```
 
 On non-convergence the fitting layer falls back deterministically and
@@ -265,14 +279,15 @@ knitr::kable(
   t2, col.names = c("unstable.action", "returned value", "attempted",
                     "converged", "fallback", "event-rate fallback",
                     "NA failure"),
-  caption = paste("Table 2. Fallback behavior and telemetry on the exactly",
-                  "separable arm (one solve attempt each). 'returned value'",
-                  "is the fitted probability the caller receives — the",
-                  "weighted event rate 0.063151 under \"mean\", NA under",
-                  "\"na\". The last four columns are the recorded telemetry",
-                  "counters (logistic.diagnostics): every fallback is",
-                  "counted, split into event-rate substitutions and NA",
-                  "returns. No NaN and no unbounded loop occurs."))
+  caption = tab.cap(2, paste(
+    "Fallback behavior and telemetry on the exactly",
+    "separable arm (one solve attempt each). 'returned value'",
+    "is the fitted probability the caller receives: the",
+    "weighted event rate 0.063151 under \"mean\", NA under",
+    "\"na\". The last four columns are the recorded telemetry",
+    "counters (logistic.diagnostics): every fallback is",
+    "counted, split into event-rate substitutions and NA",
+    "returns. No NaN and no unbounded loop occurs.")))
 ```
 
 E2.14 also pins that nothing changed where nothing needed to change: when
@@ -415,18 +430,19 @@ knitr::kable(
   t3, row.names = FALSE,
   col.names = c("support", "degree", "raw Brier", "deployed Brier",
                 "n pred < 0", "n pred > 1", "selected"),
-  caption = paste("Table 3. The four candidates on the E2.12(a) fixture.",
-                  "'raw Brier' is the mean squared error of the unclipped",
-                  "out-of-fold predictions (the pre-fix selection score);",
-                  "'deployed Brier' is the same on [0,1]-clipped",
-                  "predictions and is the post-fix selection column",
-                  "cv.brier.observed; the two count columns give each",
-                  "candidate's out-of-fold predictions outside [0,1] (of",
-                  "400); 'selected' marks the candidate the post-fix fit",
-                  "returns. The gate additionally verifies the selection",
-                  "column equals the deployed metric recomputed from the",
-                  "stored CV predictions (max residual 1.4e-17, contract",
-                  "tolerance 1e-6)."))
+  caption = tab.cap(3, paste(
+    "The four candidates on the E2.12(a) fixture.",
+    "'raw Brier' is the mean squared error of the unclipped",
+    "out-of-fold predictions (the pre-fix selection score);",
+    "'deployed Brier' is the same on [0,1]-clipped",
+    "predictions and is the post-fix selection column",
+    "cv.brier.observed; the two count columns give each",
+    "candidate's out-of-fold predictions outside [0,1] (of",
+    "400); 'selected' marks the candidate the post-fix fit",
+    "returns. The gate additionally verifies the selection",
+    "column equals the deployed metric recomputed from the",
+    "stored CV predictions (max residual 1.4e-17, contract",
+    "tolerance 1e-6).")))
 ```
 
 # E2.12(b) — the log-loss clip: one point owned the score
@@ -449,7 +465,7 @@ logistic solve lands in the event-rate fallback, whose weighted mean of
 zeros is $0$.
 
 Fit-status accounting: the binomial cross-validation ran 800 local logistic
-solves (400 points × 2 candidates); 785 converged (98.1%) and 15 (1.9%)
+solves (400 points $\times$ 2 candidates); 785 converged (98.1%) and 15 (1.9%)
 took the telemetered event-rate fallback — among them all solves for the
 flipped point. All 800 predictions are finite; none is excluded from any
 summary.
@@ -509,17 +525,17 @@ for (cn in names(t4)[3:8]) t4[[cn]] <- sprintf("%.4f", t4[[cn]])
 knitr::kable(
   t4, row.names = FALSE,
   col.names = c("support", "degree", "LL(1e-15)", "LL(1e-6)", "LL(1e-3)",
-                "flip share of 1e-15→1e-6 change", "flip contrib at 1e-15",
-                "max other contrib"),
-  caption = paste("Table 4. Per-candidate log-loss scores at the three",
-                  "truncation levels and the single-point dominance",
-                  "accounting. 'flip share' is the fraction of the",
-                  "LL(1e-15) − LL(1e-6) score change attributable to the",
-                  "flipped observation (1.0 = all of it); the last two",
-                  "columns compare its per-point contribution at 1e-15",
-                  "with the largest contribution among the other 399",
-                  "points. LL(1e-6) equals the deployed selection column",
-                  "cv.logloss.observed exactly (residual 0)."))
+                "flip share", "flip contrib", "max other"),
+  caption = tab.cap(4, paste(
+    "Per-candidate log-loss scores at the three",
+    "truncation levels and the single-point dominance",
+    "accounting. 'flip share' is the fraction of the",
+    "LL(1e-15) - LL(1e-6) score change attributable to the",
+    "flipped observation (1.0 = all of it); 'flip contrib' and",
+    "'max other' compare its per-point contribution at clip 1e-15",
+    "with the largest contribution among the other 399",
+    "points. LL(1e-6) equals the deployed selection column",
+    "cv.logloss.observed exactly (residual 0).")))
 ```
 
 # E2.12 study — selection stability across truncation levels
@@ -649,20 +665,21 @@ commit `` `r mf("git_head")` ``; BLAS `` `r basename(mf("blas"))` ``;
 `r mf("r_version")`. Bundle cross-check at generation:
 `r mf("bundle_crosscheck")`.
 
-Result artifacts consumed (committed; SHA-256 in the
+Result artifacts consumed (committed under `reports/`; SHA-256 in the
 [input manifest](../../../reports/tier2_report_inputs_manifest.txt)):
-[`e2_14_fixture.csv`](../../../reports/e2_14_fixture.csv),
-[`e2_14_prefix_newton_overshoot.csv`](../../../reports/e2_14_prefix_newton_overshoot.csv),
-[`e2_14_deviance_traces.csv`](../../../reports/e2_14_deviance_traces.csv),
-[`e2_14_solver_summary.csv`](../../../reports/e2_14_solver_summary.csv),
-[`e2_14_fallback_telemetry.csv`](../../../reports/e2_14_fallback_telemetry.csv),
-[`e2_12_fixture_a.csv`](../../../reports/e2_12_fixture_a.csv),
-[`e2_12a_selection_metric.csv`](../../../reports/e2_12a_selection_metric.csv),
-[`e2_12b_contributions.csv`](../../../reports/e2_12b_contributions.csv),
-[`e2_12b_clip_dominance.csv`](../../../reports/e2_12b_clip_dominance.csv),
-[`e2_12b_fit_accounting.csv`](../../../reports/e2_12b_fit_accounting.csv),
-[`e2_12_crossclip_scores.csv`](../../../reports/e2_12_crossclip_scores.csv),
-[`e2_12_crossclip_stability_verdict.csv`](../../../reports/e2_12_crossclip_stability_verdict.csv).
+
+- E2.14: [`e2_14_fixture.csv`](../../../reports/e2_14_fixture.csv),
+  [`e2_14_deviance_traces.csv`](../../../reports/e2_14_deviance_traces.csv),\
+  [`e2_14_solver_summary.csv`](../../../reports/e2_14_solver_summary.csv),
+  [`e2_14_fallback_telemetry.csv`](../../../reports/e2_14_fallback_telemetry.csv),\
+  [`e2_14_prefix_newton_overshoot.csv`](../../../reports/e2_14_prefix_newton_overshoot.csv);
+- E2.12: [`e2_12_fixture_a.csv`](../../../reports/e2_12_fixture_a.csv),
+  [`e2_12a_selection_metric.csv`](../../../reports/e2_12a_selection_metric.csv),\
+  [`e2_12b_contributions.csv`](../../../reports/e2_12b_contributions.csv),
+  [`e2_12b_clip_dominance.csv`](../../../reports/e2_12b_clip_dominance.csv),\
+  [`e2_12b_fit_accounting.csv`](../../../reports/e2_12b_fit_accounting.csv);
+- study: [`e2_12_crossclip_scores.csv`](../../../reports/e2_12_crossclip_scores.csv),\
+  [`e2_12_crossclip_stability_verdict.csv`](../../../reports/e2_12_crossclip_stability_verdict.csv).
 
 Generation and rendering commands:
 
@@ -675,7 +692,7 @@ Rscript validation/export_tier2_report_inputs.R audit_artifacts/tier2_20260611T0
 Rscript validation/e2_14_prefix_newton_overshoot.R
 Rscript validation/e2_12_crossclip_stability_study.R
 
-# 3. render this report (writes dev/notes/lps/…html):
+# 3. render this report, HTML + PDF (writes dev/notes/lps/...):
 Rscript validation/render_lps_tier2_binary_hygiene_report.R
 
 # acceptance evidence proper (clean committed tree; auditor-facing):
@@ -686,12 +703,16 @@ Seeds and determinism: the E2.14 fixtures are seed-free closed-form
 constructions; E2.12 uses `set.seed(2121)` (sub-item a) and
 `set.seed(7001)` with the label of observation 7 flipped (sub-item b);
 cross-validation folds are the explicit `foldid = rep(1:5, length.out =
-400)` in all fits (never the internal `cv.seed`). Gate test files:
-[`test-lps-binary-separation.R`](../../../tests/testthat/test-lps-binary-separation.R),
-[`test-lps-binary-metric-consistency.R`](../../../tests/testthat/test-lps-binary-metric-consistency.R).
-Implementer handoffs:
-[`e2_14_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),
-[`e2_12_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md).
-Execution bundles (machine-local, gitignored):
-`audit_artifacts/tier2_20260611T075822Z`,
-`audit_artifacts/tier2_20260611T084642Z`.
+400)` in all fits (never the internal `cv.seed`).
+
+Related committed documents and machine-local evidence:
+
+- gate test files:
+  [`test-lps-binary-separation.R`](../../../tests/testthat/test-lps-binary-separation.R),\
+  [`test-lps-binary-metric-consistency.R`](../../../tests/testthat/test-lps-binary-metric-consistency.R);
+- implementer handoffs:
+  [`e2_14_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),\
+  [`e2_12_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md);
+- execution bundles (machine-local, gitignored):
+  `audit_artifacts/tier2_20260611T075822Z` and\
+  `audit_artifacts/tier2_20260611T084642Z`.
