@@ -1,10 +1,10 @@
-results_generated_utc: 2026-06-11T14:20:19Z
-results_generated_eastern: 2026-06-11 10:20:19 EDT
-git_head: cb89e12e7c19a38f57f6d5a3e44cc4c0a901b187
+results_generated_utc: 2026-06-11T21:35:50Z
+results_generated_eastern: 2026-06-11 17:35:50 EDT
+git_head: 550d7e862edd25c6d0092f267acfca67b88cfb20
 tree_clean: TRUE
 r_version: R version 4.5.2 (2025-10-31)
 blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
-bundle_crosscheck: ok vs audit_artifacts/tier2_20260611T084642Z: e2_12a max |diff| = 4.441e-16; e2_14 traces max |diff| = 1.421e-14
+bundle_crosscheck: ok vs audit_artifacts/tier2_20260611T210313Z: e2_12a max |diff| = 4.441e-16; e2_14 traces max |diff| = 1.421e-14
 files:
   8d172bd376fecfbcbfa633c98ac354695a11604f8c000519d8a0c887cebfcb4e  dev/methods/lps/reports/tier2/binary_hygiene/2026-06-11/inputs/e2_14_fixture.csv
   9bf88f556bbe2185aed9222e5d52bb0def956903335edec0c2b1e03addf59917  dev/methods/lps/reports/tier2/binary_hygiene/2026-06-11/inputs/e2_14_deviance_traces.csv
