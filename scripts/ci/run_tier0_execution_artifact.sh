@@ -9,7 +9,7 @@
 # Independence rule: run this by an executor (or CI) distinct from the
 # implementer's interactive session. The auditor reviews the BUNDLE, never a
 # bare "all dots passed" message. See:
-#   split_handoffs/lps_tier0_execution_artifact_contract_2026-06-10.md
+#   audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md
 #
 # Usage:   bash scripts/ci/run_tier0_execution_artifact.sh [REPO_ROOT]
 # Env:     LPS_NATIVE_BACKEND  native backend token fit.lps accepts
