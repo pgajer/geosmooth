@@ -117,8 +117,8 @@ committed tree alongside the full Tier-0 battery inside the bundles named
 above, are:
 
 - `tests/testthat/test-lps-binary-separation.R` (E2.14, 43 assertions);
-- `tests/testthat/test-lps-binary-metric-consistency.R` (E2.12, 38
-  assertions).
+- `tests/testthat/test-lps-binary-metric-consistency.R` (E2.12, 43
+  assertions including the audit-required backend-resolution coverage).
 
 # E2.14 — the constructed separation fixtures
 
@@ -612,11 +612,15 @@ the candidates differently (margins $> 100\times$ the comparison
 tolerance), and the pre-fix rule would have deployed the wrong candidate
 (support 8, degree 0) over the one that is actually better as deployed
 (support 60, degree 2). Post-fix, the selection column *is* the deployed
-clipped metric (recomputed-equality residual $1.4\times10^{-17}$), so the
-mismatch class is closed on the R cross-validation path. The legacy C++
-cross-validation path still selects on raw aggregate RMSE because it
-returns no per-point predictions; that scope decision is with the
-orchestrator (spec-memo item 8).
+clipped metric (recomputed-equality residual $1.4\times10^{-17}$), and the
+invariant is unconditional over legal bernoulli configurations: per the
+independent audit's required fix (`audits/tier2_audit_2026-06-11.md`),
+bernoulli now always uses the R cross-validation path — `backend = "auto"`
+resolves to `"R"` exactly as for `binomial`, and an explicit C++ backend is
+an error — because the C++ CV kernels return only the aggregate raw RMSE
+and cannot score the deployed metric. The gate pins this resolution and a
+gaussian control confirming the C++ fast path remains available outside the
+binary families.
 
 **E2.12(b) — positive, with the instability precisely localized.** At the
 old $10^{-15}$ truncation, one deliberately confident-wrong held-out point

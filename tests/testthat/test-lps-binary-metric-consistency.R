@@ -156,6 +156,67 @@ test_that("E2.12 keep.cv.predictions default reproduces the prior fit object exa
                      c(60L, nrow(fit.keep$cv.table)))
 })
 
+test_that("E2.12 bernoulli always uses the R CV path (no raw-metric backend corner)", {
+    # Audit-required fix (audits/tier2_audit_2026-06-11.md): a legal
+    # bernoulli configuration (monomial basis, singleton ridge 0,
+    # ridge.condition.max = Inf, coordinates) used to reach the C++ CV
+    # kernels, which return only the aggregate raw RMSE, silently reverting
+    # selection to the pre-fix raw metric. Bernoulli now resolves
+    # backend = "auto" to the R backend (exactly like "binomial") and
+    # rejects an explicit C++ backend, making the deployed-metric
+    # invariant unconditional over legal bernoulli configurations.
+    g <- e212.g6(n = 60L, seed = 99L)
+    cpp.eligible <- list(
+        X = g$X,
+        y = g$y,
+        foldid = rep(1:5, length.out = 60L),
+        support.grid = c(6L, 8L),
+        degree.grid = c(0L, 1L),
+        kernel.grid = "gaussian",
+        coordinate.method = "coordinates",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
+    )
+    fit.auto <- do.call(fit.lps, c(cpp.eligible, list(
+        backend = "auto",
+        outcome.family = "bernoulli",
+        keep.cv.predictions = TRUE
+    )))
+    expect_identical(fit.auto$backend.used, "R")
+    expect_false(is.null(fit.auto$cv.predictions))
+    # The selection column is the deployed clipped metric, computed from
+    # actual per-point CV predictions (never decorated from raw RMSE):
+    expect_equal(
+        fit.auto$cv.table$cv.brier.observed,
+        vapply(
+            seq_len(ncol(fit.auto$cv.predictions)),
+            function(j) {
+                mean((g$y - pmin(1, pmax(0, fit.auto$cv.predictions[, j])))^2)
+            },
+            numeric(1L)
+        ),
+        tolerance = 1e-12
+    )
+    # An explicit C++ backend with bernoulli is an error, mirroring the
+    # binomial constraint:
+    expect_error(
+        do.call(fit.lps, c(cpp.eligible, list(
+            backend = "cpp",
+            outcome.family = "bernoulli"
+        ))),
+        "currently uses the R backend"
+    )
+    # The forcing is family-scoped: the same configuration in gaussian
+    # mode still resolves to the C++ fast path.
+    fit.gauss <- do.call(fit.lps, c(cpp.eligible, list(
+        backend = "auto",
+        outcome.family = "gaussian"
+    )))
+    expect_identical(fit.gauss$backend.used, "cpp")
+})
+
 test_that("E2.12b log-loss clip is pinned at 1e-6 and the 1e-15 instability is one point", {
     # -- The pin ------------------------------------------------------------
     expect_identical(
