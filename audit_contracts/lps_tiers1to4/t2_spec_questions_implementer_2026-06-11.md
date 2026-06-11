@@ -181,6 +181,20 @@ Inf`, coordinates — not the defaults, but a legal configuration). Options:
 I recommend **(a)** and will implement it on sign-off; (b) is the fallback if
 you weigh §A2 strictly. The GATE itself runs `backend = "R"` either way.
 
+**Addendum 8b (2026-06-11, post-audit): RESOLVED as option (a).** The
+independent audit (`audits/tier2_audit_2026-06-11.md`) accepted E2.12 with a
+required fix — make the deployed-metric claim unconditional by either
+forcing bernoulli to the R backend or implementing clipped scoring in the
+C++ path — and the orchestrator forwarded the audit for action. Implemented
+as option (a): `backend = "auto"` with `outcome.family = "bernoulli"`
+resolves to `"R"` (exactly like `"binomial"`), an explicit C++ backend
+errors, the now-unreachable raw-RMSE selection fallback in `fit.lps` is
+removed, and `.klp.decorate.outcome.cv.table` fails loudly instead of
+silently decorating a missing deployed-metric column. Gate coverage added in
+`tests/testthat/test-lps-binary-metric-consistency.R` ("bernoulli always
+uses the R CV path"), including a gaussian control pinning that the C++
+fast path remains available outside the binary families.
+
 ### 9. `keep.cv.predictions` opt-in argument **[proposal]**
 
 `fit.lps` currently discards the per-candidate CV prediction matrix

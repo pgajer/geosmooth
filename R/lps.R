@@ -82,9 +82,11 @@
 #'   \eqn{\Pr(Y=1\mid X)}, keeps the same local least-squares fitting core,
 #'   clips reported response-scale probabilities to \code{[0,1]}, selects
 #'   candidates by the observed CV Brier score of the clipped predictions
-#'   (E2.12: the selection score is the deployed metric; on the legacy C++
-#'   CV path, which returns no per-point predictions, selection remains on
-#'   the raw aggregate RMSE), and records Brier/log-loss probability
+#'   (E2.12: the selection score is the deployed metric, which requires
+#'   per-point CV predictions, so \code{"bernoulli"} -- like
+#'   \code{"binomial"} -- always uses the R backend: \code{backend =
+#'   "auto"} resolves to \code{"R"} and an explicit C++ backend is an
+#'   error), and records Brier/log-loss probability
 #'   diagnostics. \code{"binomial"} uses local weighted logistic polynomial
 #'   fits, selects candidates by observed CV log loss with the log-loss
 #'   probability truncation pinned at \code{1e-6} (E2.12), and reports
@@ -106,7 +108,8 @@
 #'   additionally carries \code{cv.predictions}, the matrix of out-of-fold
 #'   CV predictions with one column per \code{cv.table} row, so selection
 #'   scores can be recomputed from the actual CV predictions (E2.12).
-#'   \code{NULL} on the legacy C++ CV paths, which do not materialize
+#'   \code{NULL} on the C++ CV paths (reachable only for
+#'   \code{outcome.family = "gaussian"}), which do not materialize
 #'   per-point predictions. Default \code{FALSE} leaves the returned object
 #'   exactly as before.
 #' @return A list of class \code{"lps"} with response-scale
@@ -120,9 +123,7 @@
 #'   estimates for \code{"bernoulli"} and the fitted probabilities for
 #'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is the observed CV
 #'   Brier score of the response-scale (clipped) predictions with
-#'   \code{Inf} for candidates having any non-finite prediction (on the
-#'   legacy C++ CV path it falls back to
-#'   \code{cv.table$cv.rmse.observed^2}), and
+#'   \code{Inf} for candidates having any non-finite prediction, and
 #'   \code{probability.diagnostics} records raw/clipped probability ranges,
 #'   out-of-range fractions, and Brier/log-loss diagnostics.  The Brier and
 #'   log-loss diagnostics are defined only when the fitted predictions have the
@@ -210,13 +211,22 @@ fit.lps <- function(
         ridge.multiplier.grid,
         ridge.condition.max
     )
-    if (identical(outcome.family, "binomial") &&
+    if (outcome.family %in% c("bernoulli", "binomial") &&
         identical(backend, "auto")) {
         backend.used <- "R"
     } else if (identical(outcome.family, "binomial") &&
         !identical(backend.used, "R")) {
         stop("'outcome.family = \"binomial\"' currently uses the R backend; ",
              "use backend = 'R' or backend = 'auto'.", call. = FALSE)
+    } else if (identical(outcome.family, "bernoulli") &&
+        !identical(backend.used, "R")) {
+        # E2.12 (audit-required): bernoulli selection scores the deployed
+        # (clipped) Brier metric, which needs per-point CV predictions; the
+        # C++ CV kernels return only the aggregate raw RMSE.
+        stop("'outcome.family = \"bernoulli\"' currently uses the R backend ",
+             "(selection scores the deployed clipped Brier, which requires ",
+             "per-point CV predictions); use backend = 'R' or ",
+             "backend = 'auto'.", call. = FALSE)
     }
     if (.klp.is.local.auto.chart.dim(chart.dim)) {
         if (!identical(coordinate.method, "local.pca")) {
@@ -269,13 +279,6 @@ fit.lps <- function(
     cv.table <- cv.result$cv.table
     cv.table <- .klp.decorate.outcome.cv.table(cv.table, outcome.family)
     score.column <- .klp.selection.score.column(outcome.family)
-    if (identical(outcome.family, "bernoulli") &&
-        is.null(cv.result$predictions)) {
-        # Legacy C++ CV path: per-point CV predictions are unavailable, so
-        # the deployed clipped metric cannot be scored (E2.12 spec memo item
-        # 8); selection stays on the raw aggregate RMSE exactly as before.
-        score.column <- "cv.rmse.observed"
-    }
     best.idx <- .klp.select.best.idx(cv.table, score.column = score.column)
     selected <- cv.table[best.idx, , drop = FALSE]
     selected.dim <- .klp.resolve.chart.dim(
@@ -844,17 +847,22 @@ lps.backend.diagnostics <- function(object) {
     if (!outcome.family %in% c("bernoulli", "binomial")) {
         return(cv.table)
     }
-    # E2.12: the R CV path computes cv.brier.observed directly from the
-    # response-scale (clipped) predictions. The raw-RMSE decoration below
-    # remains only for the legacy C++ CV paths, which return aggregate raw
-    # RMSE without per-point predictions, so the deployed clipped metric
-    # cannot be computed there.
-    if (!"cv.brier.observed" %in% names(cv.table)) {
-        cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
-    }
-    if (identical(outcome.family, "binomial") &&
-        !"cv.logloss.observed" %in% names(cv.table)) {
-        cv.table$cv.logloss.observed <- NA_real_
+    # E2.12 (audit-required): the binary families always run the R CV path
+    # (enforced at backend resolution), which computes cv.brier.observed
+    # -- and, for "binomial", cv.logloss.observed -- directly from the
+    # response-scale predictions. A missing column would mean selection
+    # could silently fall back to a raw metric again, so fail loudly
+    # instead of decorating.
+    required <- c("cv.brier.observed",
+                  if (identical(outcome.family, "binomial")) {
+                      "cv.logloss.observed"
+                  })
+    missing <- setdiff(required, names(cv.table))
+    if (length(missing)) {
+        stop("Internal error: binary-family CV table lacks ",
+             paste(missing, collapse = ", "),
+             "; the deployed-metric selection columns must be computed by ",
+             "the R CV path.", call. = FALSE)
     }
     cv.table
 }
