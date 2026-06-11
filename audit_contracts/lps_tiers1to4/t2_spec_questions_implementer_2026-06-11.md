@@ -222,6 +222,29 @@ candidate predicting `NA` on most points is scored on the remainder and can
 win. This is outside E2.12's contract scope; I am **not** changing it. Flag
 for a possible future amendment; happy to file it as a separate finding.
 
+### 11b. Addendum (2026-06-11, before the E2.12 tests landed): corrected
+### dominance definition for the (b) demonstration **[info]**
+
+Item 10's parenthetical proposed defining "dominated by a single
+confident-wrong point" as *that point's contribution exceeding the sum of
+all other contributions* at clip `1e-15`. Measured on the constructed G6
+fixture this definition is unachievable for `n = 400`: G6 pins
+`p ∈ [0.05, 0.95]`, so the irreducible per-point log-loss is on the order of
+`-log(0.95) … -log(0.05)` and the 399 other points sum to roughly 40–140,
+while the single point's maximum possible contribution is `-log(1e-15) ≈
+34.5`. Implemented (and asserted) definition instead, stated before the test
+was written: at clip `1e-15` the deliberately confident-wrong point (i) is
+the **unique** point whose wrong-side clip binds at `1e-6` (its realized CV
+prediction is exactly `0`, the all-zero-neighborhood event-rate fallback);
+(ii) accounts for **> 99.9 %** of the score change between clips `1e-15`
+and `1e-6` (realized: 100.000 % on both candidates — no other prediction
+lies outside `[1e-6, 1 - 1e-6]`); and (iii) is the **largest single
+contributor** to the `1e-15` score by a factor `> 5` on the selected
+candidate (realized: `34.54` vs `4.03`, ratio `8.6`). This is the defect the
+spec names — the score's clip-sensitive component is one point — without the
+impossible sum comparison. Flag if you want a different operationalization;
+the fixture and assertions are otherwise per contract.
+
 ## E2.13 — ridge-penalty alignment (§G4)
 
 ### 12. §G4 resolution — proposed default state **[proposal — blocking E2.13]**

@@ -80,10 +80,15 @@
 #'   ordinary numeric-response LPS behavior. \code{"bernoulli"} treats
 #'   \code{0/1} responses as numeric conditional-expectation targets for
 #'   \eqn{\Pr(Y=1\mid X)}, keeps the same local least-squares fitting core,
-#'   clips reported response-scale probabilities to \code{[0,1]}, and records
-#'   Brier/log-loss probability diagnostics. \code{"binomial"} uses local
-#'   weighted logistic polynomial fits, selects candidates by observed CV log
-#'   loss, and reports probability diagnostics on the fitted probabilities.
+#'   clips reported response-scale probabilities to \code{[0,1]}, selects
+#'   candidates by the observed CV Brier score of the clipped predictions
+#'   (E2.12: the selection score is the deployed metric; on the legacy C++
+#'   CV path, which returns no per-point predictions, selection remains on
+#'   the raw aggregate RMSE), and records Brier/log-loss probability
+#'   diagnostics. \code{"binomial"} uses local weighted logistic polynomial
+#'   fits, selects candidates by observed CV log loss with the log-loss
+#'   probability truncation pinned at \code{1e-6} (E2.12), and reports
+#'   probability diagnostics on the fitted probabilities.
 #'   The local logistic IRLS uses deviance step-halving (E2.14): a Newton
 #'   update is accepted only if the weighted binomial deviance does not
 #'   increase by more than \code{1e-8}; otherwise the step is halved toward
@@ -97,6 +102,13 @@
 #'   \code{unstable.action = "na"}; every fallback is counted in
 #'   \code{logistic.diagnostics} (\code{fallback.path},
 #'   \code{event.rate.fallback}, \code{na.failure}).
+#' @param keep.cv.predictions Logical; if \code{TRUE}, the returned object
+#'   additionally carries \code{cv.predictions}, the matrix of out-of-fold
+#'   CV predictions with one column per \code{cv.table} row, so selection
+#'   scores can be recomputed from the actual CV predictions (E2.12).
+#'   \code{NULL} on the legacy C++ CV paths, which do not materialize
+#'   per-point predictions. Default \code{FALSE} leaves the returned object
+#'   exactly as before.
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -106,8 +118,11 @@
 #'   probabilities in \code{[0,1]},
 #'   \code{fitted.values.raw} are the un-clipped conditional-expectation
 #'   estimates for \code{"bernoulli"} and the fitted probabilities for
-#'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is
-#'   \code{cv.table$cv.rmse.observed^2}, and
+#'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is the observed CV
+#'   Brier score of the response-scale (clipped) predictions with
+#'   \code{Inf} for candidates having any non-finite prediction (on the
+#'   legacy C++ CV path it falls back to
+#'   \code{cv.table$cv.rmse.observed^2}), and
 #'   \code{probability.diagnostics} records raw/clipped probability ranges,
 #'   out-of-range fractions, and Brier/log-loss diagnostics.  The Brier and
 #'   log-loss diagnostics are defined only when the fitted predictions have the
@@ -137,11 +152,13 @@ fit.lps <- function(
     ridge.multiplier.grid = c(0, 1e-10, 1e-8),
     ridge.condition.max = 1e12,
     unstable.action = c("na", "mean"),
-    outcome.family = c("gaussian", "bernoulli", "binomial")) {
+    outcome.family = c("gaussian", "bernoulli", "binomial"),
+    keep.cv.predictions = FALSE) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
     outcome.family <- match.arg(outcome.family)
+    keep.cv.predictions <- isTRUE(keep.cv.predictions)
     if (!is.numeric(X) || !length(X) || any(!is.finite(X))) {
         stop("'X' must be a finite numeric matrix.", call. = FALSE)
     }
@@ -252,6 +269,13 @@ fit.lps <- function(
     cv.table <- cv.result$cv.table
     cv.table <- .klp.decorate.outcome.cv.table(cv.table, outcome.family)
     score.column <- .klp.selection.score.column(outcome.family)
+    if (identical(outcome.family, "bernoulli") &&
+        is.null(cv.result$predictions)) {
+        # Legacy C++ CV path: per-point CV predictions are unavailable, so
+        # the deployed clipped metric cannot be scored (E2.12 spec memo item
+        # 8); selection stays on the raw aggregate RMSE exactly as before.
+        score.column <- "cv.rmse.observed"
+    }
     best.idx <- .klp.select.best.idx(cv.table, score.column = score.column)
     selected <- cv.table[best.idx, , drop = FALSE]
     selected.dim <- .klp.resolve.chart.dim(
@@ -368,6 +392,13 @@ fit.lps <- function(
         logistic.diagnostics = logistic.diagnostics,
         call = match.call()
     )
+    if (keep.cv.predictions) {
+        # E2.12: the per-candidate out-of-fold prediction matrix (columns in
+        # cv.table row order), so the selection score can be recomputed from
+        # the actual CV predictions. NULL on the legacy C++ CV paths, which
+        # do not materialize per-point predictions.
+        out$cv.predictions <- cv.result$predictions
+    }
     class(out) <- c("lps", "list")
     out
 }
@@ -655,7 +686,10 @@ lps.backend.diagnostics <- function(object) {
     invisible(TRUE)
 }
 
-.klp.clip.probability <- function(p, eps = 1e-15) {
+# E2.12: the log-loss probability truncation is pinned at 1e-6. The previous
+# 1e-15 made the selection score unstable: a single confident-wrong point
+# contributes up to -log(1e-15)/n and can decide the selected candidate.
+.klp.clip.probability <- function(p, eps = 1e-6) {
     p <- as.numeric(p)
     pmin(1 - eps, pmax(eps, p))
 }
@@ -810,7 +844,14 @@ lps.backend.diagnostics <- function(object) {
     if (!outcome.family %in% c("bernoulli", "binomial")) {
         return(cv.table)
     }
-    cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
+    # E2.12: the R CV path computes cv.brier.observed directly from the
+    # response-scale (clipped) predictions. The raw-RMSE decoration below
+    # remains only for the legacy C++ CV paths, which return aggregate raw
+    # RMSE without per-point predictions, so the deployed clipped metric
+    # cannot be computed there.
+    if (!"cv.brier.observed" %in% names(cv.table)) {
+        cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
+    }
     if (identical(outcome.family, "binomial") &&
         !"cv.logloss.observed" %in% names(cv.table)) {
         cv.table$cv.logloss.observed <- NA_real_
@@ -821,6 +862,10 @@ lps.backend.diagnostics <- function(object) {
 .klp.selection.score.column <- function(outcome.family) {
     if (identical(outcome.family, "binomial")) {
         "cv.logloss.observed"
+    } else if (identical(outcome.family, "bernoulli")) {
+        # E2.12: Bernoulli-mode selection scores the deployed (clipped)
+        # Brier metric, not the raw-prediction RMSE.
+        "cv.brier.observed"
     } else {
         "cv.rmse.observed"
     }
@@ -1050,12 +1095,24 @@ lps.backend.diagnostics <- function(object) {
         function(j) .klp.rmse(pred[, j], y),
         numeric(1L)
     )
-    if (identical(outcome.family, "binomial")) {
+    if (outcome.family %in% c("bernoulli", "binomial")) {
+        # E2.12: the selection-facing Brier column is the deployed (clipped)
+        # metric -- the mean squared error of the response-scale predictions
+        # -- with the same Inf-on-any-non-finite semantics .klp.rmse gives
+        # the raw selection score, so a candidate that was unselectable
+        # under unstable.action = "na" stays unselectable. For "binomial"
+        # the fitted probabilities already lie in [0, 1], so clipping is a
+        # no-op there and the column value is unchanged.
         cv.table$cv.brier.observed <- vapply(
             seq_len(ncol(pred)),
-            function(j) .klp.brier(y, pred[, j]),
+            function(j) {
+                .klp.rmse(.klp.response.scale(pred[, j], outcome.family),
+                          y)^2
+            },
             numeric(1L)
         )
+    }
+    if (identical(outcome.family, "binomial")) {
         cv.table$cv.logloss.observed <- vapply(
             seq_len(ncol(pred)),
             function(j) .klp.logloss(y, pred[, j]),

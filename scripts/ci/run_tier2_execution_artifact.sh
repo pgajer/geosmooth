@@ -30,9 +30,11 @@ TEST_FILES=(
   "tests/testthat/test-lps-tier0-correctness-extended.R"  # E0.3a, E0.4, E0.5, E0.6, E0.7
   "tests/testthat/test-lps-degenerate.R"                  # E0.8
   "tests/testthat/test-lps-binary-separation.R"           # E2.14
+  "tests/testthat/test-lps-binary-metric-consistency.R"   # E2.12
 )
 SRC_FILE="R/lps.R"
 PROBE="scripts/ci/tier2_binary_probe.R"
+STUDY="validation/e2_12_crossclip_stability_study.R"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT="audit_artifacts/tier2_${STAMP}"
 mkdir -p "$OUT"
@@ -49,12 +51,12 @@ git status --porcelain                          > "$OUT/git_status.txt" 2>/dev/n
 git log -1 --format='%H%n%an <%ae>%n%aI%n%s'    > "$OUT/git_log1.txt"   2>/dev/null
 CLEAN=true
 [ -s "$OUT/git_status.txt" ] && CLEAN=false
-if ! git ls-files --error-unmatch "${TEST_FILES[@]}" "$SRC_FILE" "$PROBE" > "$OUT/tracked_files.txt" 2>&1; then
+if ! git ls-files --error-unmatch "${TEST_FILES[@]}" "$SRC_FILE" "$PROBE" "$STUDY" > "$OUT/tracked_files.txt" 2>&1; then
   CLEAN=false
 fi
 
 # --- 2) Bind the artifact to the exact reviewed source ------------------------
-SHA "$SRC_FILE" "$PROBE" "${TEST_FILES[@]}" > "$OUT/source_checksums.txt" 2>/dev/null
+SHA "$SRC_FILE" "$PROBE" "$STUDY" "${TEST_FILES[@]}" > "$OUT/source_checksums.txt" 2>/dev/null
 
 # --- 3) Environment capture (reproducibility / determinism context) -----------
 Rscript -e 'writeLines(capture.output(sessionInfo()))' > "$OUT/sessionInfo.txt" 2>&1 || true
@@ -101,6 +103,15 @@ TESTTHAT_RC=$?
 Rscript "$PROBE" "$OUT" > "$OUT/probe_stdout.txt" 2>&1
 PROBE_RC=$?
 
+# --- 5b) E2.12 cross-clip STUDY (reported, not gated) --------------------------
+# Regenerates the committed verdict/scores CSVs (deterministic) and copies
+# them into the bundle; a "not stable" verdict is recorded, never a failure.
+Rscript "$STUDY" > "$OUT/e2_12_study_stdout.txt" 2>&1
+STUDY_RC=$?
+cp reports/e2_12_crossclip_stability_verdict.csv \
+   reports/e2_12_crossclip_scores.csv "$OUT/" 2>/dev/null || true
+git status --porcelain > "$OUT/git_status_post_study.txt" 2>/dev/null
+
 # --- 6) Human/machine manifest ------------------------------------------------
 {
   echo "artifact_id: tier2_${STAMP}"
@@ -113,6 +124,9 @@ PROBE_RC=$?
   echo "gate_contexts: $(paste -sd';' "$OUT/gate_contexts.txt" 2>/dev/null)"
   echo "probe_rc: ${PROBE_RC}"
   echo "probe_summary: $(tail -n1 "$OUT/probe_stdout.txt" 2>/dev/null)"
+  echo "study_rc: ${STUDY_RC}"
+  echo "study_summary: $(grep '^E2.12 cross-clip STUDY' "$OUT/e2_12_study_stdout.txt" 2>/dev/null | tail -n1)"
+  echo "tree_clean_post_study: $([ -s "$OUT/git_status_post_study.txt" ] && echo false || echo true)"
   echo "executor: ${EXECUTOR:-$(whoami 2>/dev/null)@$(hostname 2>/dev/null)}"
 } > "$OUT/execution_manifest.txt"
 
