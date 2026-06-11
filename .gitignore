@@ -8,6 +8,12 @@ __pycache__/
 split_handoffs/
 audit_artifacts/
 man/
+# dev/ is untracked scratch by default; only dev/notes/lps (version-
+# controlled research notes/reports) is carved out.
+dev/*
+!dev/notes
+dev/notes/*
+!dev/notes/lps
 *.rds
 *.RDS
 *.o

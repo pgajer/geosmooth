@@ -1,0 +1,17 @@
+results_generated_utc: 2026-06-11T13:34:19Z
+results_generated_eastern: 2026-06-11 09:34:19 EDT
+git_head: 662ecb8130deba4056e787d6aa263cea83fa9502
+tree_clean: FALSE
+r_version: R version 4.5.2 (2025-10-31)
+blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+bundle_crosscheck: ok vs audit_artifacts/tier2_20260611T084642Z: e2_12a max |diff| = 4.441e-16; e2_14 traces max |diff| = 1.421e-14
+files:
+  8d172bd376fecfbcbfa633c98ac354695a11604f8c000519d8a0c887cebfcb4e  reports/e2_14_fixture.csv
+  9bf88f556bbe2185aed9222e5d52bb0def956903335edec0c2b1e03addf59917  reports/e2_14_deviance_traces.csv
+  4238c019bbf144390a874a932c58e867485deedb1bbadcb028bed6869337e543  reports/e2_14_solver_summary.csv
+  68045aaf8ad4f4a7aedb5bf1de8e5e8884fb4cbf1b3389fb33a183564af6582d  reports/e2_14_fallback_telemetry.csv
+  d024b0cbf4a166374efa8c40077f2903d0d7a0f1bacee124656e2b013d651fcf  reports/e2_12_fixture_a.csv
+  a835cf08f045765638164512ed519ff69737ca4695b3a9503f902a65884be3f2  reports/e2_12a_selection_metric.csv
+  fa9999995dcd9474b99e0604b403d078598124956a6b65b5717063137b85201e  reports/e2_12b_contributions.csv
+  a3a108f40a0b8098149458920663a5553b3c073654b32c25e3eb9f23af5cb452  reports/e2_12b_clip_dominance.csv
+  e7e4d2a295de7a9548c5b11384eb41ea3e0c56949a8271ab24725d17b92d2f1f  reports/e2_12b_fit_accounting.csv

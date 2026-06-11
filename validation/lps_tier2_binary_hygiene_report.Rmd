@@ -1,0 +1,697 @@
+---
+title: "LPS Tier 2 — binary-path correctness gates: E2.14 (separation robustness) and E2.12 (selection-metric consistency)"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10.5,
+  fig.height = 6.2,
+  fig.align = "center",
+  out.width = "100%",
+  dpi = 140,
+  dev = "ragg_png"
+)
+library(ggplot2)
+
+fixture14 <- read.csv("reports/e2_14_fixture.csv")
+prefix14  <- read.csv("reports/e2_14_prefix_newton_overshoot.csv")
+traces14  <- read.csv("reports/e2_14_deviance_traces.csv")
+summary14 <- read.csv("reports/e2_14_solver_summary.csv")
+fallback14 <- read.csv("reports/e2_14_fallback_telemetry.csv")
+fixture12a <- read.csv("reports/e2_12_fixture_a.csv")
+sel12a    <- read.csv("reports/e2_12a_selection_metric.csv")
+contrib12b <- read.csv("reports/e2_12b_contributions.csv")
+dom12b    <- read.csv("reports/e2_12b_clip_dominance.csv")
+acct12b   <- read.csv("reports/e2_12b_fit_accounting.csv")
+crossclip <- read.csv("reports/e2_12_crossclip_scores.csv")
+verdict   <- read.csv("reports/e2_12_crossclip_stability_verdict.csv")
+manifest  <- readLines("reports/tier2_report_inputs_manifest.txt")
+
+mf <- function(key) {
+  ln <- grep(paste0("^", key, ":"), manifest, value = TRUE)[1]
+  trimws(sub(paste0("^", key, ":"), "", ln))
+}
+build.time <- Sys.getenv("BUILD_DATETIME",
+  format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z", tz = "America/New_York"))
+
+col.pre  <- "#B23A48"   # pre-fix / raw metric
+col.post <- "#2C6E91"   # post-fix / deployed metric
+col.flag <- "#D7263D"   # highlighted (flipped) observation
+```
+
+<div style="border:1px solid #ccc; background:#f8f8f8; padding:0.6em 1em; font-size:90%;">
+**Report build:** `r build.time` &nbsp;|&nbsp;
+**Result generation:** `r mf("results_generated_eastern")` (UTC `r mf("results_generated_utc")`) &nbsp;|&nbsp;
+**Source commit:** `` `r substr(mf("git_head"), 1, 12)` `` (branch `codex/geosmooth-t2-binary-hygiene`) &nbsp;|&nbsp;
+**Input manifest:** [`reports/tier2_report_inputs_manifest.txt`](../../../reports/tier2_report_inputs_manifest.txt) &nbsp;|&nbsp;
+**Bundle cross-check:** `r mf("bundle_crosscheck")`
+</div>
+
+All numbers shown are read from precomputed, committed CSV artifacts under
+`reports/`, regenerated deterministically by
+`validation/export_tier2_report_inputs.R` from the gated fixture
+constructors; this report did not rerun the experiments. The acceptance
+evidence proper lives in the execution bundles
+`audit_artifacts/tier2_20260611T075822Z` (E2.14, commit `75c1788`) and
+`audit_artifacts/tier2_20260611T084642Z` (E2.12 + E2.14 rerun, commit
+`3eaf9cf`), whose regenerated aggregates the input manifest cross-checks.
+
+# Purpose
+
+`fit.lps()` fits local weighted polynomial regression in local charts and
+selects its configuration (support size, polynomial degree, kernel) by
+cross-validation. Its binary path has two modes: `bernoulli` (local least
+squares on 0/1 labels; deployed probabilities are the predictions clipped to
+$[0,1]$) and `binomial` (local weighted logistic fits solved by iteratively
+reweighted least squares, IRLS; selection by cross-validated log loss).
+
+This report documents the results of the two Tier-2 correctness gates that
+landed on branch `codex/geosmooth-t2-binary-hygiene`:
+
+1. **E2.14 — separation robustness.** Is the local logistic IRLS monotone
+   and bounded on (near-)separable supports, and does *exact* separation end
+   in a documented, telemetered fallback rather than an unbounded loop or
+   `NaN`? The fix under test is deviance **step-halving** inside the IRLS
+   loop.
+2. **E2.12 — selection-metric consistency and log-loss clipping.**
+   (a) Does bernoulli-mode selection score the **deployed** (clipped)
+   metric rather than raw, unclipped predictions — and can the difference
+   change which candidate is selected? (b) Is the log-loss probability
+   truncation pinned at $10^{-6}$, and what instability did the previous
+   $10^{-15}$ truncation permit? A companion **study** (reported, not
+   gated) asks whether the selected candidate is stable across truncation
+   levels $\{10^{-6}, 10^{-3}\}$.
+
+Both gates are deterministic `testthat` batteries on constructed fixtures
+(no replication), so all results below are single realized values; no
+uncertainty intervals apply. The committed gates are
+`tests/testthat/test-lps-binary-separation.R` (E2.14, 43 assertions) and
+`tests/testthat/test-lps-binary-metric-consistency.R` (E2.12, 38
+assertions); both pass on the committed tree, alongside the full Tier-0
+battery, inside the bundles named above.
+
+# E2.14 — the constructed separation fixtures
+
+A local logistic solve receives a small neighborhood: 1-D local coordinates
+$z_i$ centered at the evaluation point, labels $y_i \in \{0,1\}$, and
+gaussian kernel weights $w_i$ that decay with $|z_i|$. The gate uses one
+support shape in two label configurations (the frozen plan's DGP: $y =
+\mathbf{1}\{z>0\}$, optionally one flipped label, weights from the gaussian
+kernel):
+
+- **Near-separable arm:** ten equispaced negatives $z \in \{-0.20, -0.18,
+  \dots, -0.02\}$ plus one far positive at $z = 6$, with the label of the
+  *second* point ($z = -0.18$) flipped to $1$. Two classes, not linearly
+  separable: the flipped positive sits inside the negative cluster.
+- **Exactly separable arm:** the same support without the flip — a
+  threshold at any $z \in (-0.02, 6)$ separates the classes perfectly, so
+  the unpenalized logistic maximum-likelihood estimate does not exist
+  (coefficients diverge).
+
+The flip *position* is load-bearing: flipping an edge-of-cluster point
+produces the plain-Newton overshoot shown in Figure 2, while a mid-cluster
+flip leaves plain Newton monotone and would make the fix undetectable.
+
+```{r fig1-fixture, fig.height=4.6}
+fx <- rbind(
+  transform(fixture14, arm = "near-separable", y = y.near.separable),
+  transform(fixture14, arm = "exactly separable", y = y.exactly.separable)
+)
+fx$arm <- factor(fx$arm, levels = c("near-separable", "exactly separable"))
+fx$region <- factor(
+  ifelse(fx$z < 0, "negative cluster (z < 0)", "far positive (z = 6)"),
+  levels = c("negative cluster (z < 0)", "far positive (z = 6)"))
+fx$highlight <- fx$flipped & fx$arm == "near-separable"
+ggplot(fx, aes(x = z, y = y)) +
+  geom_point(aes(size = weight, color = highlight), alpha = 0.85) +
+  facet_grid(arm ~ region, scales = "free_x", space = "free_x") +
+  scale_color_manual(values = c(`FALSE` = "grey35", `TRUE` = col.flag),
+                     labels = c(`FALSE` = "as constructed",
+                                `TRUE` = "flipped label"),
+                     name = NULL) +
+  scale_size_continuous(name = "kernel weight", range = c(2, 5),
+                        breaks = c(0.7, 0.9, 1.0)) +
+  scale_y_continuous(breaks = c(0, 1), limits = c(-0.25, 1.25)) +
+  labs(x = "local coordinate z", y = "label y") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 10))
+```
+
+**Figure 1.** The E2.14 fixture in its two label configurations (rows:
+near-separable = one flipped label; exactly separable = no flip). The
+x-axis is split (columns, independent scales) because the far positive at
+$z = 6$ would otherwise compress the negative cluster into a single blot.
+Point size encodes the gaussian kernel weight: cluster points carry weight
+$\approx 1.0$, the far positive $\approx 0.61$. The red point in the top row
+is the single flipped label at $z = -0.18$ — a high-weight, wrong-side
+observation. Removing the flip (bottom row) makes the support exactly
+separable.
+
+# E2.14 — deviance trajectories: plain Newton vs step-halving
+
+The solver minimizes the weighted binomial deviance
+
+$$
+D(\beta) \;=\; -2 \sum_i w_i \Big( y_i \log \mu_i(\beta)
+              + (1-y_i)\log\big(1-\mu_i(\beta)\big) \Big),
+\qquad
+\mu_i(\beta) = \operatorname{expit}\!\big(\tilde\eta_i\big),
+$$
+
+where $\tilde\eta_i$ is the linear predictor $\eta_i = x_i^\top\beta$ clamped
+to $[-35, 35]$ (the same clamp the IRLS update uses, which keeps $D$ finite
+for every finite iterate). Plain IRLS accepts every Newton update
+unconditionally. The E2.14 fix accepts a candidate $\beta_{\text{new}}$ only
+if $D(\beta_{\text{new}}) \le D(\beta_{\text{cur}}) + 10^{-8}$, halving the
+step toward $\beta_{\text{cur}}$ up to 30 times otherwise; an exhausted
+halving budget ends the solve as non-convergent. The gate asserts on the
+whole recorded trajectory, not only its endpoint, so oscillation cannot
+hide.
+
+```{r fig2-trajectories, fig.height=5.6}
+near.pre  <- transform(prefix14, algorithm = "pre-fix plain Newton")
+near.post <- transform(
+  subset(traces14, arm == "near.separable")[, c("iteration", "deviance")],
+  algorithm = "post-fix step-halving")
+near <- rbind(near.pre, near.post)
+near$panel <- "near-separable arm"
+exact <- transform(
+  subset(traces14, arm == "exactly.separable")[, c("iteration", "deviance")],
+  algorithm = "both algorithms (identical here)")
+exact$panel <- "exactly separable arm"
+both <- rbind(near, exact)
+both$panel <- factor(both$panel,
+  levels = c("near-separable arm", "exactly separable arm"))
+both$algorithm <- factor(both$algorithm,
+  levels = c("pre-fix plain Newton", "post-fix step-halving",
+             "both algorithms (identical here)"))
+end.post <- transform(subset(near.post, iteration == max(iteration)),
+                      panel = factor("near-separable arm",
+                                     levels = levels(both$panel)))
+ggplot(both, aes(iteration, deviance, color = algorithm)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.4) +
+  geom_point(data = end.post,
+             shape = 21, size = 3.4, stroke = 1.1, fill = "white") +
+  facet_wrap(~panel, nrow = 1, scales = "free") +
+  scale_y_log10() +
+  scale_color_manual(values = c(`pre-fix plain Newton` = col.pre,
+                                `post-fix step-halving` = col.post,
+                                `both algorithms (identical here)` = "grey30"),
+                     name = NULL) +
+  labs(x = "accepted IRLS iteration (0 = initialization)",
+       y = "weighted binomial deviance (log scale)") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom")
+```
+
+**Figure 2.** Per-iteration deviance of the local logistic solve on the two
+fixture arms (log scale). *Left:* on the near-separable arm, pre-fix plain
+Newton (red; replicated update equations of the pre-change solver, committed
+trajectory in `reports/e2_14_prefix_newton_overshoot.csv`) overshoots at
+iteration 2 — the deviance jumps from $6.9$ to $\approx 496$, a $+489$
+increase — then oscillates between $\approx 6.5$ and $\approx 9$ and never
+converges within the 50-iteration cap. Post-fix step-halving (blue) needs a
+single halving at that same step, descends monotonically (largest per-step
+increase $1.8 \times 10^{-15}$, within the $10^{-8}$ slack), and converges at
+iteration 9 (open circle) with finite coefficients and a center prediction
+$\hat p = 0.125 \in (0,1)$. *Right:* on the exactly separable arm both
+algorithms coincide (no halving triggers): the deviance decreases
+monotonically toward zero as the coefficients run off to infinity, and the
+solve stops at the 50-iteration cap as designed.
+
+The realized endpoint quantities behind Figure 2:
+
+```{r table1}
+t1 <- summary14
+t1$max.deviance.increase <- sprintf("%.2e", t1$max.deviance.increase)
+t1$prediction <- ifelse(is.na(t1$prediction), "—",
+                        sprintf("%.4f", t1$prediction))
+knitr::kable(
+  t1, col.names = c("arm", "status", "converged", "iterations",
+                    "step halvings", "max per-step Δdeviance", "p̂(center)"),
+  caption = paste("Table 1. Post-fix solver summary per fixture arm.",
+                  "Columns: solver status string; whether the coefficient-",
+                  "step criterion (1e-7) was met within the 50-iteration",
+                  "cap; accepted iterations; total step halvings; the",
+                  "largest per-step deviance increase along the accepted",
+                  "trajectory (the gate requires ≤ 1e-8); the fitted center",
+                  "probability ('—' = no converged fit is returned; the",
+                  "fallback layer supplies the prediction, Table 2)."))
+```
+
+On non-convergence the fitting layer falls back deterministically and
+records it: under `unstable.action = "mean"` the prediction is the local
+weighted event rate $\bar y_w = \sum_i w_i y_i / \sum_i w_i$; under
+`unstable.action = "na"` it is `NA` (the sanctioned guarded output). The
+exactly separable arm exercises both paths:
+
+```{r table2}
+t2 <- fallback14[, c("unstable.action", "fitted", "attempted", "converged",
+                     "fallback.path.count", "event.rate.fallback.count",
+                     "na.failure.count")]
+t2$fitted <- ifelse(is.na(t2$fitted), "NA", sprintf("%.6f", t2$fitted))
+knitr::kable(
+  t2, col.names = c("unstable.action", "returned value", "attempted",
+                    "converged", "fallback", "event-rate fallback",
+                    "NA failure"),
+  caption = paste("Table 2. Fallback behavior and telemetry on the exactly",
+                  "separable arm (one solve attempt each). 'returned value'",
+                  "is the fitted probability the caller receives — the",
+                  "weighted event rate 0.063151 under \"mean\", NA under",
+                  "\"na\". The last four columns are the recorded telemetry",
+                  "counters (logistic.diagnostics): every fallback is",
+                  "counted, split into event-rate substitutions and NA",
+                  "returns. No NaN and no unbounded loop occurs."))
+```
+
+E2.14 also pins that nothing changed where nothing needed to change: when
+every full Newton step already satisfies the deviance slack, the halving
+check accepts the identical iterate, so well-behaved solves are numerically
+identical to the pre-change solver (asserted in the gate against an
+independent plain-IRLS replication, and corroborated by the Tier-0 E0.6
+battery statistics being bit-identical to the unmodified base commit).
+
+# E2.12 — the constructed G6 fixture
+
+Both E2.12 sub-items use the plan's binary-surface DGP **G6** with one named
+override: a *sharp* log-odds cliff in place of the default smooth surface,
+
+$$
+\eta(x) = 6\,\tanh(15\,x_1), \qquad
+p(x) = \min\!\big(\max(\operatorname{expit}(\eta(x)),\,0.05),\,0.95\big),
+\qquad y \sim \mathrm{Bernoulli}(p),
+$$
+
+on $x \in [-1,1]^2$ with $n = 400$ (prevalence target $0.5$ by symmetry; the
+$[0.05, 0.95]$ probability clamp is part of the G6 construction). The cliff
+at $x_1 = 0$ is what forces flexible local fits to overshoot $[0,1]$ on the
+raw scale — the behavior sub-item (a) needs. Sub-item (b) uses a second draw
+(seed 7001) of the same surface with one label deliberately flipped, fit in
+`binomial` mode.
+
+```{r fig3-g6, fig.height=4.4}
+curve.df <- fixture12a[order(fixture12a$x1), ]
+ggplot() +
+  geom_line(data = curve.df, aes(x1, p), linewidth = 0.9,
+            color = col.post) +
+  geom_jitter(data = fixture12a, aes(x1, y), width = 0, height = 0.04,
+              alpha = 0.35, size = 1.1, color = "grey25") +
+  scale_y_continuous(breaks = c(0, 0.05, 0.5, 0.95, 1)) +
+  labs(x = expression(x[1]),
+       y = "p(x) (line)  /  drawn label y (points)") +
+  theme_bw(base_size = 13)
+```
+
+**Figure 3.** The E2.12(a) fixture (seed 2121): the true success probability
+$p(x)$ (blue line; it depends on $x_1$ only) and the $n = 400$ drawn labels
+(grey points, vertically jittered). The surface is a two-plateau cliff —
+$p = 0.05$ for $x_1 \lesssim -0.15$, $p = 0.95$ for $x_1 \gtrsim 0.15$ —
+so local polynomial fits near the transition extrapolate outside $[0,1]$.
+The E2.12(b) fixture is a second draw (seed 7001) of this same surface; its
+deliberately flipped observation sits deep in the left plateau at
+$x_1 = -0.702$, where every 60-point neighborhood is all-zero.
+
+# E2.12(a) — selection scores the deployed clipped metric
+
+For a candidate configuration $j$ with out-of-fold (cross-validation)
+predictions $\hat p_{ij}$, the two scores at issue are
+
+$$
+\text{raw Brier}_j = \frac{1}{n}\sum_i \big(y_i - \hat p_{ij}\big)^2,
+\qquad
+\text{deployed Brier}_j = \frac{1}{n}\sum_i
+\big(y_i - \operatorname{clip}_{[0,1]}(\hat p_{ij})\big)^2,
+$$
+
+where $\operatorname{clip}_{[0,1]}$ is exactly the clamp applied to the
+probabilities the fitted model actually deploys
+(`fitted.values`, `predict()`). Pre-fix, bernoulli selection minimized the
+raw score while deployment clipped — a train/deploy metric mismatch.
+Post-fix, the selection column `cv.brier.observed` *is* the deployed score
+(with `Inf` for any candidate having a non-finite prediction, preserving
+the old `NA`-handling semantics).
+
+Fit-status accounting for this fixture: all $4 \times 400 = 1600$
+out-of-fold predictions are finite (no `NA` candidates, nothing excluded);
+263 of them (16.4%) fall outside $[0,1]$, concentrated in the two
+degree-2 candidates — the clip is doing real work.
+
+```{r fig4-flip, fig.height=4.6}
+sel <- sel12a
+sel$label <- sprintf("support %d, degree %d", sel$support.size, sel$degree)
+sel$label <- factor(sel$label,
+                    levels = sel$label[order(-sel$deployed.clipped.brier)])
+long <- rbind(
+  data.frame(label = sel$label, metric = "raw Brier (pre-fix selection)",
+             score = sel$raw.brier),
+  data.frame(label = sel$label, metric = "deployed clipped Brier (post-fix)",
+             score = sel$deployed.clipped.brier)
+)
+winners <- rbind(
+  data.frame(label = sel$label[which.min(sel$raw.brier)],
+             metric = "raw Brier (pre-fix selection)",
+             score = min(sel$raw.brier)),
+  data.frame(label = sel$label[which.min(sel$deployed.clipped.brier)],
+             metric = "deployed clipped Brier (post-fix)",
+             score = min(sel$deployed.clipped.brier))
+)
+ggplot(long, aes(score, label, color = metric, shape = metric)) +
+  geom_line(aes(group = label), color = "grey60", linewidth = 0.6) +
+  geom_point(data = subset(long, metric == "raw Brier (pre-fix selection)"),
+             size = 4.6, stroke = 1.2) +
+  geom_point(data = subset(long,
+                           metric == "deployed clipped Brier (post-fix)"),
+             size = 2.6) +
+  geom_point(data = winners, shape = 21, size = 7.5, stroke = 1.2,
+             fill = NA, show.legend = FALSE) +
+  scale_x_log10(breaks = c(0.07, 0.1, 0.2, 0.3, 0.5, 0.9)) +
+  scale_color_manual(values = c(`raw Brier (pre-fix selection)` = col.pre,
+                                `deployed clipped Brier (post-fix)` = col.post),
+                     name = NULL) +
+  scale_shape_manual(values = c(`raw Brier (pre-fix selection)` = 5,
+                                `deployed clipped Brier (post-fix)` = 16),
+                     name = NULL) +
+  labs(x = "cross-validated Brier score (log scale; lower is better)",
+       y = NULL) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom")
+```
+
+**Figure 4.** Per-candidate selection scores on the E2.12(a) fixture under
+the two metrics (one row per candidate; open red diamonds = raw Brier,
+filled blue dots = deployed clipped Brier; grey segments connect a
+candidate's two scores; log x-axis; large circles mark each metric's
+minimizer). Where a candidate's predictions never leave $[0,1]$ the two
+scores coincide exactly and the blue dot sits inside the red diamond.
+Clipping therefore moves nothing for the in-range candidates but rescues the
+degree-2 candidates whose raw predictions overshoot — most dramatically
+(support 8, degree 2), whose score falls from $0.883$ to $0.110$. The two
+metrics disagree on the winner: the raw score (the pre-fix rule) picks
+(support 8, degree 0) while the deployed score picks (support 60, degree 2),
+with cross-candidate margins of $5.8 \times 10^{-4}$ (raw) and
+$2.1 \times 10^{-3}$ (deployed) — both more than $100\times$ the contract's
+$10^{-6}$ comparison tolerance, so the flip is real rather than a tie. The
+post-fix fit deploys the clipped winner.
+
+```{r table3}
+t3 <- sel12a[order(-sel12a$deployed.clipped.brier),
+             c("support.size", "degree", "raw.brier",
+               "cv.brier.observed", "n.pred.below.0", "n.pred.above.1",
+               "selected")]
+t3$raw.brier <- sprintf("%.6f", t3$raw.brier)
+t3$cv.brier.observed <- sprintf("%.6f", t3$cv.brier.observed)
+knitr::kable(
+  t3, row.names = FALSE,
+  col.names = c("support", "degree", "raw Brier", "deployed Brier",
+                "n pred < 0", "n pred > 1", "selected"),
+  caption = paste("Table 3. The four candidates on the E2.12(a) fixture.",
+                  "'raw Brier' is the mean squared error of the unclipped",
+                  "out-of-fold predictions (the pre-fix selection score);",
+                  "'deployed Brier' is the same on [0,1]-clipped",
+                  "predictions and is the post-fix selection column",
+                  "cv.brier.observed; the two count columns give each",
+                  "candidate's out-of-fold predictions outside [0,1] (of",
+                  "400); 'selected' marks the candidate the post-fix fit",
+                  "returns. The gate additionally verifies the selection",
+                  "column equals the deployed metric recomputed from the",
+                  "stored CV predictions (max residual 1.4e-17, contract",
+                  "tolerance 1e-6)."))
+```
+
+# E2.12(b) — the log-loss clip: one point owned the score
+
+Binomial-mode selection minimizes the cross-validated log loss with
+probability truncation $\varepsilon$:
+
+$$
+\mathrm{LL}_\varepsilon(j) = -\frac{1}{n}\sum_i \Big(
+ y_i \log \operatorname{clip}_{[\varepsilon,\,1-\varepsilon]}(\hat p_{ij})
+ + (1-y_i)\log\big(1-\operatorname{clip}_{[\varepsilon,\,1-\varepsilon]}(\hat p_{ij})\big)\Big).
+$$
+
+A confidently wrong held-out point ($\hat p \approx 0$, $y = 1$) contributes
+$-\log\varepsilon$ — $34.54$ at the previous $\varepsilon = 10^{-15}$ versus
+$13.82$ at the pinned $\varepsilon = 10^{-6}$. On the (b) fixture the
+deliberately flipped observation's out-of-fold prediction is exactly $0$
+under both candidates: its 60-point neighborhoods are all-zero, so the local
+logistic solve lands in the event-rate fallback, whose weighted mean of
+zeros is $0$.
+
+Fit-status accounting: the binomial cross-validation ran 800 local logistic
+solves (400 points × 2 candidates); 785 converged (98.1%) and 15 (1.9%)
+took the telemetered event-rate fallback — among them all solves for the
+flipped point. All 800 predictions are finite; none is excluded from any
+summary.
+
+```{r fig5-dominance, fig.height=5.4}
+sel.cand <- dom12b$candidate[dom12b$selected][1]
+cc <- subset(contrib12b, candidate == sel.cand)
+cc <- cc[order(-cc$contrib.clip.1e.15), ]
+cc$rank <- seq_len(nrow(cc))
+floor.y <- 1e-6
+n.below <- sum(cc$contrib.clip.1e.15 < floor.y)
+cc$shown <- pmax(cc$contrib.clip.1e.15, floor.y)
+ggplot(cc, aes(rank, shown, color = flipped, size = flipped)) +
+  geom_hline(yintercept = -log(1e-15), linetype = "dashed",
+             color = col.pre) +
+  geom_hline(yintercept = -log(1e-6), linetype = "dashed",
+             color = col.post) +
+  geom_point(alpha = 0.85) +
+  annotate("text", x = 150, y = -log(1e-15) * 1.85, hjust = 0,
+           label = "-log(1e-15) = 34.54 (old clip ceiling)",
+           color = col.pre, size = 4) +
+  annotate("text", x = 150, y = -log(1e-6) * 0.55, hjust = 0,
+           label = "-log(1e-6) = 13.82 (pinned clip ceiling)",
+           color = col.post, size = 4) +
+  scale_y_log10(breaks = 10^c(2, 1, 0, -2, -4, -6),
+                labels = c("100", "10", "1", "0.01", "1e-4", "1e-6")) +
+  scale_color_manual(values = c(`FALSE` = "grey40", `TRUE` = col.flag),
+                     labels = c(`FALSE` = "other 399 points",
+                                `TRUE` = "deliberately flipped point"),
+                     name = NULL) +
+  scale_size_manual(values = c(`FALSE` = 1.6, `TRUE` = 3.4),
+                    guide = "none") +
+  labs(x = "points sorted by contribution (rank 1 = largest)",
+       y = "per-point log-loss contribution at clip 1e-15 (log scale)") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(override.aes = list(size = 3)))
+```
+
+**Figure 5.** Per-point log-loss contributions at the old truncation
+$\varepsilon = 10^{-15}$ for the selected candidate (support 60, degree 0),
+sorted in decreasing order (log y-axis; the `r n.below` points with
+contributions below $10^{-6}$ are drawn at the $10^{-6}$ display floor).
+The deliberately flipped point (red, rank 1) contributes $-\log(10^{-15}) =
+34.54$ — $8.6\times$ the largest other contribution ($4.03$) — and is the
+*only* point whose prediction lies outside $[10^{-6}, 1-10^{-6}]$, so it
+accounts for 100% of the score change when the truncation moves from
+$10^{-15}$ to $10^{-6}$ (a $0.052$ shift of the mean score, both
+candidates). Pinning $\varepsilon = 10^{-6}$ caps that single point's
+leverage at the blue ceiling; the dashed lines mark the two ceilings.
+
+```{r table4}
+t4 <- dom12b[, c("support.size", "degree", "logloss.1e.15", "logloss.1e.6",
+                 "logloss.1e.3", "flip.share.of.crossclip.swing",
+                 "flip.contrib.1e.15", "max.other.contrib.1e.15")]
+for (cn in names(t4)[3:8]) t4[[cn]] <- sprintf("%.4f", t4[[cn]])
+knitr::kable(
+  t4, row.names = FALSE,
+  col.names = c("support", "degree", "LL(1e-15)", "LL(1e-6)", "LL(1e-3)",
+                "flip share of 1e-15→1e-6 change", "flip contrib at 1e-15",
+                "max other contrib"),
+  caption = paste("Table 4. Per-candidate log-loss scores at the three",
+                  "truncation levels and the single-point dominance",
+                  "accounting. 'flip share' is the fraction of the",
+                  "LL(1e-15) − LL(1e-6) score change attributable to the",
+                  "flipped observation (1.0 = all of it); the last two",
+                  "columns compare its per-point contribution at 1e-15",
+                  "with the largest contribution among the other 399",
+                  "points. LL(1e-6) equals the deployed selection column",
+                  "cv.logloss.observed exactly (residual 0)."))
+```
+
+# E2.12 study — selection stability across truncation levels
+
+The contract treats cross-clip selection stability as a **study** — its
+verdict is recorded, never gated, because near-tied candidates may
+legitimately reselect when the truncation changes. The predeclared rule:
+the selection is *stable* iff the log-loss minimizer at
+$\varepsilon = 10^{-6}$ equals the minimizer at $\varepsilon = 10^{-3}$,
+computed from the same out-of-fold predictions.
+
+```{r fig6-crossclip, fig.height=4.6}
+cs <- crossclip
+cs$label <- sprintf("support %d, degree %d", cs$support.size, cs$degree)
+cs$clip.f <- factor(format(cs$clip, scientific = TRUE),
+                    levels = format(c(1e-15, 1e-6, 1e-3), scientific = TRUE))
+mins <- do.call(rbind, lapply(split(cs, cs$clip.f), function(d) {
+  d[which.min(d$cv.logloss), ]
+}))
+ggplot(cs, aes(clip.f, cv.logloss, color = label, group = label)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 3) +
+  geom_point(data = mins, shape = 21, size = 6, stroke = 1.2, fill = NA,
+             color = "black", show.legend = FALSE) +
+  scale_color_manual(values = c(`support 60, degree 0` = col.post,
+                                `support 60, degree 1` = "#8A6FB5"),
+                     name = NULL) +
+  labs(x = "log-loss probability truncation ε",
+       y = "cross-validated log loss (lower is better)") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom")
+```
+
+**Figure 6.** Cross-validated log loss of the two E2.12(b) candidates as a
+function of the truncation level $\varepsilon$ (black circles mark the
+minimizer at each level). The selection is identical at $10^{-15}$ and at
+the pinned $10^{-6}$ (support 60, degree 0; margin $0.0022$) and *reselects*
+at $10^{-3}$ (support 60, degree 1; margin $0.0106$): the coarser truncation
+caps the flipped point's penalty at $-\log(10^{-3}) = 6.9$ and also
+truncates the degree-1 candidate's confident near-miss predictions, enough
+to move a $0.002$-wide near-tie. The recorded study verdict is therefore
+**"not stable (near-tie reselected; recorded, not gated)"**
+([verdict CSV](../../../reports/e2_12_crossclip_stability_verdict.csv)) —
+precisely the legitimate-reselection case the contract anticipated when it
+declined to gate this comparison.
+
+# Results summary and discussion
+
+**E2.14 — positive.** On the near-separable fixture the pre-fix solver is
+demonstrably broken in the way the plan predicted: plain Newton's deviance
+increases by $\approx 489$ at step 2, oscillates, and exhausts the iteration
+cap, silently degrading the prediction to the event-rate fallback. With
+step-halving the same support converges in 9 iterations after a single
+halving, with a monotone trajectory (largest increase $1.8\times10^{-15}$
+against the $10^{-8}$ gate slack), finite coefficients, and
+$\hat p = 0.125$ strictly inside $(0,1)$. Exact separation behaves exactly
+as documented: bounded non-convergence at the 50-iteration cap, no `NaN`,
+and a deterministic, telemetered fallback under both `unstable.action`
+modes. The fix engages only where plain Newton misbehaves — on well-behaved
+solves the accepted iterates are identical, and the Tier-0 E0.6 statistics
+are bit-identical to the unmodified base commit.
+
+**E2.12(a) — positive.** The train/deploy metric mismatch is not
+hypothetical: on a sharp G6 surface the raw and deployed Brier scores rank
+the candidates differently (margins $> 100\times$ the comparison
+tolerance), and the pre-fix rule would have deployed the wrong candidate
+(support 8, degree 0) over the one that is actually better as deployed
+(support 60, degree 2). Post-fix, the selection column *is* the deployed
+clipped metric (recomputed-equality residual $1.4\times10^{-17}$), so the
+mismatch class is closed on the R cross-validation path. The legacy C++
+cross-validation path still selects on raw aggregate RMSE because it
+returns no per-point predictions; that scope decision is with the
+orchestrator (spec-memo item 8).
+
+**E2.12(b) — positive, with the instability precisely localized.** At the
+old $10^{-15}$ truncation, one deliberately confident-wrong held-out point
+contributes $34.54$ — $8.6\times$ any other point — and owns 100% of the
+score's sensitivity to the truncation level. The pin at $10^{-6}$ caps
+exactly that leverage. The cross-clip study honestly records that a
+$0.002$-wide near-tie reselects at $10^{-3}$: cross-clip invariance is a
+robustness goal, not a correctness criterion, and this fixture sits on the
+expected boundary.
+
+**Failure modes and residual limits.** Nothing in these results validates
+the gates against adversarial mutation — that is the auditor's
+mutation-qualification step, deliberately not run by the implementer. All
+numbers come from one machine/BLAS (macOS arm64, vecLib); the decisive
+margins ($\ge 5.8\times10^{-4}$) sit far above plausible floating-point
+jitter, but no second platform was exercised. The pre-fix E2.14 trajectory
+is a committed replication of the pre-change update equations, not an
+execution of the deleted code. Both fixtures are single deterministic
+constructions (per the contract's smoke/full sizing: "deterministic — no
+replication"), so no uncertainty intervals apply anywhere in this report.
+
+# What we learned
+
+- IRLS instability under near-separation is real but *geometrically
+  selective*: it took an edge-of-cluster flipped label adjacent to a far
+  same-class point to trigger it (a mid-cluster flip is benign). One
+  step-halving is enough to recover a genuine fit that the pre-fix solver
+  abandoned to a fallback — the fix improves fits, not just telemetry.
+- The variance floor and $\pm 35$ linear-predictor clamp already prevented
+  `NaN`; what they could not prevent was non-monotone oscillation, which is
+  invisible at the endpoint and only assertable on the trajectory. Gating
+  the *trajectory* was the right call.
+- Metric mismatches between selection and deployment can flip model choice
+  on realistic sharp-boundary binary surfaces — 16% of out-of-fold
+  predictions leaving $[0,1]$ was enough. Selection now optimizes what is
+  deployed.
+- A $10^{-15}$ log-loss truncation converts a single all-zero-neighborhood
+  fallback prediction into the dominant term of the selection score; a
+  $10^{-6}$ pin bounds that single-point leverage while leaving every
+  in-range contribution untouched.
+- A near-tie ($\Delta \approx 0.002$) between candidates can legitimately
+  reselect under truncation changes; recording this as a study verdict
+  rather than gating it keeps the acceptance criteria honest.
+
+# Appendix — reproducibility
+
+All commands assume the package root of worktree
+`/Users/pgajer/current_projects/geosmooth-t2`, branch
+`codex/geosmooth-t2-binary-hygiene`.
+
+**Report build:** `r build.time`. **Result generation:**
+`r mf("results_generated_eastern")` (UTC `r mf("results_generated_utc")`) at
+commit `` `r mf("git_head")` ``; BLAS `` `r basename(mf("blas"))` ``;
+`r mf("r_version")`. Bundle cross-check at generation:
+`r mf("bundle_crosscheck")`.
+
+Result artifacts consumed (committed; SHA-256 in the
+[input manifest](../../../reports/tier2_report_inputs_manifest.txt)):
+[`e2_14_fixture.csv`](../../../reports/e2_14_fixture.csv),
+[`e2_14_prefix_newton_overshoot.csv`](../../../reports/e2_14_prefix_newton_overshoot.csv),
+[`e2_14_deviance_traces.csv`](../../../reports/e2_14_deviance_traces.csv),
+[`e2_14_solver_summary.csv`](../../../reports/e2_14_solver_summary.csv),
+[`e2_14_fallback_telemetry.csv`](../../../reports/e2_14_fallback_telemetry.csv),
+[`e2_12_fixture_a.csv`](../../../reports/e2_12_fixture_a.csv),
+[`e2_12a_selection_metric.csv`](../../../reports/e2_12a_selection_metric.csv),
+[`e2_12b_contributions.csv`](../../../reports/e2_12b_contributions.csv),
+[`e2_12b_clip_dominance.csv`](../../../reports/e2_12b_clip_dominance.csv),
+[`e2_12b_fit_accounting.csv`](../../../reports/e2_12b_fit_accounting.csv),
+[`e2_12_crossclip_scores.csv`](../../../reports/e2_12_crossclip_scores.csv),
+[`e2_12_crossclip_stability_verdict.csv`](../../../reports/e2_12_crossclip_stability_verdict.csv).
+
+Generation and rendering commands:
+
+```sh
+# 1. (re)generate every report-input CSV + manifest (deterministic;
+#    optional argument cross-checks against an execution bundle):
+Rscript validation/export_tier2_report_inputs.R audit_artifacts/tier2_20260611T084642Z
+
+# 2. pre-fix trajectory + cross-clip study artifacts (committed):
+Rscript validation/e2_14_prefix_newton_overshoot.R
+Rscript validation/e2_12_crossclip_stability_study.R
+
+# 3. render this report (writes dev/notes/lps/…html):
+Rscript validation/render_lps_tier2_binary_hygiene_report.R
+
+# acceptance evidence proper (clean committed tree; auditor-facing):
+EXECUTOR="<id>" bash scripts/ci/run_tier2_execution_artifact.sh
+```
+
+Seeds and determinism: the E2.14 fixtures are seed-free closed-form
+constructions; E2.12 uses `set.seed(2121)` (sub-item a) and
+`set.seed(7001)` with the label of observation 7 flipped (sub-item b);
+cross-validation folds are the explicit `foldid = rep(1:5, length.out =
+400)` in all fits (never the internal `cv.seed`). Gate test files:
+[`test-lps-binary-separation.R`](../../../tests/testthat/test-lps-binary-separation.R),
+[`test-lps-binary-metric-consistency.R`](../../../tests/testthat/test-lps-binary-metric-consistency.R).
+Implementer handoffs:
+[`e2_14_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),
+[`e2_12_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md).
+Execution bundles (machine-local, gitignored):
+`audit_artifacts/tier2_20260611T075822Z`,
+`audit_artifacts/tier2_20260611T084642Z`.

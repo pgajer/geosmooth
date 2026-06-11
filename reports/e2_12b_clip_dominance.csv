@@ -1,0 +1,3 @@
+"candidate","support.size","degree","logloss.1e.15","logloss.1e.6","logloss.1e.3","cv.logloss.observed","n.wrong.side.binders","binder.is.flip","flip.prediction","flip.share.of.crossclip.swing","flip.contrib.1e.15","max.other.contrib.1e.15","selected"
+1,60,0,0.377070134709783,0.325261977617421,0.308000085672464,0.325261977617421,1,TRUE,0,1.00000014476492,34.5387763949107,4.03183797819015,TRUE
+2,60,1,0.379262216236125,0.327454069578692,0.297414331936792,0.327454069578692,1,TRUE,0,1.00000034617977,34.5387763949107,12.0363003040187,FALSE
