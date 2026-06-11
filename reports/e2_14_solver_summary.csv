@@ -1,0 +1,3 @@
+"arm","status","converged","iterations","step.halvings","max.deviance.increase","prediction"
+"near.separable","ok",TRUE,9,1,1.77635683940025e-15,0.124668166032953
+"exactly.separable","not_converged",FALSE,50,0,-1.57948123958524e-10,NA
