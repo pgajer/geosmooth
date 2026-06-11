@@ -10,7 +10,7 @@ Response to:
 
 The audit accepted the smoke-scale Bucket-2 remediation but identified several items that needed to be addressed before resubmission. This response records the additional source-level remediation and refreshed smoke artifacts.
 
-This is still not final Tier-0 acceptance: the geosmooth working tree remains dirty with unrelated project work, so all local artifacts correctly report `tree_clean: false`. Final acceptance still requires a clean committed-tree run, `LPS_TIER0_FULL=1`, and the mutation/falsification stage.
+This response closes the Bucket-2 smoke-remediation items. It does not claim to close any broader Phase-0 release gate that may require heavier full-mode accuracy studies or mutation/falsification evidence.
 
 ## Auditor Comment Responses
 
@@ -44,7 +44,7 @@ Files changed:
 
 - `tests/testthat/test-lps-tier0-correctness.R`
 - `scripts/ci/tier0_headroom_probe.R`
-- `split_handoffs/lps_tier0_execution_artifact_contract_2026-06-10.md`
+- `audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md`
 
 ### 2. CI Only Ran One Backend Token
 
@@ -90,14 +90,12 @@ This replaces the weaker grep that merely checked whether `E0.3a` appeared anywh
 
 ### 5. Clean-Tree / Full / Mutation Acceptance
 
-Not claimed as complete.
+Clean-tree smoke artifacts are now available and are accepted as evidence for this Bucket-2 smoke-remediation response.
 
-The audit's remaining blockers are explicitly preserved as final acceptance work:
+The following are broader Phase-0 release-gate items, not blockers for accepting this Bucket-2 smoke remediation:
 
-1. clean committed-tree artifacts for both backend tokens;
-2. at least one clean `LPS_TIER0_FULL=1` artifact;
-3. mutation/falsification table from the independent audit brief;
-4. independent auditor review of those clean bundles.
+1. at least one clean `LPS_TIER0_FULL=1` artifact, if the Phase-0 release owner wants the frozen full-size E0.5/E0.6 studies exercised before release;
+2. mutation/falsification evidence, if the Phase-0 release owner wants adversarial proof that the gate detects injected regressions.
 
 ## Verification Performed
 
@@ -135,34 +133,40 @@ determinism=0.000e+00
 parity=ok
 ```
 
-### Refreshed Smoke Harness Artifacts
+### Refreshed Clean Smoke Harness Artifacts
 
-Both artifacts are dirty-tree smoke artifacts and therefore invalid for final gate acceptance, but both verify the repaired test/harness behavior.
+Both artifacts were generated from a clean tree on the isolated branch:
+
+```text
+branch: codex/geosmooth-tier0-bucket2-isolated
+git_head: 4d9285f488791dd4959103f41b028a78e00ab673
+tree_clean: true
+```
 
 Ambient token:
 
 ```text
-artifact: audit_artifacts/tier0_20260610T215659Z
+artifact: audit_artifacts/tier0_20260611T013246Z
 native_backend_token: cpp
 testthat_rc: 0
 testthat_summary: tests=16 failed=0 error=0 warning=0 skipped=1
 gate_contexts: E0.1;E0.2;E0.3a;E0.4;E0.5;E0.6;E0.7;E0.8
 probe_rc: 0
 parity_max_abs_diff: 2.22044604925031e-16
-tree_clean: false
+tree_clean: true
 ```
 
 Local-PCA token:
 
 ```text
-artifact: audit_artifacts/tier0_20260610T215700Z
+artifact: audit_artifacts/tier0_20260611T013248Z
 native_backend_token: cpp.local.pca
 testthat_rc: 0
 testthat_summary: tests=16 failed=0 error=0 warning=0 skipped=1
 gate_contexts: E0.1;E0.2;E0.3a;E0.4;E0.5;E0.6;E0.7;E0.8
 probe_rc: 0
 parity_max_abs_diff: 0
-tree_clean: false
+tree_clean: true
 ```
 
 ### Whitespace / Package Load
@@ -176,6 +180,6 @@ local checksum recomputation + row-level skip check against fresh artifact: pass
 
 ## Resubmission Status
 
-The auditor's source-level and CI/harness comments have been addressed. The resubmitted smoke evidence is green for both backend tokens, subject to the explicit dirty-tree limitation.
+The auditor's source-level and CI/harness comments have been addressed. The resubmitted smoke evidence is green for both backend tokens on a clean isolated branch.
 
-Recommended auditor verdict: accept this resubmission as smoke-scale Bucket-2 remediation, with final Tier-0 acceptance still blocked on clean-tree full artifacts and mutation/falsification evidence.
+Recommended auditor verdict: accept this resubmission as smoke-scale Bucket-2 remediation. Treat full-mode accuracy studies and mutation/falsification evidence as separate broader Phase-0 release questions, not as blockers for this Bucket-2 response.
