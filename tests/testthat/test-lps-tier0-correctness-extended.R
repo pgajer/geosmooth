@@ -152,7 +152,13 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
     R  <- if (full) 40L else 8L
     prevalence.grid <- c(0.1, 0.3, 0.5)
     d <- 2L
-    c.k <- 20 / (500^(4 / (d + 4)))
+    # Binary probability recovery needs a slightly wider local averaging
+    # scale than the continuous E0.5 regression gate.  The rate is still the
+    # frozen nonparametric schedule k(n) proportional to n^{4/(d+4)}; the
+    # constant is set so the n=500 reference support is 30 rather than 20,
+    # avoiding the full-size calibration overconfidence seen with too-small
+    # supports.
+    c.k <- 30 / (500^(4 / (d + 4)))
     support.grid.for <- function(n) {
         k <- max(12L, as.integer(round(c.k * n^(4 / (d + 4)))))
         sort(unique(pmax(8L, as.integer(round(k * c(0.75, 1, 1.25))))))
