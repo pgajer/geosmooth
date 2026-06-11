@@ -32,19 +32,25 @@ tab.cap <- function(n, text) {
   if (knitr::is_latex_output()) text else paste0("Table ", n, ". ", text)
 }
 
-fixture14 <- read.csv("reports/e2_14_fixture.csv")
+# Report-specific inputs live beside the rendered report; the gate/study
+# evidence CSVs stay at their canonical package-level reports/ location
+# (they are wired into the Tier-2 harness and the frozen handoffs).
+inputs.dir <- file.path("dev", "methods", "lps", "reports", "tier2",
+                        "binary_hygiene", "2026-06-11", "inputs")
+fixture14 <- read.csv(file.path(inputs.dir, "e2_14_fixture.csv"))
 prefix14  <- read.csv("reports/e2_14_prefix_newton_overshoot.csv")
-traces14  <- read.csv("reports/e2_14_deviance_traces.csv")
-summary14 <- read.csv("reports/e2_14_solver_summary.csv")
-fallback14 <- read.csv("reports/e2_14_fallback_telemetry.csv")
-fixture12a <- read.csv("reports/e2_12_fixture_a.csv")
-sel12a    <- read.csv("reports/e2_12a_selection_metric.csv")
-contrib12b <- read.csv("reports/e2_12b_contributions.csv")
-dom12b    <- read.csv("reports/e2_12b_clip_dominance.csv")
-acct12b   <- read.csv("reports/e2_12b_fit_accounting.csv")
+traces14  <- read.csv(file.path(inputs.dir, "e2_14_deviance_traces.csv"))
+summary14 <- read.csv(file.path(inputs.dir, "e2_14_solver_summary.csv"))
+fallback14 <- read.csv(file.path(inputs.dir, "e2_14_fallback_telemetry.csv"))
+fixture12a <- read.csv(file.path(inputs.dir, "e2_12_fixture_a.csv"))
+sel12a    <- read.csv(file.path(inputs.dir, "e2_12a_selection_metric.csv"))
+contrib12b <- read.csv(file.path(inputs.dir, "e2_12b_contributions.csv"))
+dom12b    <- read.csv(file.path(inputs.dir, "e2_12b_clip_dominance.csv"))
+acct12b   <- read.csv(file.path(inputs.dir, "e2_12b_fit_accounting.csv"))
 crossclip <- read.csv("reports/e2_12_crossclip_scores.csv")
 verdict   <- read.csv("reports/e2_12_crossclip_stability_verdict.csv")
-manifest  <- readLines("reports/tier2_report_inputs_manifest.txt")
+manifest  <- readLines(file.path(inputs.dir,
+                                 "tier2_report_inputs_manifest.txt"))
 
 mf <- function(key) {
   ln <- grep(paste0("^", key, ":"), manifest, value = TRUE)[1]
@@ -62,16 +68,18 @@ col.flag <- "#D7263D"   # highlighted (flipped) observation
 **Report build:** `r build.time`\
 **Result generation:** `r mf("results_generated_eastern")` (UTC `r mf("results_generated_utc")`)\
 **Source commit:** `` `r substr(mf("git_head"), 1, 12)` `` (branch `codex/geosmooth-t2-binary-hygiene`)\
-**Report source:** `~/current_projects/geosmooth-t2/validation/lps_tier2_binary_hygiene_report.Rmd`\
-**Input manifest:** [`reports/tier2_report_inputs_manifest.txt`](../../../reports/tier2_report_inputs_manifest.txt)\
+**Report source (repo-relative):** `dev/methods/lps/reports/tier2/binary_hygiene/2026-06-11/`\
+`scripts/lps_tier2_binary_hygiene_report.Rmd`\
+**Input manifest:** [`inputs/tier2_report_inputs_manifest.txt`](inputs/tier2_report_inputs_manifest.txt)\
 **Bundle cross-check:** `r mf("bundle_crosscheck")`
 </div>
 
-All numbers shown are read from precomputed, committed CSV artifacts under
-`reports/`, regenerated deterministically by
-`validation/export_tier2_report_inputs.R` from the gated fixture
-constructors; this report did not rerun the experiments. The acceptance
-evidence proper lives in the execution bundles
+All numbers shown are read from precomputed, committed CSV artifacts — the
+report-specific inputs in `inputs/` beside this report (regenerated
+deterministically by the adjacent `scripts/export_tier2_report_inputs.R`
+from the gated fixture constructors) and the gate/study evidence at the
+package-level `reports/` directory; this report did not rerun the
+experiments. The acceptance evidence proper lives in the execution bundles
 `audit_artifacts/tier2_20260611T075822Z` (E2.14, commit `75c1788`) and
 `audit_artifacts/tier2_20260611T084642Z` (E2.12 + E2.14 rerun, commit
 `3eaf9cf`), whose regenerated aggregates the input manifest cross-checks.
@@ -578,7 +586,7 @@ caps the flipped point's penalty at $-\log(10^{-3}) = 6.9$ and also
 truncates the degree-1 candidate's confident near-miss predictions, enough
 to move a $0.002$-wide near-tie. The recorded study verdict is therefore
 **"not stable (near-tie reselected; recorded, not gated)"**
-([verdict CSV](../../../reports/e2_12_crossclip_stability_verdict.csv)) —
+([verdict CSV](../../../../../../../reports/e2_12_crossclip_stability_verdict.csv)) —
 precisely the legitimate-reselection case the contract anticipated when it
 declined to gate this comparison.
 
@@ -665,35 +673,43 @@ commit `` `r mf("git_head")` ``; BLAS `` `r basename(mf("blas"))` ``;
 `r mf("r_version")`. Bundle cross-check at generation:
 `r mf("bundle_crosscheck")`.
 
-Result artifacts consumed (committed under `reports/`; SHA-256 in the
-[input manifest](../../../reports/tier2_report_inputs_manifest.txt)):
+Result artifacts consumed (committed; report-specific inputs under
+`inputs/` beside this report with SHA-256 in the
+[input manifest](inputs/tier2_report_inputs_manifest.txt); gate/study
+evidence at the package-level `reports/`):
 
-- E2.14: [`e2_14_fixture.csv`](../../../reports/e2_14_fixture.csv),
-  [`e2_14_deviance_traces.csv`](../../../reports/e2_14_deviance_traces.csv),\
-  [`e2_14_solver_summary.csv`](../../../reports/e2_14_solver_summary.csv),
-  [`e2_14_fallback_telemetry.csv`](../../../reports/e2_14_fallback_telemetry.csv),\
-  [`e2_14_prefix_newton_overshoot.csv`](../../../reports/e2_14_prefix_newton_overshoot.csv);
-- E2.12: [`e2_12_fixture_a.csv`](../../../reports/e2_12_fixture_a.csv),
-  [`e2_12a_selection_metric.csv`](../../../reports/e2_12a_selection_metric.csv),\
-  [`e2_12b_contributions.csv`](../../../reports/e2_12b_contributions.csv),
-  [`e2_12b_clip_dominance.csv`](../../../reports/e2_12b_clip_dominance.csv),\
-  [`e2_12b_fit_accounting.csv`](../../../reports/e2_12b_fit_accounting.csv);
-- study: [`e2_12_crossclip_scores.csv`](../../../reports/e2_12_crossclip_scores.csv),\
-  [`e2_12_crossclip_stability_verdict.csv`](../../../reports/e2_12_crossclip_stability_verdict.csv).
+- E2.14 inputs: [`e2_14_fixture.csv`](inputs/e2_14_fixture.csv),
+  [`e2_14_deviance_traces.csv`](inputs/e2_14_deviance_traces.csv),\
+  [`e2_14_solver_summary.csv`](inputs/e2_14_solver_summary.csv),
+  [`e2_14_fallback_telemetry.csv`](inputs/e2_14_fallback_telemetry.csv);
+- E2.12 inputs: [`e2_12_fixture_a.csv`](inputs/e2_12_fixture_a.csv),
+  [`e2_12a_selection_metric.csv`](inputs/e2_12a_selection_metric.csv),\
+  [`e2_12b_contributions.csv`](inputs/e2_12b_contributions.csv),
+  [`e2_12b_clip_dominance.csv`](inputs/e2_12b_clip_dominance.csv),\
+  [`e2_12b_fit_accounting.csv`](inputs/e2_12b_fit_accounting.csv);
+- gate/study evidence (`reports/`):
+  [`e2_14_prefix_newton_overshoot.csv`](../../../../../../../reports/e2_14_prefix_newton_overshoot.csv),\
+  [`e2_12_crossclip_scores.csv`](../../../../../../../reports/e2_12_crossclip_scores.csv),
+  [`e2_12_crossclip_stability_verdict.csv`](../../../../../../../reports/e2_12_crossclip_stability_verdict.csv).
 
 Generation and rendering commands:
 
 ```sh
-# 1. (re)generate every report-input CSV + manifest (deterministic;
-#    optional argument cross-checks against an execution bundle):
-Rscript validation/export_tier2_report_inputs.R audit_artifacts/tier2_20260611T084642Z
+R="dev/methods/lps/reports/tier2/binary_hygiene/2026-06-11"
 
-# 2. pre-fix trajectory + cross-clip study artifacts (committed):
+# 1. (re)generate every report-input CSV + manifest into $R/inputs/
+#    (deterministic; the optional argument cross-checks against an
+#    execution bundle):
+Rscript "$R/scripts/export_tier2_report_inputs.R" \
+  audit_artifacts/tier2_20260611T084642Z
+
+# 2. pre-fix trajectory + cross-clip study artifacts (committed
+#    gate/study evidence under reports/):
 Rscript validation/e2_14_prefix_newton_overshoot.R
 Rscript validation/e2_12_crossclip_stability_study.R
 
-# 3. render this report, HTML + PDF (writes dev/notes/lps/...):
-Rscript validation/render_lps_tier2_binary_hygiene_report.R
+# 3. render this report, HTML + PDF (written into $R/):
+Rscript "$R/scripts/render_lps_tier2_binary_hygiene_report.R"
 
 # acceptance evidence proper (clean committed tree; auditor-facing):
 EXECUTOR="<id>" bash scripts/ci/run_tier2_execution_artifact.sh
@@ -708,11 +724,11 @@ cross-validation folds are the explicit `foldid = rep(1:5, length.out =
 Related committed documents and machine-local evidence:
 
 - gate test files:
-  [`test-lps-binary-separation.R`](../../../tests/testthat/test-lps-binary-separation.R),\
-  [`test-lps-binary-metric-consistency.R`](../../../tests/testthat/test-lps-binary-metric-consistency.R);
+  [`test-lps-binary-separation.R`](../../../../../../../tests/testthat/test-lps-binary-separation.R),\
+  [`test-lps-binary-metric-consistency.R`](../../../../../../../tests/testthat/test-lps-binary-metric-consistency.R);
 - implementer handoffs:
-  [`e2_14_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),\
-  [`e2_12_implementer_handoff_2026-06-11.md`](../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md);
+  [`e2_14_implementer_handoff_2026-06-11.md`](../../../../../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),\
+  [`e2_12_implementer_handoff_2026-06-11.md`](../../../../../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md);
 - execution bundles (machine-local, gitignored):
   `audit_artifacts/tier2_20260611T075822Z` and\
   `audit_artifacts/tier2_20260611T084642Z`.
