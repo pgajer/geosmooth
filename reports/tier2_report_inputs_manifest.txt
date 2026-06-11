@@ -1,7 +1,7 @@
-results_generated_utc: 2026-06-11T13:34:19Z
-results_generated_eastern: 2026-06-11 09:34:19 EDT
-git_head: 662ecb8130deba4056e787d6aa263cea83fa9502
-tree_clean: FALSE
+results_generated_utc: 2026-06-11T13:49:19Z
+results_generated_eastern: 2026-06-11 09:49:19 EDT
+git_head: 02f8c05b363e8214480b774e188a13dd026b04c6
+tree_clean: TRUE
 r_version: R version 4.5.2 (2025-10-31)
 blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
 bundle_crosscheck: ok vs audit_artifacts/tier2_20260611T084642Z: e2_12a max |diff| = 4.441e-16; e2_14 traces max |diff| = 1.421e-14
