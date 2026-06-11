@@ -84,6 +84,19 @@
 #'   Brier/log-loss probability diagnostics. \code{"binomial"} uses local
 #'   weighted logistic polynomial fits, selects candidates by observed CV log
 #'   loss, and reports probability diagnostics on the fitted probabilities.
+#'   The local logistic IRLS uses deviance step-halving (E2.14): a Newton
+#'   update is accepted only if the weighted binomial deviance does not
+#'   increase by more than \code{1e-8}; otherwise the step is halved toward
+#'   the current iterate (at most 30 times, after which the solve is declared
+#'   non-convergent). The deviance is evaluated on the same \code{[-35, 35]}
+#'   clamped linear predictor the IRLS update uses, so it is finite for every
+#'   finite iterate. A solve that does not converge within the iteration cap
+#'   (including under exact separation, where the unpenalized logistic MLE
+#'   does not exist) falls back deterministically to the local weighted event
+#'   rate under \code{unstable.action = "mean"} or to \code{NA} under
+#'   \code{unstable.action = "na"}; every fallback is counted in
+#'   \code{logistic.diagnostics} (\code{fallback.path},
+#'   \code{event.rate.fallback}, \code{na.failure}).
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -1677,12 +1690,31 @@ lps.backend.diagnostics <- function(object) {
         diag(c(0, rep(1, max(0L, ncol(design) - 1L))),
              nrow = ncol(design))
     }
+    # Weighted binomial deviance of an iterate. mu is computed from the same
+    # clamped eta the IRLS update uses, so the deviance is finite for every
+    # finite beta (E2.14: the trajectory must be assertable, never NaN).
+    deviance.at <- function(beta) {
+        eta <- pmax(-35, pmin(35, as.numeric(design %*% beta)))
+        mu <- stats::plogis(eta)
+        -2 * sum(weights * (y * log(mu) + (1 - y) * log1p(-mu)))
+    }
+    # E2.14: a Newton candidate may be halved toward the current iterate at
+    # most this many times before the solve is declared non-convergent.
+    max.step.halvings <- 30L
+    deviance.slack <- 1e-8
     last.status <- "not_run"
+    last.trace <- numeric(0)
+    last.iterations <- 0L
+    last.halvings <- 0L
     for (rho in ridge.multiplier.grid) {
         beta <- beta0
         converged <- FALSE
         ridge.used <- NA_real_
         cond.used <- NA_real_
+        deviance.current <- deviance.at(beta)
+        deviance.trace <- deviance.current
+        step.halvings <- 0L
+        iterations <- 0L
         for (iter in seq_len(as.integer(max.iter))) {
             eta <- as.numeric(design %*% beta)
             mu <- stats::plogis(pmax(-35, pmin(35, eta)))
@@ -1712,16 +1744,40 @@ lps.backend.diagnostics <- function(object) {
                 last.status <- "logistic_solve_failed"
                 break
             }
-            if (max(abs(beta.new - beta)) <
-                tolerance * (1 + max(abs(beta)))) {
-                beta <- beta.new
+            # E2.14 step-halving: accept the Newton candidate only if the
+            # deviance does not increase beyond the slack; otherwise halve
+            # toward the current iterate. When the full Newton step already
+            # satisfies the slack (every well-behaved solve), zero halvings
+            # occur and the iterate sequence is identical to plain IRLS.
+            deviance.candidate <- deviance.at(beta.new)
+            halvings <- 0L
+            while (deviance.candidate > deviance.current + deviance.slack &&
+                   halvings < max.step.halvings) {
+                beta.new <- (beta + beta.new) / 2
+                deviance.candidate <- deviance.at(beta.new)
+                halvings <- halvings + 1L
+            }
+            step.halvings <- step.halvings + halvings
+            if (deviance.candidate > deviance.current + deviance.slack) {
+                last.status <- "step_halving_failed"
+                break
+            }
+            step.converged <- max(abs(beta.new - beta)) <
+                tolerance * (1 + max(abs(beta)))
+            beta <- beta.new
+            deviance.current <- deviance.candidate
+            deviance.trace <- c(deviance.trace, deviance.current)
+            iterations <- iter
+            if (step.converged) {
                 converged <- TRUE
                 last.status <- "ok"
                 break
             }
-            beta <- beta.new
             last.status <- "not_converged"
         }
+        last.trace <- deviance.trace
+        last.iterations <- iterations
+        last.halvings <- step.halvings
         if (isTRUE(converged) && all(is.finite(beta))) {
             pred <- if (is.null(prediction.row)) {
                 NA_real_
@@ -1737,15 +1793,25 @@ lps.backend.diagnostics <- function(object) {
                 condition = cond.used,
                 prediction = pred,
                 kept.columns = kept.columns,
-                original.ncol = original.ncol
+                original.ncol = original.ncol,
+                converged = TRUE,
+                iterations = iterations,
+                step.halvings = step.halvings,
+                deviance.trace = deviance.trace
             ))
         }
     }
+    # Failure return: the trace/iteration fields describe the LAST attempted
+    # ridge multiplier (each rho restarts from beta0).
     list(
         ok = FALSE,
         status = last.status,
         kept.columns = kept.columns,
-        original.ncol = original.ncol
+        original.ncol = original.ncol,
+        converged = FALSE,
+        iterations = last.iterations,
+        step.halvings = last.halvings,
+        deviance.trace = last.trace
     )
 }
 
