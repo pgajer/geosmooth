@@ -84,6 +84,17 @@
 #'   Brier/log-loss probability diagnostics. \code{"binomial"} uses local
 #'   weighted logistic polynomial fits, selects candidates by observed CV log
 #'   loss, and reports probability diagnostics on the fitted probabilities.
+#' @param bandwidth.multiplier.grid Nonnegative bandwidth multipliers added to
+#'   the CV candidate grid. For a candidate with multiplier \eqn{b}, the local
+#'   kernel bandwidth becomes \eqn{h = b \cdot d_{(K)}} where \eqn{d_{(K)}} is
+#'   the distance to the \eqn{K}-th nearest support neighbor, decoupling the
+#'   kernel scale from the support size. The default \code{1} reproduces the
+#'   historical behavior exactly (the bandwidth equals the support radius).
+#'   Any grid other than exactly \code{1} requires the R reference backend:
+#'   \code{backend = "auto"} then resolves to \code{"R"}, and explicit
+#'   \code{backend = "cpp"} or \code{"cpp.local.pca"} is an error. The
+#'   selected multiplier is returned in \code{$selected$bandwidth.multiplier}
+#'   and as a \code{bandwidth.multiplier} column of \code{cv.table}.
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -124,7 +135,8 @@ fit.lps <- function(
     ridge.multiplier.grid = c(0, 1e-10, 1e-8),
     ridge.condition.max = 1e12,
     unstable.action = c("na", "mean"),
-    outcome.family = c("gaussian", "bernoulli", "binomial")) {
+    outcome.family = c("gaussian", "bernoulli", "binomial"),
+    bandwidth.multiplier.grid = 1) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
@@ -170,6 +182,9 @@ fit.lps <- function(
         "ridge.condition.max",
         allow.infinite = TRUE
     )
+    bandwidth.multiplier.grid <- .klp.clean.bandwidth.multiplier.grid(
+        bandwidth.multiplier.grid
+    )
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     backend.used <- .klp.resolve.backend(
@@ -178,7 +193,8 @@ fit.lps <- function(
         local.chart.method.effective,
         design.basis,
         ridge.multiplier.grid,
-        ridge.condition.max
+        ridge.condition.max,
+        bandwidth.multiplier.grid
     )
     if (identical(outcome.family, "binomial") &&
         identical(backend, "auto")) {
@@ -212,6 +228,7 @@ fit.lps <- function(
         support.size = support.grid,
         degree = degree.grid,
         kernel = kernel.grid,
+        bandwidth.multiplier = bandwidth.multiplier.grid,
         KEEP.OUT.ATTRS = FALSE,
         stringsAsFactors = FALSE
     )
@@ -280,7 +297,8 @@ fit.lps <- function(
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         logistic.telemetry = logistic.final.telemetry,
-        return.chart.diagnostics = TRUE
+        return.chart.diagnostics = TRUE,
+        bandwidth.multiplier = selected[["bandwidth.multiplier"]][[1L]]
     )
     fitted <- if (is.list(fitted.result) &&
                   !is.null(fitted.result$predictions)) {
@@ -349,6 +367,7 @@ fit.lps <- function(
         design.drop.tol = design.drop.tol,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         probability.diagnostics = probability.diagnostics,
@@ -406,6 +425,13 @@ predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
             "coordinates",
         summary.dim = object$chart.dim
     )
+    selected.bandwidth.multiplier <- object$selected[["bandwidth.multiplier"]]
+    bandwidth.multiplier <- if (is.null(selected.bandwidth.multiplier) ||
+                                !length(selected.bandwidth.multiplier)) {
+        1
+    } else {
+        as.numeric(selected.bandwidth.multiplier[[1L]])
+    }
     pred <- .klp.predict.local.polynomial(
         X.train = object$X,
         y.train = object$y,
@@ -425,7 +451,8 @@ predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
             c(0, 1e-10, 1e-8),
         ridge.condition.max = object$ridge.condition.max %||% 1e12,
         unstable.action = object$unstable.action %||% "mean",
-        outcome.family = object$outcome.family %||% "gaussian"
+        outcome.family = object$outcome.family %||% "gaussian",
+        bandwidth.multiplier = bandwidth.multiplier
     )
     if (identical(type, "raw")) {
         return(pred)
@@ -456,6 +483,14 @@ print.lps <- function(x, ...) {
     cat("  selected support.size:", x$selected$support.size[[1L]], "\n")
     cat("  selected degree:", x$selected$degree[[1L]], "\n")
     cat("  selected kernel:", x$selected$kernel[[1L]], "\n")
+    selected.bandwidth.multiplier <- x$selected[["bandwidth.multiplier"]]
+    if (!is.null(selected.bandwidth.multiplier) &&
+        length(selected.bandwidth.multiplier) &&
+        is.finite(selected.bandwidth.multiplier[[1L]]) &&
+        selected.bandwidth.multiplier[[1L]] != 1) {
+        cat("  selected bandwidth.multiplier:",
+            selected.bandwidth.multiplier[[1L]], "\n")
+    }
     cat("  selected CV RMSE:",
         signif(x$selected$cv.rmse.observed[[1L]], 5), "\n")
     if (identical(x$outcome.family, "bernoulli") &&
@@ -597,6 +632,8 @@ lps.backend.diagnostics <- function(object) {
             as.integer(selected.value("support.size", NA_integer_)),
         selected.degree = as.integer(selected.value("degree", NA_integer_)),
         selected.kernel = as.character(selected.value("kernel", NA_character_)),
+        selected.bandwidth.multiplier =
+            as.numeric(selected.value("bandwidth.multiplier", 1)),
         selected.cv.rmse.observed =
             as.numeric(selected.value("cv.rmse.observed", NA_real_)),
         selected.cv.brier.observed =
@@ -612,6 +649,10 @@ lps.backend.diagnostics <- function(object) {
         ),
         ridge.condition.max =
             as.numeric(object$ridge.condition.max %||% 1e12),
+        bandwidth.multiplier.grid = paste(
+            object$bandwidth.multiplier.grid %||% 1,
+            collapse = ";"
+        ),
         unstable.action = object$unstable.action %||% NA_character_,
         candidate.count = if (is.null(object$cv.table)) {
             NA_integer_
@@ -841,10 +882,16 @@ lps.backend.diagnostics <- function(object) {
             score <=
                 best + max(tolerance, tolerance * abs(best))
     )
+    bandwidth.multiplier <- if (is.null(cv.table$bandwidth.multiplier)) {
+        rep(1, length(eligible))
+    } else {
+        cv.table$bandwidth.multiplier[eligible]
+    }
     eligible[order(
         cv.table$support.size[eligible],
         cv.table$degree[eligible],
         cv.table$kernel[eligible],
+        bandwidth.multiplier,
         score[eligible]
     )[[1L]]]
 }
@@ -861,10 +908,17 @@ lps.backend.diagnostics <- function(object) {
                           unstable.action = "mean",
                           outcome.family = "gaussian",
                           logistic.telemetry = NULL) {
+    if (is.null(cand$bandwidth.multiplier)) {
+        cand$bandwidth.multiplier <- 1
+    }
     cand$chart.dim <- NA_integer_
     local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
     if (identical(coordinate.method, "coordinates") &&
         identical(backend, "cpp")) {
+        if (any(cand$bandwidth.multiplier != 1)) {
+            stop("The 'cpp' backend does not support bandwidth multipliers ",
+                 "other than 1.", call. = FALSE)
+        }
         cand$chart.dim <- ncol(X)
         cand$cv.rmse.observed <- rcpp_kernel_local_polynomial_cv_coordinates(
             X = X,
@@ -898,6 +952,10 @@ lps.backend.diagnostics <- function(object) {
     if (identical(coordinate.method, "local.pca") &&
         identical(local.chart.method, "pca") &&
         identical(backend, "cpp.local.pca")) {
+        if (any(cand$bandwidth.multiplier != 1)) {
+            stop("The 'cpp.local.pca' backend does not support bandwidth ",
+                 "multipliers other than 1.", call. = FALSE)
+        }
         cand$cv.rmse.observed <- rcpp_kernel_local_polynomial_cv_local_pca(
             X = X,
             y = y,
@@ -950,7 +1008,11 @@ lps.backend.diagnostics <- function(object) {
                     max.chart.dim <- max(cand$chart.dim[support.rows],
                                          na.rm = TRUE)
                 }
-                kernel.names <- unique(cand$kernel[support.rows])
+                weight.specs <- unique(
+                    cand[support.rows,
+                         c("kernel", "bandwidth.multiplier"),
+                         drop = FALSE]
+                )
                 if (!identical(local.chart.method, "second.order.svd")) {
                     local <- .klp.local.neighborhood.from.order(
                         X.train = X.train,
@@ -964,17 +1026,24 @@ lps.backend.diagnostics <- function(object) {
                     )
                 }
                 kernel.weights <- lapply(
-                    kernel.names,
-                    function(kernel) .klp.kernel.weights(
+                    seq_len(nrow(weight.specs)),
+                    function(ss) .klp.kernel.weights(
                         ordered$distances[seq_len(effective.support)],
-                        kernel
+                        weight.specs$kernel[[ss]],
+                        weight.specs$bandwidth.multiplier[[ss]]
                     )
                 )
-                names(kernel.weights) <- kernel.names
+                names(kernel.weights) <- .klp.weight.key(
+                    weight.specs$kernel,
+                    weight.specs$bandwidth.multiplier
+                )
                 if (!identical(local.chart.method, "second.order.svd")) {
                     design.cache <- new.env(parent = emptyenv())
                     for (rr in support.rows) {
-                        w <- kernel.weights[[cand$kernel[[rr]]]]
+                        w <- kernel.weights[[.klp.weight.key(
+                            cand$kernel[[rr]],
+                            cand$bandwidth.multiplier[[rr]]
+                        )]]
                         fit.chart.dim <- if (local.auto.dim) {
                             chart.dim.by.degree[[as.character(cand$degree[[rr]])]]
                         } else {
@@ -998,7 +1067,10 @@ lps.backend.diagnostics <- function(object) {
                     }
                 } else {
                     for (rr in support.rows) {
-                        w <- kernel.weights[[cand$kernel[[rr]]]]
+                        w <- kernel.weights[[.klp.weight.key(
+                            cand$kernel[[rr]],
+                            cand$bandwidth.multiplier[[rr]]
+                        )]]
                         fit.chart.dim <- cand$chart.dim[[rr]]
                         local <- .klp.local.neighborhood.from.order(
                             X.train = X.train,
@@ -1106,11 +1178,14 @@ lps.backend.diagnostics <- function(object) {
                                      "orthogonal.polynomial.drop",
                                  ridge.multiplier.grid =
                                      c(0, 1e-10, 1e-8),
-                                 ridge.condition.max = 1e12) {
+                                 ridge.condition.max = 1e12,
+                                 bandwidth.multiplier.grid = 1) {
     needs.r.backend <- !identical(design.basis, "monomial") ||
         length(ridge.multiplier.grid) != 1L ||
         !identical(as.numeric(ridge.multiplier.grid[[1L]]), 0) ||
-        is.finite(ridge.condition.max)
+        is.finite(ridge.condition.max) ||
+        length(bandwidth.multiplier.grid) != 1L ||
+        !identical(as.numeric(bandwidth.multiplier.grid[[1L]]), 1)
     if (identical(backend, "auto")) {
         return(if (identical(coordinate.method, "coordinates") &&
                    !needs.r.backend) {
@@ -1126,7 +1201,8 @@ lps.backend.diagnostics <- function(object) {
         }
         if (needs.r.backend) {
             stop("'backend = \"cpp\"' does not support non-monomial design ",
-                 "bases or guarded ridge solves; use backend = 'auto' or 'R'.",
+                 "bases, guarded ridge solves, or bandwidth multipliers ",
+                 "other than 1; use backend = 'auto' or 'R'.",
                  call. = FALSE)
         }
     }
@@ -1139,8 +1215,9 @@ lps.backend.diagnostics <- function(object) {
         }
         if (needs.r.backend) {
             stop("'backend = \"cpp.local.pca\"' does not support non-monomial ",
-                 "design bases or guarded ridge solves; use backend = 'auto' ",
-                 "or 'R'.", call. = FALSE)
+                 "design bases, guarded ridge solves, or bandwidth ",
+                 "multipliers other than 1; use backend = 'auto' or 'R'.",
+                 call. = FALSE)
         }
     }
     backend
@@ -1286,13 +1363,18 @@ lps.backend.diagnostics <- function(object) {
                                           unstable.action = "mean",
                                           outcome.family = "gaussian",
                                           logistic.telemetry = NULL,
-                                          return.chart.diagnostics = FALSE) {
+                                          return.chart.diagnostics = FALSE,
+                                          bandwidth.multiplier = 1) {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
     support.size <- min(as.integer(support.size), nrow(X.train))
     if (identical(coordinate.method, "coordinates") &&
         identical(backend, "cpp")) {
+        if (!identical(as.numeric(bandwidth.multiplier[[1L]]), 1)) {
+            stop("The 'cpp' backend does not support bandwidth multipliers ",
+                 "other than 1.", call. = FALSE)
+        }
         return(rcpp_kernel_local_polynomial_predict_coordinates(
             X_train = X.train,
             y_train = y.train,
@@ -1315,7 +1397,7 @@ lps.backend.diagnostics <- function(object) {
             matrix(center, nrow(X.train), ncol(X.train), byrow = TRUE))^2))
         idx <- order(d, seq_along(d))[seq_len(support.size)]
         local.d <- d[idx]
-        weights <- .klp.kernel.weights(local.d, kernel)
+        weights <- .klp.kernel.weights(local.d, kernel, bandwidth.multiplier)
         if (!any(weights > 0)) weights[] <- 1
         local.coords <- .klp.local.coordinates(
             X.support = X.train[idx, , drop = FALSE],
@@ -1802,6 +1884,16 @@ lps.backend.diagnostics <- function(object) {
     out <- out[is.finite(out) & out >= 0]
     if (!length(out)) {
         stop("'ridge.multiplier.grid' must contain at least one finite ",
+             "nonnegative value.", call. = FALSE)
+    }
+    out
+}
+
+.klp.clean.bandwidth.multiplier.grid <- function(x) {
+    out <- sort(unique(as.numeric(x)))
+    out <- out[is.finite(out) & out >= 0]
+    if (!length(out)) {
+        stop("'bandwidth.multiplier.grid' must contain at least one finite ",
              "nonnegative value.", call. = FALSE)
     }
     out
@@ -2363,11 +2455,12 @@ lps.backend.diagnostics <- function(object) {
     )
 }
 
-.klp.kernel.weights <- function(distances, kernel) {
+.klp.kernel.weights <- function(distances, kernel, bandwidth.multiplier = 1) {
     if (!length(distances)) return(numeric(0))
     h <- max(distances[is.finite(distances)], 0)
     if (!is.finite(h) || h <= 0) h <- 1
-    u <- as.numeric(distances) / (h + sqrt(.Machine$double.eps))
+    b <- as.numeric(bandwidth.multiplier[[1L]])
+    u <- as.numeric(distances) / (b * h + sqrt(.Machine$double.eps))
     w <- switch(
         kernel,
         gaussian = exp(-0.5 * u^2),
@@ -2377,4 +2470,12 @@ lps.backend.diagnostics <- function(object) {
     )
     w[!is.finite(w)] <- 0
     as.numeric(w)
+}
+
+.klp.weight.key <- function(kernel, bandwidth.multiplier) {
+    paste(
+        as.character(kernel),
+        sprintf("%.17g", as.numeric(bandwidth.multiplier)),
+        sep = "|"
+    )
 }
