@@ -14,6 +14,10 @@
 # Usage:   bash scripts/ci/run_tier0_execution_artifact.sh [REPO_ROOT]
 # Env:     LPS_NATIVE_BACKEND  native backend token fit.lps accepts
 #                              ("cpp" for ambient, "cpp.local.pca" for local-PCA)
+#          MODE                "full" (default) runs the testthat battery plus
+#                              probe; "probe" skips the backend-independent
+#                              battery and runs only source/environment binding
+#                              plus the per-token probe/parity addendum.
 #          EXECUTOR            free-text executor id recorded in the manifest
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
@@ -36,8 +40,14 @@ TEST_FILES=(
 )
 SRC_FILE="R/lps.R"
 PROBE="scripts/ci/tier0_headroom_probe.R"
+MODE="${MODE:-full}"
+BACKEND_TOKEN="${LPS_NATIVE_BACKEND:-cpp}"
+case "$MODE" in
+  full|probe) ;;
+  *) echo "ERR: MODE must be 'full' or 'probe', got '$MODE'" >&2; exit 2 ;;
+esac
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-OUT="audit_artifacts/tier0_${STAMP}"
+OUT="audit_artifacts/tier0_${STAMP}_${BACKEND_TOKEN}"
 mkdir -p "$OUT"
 
 # portable sha256 (Linux: sha256sum, macOS: shasum -a 256)
@@ -66,8 +76,12 @@ Rscript -e 'cat("BLAS:", extSoftVersion()[["BLAS"]], "\nLAPACK_library:", La_lib
         > "$OUT/blas.txt" 2>&1 || true
 
 # --- 4) Authoritative pass/fail across the COMMITTED Tier-0 battery ------------
-R_FILES="c($(printf '"%s",' "${TEST_FILES[@]}" | sed 's/,$//'))"
-Rscript -e '
+# Probe-only mode is used for the second native-backend token in full release
+# evidence. The Tier-0 testthat battery uses backend="R" throughout and is
+# therefore backend-token-independent; the probe is the only per-token output.
+if [ "$MODE" = "full" ]; then
+  R_FILES="c($(printf '"%s",' "${TEST_FILES[@]}" | sed 's/,$//'))"
+  Rscript -e '
   suppressMessages(pkgload::load_all(".", quiet = TRUE))
   files <- '"$R_FILES"'
   flatten <- function(d) {
@@ -100,7 +114,17 @@ Rscript -e '
   writeLines(gate.contexts, "'"$OUT"'/gate_contexts.txt")
   quit(status = if (nf == 0 && ne == 0) 0L else 1L)
 ' > "$OUT/testthat_stdout.txt" 2>&1
-TESTTHAT_RC=$?
+  TESTTHAT_RC=$?
+else
+  TESTTHAT_RC=0
+  {
+    echo "MODE=probe: skipped backend-independent testthat battery."
+    echo "The full battery must be supplied by a same-commit MODE=full bundle."
+  } > "$OUT/testthat_stdout.txt"
+  echo "tests=NA failed=NA error=NA warning=NA skipped=NA" \
+    > "$OUT/testthat_summary.txt"
+  : > "$OUT/gate_contexts.txt"
+fi
 
 # --- 5) Realized-error / determinism / backend-parity probe (E0.1/E0.2) -------
 Rscript "$PROBE" "$OUT" > "$OUT/probe_stdout.txt" 2>&1
@@ -110,10 +134,11 @@ PROBE_RC=$?
 {
   echo "artifact_id: tier0_${STAMP}"
   echo "generated_utc: ${STAMP}"
+  echo "mode: ${MODE}"
   echo "repo: ${REPO}"
   echo "git_head: $(cat "$OUT/git_head.txt" 2>/dev/null)"
   echo "tree_clean: ${CLEAN}"
-  echo "native_backend_token: ${LPS_NATIVE_BACKEND:-cpp}"
+  echo "native_backend_token: ${BACKEND_TOKEN}"
   echo "testthat_rc: ${TESTTHAT_RC}"
   echo "testthat_summary: $(cat "$OUT/testthat_summary.txt" 2>/dev/null)"
   echo "gate_contexts: $(paste -sd';' "$OUT/gate_contexts.txt" 2>/dev/null)"

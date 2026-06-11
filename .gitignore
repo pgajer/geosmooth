@@ -4,6 +4,7 @@
 .Ruserdata
 .claude/
 __pycache__/
+.auctex-auto/
 split_handoffs/
 audit_artifacts/
 man/
