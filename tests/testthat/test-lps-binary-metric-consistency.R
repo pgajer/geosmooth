@@ -119,6 +119,43 @@ test_that("E2.12a bernoulli selection scores the deployed clipped metric", {
     )
 })
 
+test_that("E2.12 keep.cv.predictions default reproduces the prior fit object exactly", {
+    # S A2 regression pin for the new opt-in argument: at the default
+    # (FALSE) the returned object carries no cv.predictions element and
+    # every other component is identical to the keep.cv.predictions = TRUE
+    # fit (the argument only appends the matrix; `call` necessarily
+    # differs and is excluded).
+    g <- e212.g6(n = 60L, seed = 99L)
+    fit.args <- list(
+        X = g$X,
+        y = g$y,
+        foldid = rep(1:5, length.out = 60L),
+        support.grid = c(6L, 8L),
+        degree.grid = c(0L, 1L),
+        kernel.grid = "gaussian",
+        coordinate.method = "coordinates",
+        backend = "R",
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean",
+        outcome.family = "bernoulli"
+    )
+    fit.default <- do.call(fit.lps, fit.args)
+    fit.keep <- do.call(fit.lps, c(fit.args, list(keep.cv.predictions = TRUE)))
+    expect_false("cv.predictions" %in% names(fit.default))
+    expect_true("cv.predictions" %in% names(fit.keep))
+    expect_identical(
+        setdiff(names(fit.keep), names(fit.default)),
+        "cv.predictions"
+    )
+    shared <- setdiff(names(fit.default), "call")
+    expect_identical(fit.default[shared], fit.keep[shared])
+    # And the stored matrix is the per-candidate out-of-fold predictions:
+    expect_identical(dim(fit.keep$cv.predictions),
+                     c(60L, nrow(fit.keep$cv.table)))
+})
+
 test_that("E2.12b log-loss clip is pinned at 1e-6 and the 1e-15 instability is one point", {
     # -- The pin ------------------------------------------------------------
     expect_identical(
