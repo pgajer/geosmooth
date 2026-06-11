@@ -57,9 +57,10 @@ the new named fields the contract itself requires
 (`$selected$bandwidth.multiplier`, a `bandwidth.multiplier` cv.table column, a
 stored `bandwidth.multiplier.grid`), per §A2(iii). The b=1 exactness GATE pins
 the numerics against full-precision reference values generated at the
-pre-change commit (commit hash recorded in the test file), tolerance
-τ_alg = 1e-10 per the frozen thresholds; the pinning script is committed so the
-generation is reproducible at the recorded commit.
+pre-change commit (commit hash recorded in the generated reference file),
+tolerance τ_alg = 1e-10 per the frozen thresholds; the pinning script
+(`validation/e1_9_pin_reference_fits.R`) is committed so the generation is
+reproducible at the recorded commit.
 
 ## 5. Additive schema changes outside `fit.lps` **[proposal]**
 
@@ -80,6 +81,8 @@ generation is reproducible at the recorded commit.
 Gains a third defaulted parameter: `.klp.kernel.weights(distances, kernel,
 bandwidth.multiplier = 1)`. The §G1-resolved characterization call
 `geosmooth:::.klp.kernel.weights(distances, kernel)` remains valid unchanged.
+The other in-tree two-argument caller (`R/ps_lps.R:1326`, out-of-scope PS-LPS)
+is untouched and keeps bit-for-bit behavior via the default.
 
 ## 7. Characterization GATE fixed distance vector **[info]**
 
@@ -102,8 +105,10 @@ Per the assignment, the two GATEs land now; the STUDY → PROMOTION sub-item is
 am not writing the study script against an unbound generator API. E1.9's
 handoff will state this sub-item as open.
 
-## 9. Naming **[info]**
+## 9. Naming and argument position **[info]**
 
-No counter-proposal: `bandwidth.multiplier.grid` is consistent with
-`ridge.multiplier.grid`, and `$selected$bandwidth.multiplier` follows the
-cv-table column convention.
+No counter-proposal on the name: `bandwidth.multiplier.grid` is consistent
+with `ridge.multiplier.grid`, and `$selected$bandwidth.multiplier` follows the
+cv-table column convention. The new argument is appended at the **end** of the
+`fit.lps` signature (after `outcome.family`) so that any existing positional
+call sites keep their meaning; callers are expected to pass it by name.
