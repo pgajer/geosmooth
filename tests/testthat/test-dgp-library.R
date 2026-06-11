@@ -208,6 +208,27 @@ test_that("G6 realizes the target prevalence with p in [0.05,0.95]", {
   expect_lt(abs(mean(ds2$truth) - 0.6), 0.03)
 })
 
+test_that("G6 clipping is active under a strong log-odds (clip-fidelity GATE)", {
+  # eta whose UNCLIPPED probabilities escape [0.05, 0.95] (range ~[0.004,0.998]).
+  # With clipping the returned `truth` must stay in-band AND hit the band exactly.
+  # This case reddens if the clip line
+  #   p <- pmin(clip[2], pmax(clip[1], plogis(alpha + eta)))
+  # is replaced by the unclipped `p <- plogis(alpha + eta)`: the band-membership
+  # and exact-boundary assertions then fail. (The default eta.fn never escapes
+  # the band, so the other G6 case alone is clip-vacuous.)
+  strong_eta <- function(x) 6 * sin(pi * x[, 1])
+  ds <- dgp.g6(n = 600, prevalence = 0.5, eta.fn = strong_eta, seed = 1)
+  expect_true(all(ds$truth >= 0.05 - 1e-12 & ds$truth <= 0.95 + 1e-12))
+  expect_true(any(ds$truth == 0.95))     # upper clip genuinely bound
+  expect_true(any(ds$truth == 0.05))     # lower clip genuinely bound
+  # the clip band is taken from the `clip` argument, not hard-coded
+  ds2 <- dgp.g6(n = 600, prevalence = 0.5, eta.fn = strong_eta,
+                clip = c(0.1, 0.9), seed = 1)
+  expect_true(all(ds2$truth >= 0.1 - 1e-12 & ds2$truth <= 0.9 + 1e-12))
+  expect_true(any(ds2$truth == 0.9))
+  expect_true(any(ds2$truth == 0.1))
+})
+
 # =============================================================================
 # G7 -- compositional / structural zeros
 # =============================================================================
@@ -282,4 +303,54 @@ test_that("dgp.content.sha256 is reproducible and seed-sensitive", {
   expect_identical(s1, s2)
   expect_false(identical(s1, s3))
   expect_match(s1, "^[0-9a-f]{64}$")
+})
+
+# =============================================================================
+# Frozen-registry replay -- every committed row reproduces its recorded SHA-256
+# =============================================================================
+
+# Parse the registry `params` column ("k=v; k=v; ...") back into a generator
+# argument list, with the integer/character/numeric typing the generators expect.
+.dgp.parse.registry.args <- function(s) {
+  parts <- trimws(strsplit(s, ";", fixed = TRUE)[[1]])
+  out <- list()
+  for (p in parts) {
+    kv <- strsplit(p, "=", fixed = TRUE)[[1]]
+    k <- trimws(kv[1]); v <- trimws(kv[2])
+    out[[k]] <- if (k == "truth") {
+      v
+    } else if (k %in% c("n", "D", "d", "seed", "K", "m", "zero.parts")) {
+      as.integer(v)
+    } else {
+      as.numeric(v)
+    }
+  }
+  out
+}
+
+# Locate the frozen registry across run modes: dev tree (source()+test_dir,
+# load_all) via test_path first, then an installed package via system.file
+# (R CMD check). Skip only if neither resolves.
+.dgp.registry.path <- function() {
+  dev <- tryCatch(
+    testthat::test_path("..", "..", "inst", "dgp_registry", "dgp_registry.csv"),
+    error = function(e) "")
+  if (nzchar(dev) && file.exists(dev)) return(dev)
+  inst <- system.file("dgp_registry", "dgp_registry.csv", package = "geosmooth")
+  if (nzchar(inst) && file.exists(inst)) return(inst)
+  ""
+}
+
+test_that("every frozen registry row reproduces its recorded SHA-256", {
+  skip_if_not_installed("digest")
+  csv <- .dgp.registry.path()
+  skip_if(!nzchar(csv), "frozen registry CSV not found in this run mode")
+  reg <- utils::read.csv(csv, stringsAsFactors = FALSE)
+  expect_gt(nrow(reg), 0)
+  expect_true(all(c("dataset.id", "gtag", "params", "sha256") %in% names(reg)))
+  for (i in seq_len(nrow(reg))) {
+    ds <- dgp.materialize(reg$gtag[i], .dgp.parse.registry.args(reg$params[i]))
+    expect_identical(dgp.content.sha256(ds), reg$sha256[i],
+                     info = reg$dataset.id[i])
+  }
 })
