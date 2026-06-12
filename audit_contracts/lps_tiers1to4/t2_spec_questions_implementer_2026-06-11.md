@@ -236,6 +236,13 @@ candidate predicting `NA` on most points is scored on the remainder and can
 win. This is outside E2.12's contract scope; I am **not** changing it. Flag
 for a possible future amendment; happy to file it as a separate finding.
 
+**Addendum 11c (2026-06-12): promoted to Tier-2 GATE E2.15.**
+`project_briefs/lps_e2_15_binomial_na_consistency_amendment_2026-06-12.md`
+promotes this observation to a gate, implemented alongside E2.13 per the
+work order: binomial selection scores `Inf` for any candidate with a
+non-finite CV prediction (the `.klp.rmse` convention), always-on, with the
+`logloss.clipped` diagnostic's reporting preserved.
+
 ### 11b. Addendum (2026-06-11, before the E2.12 tests landed): corrected
 ### dominance definition for the (b) demonstration **[info]**
 
@@ -314,6 +321,17 @@ Proposal, per the assignment's strong preference and §A2:
 gaussian-only scope, (iii) the centering construction — or amend.** I will
 not start E2.13 (including its tests) before this lands as a §H amendment or
 an explicit no-objection.
+
+**Addendum 12b (2026-06-12): §G4 RESOLVED — proposal ratified.**
+`project_briefs/lps_g4_ridge_resolution_2026-06-12.md` ratifies (i)–(iii)
+verbatim (argument `ridge.shrinkage.target = c("zero", "local.mean")` with
+default `"zero"` bit-for-bit; gaussian/WLS scope only with the logistic
+penalty explicitly out of scope; weighted-centering construction), and the
+work order `project_briefs/lps_t2_e2_13_work_order_2026-06-12.md` instructs
+implementation now. Note from the resolution: the aligned `"local.mean"`
+setting is the statistically correct behavior and is documented as
+recommended, but flipping the default is a separately-versioned,
+separately-audited future change — not part of E2.13.
 
 ## Cross-cutting
 
