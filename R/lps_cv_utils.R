@@ -36,8 +36,12 @@ lps.grouped.foldid <- function(cluster.id, v = 5L, shuffle.seed = NULL) {
     cluster.chr <- as.character(cluster.id)
     cluster.names <- unique(cluster.chr)
     n.clusters <- length(cluster.names)
+    if (length(v) != 1L || !is.numeric(v) || !is.finite(v) ||
+        v != round(v)) {
+        stop("'v' must be a single whole number.", call. = FALSE)
+    }
     v <- as.integer(v)
-    if (!is.finite(v) || v < 2L || v > n.clusters) {
+    if (v < 2L || v > n.clusters) {
         stop("'v' must be an integer between 2 and the number of distinct ",
              "clusters (", n.clusters, ").", call. = FALSE)
     }
@@ -177,8 +181,12 @@ lps.nested.cv <- function(X, y, outer.foldid,
         stop("lps.nested.cv currently supports outcome.family = 'gaussian' ",
              "only.", call. = FALSE)
     }
+    if (length(inner.folds) != 1L || !is.numeric(inner.folds) ||
+        !is.finite(inner.folds) || inner.folds != round(inner.folds)) {
+        stop("'inner.folds' must be a single whole number.", call. = FALSE)
+    }
     inner.folds <- as.integer(inner.folds)
-    if (!is.finite(inner.folds) || inner.folds < 2L) {
+    if (inner.folds < 2L) {
         stop("'inner.folds' must be an integer >= 2.", call. = FALSE)
     }
     inner.foldid.method <- match.arg(inner.foldid.method)

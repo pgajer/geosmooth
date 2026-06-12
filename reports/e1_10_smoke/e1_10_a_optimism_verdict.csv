@@ -1,2 +1,2 @@
 "study","mode","generator","R","n.train","n.test","sigma","mean.rel.nested","se.rel.nested","mean.rel.selectedmin","mean.optimism.delta","se.optimism.delta","wilcoxon.p.greater","rule","verdict","acceptance.evidence"
-"E1.10a","smoke","inline-smoke-fixture (NOT plan DGPs)",2,120,400,0.1,0.140419948220505,0.0432506911234386,0.0870236213805679,0.0104565933835558,0.00057392649868726,NA,"mean(rel.nested)<0.10 & mean(optimism.delta)>=0; SE<0.0333","INCONCLUSIVE",FALSE
+"E1.10a","smoke","inline-smoke-fixture (NOT plan DGPs)",2,120,400,0.1,0.140419948220505,0.0432506911234386,0.0870236213805679,0.0104565933835558,0.00057392649868726,NA,"mean(rel.nested)<0.10 & mean(optimism.delta)>=0; SE of BOTH gated means < 0.0333","INCONCLUSIVE",FALSE
