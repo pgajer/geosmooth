@@ -160,6 +160,7 @@ run.e4.1.coverage.study <- function(
     z <- stats::qnorm(1 - (1 - level) / 2)
     se.known <- sigma * row.norm
     bias <- as.numeric(S %*% truth) - truth   # exact smoothing bias at f
+    bias.se.ratio <- abs(bias) / se.known     # deterministic, per point
 
     ## ---- strata --------------------------------------------------------------
     r.latent <- sqrt(rowSums(U^2))
@@ -250,7 +251,9 @@ run.e4.1.coverage.study <- function(
             min.point.coverage.known = min(pp.known[idx]),
             max.point.coverage.known = max(pp.known[idx]),
             mean.abs.bias = mean(abs(bias[idx])),
-            mean.se.known = mean(se.known[idx])
+            mean.se.known = mean(se.known[idx]),
+            mean.bias.se.ratio = mean(bias.se.ratio[idx]),
+            max.bias.se.ratio = max(bias.se.ratio[idx])
         )
     }))
 
@@ -290,6 +293,8 @@ run.e4.1.coverage.study <- function(
         dgp.source = dgp.source,
         mc.se.empirical = c(mc.se.empirical.known, mc.se.empirical.plugin),
         mc.se.perpoint.bernoulli = mc.se.perpoint,
+        interior.mean.bias.se.ratio = mean(bias.se.ratio[interior]),
+        interior.max.bias.se.ratio = max(bias.se.ratio[interior]),
         n = n,
         R.replicates = R,
         sigma = sigma,
@@ -349,6 +354,7 @@ run.e4.1.coverage.study <- function(
         top.curvature.decile = top.curvature,
         bias = bias,
         se.known = se.known,
+        bias.se.ratio = bias.se.ratio,
         smoother.row.norm = row.norm,
         coverage.known = pp.known,
         coverage.plugin = pp.plugin
@@ -386,6 +392,8 @@ run.e4.1.coverage.study <- function(
                 interior.plugin, verdict.rows$verdict[[2L]]),
         sprintf("empirical MC-SE (known / plug-in): %.4f / %.4f",
                 mc.se.empirical.known, mc.se.empirical.plugin),
+        sprintf("interior bias/se: mean %.4f  max %.4f",
+                mean(bias.se.ratio[interior]), max(bias.se.ratio[interior])),
         sprintf("df = tr S: %.3f   n: %d   R: %d", df, n, R),
         paste0("out.dir: ", out.dir)
     ), file.path(out.dir, "e4_1_console_summary.txt"))
