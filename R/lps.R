@@ -89,8 +89,11 @@
 #'   error), and records Brier/log-loss probability
 #'   diagnostics. \code{"binomial"} uses local weighted logistic polynomial
 #'   fits, selects candidates by observed CV log loss with the log-loss
-#'   probability truncation pinned at \code{1e-6} (E2.12), and reports
-#'   probability diagnostics on the fitted probabilities.
+#'   probability truncation pinned at \code{1e-6} (E2.12) and with any
+#'   candidate having a non-finite CV prediction scored \code{Inf} --
+#'   unselectable, the same rule as the gaussian/bernoulli selection
+#'   scores (E2.15) -- and reports probability diagnostics on the fitted
+#'   probabilities.
 #'   The local logistic IRLS uses deviance step-halving (E2.14): a Newton
 #'   update is accepted only if the weighted binomial deviance does not
 #'   increase by more than \code{1e-8}; otherwise the step is halved toward
@@ -1161,9 +1164,23 @@ lps.backend.diagnostics <- function(object) {
         )
     }
     if (identical(outcome.family, "binomial")) {
+        # E2.15: the selection-facing log loss uses the same
+        # Inf-on-any-non-finite convention as the gaussian/bernoulli
+        # selection scores (.klp.rmse), so a candidate that cannot predict
+        # everywhere is unselectable. The previous behavior delegated to
+        # .klp.logloss, which DROPS non-finite pairs -- letting an NA-heavy
+        # candidate win on the subset of points it happened to predict.
+        # .klp.logloss itself is unchanged: it still backs the
+        # logloss.clipped probability DIAGNOSTIC, where scoring the
+        # observed pairs is the intended reporting semantics.
         cv.table$cv.logloss.observed <- vapply(
             seq_len(ncol(pred)),
-            function(j) .klp.logloss(y, pred[, j]),
+            function(j) {
+                if (!all(is.finite(pred[, j]))) {
+                    return(Inf)
+                }
+                .klp.logloss(y, pred[, j])
+            },
             numeric(1L)
         )
     }
