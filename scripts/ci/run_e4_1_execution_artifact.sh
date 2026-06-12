@@ -18,6 +18,17 @@
 #          E4_SMOKE_N      smoke n (default 1200)
 #          E4_SMOKE_R      smoke replicates (default 100)
 #          E4_SMOKE_K      smoke support size (default 30)
+#          E4_ACCEPT       "1" runs the Part B ACCEPTANCE leg (default "0"):
+#                          validation/e4_1_acceptance_run.R — the ratified
+#                          pinned configuration (K=20, tricube, audited
+#                          G3a-R1-smooth-s010-n1200, n=1200, R=500, known
+#                          sigma=0.1), per the 2026-06-12 K ratification. The
+#                          manifest then records K, kernel, design seed,
+#                          realized interior mean/max bias-to-se, both
+#                          interior coverages, and the boundary/top-curvature
+#                          strata.
+#          E4_ACCEPT_FIT_EVERY  "TRUE" forces full per-replicate fits in the
+#                          acceptance leg (auditor's no-shortcut reproduction)
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
 # still produce its artifact). Gate acceptance is decided by the auditor from
@@ -36,14 +47,20 @@ SRC_FILES=(
   "R/lps.R"
   "R/lps_uncertainty.R"
   "validation/e4_1_coverage_study.R"
+  "validation/e4_1_g3a_binding.R"
+  "validation/e4_1_k_calibration.R"
+  "validation/e4_1_acceptance_run.R"
   "scripts/ci/e4_1_headroom_probe.R"
 )
 PROBE="scripts/ci/e4_1_headroom_probe.R"
 STUDY="validation/e4_1_coverage_study.R"
+ACCEPT_DRIVER="validation/e4_1_acceptance_run.R"
 E4_SMOKE="${E4_SMOKE:-1}"
 E4_SMOKE_N="${E4_SMOKE_N:-1200}"
 E4_SMOKE_R="${E4_SMOKE_R:-100}"
 E4_SMOKE_K="${E4_SMOKE_K:-30}"
+E4_ACCEPT="${E4_ACCEPT:-0}"
+E4_ACCEPT_FIT_EVERY="${E4_ACCEPT_FIT_EVERY:-FALSE}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT="audit_artifacts/e4_1_${STAMP}"
 mkdir -p "$OUT"
@@ -122,6 +139,18 @@ else
   echo "E4_SMOKE=0: smoke leg skipped." > "$OUT/smoke_stdout.txt"
 fi
 
+# --- 6b) Part B ACCEPTANCE leg (ratified pinned configuration) ------------------
+if [ "$E4_ACCEPT" = "1" ]; then
+  Rscript "$ACCEPT_DRIVER" \
+    out.dir="$OUT/acceptance_study" \
+    fit.every.replicate="$E4_ACCEPT_FIT_EVERY" \
+    > "$OUT/acceptance_stdout.txt" 2>&1
+  ACCEPT_RC=$?
+else
+  ACCEPT_RC=0
+  echo "E4_ACCEPT=0: acceptance leg not run." > "$OUT/acceptance_stdout.txt"
+fi
+
 # --- 7) Human/machine manifest ---------------------------------------------------
 {
   echo "artifact_id: e4_1_${STAMP}"
@@ -141,6 +170,22 @@ fi
   echo "smoke_context: $(grep '^context:' "$OUT/smoke_study/e4_1_console_summary.txt" 2>/dev/null | head -n1)"
   echo "smoke_interior_known: $(grep 'known sigma' "$OUT/smoke_study/e4_1_console_summary.txt" 2>/dev/null)"
   echo "smoke_interior_plugin: $(grep 'plug-in sigma' "$OUT/smoke_study/e4_1_console_summary.txt" 2>/dev/null)"
+  echo "accept_enabled: ${E4_ACCEPT}"
+  echo "accept_rc: ${ACCEPT_RC}"
+  if [ "$E4_ACCEPT" = "1" ]; then
+    AS="$OUT/acceptance_study"
+    echo "accept_config: K=20 kernel=tricube dgp=G3a-R1-smooth-s010-n1200 design_seed=1 n=1200 R=500 sigma=0.1 known (ratified 2026-06-12)"
+    echo "accept_fit_every_replicate: ${E4_ACCEPT_FIT_EVERY}"
+    echo "accept_context: $(grep '^context:' "$AS/e4_1_console_summary.txt" 2>/dev/null | head -n1)"
+    echo "accept_dgp_source: $(grep '^dgp.source:' "$AS/e4_1_console_summary.txt" 2>/dev/null | head -n1)"
+    echo "accept_interior_known: $(grep 'known sigma' "$AS/e4_1_console_summary.txt" 2>/dev/null)"
+    echo "accept_interior_plugin: $(grep 'plug-in sigma' "$AS/e4_1_console_summary.txt" 2>/dev/null)"
+    echo "accept_interior_bias_se: $(grep 'interior bias/se' "$AS/e4_1_console_summary.txt" 2>/dev/null)"
+    echo "accept_stratified_csv_header: $(head -n1 "$AS/e4_1_stratified_summary.csv" 2>/dev/null)"
+    echo "accept_stratum_interior: $(grep '\"interior\"' "$AS/e4_1_stratified_summary.csv" 2>/dev/null)"
+    echo "accept_stratum_boundary: $(grep 'boundary.within.h' "$AS/e4_1_stratified_summary.csv" 2>/dev/null)"
+    echo "accept_stratum_top_curvature: $(grep 'top.curvature.decile' "$AS/e4_1_stratified_summary.csv" 2>/dev/null)"
+  fi
   echo "executor: ${EXECUTOR:-$(whoami 2>/dev/null)@$(hostname 2>/dev/null)}"
 } > "$OUT/execution_manifest.txt"
 
@@ -150,7 +195,7 @@ fi
 # --- 9) Preliminary readiness (the AUDITOR makes the final call) -------------------
 echo "[e4.1-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[e4.1-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
-if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && $CLEAN; then
+if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$ACCEPT_RC" -eq 0 ] && $CLEAN; then
   echo "[e4.1-artifact] PRELIMINARY: green (auditor must still verify headroom, coverage, provenance)"
 else
   echo "[e4.1-artifact] PRELIMINARY: NOT green"
