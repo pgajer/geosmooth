@@ -98,33 +98,50 @@ paired <- data.frame(
 write.csv(paired, file.path(OUT, "e110_paired_telemetry.csv"),
           row.names = FALSE)
 
-# ---- Committed smoke outputs: bind into the bundle -----------------------------
-smoke.dir <- "reports/e1_10_smoke"
-smoke.files <- c("e1_10_a_optimism_verdict.csv",
+# ---- Committed study outputs (smoke + acceptance): bind into the bundle --------
+study.files <- c("e1_10_a_optimism_verdict.csv",
                  "e1_10_b_grouped_verdict.csv",
                  "e1_10_a_optimism_cases.csv",
                  "e1_10_b_grouped_cases.csv",
                  "e1_10_run_metadata.txt")
-smoke.present <- file.exists(file.path(smoke.dir, smoke.files))
-smoke.summary <- if (all(smoke.present[1:2])) {
-    va <- read.csv(file.path(smoke.dir, smoke.files[[1L]]))
-    vb <- read.csv(file.path(smoke.dir, smoke.files[[2L]]))
-    sprintf("a:%s b(rho=0.6):%s acceptance_evidence:%s",
-            va$verdict[[1L]],
-            vb$verdict[vb$rho.nominal == 0.6][[1L]],
-            all(c(va$acceptance.evidence, vb$acceptance.evidence)) ||
-                FALSE)
-} else {
-    "smoke outputs missing"
+bind.study.dir <- function(dir) {
+    present <- file.exists(file.path(dir, study.files))
+    if (!all(present[1:2])) {
+        return(list(summary = "verdict outputs missing", lines = c(
+            paste0("dir: ", dir),
+            paste0("files_present: ",
+                   paste(study.files[present], collapse = ";")),
+            "verdicts: verdict outputs missing"
+        )))
+    }
+    va <- read.csv(file.path(dir, study.files[[1L]]))
+    vb <- read.csv(file.path(dir, study.files[[2L]]))
+    vb6 <- vb[vb$rho.nominal == 0.6, , drop = FALSE]
+    summary <- sprintf(
+        "a:%s b(rho=0.6):%s generator:%s acceptance_evidence:%s",
+        va$verdict[[1L]],
+        if (nrow(vb6)) vb6$verdict[[1L]] else "absent",
+        va$generator[[1L]],
+        all(c(va$acceptance.evidence, vb$acceptance.evidence))
+    )
+    list(summary = summary, lines = c(
+        paste0("dir: ", dir),
+        paste0("files_present: ",
+               paste(study.files[present], collapse = ";")),
+        paste0("verdicts: ", summary)
+    ))
 }
+smoke.bind <- bind.study.dir("reports/e1_10_smoke")
+accept.bind <- bind.study.dir("reports/e1_10_acceptance")
+smoke.summary <- smoke.bind$summary
+accept.summary <- accept.bind$summary
 writeLines(c(
-    paste0("smoke_dir: ", smoke.dir),
-    paste0("files_present: ", paste(smoke.files[smoke.present],
-                                    collapse = ";")),
-    paste0("smoke_verdicts: ", smoke.summary),
-    "note: smoke verdicts are pipeline evidence only (inline fixtures, NOT",
-    "      plan DGPs); acceptance runs are gated on the audited DGP library."
-), file.path(OUT, "e110_smoke_binding.txt"))
+    "== smoke (pipeline evidence only; inline fixtures, NOT plan DGPs) ==",
+    smoke.bind$lines,
+    "",
+    "== acceptance (registry dgp.g3a / dgp.g5; STUDY verdicts) ==",
+    accept.bind$lines
+), file.path(OUT, "e110_study_outputs_binding.txt"))
 
 # ---- Provenance -----------------------------------------------------------------
 writeLines(c(
@@ -149,15 +166,17 @@ summ <- data.frame(
     grouped_fold_sizes = balance$fold_sizes,
     paired_all_identical = all(unlist(paired[1, -1])),
     smoke_outputs = smoke.summary,
+    acceptance_outputs = accept.summary,
     all_ok = ok,
     stringsAsFactors = FALSE
 )
 write.csv(summ, file.path(OUT, "e110_probe_summary.csv"), row.names = FALSE)
 cat(sprintf(
     paste0("E1.10A1 max_inner_delta=%.3e max_pred_delta=%.3e sel_identical=%s | ",
-           "E1.10A2 whole=%s sizes=%s | E1.10A3 paired=%s | smoke: %s | all_ok=%s\n"),
+           "E1.10A2 whole=%s sizes=%s | E1.10A3 paired=%s | smoke: %s | ",
+           "acceptance: %s | all_ok=%s\n"),
     summ$leakage_max_inner_cv_delta, summ$leakage_max_prediction_delta,
     summ$leakage_all_selection_identical, summ$grouped_whole_cluster,
     summ$grouped_fold_sizes, summ$paired_all_identical,
-    summ$smoke_outputs, ok))
+    summ$smoke_outputs, summ$acceptance_outputs, ok))
 quit(status = if (ok) 0L else 1L)
