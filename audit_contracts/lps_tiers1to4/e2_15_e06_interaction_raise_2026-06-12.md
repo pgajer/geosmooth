@@ -90,3 +90,20 @@ I have not implemented any of the three.
   emits the artifact regardless of battery status). E2.15 must not be
   re-audited for acceptance until this interaction is adjudicated; the
   combined re-audit can proceed on E2.12/E2.13/E2.14 regardless.
+
+## RESOLUTION (2026-06-12, orchestrator-adjudicated): Option 1 implemented
+
+The orchestrator adjudicated **Option 1** — amend E0.6's binomial arm to
+`unstable.action = "mean"` — framing it as the program's first Tier-0
+re-open and "the audit chain working as designed" (a downstream fix
+surfaced that an accepted gate's numbers depended on the defect being
+fixed). Implemented in commit `5fb3a1c`
+(`tests/testthat/test-lps-tier0-correctness-extended.R`; the bernoulli arm
+keeps `"na"`): realized movement and the degree-0 identity note are in the
+commit message and the amendment handoff
+(`phase_handoffs/e0_6_binomial_amendment_handoff_2026-06-12.md`); no
+threshold re-pin was needed (all existing assertions pass unchanged).
+Green full-battery bundle: `audit_artifacts/tier2_20260612T215842Z`
+(tests=29, failed=0, error=0, coverage E0.1–E0.8 + E2.12/13/14/15).
+Re-audit sequencing per the adjudication: E2.12-universal + E2.13 + E2.14
+regression at `b79d041`; then E2.15 + the amended E0.6 at `5fb3a1c`.
