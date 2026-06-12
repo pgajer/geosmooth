@@ -155,7 +155,11 @@ fi
 {
   echo "artifact_id: e4_1_${STAMP}"
   echo "generated_utc: ${STAMP}"
-  echo "gate: E4.1 (Part A unit GATE; Part B smoke leg is wiring evidence only)"
+  if [ "$E4_ACCEPT" = "1" ]; then
+    echo "gate: E4.1 (Part A unit GATE; Part B ACCEPTANCE leg at the ratified configuration)"
+  else
+    echo "gate: E4.1 (Part A unit GATE; Part B smoke leg, when run, is wiring evidence only)"
+  fi
   echo "repo: ${REPO}"
   echo "git_head: $(cat "$OUT/git_head.txt" 2>/dev/null)"
   echo "tree_clean: ${CLEAN}"
