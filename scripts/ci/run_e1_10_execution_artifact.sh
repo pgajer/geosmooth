@@ -28,6 +28,7 @@ TEST_FILES=(
 )
 AUX_FILES=(
   "R/lps_cv_utils.R"
+  "R/dgp_library.R"
   "tests/testthat/helper-lps-e1-9.R"
   "tests/testthat/helper-lps-e1-9-reference.R"
   "validation/e1_10_nested_grouped_cv.R"
@@ -36,6 +37,11 @@ AUX_FILES=(
   "reports/e1_10_smoke/e1_10_b_grouped_cases.csv"
   "reports/e1_10_smoke/e1_10_b_grouped_verdict.csv"
   "reports/e1_10_smoke/e1_10_run_metadata.txt"
+  "reports/e1_10_acceptance/e1_10_a_optimism_cases.csv"
+  "reports/e1_10_acceptance/e1_10_a_optimism_verdict.csv"
+  "reports/e1_10_acceptance/e1_10_b_grouped_cases.csv"
+  "reports/e1_10_acceptance/e1_10_b_grouped_verdict.csv"
+  "reports/e1_10_acceptance/e1_10_run_metadata.txt"
 )
 SRC_FILE="R/lps.R"
 PROBE="scripts/ci/e1_10_realized_quantities_probe.R"
