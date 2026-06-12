@@ -147,6 +147,23 @@ test_that("E0.5 Truth-RMSE is consistent (slope < -0.1) on a curved 2-manifold",
 test_that("E0.6 binary modes recover and calibrate probabilities", {
     # Spec E0.6: both binary modes give probability estimates that are (i)
     # consistent (RMSE_p decreasing in n) and (ii) calibrated at large n.
+    #
+    # Tier-0 amendment (2026-06-12, orchestrator-adjudicated; raised by the
+    # Tier-2 implementer in audit_contracts/lps_tiers1to4/
+    # e2_15_e06_interaction_raise_2026-06-12.md): the BINOMIAL arm runs
+    # unstable.action = "mean" (deployed event-rate fallback predictions at
+    # every point) instead of "na". Rationale: (i) under E2.15 a candidate
+    # with any non-finite CV prediction is unselectable, and at small
+    # supports / low prevalence every candidate can have NA predictions
+    # (logistic exact separation), erroring the fit -- 7 of 72 smoke cells
+    # pre-amendment; (ii) the accepted "na"-era statistics were computed
+    # over selections E2.15 classifies as invalid (candidates scored only
+    # on the points they happened to predict, failing on up to ~13%);
+    # (iii) scoring the DEPLOYED predictions at every point is the same
+    # train/deploy-consistency principle as E2.12, with the fallback
+    # fraction telemetered per E2.14. The bernoulli arm keeps "na" (its
+    # least-squares solve produces no NA on these fixtures; realized
+    # na.fraction 0 in the accepted bundles).
     full <- nzchar(Sys.getenv("LPS_TIER0_FULL"))
     ns <- if (full) c(500L, 1000L, 2000L, 4000L) else c(500L, 1000L, 2000L)
     R  <- if (full) 40L else 8L
@@ -179,7 +196,8 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
         kernel.grid = "tricube", coordinate.method = "coordinates",
         backend = "R", design.basis = "orthogonal.polynomial.drop",
         outcome.family = fam, ridge.multiplier.grid = 0,
-        ridge.condition.max = Inf, unstable.action = "na")
+        ridge.condition.max = Inf,
+        unstable.action = if (identical(fam, "binomial")) "mean" else "na")
 
     for (fam in c("bernoulli", "binomial")) {
         for (prev in prevalence.grid) {
