@@ -31,6 +31,7 @@ TEST_FILES=(
   "tests/testthat/test-lps-degenerate.R"                  # E0.8
   "tests/testthat/test-lps-binary-separation.R"           # E2.14
   "tests/testthat/test-lps-binary-metric-consistency.R"   # E2.12
+  "tests/testthat/test-lps-ridge-alignment.R"             # E2.13
 )
 SRC_FILE="R/lps.R"
 PROBE="scripts/ci/tier2_binary_probe.R"

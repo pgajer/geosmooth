@@ -112,6 +112,23 @@
 #'   \code{outcome.family = "gaussian"}), which do not materialize
 #'   per-point predictions. Default \code{FALSE} leaves the returned object
 #'   exactly as before.
+#' @param ridge.shrinkage.target Shrinkage target of the local ridge
+#'   penalty in the least-squares solve (E2.13). The default \code{"zero"}
+#'   preserves the historical behavior bit-for-bit: in the orthogonal
+#'   design bases the penalty acts on every transformed direction,
+#'   including the constant, so a large ridge multiplier shrinks the local
+#'   prediction toward 0. \code{"local.mean"} -- the statistically
+#'   recommended setting -- leaves the constant direction unpenalized via a
+#'   weighted-centering reparametrization, so a large ridge shrinks the
+#'   prediction toward the local weighted mean instead, and \code{rho = 0}
+#'   remains the unpenalized weighted least-squares solve. The two settings
+#'   coincide for the non-orthogonal design bases (\code{"monomial"},
+#'   \code{"weighted.qr"}, \code{"weighted.qr.drop"}), whose constant
+#'   column is already unpenalized, and at \code{rho = 0}. The setting
+#'   applies to the least-squares solve (\code{outcome.family "gaussian"} /
+#'   \code{"bernoulli"}); it has \emph{no effect} on the
+#'   \code{"binomial"} local logistic solver, whose ridge keeps the
+#'   historical structure (a warning is issued if combined).
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -154,12 +171,24 @@ fit.lps <- function(
     ridge.condition.max = 1e12,
     unstable.action = c("na", "mean"),
     outcome.family = c("gaussian", "bernoulli", "binomial"),
-    keep.cv.predictions = FALSE) {
+    keep.cv.predictions = FALSE,
+    ridge.shrinkage.target = c("zero", "local.mean")) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
     outcome.family <- match.arg(outcome.family)
     keep.cv.predictions <- isTRUE(keep.cv.predictions)
+    ridge.shrinkage.target <- match.arg(ridge.shrinkage.target)
+    if (identical(outcome.family, "binomial") &&
+        identical(ridge.shrinkage.target, "local.mean")) {
+        # E2.13 scope (S G4 resolution): the alignment applies to the
+        # least-squares ridge only; the binomial logistic solver's penalty
+        # is unchanged.
+        warning("'ridge.shrinkage.target = \"local.mean\"' has no effect ",
+                "in outcome.family = \"binomial\" mode: the alignment ",
+                "applies to the least-squares ridge solve only.",
+                call. = FALSE)
+    }
     if (!is.numeric(X) || !length(X) || any(!is.finite(X))) {
         stop("'X' must be a finite numeric matrix.", call. = FALSE)
     }
@@ -274,7 +303,8 @@ fit.lps <- function(
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
-        logistic.telemetry = logistic.cv.telemetry
+        logistic.telemetry = logistic.cv.telemetry,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     cv.table <- cv.result$cv.table
     cv.table <- .klp.decorate.outcome.cv.table(cv.table, outcome.family)
@@ -320,7 +350,8 @@ fit.lps <- function(
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         logistic.telemetry = logistic.final.telemetry,
-        return.chart.diagnostics = TRUE
+        return.chart.diagnostics = TRUE,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     fitted <- if (is.list(fitted.result) &&
                   !is.null(fitted.result$predictions)) {
@@ -391,6 +422,7 @@ fit.lps <- function(
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
+        ridge.shrinkage.target = ridge.shrinkage.target,
         probability.diagnostics = probability.diagnostics,
         logistic.diagnostics = logistic.diagnostics,
         call = match.call()
@@ -472,7 +504,8 @@ predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
             c(0, 1e-10, 1e-8),
         ridge.condition.max = object$ridge.condition.max %||% 1e12,
         unstable.action = object$unstable.action %||% "mean",
-        outcome.family = object$outcome.family %||% "gaussian"
+        outcome.family = object$outcome.family %||% "gaussian",
+        ridge.shrinkage.target = object$ridge.shrinkage.target %||% "zero"
     )
     if (identical(type, "raw")) {
         return(pred)
@@ -499,6 +532,10 @@ print.lps <- function(x, ...) {
     if (!is.null(x$outcome.family) &&
         !identical(x$outcome.family, "gaussian")) {
         cat("  outcome family:", x$outcome.family, "\n")
+    }
+    if (!is.null(x$ridge.shrinkage.target) &&
+        !identical(x$ridge.shrinkage.target, "zero")) {
+        cat("  ridge shrinkage target:", x$ridge.shrinkage.target, "\n")
     }
     cat("  selected support.size:", x$selected$support.size[[1L]], "\n")
     cat("  selected degree:", x$selected$degree[[1L]], "\n")
@@ -926,7 +963,8 @@ lps.backend.diagnostics <- function(object) {
                           ridge.condition.max = 1e12,
                           unstable.action = "mean",
                           outcome.family = "gaussian",
-                          logistic.telemetry = NULL) {
+                          logistic.telemetry = NULL,
+                          ridge.shrinkage.target = "zero") {
     cand$chart.dim <- NA_integer_
     local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
     if (identical(coordinate.method, "coordinates") &&
@@ -1059,7 +1097,8 @@ lps.backend.diagnostics <- function(object) {
                             ridge.condition.max = ridge.condition.max,
                             unstable.action = unstable.action,
                             outcome.family = outcome.family,
-                            logistic.telemetry = logistic.telemetry
+                            logistic.telemetry = logistic.telemetry,
+                            ridge.shrinkage.target = ridge.shrinkage.target
                         )
                     }
                 } else {
@@ -1090,7 +1129,8 @@ lps.backend.diagnostics <- function(object) {
                             ridge.condition.max = ridge.condition.max,
                             unstable.action = unstable.action,
                             outcome.family = outcome.family,
-                            logistic.telemetry = logistic.telemetry
+                            logistic.telemetry = logistic.telemetry,
+                            ridge.shrinkage.target = ridge.shrinkage.target
                         )
                     }
                 }
@@ -1364,7 +1404,8 @@ lps.backend.diagnostics <- function(object) {
                                           unstable.action = "mean",
                                           outcome.family = "gaussian",
                                           logistic.telemetry = NULL,
-                                          return.chart.diagnostics = FALSE) {
+                                          return.chart.diagnostics = FALSE,
+                                          ridge.shrinkage.target = "zero") {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
@@ -1433,7 +1474,8 @@ lps.backend.diagnostics <- function(object) {
             ridge.condition.max = ridge.condition.max,
             unstable.action = unstable.action,
             outcome.family = outcome.family,
-            logistic.telemetry = logistic.telemetry
+            logistic.telemetry = logistic.telemetry,
+            ridge.shrinkage.target = ridge.shrinkage.target
         )
     }
     if (!return.chart.diagnostics) return(out)
@@ -1519,7 +1561,8 @@ lps.backend.diagnostics <- function(object) {
                                ridge.condition.max = 1e12,
                                unstable.action = "mean",
                                outcome.family = "gaussian",
-                               logistic.telemetry = NULL) {
+                               logistic.telemetry = NULL,
+                               ridge.shrinkage.target = "zero") {
     .klp.fit.intercept.lazy(
         z = z,
         y = y,
@@ -1533,7 +1576,8 @@ lps.backend.diagnostics <- function(object) {
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
-        logistic.telemetry = logistic.telemetry
+        logistic.telemetry = logistic.telemetry,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
 }
 
@@ -1547,7 +1591,8 @@ lps.backend.diagnostics <- function(object) {
                                     ridge.condition.max = 1e12,
                                     unstable.action = "mean",
                                     outcome.family = "gaussian",
-                                    logistic.telemetry = NULL) {
+                                    logistic.telemetry = NULL,
+                                    ridge.shrinkage.target = "zero") {
     ok <- is.finite(y) & is.finite(weights) & weights > 0
     if (!any(weights > 0)) {
         weights[] <- 1
@@ -1585,7 +1630,8 @@ lps.backend.diagnostics <- function(object) {
         design.drop.tol = design.drop.tol,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
-        unstable.action = unstable.action
+        unstable.action = unstable.action,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
 }
 
@@ -1596,7 +1642,8 @@ lps.backend.diagnostics <- function(object) {
                                       ridge.multiplier.grid =
                                           c(0, 1e-10, 1e-8),
                                       ridge.condition.max = 1e12,
-                                      unstable.action = "mean") {
+                                      unstable.action = "mean",
+                                      ridge.shrinkage.target = "zero") {
     design.ok <- rowSums(is.finite(design)) == ncol(design)
     ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     if (!any(weights > 0)) {
@@ -1620,7 +1667,8 @@ lps.backend.diagnostics <- function(object) {
         design.drop.tol = design.drop.tol,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
-        prediction.row = prediction.row
+        prediction.row = prediction.row,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     if (!is.null(solved) && isTRUE(solved$ok) &&
         length(solved$prediction) && is.finite(solved$prediction[[1L]])) {
@@ -2028,7 +2076,8 @@ lps.backend.diagnostics <- function(object) {
                                  design.drop.tol = 1e-8,
                                  ridge.multiplier.grid = c(0, 1e-10, 1e-8),
                                  ridge.condition.max = 1e12,
-                                 prediction.row = NULL) {
+                                 prediction.row = NULL,
+                                 ridge.shrinkage.target = "zero") {
     design <- as.matrix(design)
     y <- as.numeric(y)
     weights <- as.numeric(weights)
@@ -2160,7 +2209,74 @@ lps.backend.diagnostics <- function(object) {
         diag(c(0, rep(1, max(0L, ncol(cross) - 1L))),
              nrow = ncol(cross))
     }
+    # E2.13 (S G4 resolution): opt-in aligned ridge. In the orthogonal basis
+    # the legacy penalty acts on every transformed direction including the
+    # constant, so large ridge shrinks the prediction toward 0. With
+    # ridge.shrinkage.target = "local.mean" the solve is reparametrized by
+    # weighted centering: fit deviations from the local weighted mean
+    # (every centered column has zero weighted mean, so the constant
+    # function is unpenalized) and add the mean back. rho -> Inf then tends
+    # to the local weighted mean exactly; rho = 0 falls through to the
+    # legacy unpenalized solve, where the two targets coincide. The
+    # non-orthogonal bases already leave the constant column unpenalized
+    # (penalty.base above), so the aligned branch is orthogonal-basis only
+    # and the two settings coincide elsewhere.
+    aligned <- identical(ridge.shrinkage.target, "local.mean") &&
+        isTRUE(orthogonal.basis)
+    if (aligned) {
+        w.sum <- sum(weights)
+        ybar.w <- sum(weights * y) / w.sum
+        col.wmeans <- colSums(design * weights) / w.sum
+        design.centered <- sweep(design, 2L, col.wmeans, "-")
+        xw.centered <- design.centered * sqrt(weights)
+        yw.centered <- (y - ybar.w) * sqrt(weights)
+        cross.centered <- crossprod(xw.centered)
+        rhs.centered <- crossprod(xw.centered, yw.centered)
+        scale.centered <- .klp.local.ridge.scale(cross.centered)
+        prediction.row.centered <- if (is.null(prediction.row)) {
+            NULL
+        } else {
+            sweep(prediction.row, 2L, col.wmeans, "-")
+        }
+    }
     for (rho in ridge.multiplier.grid) {
+        if (aligned && rho > 0) {
+            ridge <- rho * scale.centered
+            normal <- cross.centered +
+                ridge * diag(1, nrow = ncol(cross.centered))
+            cond <- .klp.local.design.condition(normal)
+            if (is.finite(ridge.condition.max) &&
+                (!is.finite(cond) || cond > ridge.condition.max)) {
+                next
+            }
+            gamma <- tryCatch(as.numeric(solve(normal, rhs.centered)),
+                              error = function(e) {
+                                  rep(NA_real_, ncol(normal))
+                              })
+            if (length(gamma) && all(is.finite(gamma))) {
+                return(list(
+                    ok = TRUE,
+                    status = "ok",
+                    # Deviation coefficients in the weighted-centered basis;
+                    # the prediction below adds the local weighted mean
+                    # back, so callers must use $prediction (always finite
+                    # here when gamma is), not $coefficients[[1L]].
+                    coefficients = gamma,
+                    ridge.multiplier = rho,
+                    ridge.lambda = ridge,
+                    condition = cond,
+                    prediction = if (is.null(prediction.row)) {
+                        NA_real_
+                    } else {
+                        as.numeric(ybar.w +
+                                       prediction.row.centered %*% gamma)
+                    },
+                    kept.columns = kept.columns,
+                    original.ncol = original.ncol
+                ))
+            }
+            next
+        }
         ridge <- rho * scale
         normal <- cross + ridge * penalty.base
         cond <- .klp.local.design.condition(normal)
