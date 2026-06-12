@@ -1,7 +1,7 @@
 mode: smoke
 generator_source: inline-smoke-fixture (NOT plan DGPs)
-git_head: 164f913edba36441f6c2bd818037736adcfdfd3e
-generated_utc: 20260611T211710Z
+git_head: 7be9d49c671de7848edfeac4093fa9641dac3a66
+generated_utc: 20260612T203315Z
 r_version: R version 4.5.2 (2025-10-31)
 blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
 fit_args:

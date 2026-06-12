@@ -247,7 +247,9 @@ write.csv(cases.a, file.path(OUT, "e1_10_a_optimism_cases.csv"),
 
 se.rel.nested <- mean.se(cases.a$rel.nested)
 se.delta <- mean.se(cases.a$optimism.delta)
-se.ok.a <- is.finite(se.rel.nested) && se.rel.nested < SE.MAX
+# Audit P1: BOTH gated means must satisfy the SE guard, else INCONCLUSIVE.
+se.ok.a <- is.finite(se.rel.nested) && se.rel.nested < SE.MAX &&
+    is.finite(se.delta) && se.delta < SE.MAX
 pass.a <- mean(cases.a$rel.nested) < 0.10 &&
     mean(cases.a$optimism.delta) >= 0
 wilcox.p.a <- if (R.A >= 5L) {
@@ -266,7 +268,8 @@ verdict.a <- data.frame(
     mean.optimism.delta = mean(cases.a$optimism.delta),
     se.optimism.delta = se.delta,
     wilcoxon.p.greater = wilcox.p.a,
-    rule = "mean(rel.nested)<0.10 & mean(optimism.delta)>=0; SE<0.0333",
+    rule = paste0("mean(rel.nested)<0.10 & mean(optimism.delta)>=0; ",
+                  "SE of BOTH gated means < 0.0333"),
     verdict = verdict.word(pass.a, se.ok.a),
     acceptance.evidence = identical(MODE, "acceptance"),
     stringsAsFactors = FALSE

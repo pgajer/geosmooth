@@ -182,6 +182,12 @@ test_that("E1.10A2 cluster integrity: whole-cluster folds, disjointness, leave-c
         "between 2 and the number of distinct clusters"
     )
     expect_error(lps.grouped.foldid(c("a", NA, "b"), v = 2L), "missing")
+    # fold counts must be whole scalars, never silently truncated (audit P3)
+    expect_error(lps.grouped.foldid(fx$cluster.id, v = 2.9), "whole number")
+    expect_error(lps.grouped.foldid(fx$cluster.id, v = c(2L, 3L)),
+                 "whole number")
+    expect_identical(lps.grouped.foldid(fx$cluster.id, v = 4),
+                     lps.grouped.foldid(fx$cluster.id, v = 4L))
 })
 
 test_that("E1.10A2 cluster integrity: grouped nested CV keeps inner folds cluster-whole", {
@@ -255,6 +261,21 @@ test_that("E1.10A3 paired discipline: both arms run on the same recorded foldid"
             inner.folds = 3L
         ),
         "gaussian"
+    )
+    # inner.folds must be a whole scalar, never silently truncated (audit P3)
+    expect_error(
+        lps.nested.cv(
+            X = fx$X, y = fx$y, outer.foldid = fx$outer.foldid,
+            fit.args = e110.fit.args(), inner.folds = 2.9
+        ),
+        "whole number"
+    )
+    expect_error(
+        lps.nested.cv(
+            X = fx$X, y = fx$y, outer.foldid = fx$outer.foldid,
+            fit.args = e110.fit.args(), inner.folds = c(2L, 3L)
+        ),
+        "whole number"
     )
 })
 
