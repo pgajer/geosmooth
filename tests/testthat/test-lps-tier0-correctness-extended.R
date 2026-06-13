@@ -231,6 +231,7 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
             lmf <- stats::lm(log(rmse) ~ logn, data = pts)
             ci.hi <- stats::coef(lmf)[["logn"]] +
                 1.96 * summary(lmf)$coefficients["logn", 2L]
+            median.fallback <- stats::median(pts$fallback.fraction, na.rm = TRUE)
             cat(sprintf(
                 "E0.6 family=%s prevalence=%.1f support=%s slope=%.4f ci_hi=%.4f max_na=%.4f median_fallback=%.4f\n",
                 fam, prev, paste(vapply(ns, function(n) {
@@ -238,9 +239,26 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
                 }, character(1L)), collapse = ","),
                 stats::coef(lmf)[["logn"]], ci.hi,
                 max(pts$na.fraction, na.rm = TRUE),
-                stats::median(pts$fallback.fraction, na.rm = TRUE)
+                median.fallback
             ))
             expect_lt(ci.hi, -0.1)    # consistency slope CI below -0.1
+            # E0.6 fallback-fraction bound (BINOMIAL arm only). The binomial arm
+            # runs unstable.action = "mean" (Tier-0 amendment above), so every
+            # non-converged logistic solve deploys an event-rate fallback
+            # prediction; the per-fit fallback fraction is telemetered in
+            # fit$logistic.diagnostics$final$fallback.path.fraction. This bound
+            # promotes the already-printed median_fallback telemetry into a gate:
+            # it asserts the deployed fallback stays a small minority of final
+            # fits. Realized per-prevalence medians are ~0.0155 (smoke) /
+            # ~0.0020 (full-size) at prevalence 0.1 and 0 elsewhere; the 0.3 bound
+            # clears the real code by ~20x while reddening a degenerate
+            # all-fallback regime (median 1.0). The bernoulli arm records NA
+            # fallback (least-squares solve, no logistic path), so the assertion
+            # is binomial-only -- a bernoulli median over all-NA is NA, which is
+            # not a meaningful bound.
+            if (identical(fam, "binomial")) {
+                expect_lt(median.fallback, 0.3)
+            }
         }
     }
 
