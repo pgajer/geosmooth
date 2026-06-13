@@ -79,12 +79,71 @@ sanctioned skip), the full package suite (225 tests; only the four
 pre-existing `test-ge7-lps-api.R` failures, no errors), and the full
 bundle on a clean committed tree.
 
+## Full-size re-acceptance evidence (added 2026-06-12, closing the open item)
+
+Execution bundle `audit_artifacts/tier2_20260612T233509Z/` — the full
+battery under `LPS_TIER0_FULL=1` on the clean committed tree at
+`git_head = 4367d10…` (`tree_clean: true` before and after,
+`testthat_summary: tests=29 failed=0 error=0 warning=0 skipped=1` — the
+sanctioned E0.3a skip — `gate_contexts: E0.1;…;E0.8;E2.12;E2.12a;E2.12b;
+E2.13;E2.14;E2.15`, `probe_rc: 0`, `study_rc: 0`). Command:
+
+```sh
+LPS_TIER0_FULL=1 EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execution_artifact.sh
+```
+
+This bundle is committed alongside this handoff update (force-added at its
+standard `audit_artifacts/` path, which is gitignored by default) per the
+orchestrator's instruction, as the Tier-0 E0.6 re-acceptance evidence.
+
+Full-size E0.6 binomial-arm consistency (n ∈ {500, 1000, 2000, 4000},
+R = 40, support schedule up to 90/120/150; criterion `ci_hi < -0.1`),
+against the accepted pre-amendment full-size values (`"na"`-era bundle
+`tier0_20260611T040812Z_cpp` at `b86b796`):
+
+| prevalence | slope (na→mean) | ci_hi (na→mean) | max na.fraction | median fallback |
+|---|---|---|---|---|
+| 0.1 | -0.3572 → -0.3181 | -0.3325 → -0.2973 | 0.236 → 0 | 0.0025 → 0.0020 |
+| 0.3 | -0.3268 → -0.3175 | -0.3074 → -0.2980 | 0.124 → 0 | 0.0008 → 0.0000 |
+| 0.5 | -0.3319 → -0.3269 | -0.3097 → -0.3060 | 0.024 → 0 | 0.0000 → 0.0000 |
+
+All three full-size bernoulli rows are unchanged from the accepted values
+to every printed digit (arm untouched, same seeds).
+
+Full-size calibration (held-out logistic recalibration at n = 4000,
+prevalence 0.3, seed 69999; the test gates the **bernoulli** arm with
+bands slope ∈ (0.8, 1.25), intercept ∈ (-0.25, 0.25)):
+
+- **bernoulli (gated):** slope `0.8005`, intercept `-0.0781`, all 2000
+  held-out predictions finite — inside the bands, but the slope clears the
+  lower band edge by only `5e-4`. This value is inherited from the
+  accepted configuration (the bernoulli arm is untouched by the
+  amendment); the margin is stated here so the re-audit sees it rather
+  than discovers it.
+- **binomial (reported, NOT gated — E0.6 has no binomial calibration
+  assertion):** same protocol on a binomial fit: slope `0.8005`,
+  intercept `-0.0781`, all predictions finite, final-fit fallback
+  fraction `0.0000`. Identical to bernoulli by the degree-0 identity:
+  both arms select (support 95, degree 0) at this size, where the
+  intercept-only logistic MLE equals the weighted event rate. Computed by
+  the mirrored standalone script recorded in this handoff's command log
+  (the committed test computes but does not print these values).
+
 ## Limitations and unverified claims
 
-- **Smoke sizes only.** `LPS_TIER0_FULL=1` (n up to 4000, R = 40) was not
-  run; the full-size binomial statistics under the amended configuration
-  remain unmeasured, and Tier-0 release acceptance needs that run as
-  before.
+- ~~**Smoke sizes only.**~~ **Closed above**: the full-size battery ran
+  green on the clean tree at `4367d10` (bundle
+  `tier2_20260612T233509Z`).
+- **The full-size bernoulli calibration slope passes by `5e-4`.** Not a
+  product of this amendment (the arm and seeds are unchanged), but any
+  future change that perturbs bernoulli numerics — or a different BLAS —
+  could flip that assertion. Flagged as a fragility, not acted on.
+- **The full-size binomial calibration analogue is informative only**: at
+  n = 2000 training both arms select degree 0, so it numerically equals
+  the bernoulli value and does not separately exercise the logistic
+  path's calibration; the logistic path's distinct full-size behavior
+  shows up in the consistency cells where degree 1 is selected and in the
+  fallback accounting.
 - **No mutation run.** The adjudication assigns the re-audit to confirm
   the `unstable.action` change is the deployed-scoring fix rather than
   goalpost-moving and that no real calibration failure is masked; none of
