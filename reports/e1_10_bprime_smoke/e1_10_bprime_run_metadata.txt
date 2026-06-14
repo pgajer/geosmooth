@@ -1,0 +1,14 @@
+study: E1.10b' (grouped CV relative-improvement + LOCO confirmatory)
+mode: smoke
+generator_source: inline-smoke-fixture (NOT plan DGP)
+git_head: b883ffcbf6dc0f2183262026c3b80bb2ce4fb0d2
+generated_utc: 20260614T173413Z
+r_version: R version 4.5.2 (2025-10-31)
+blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+fit_args:
+list(support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian", 
+"tricube"), backend = "R", design.basis = "orthogonal.polynomial.drop", 
+    ridge.multiplier.grid = c(0, 1e-10, 1e-08), ridge.condition.max = 1e+12, 
+    unstable.action = "na")
+core: K=8 m=6 K_test=10 R=2 rho=0.3,0.6 seed0=70000 closure_f=0.50
+armC: K=8,12 m=6 rho=0.6 R_C=2 (diagnostic, non-gated)

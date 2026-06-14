@@ -1,0 +1,3 @@
+"study","K","m","rho.nominal","R_C","mean.rel.cluster","se.rel.cluster","mean.realized.icc","note"
+"E1.10b'-armC",8,6,0.6,2,0.329467729903341,0.0235195050506838,0.599687502235906,"diagnostic, non-gated; expect rel.cluster decreasing in K"
+"E1.10b'-armC",12,6,0.6,2,0.165307446393356,0.0307787091348858,0.552702291614405,"diagnostic, non-gated; expect rel.cluster decreasing in K"
