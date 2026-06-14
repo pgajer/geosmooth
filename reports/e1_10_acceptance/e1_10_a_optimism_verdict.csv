@@ -1,0 +1,2 @@
+"study","mode","generator","R","n.train","n.test","sigma","mean.rel.nested","se.rel.nested","mean.rel.selectedmin","mean.optimism.delta","se.optimism.delta","wilcoxon.p.greater","rule","verdict","acceptance.evidence"
+"E1.10a","acceptance","registry",40,800,4000,0.1,0.0321321135388682,0.00392977557371172,0.0322751972123884,2.53313265655406e-05,2.53313265655405e-05,0.5,"mean(rel.nested)<0.10 & mean(optimism.delta)>=0; SE of BOTH gated means < 0.0333","PASS",TRUE
