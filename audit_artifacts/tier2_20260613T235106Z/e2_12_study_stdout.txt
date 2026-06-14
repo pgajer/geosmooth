@@ -1,0 +1,2 @@
+E2.12 cross-clip STUDY: argmin@1e-15=support=60,degree=0 argmin@1e-6=support=60,degree=0 argmin@1e-3=support=60,degree=1 | margins 0.002192 / 0.002192 / 0.010586 | not stable (near-tie reselected; recorded, not gated)
+wrote reports/e2_12_crossclip_scores.csv and reports/e2_12_crossclip_stability_verdict.csv

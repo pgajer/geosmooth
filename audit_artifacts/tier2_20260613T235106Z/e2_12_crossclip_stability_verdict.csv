@@ -1,0 +1,2 @@
+"study","fixture","n.candidates","selected.eps.1e.15","selected.eps.1e.6","selected.eps.1e.3","margin.eps.1e.15","margin.eps.1e.6","margin.eps.1e.3","stable.1e.6.vs.1e.3","stable.1e.15.vs.1e.6","verdict"
+"e2_12_crossclip_stability","G6 seed 7001, eta=6*tanh(15*x1), n=400, flip obs 7, binomial",2,"support=60,degree=0","support=60,degree=0","support=60,degree=1",0.00219208152634232,0.0021920919612709,0.0105857537356721,FALSE,TRUE,"not stable (near-tie reselected; recorded, not gated)"

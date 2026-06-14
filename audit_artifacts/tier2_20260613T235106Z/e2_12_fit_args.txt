@@ -1,0 +1,2 @@
+E2.12(a) fit.lps(X, y, foldid=rep(1:5,80), support.grid=c(8,60), degree.grid=c(0,2), kernel.grid="gaussian", coordinate.method="coordinates", backend="R", design.basis="orthogonal.polynomial.drop", ridge.multiplier.grid=0, ridge.condition.max=Inf, unstable.action="mean", outcome.family="bernoulli", keep.cv.predictions=TRUE); G6 seed=2121 eta=6*tanh(15*x1) n=400
+E2.12(b) same but support.grid=60, degree.grid=c(0,1), outcome.family="binomial"; G6 seed=7001, y[7] flipped 0->1 (deliberate confident-wrong held-out point)

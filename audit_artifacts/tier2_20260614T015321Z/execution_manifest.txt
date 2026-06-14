@@ -1,0 +1,14 @@
+artifact_id: tier2_20260614T015321Z
+generated_utc: 20260614T015321Z
+repo: /tmp/geosmooth-t2-bundle-83218b6
+git_head: 83218b6bc65d6e403bd49190bce00c7192c82cf6
+tree_clean: true
+testthat_rc: 0
+testthat_summary: tests=29 failed=0 error=0 warning=0 skipped=1
+gate_contexts: E0.1;E0.2;E0.3a;E0.4;E0.5;E0.6;E0.7;E0.8;E2.12;E2.12a;E2.12b;E2.13;E2.14;E2.15
+probe_rc: 0
+probe_summary: E2.14 near: status=ok halvings=1 max.inc=1.776e-15 pred=0.124668 | exact: status=not_converged max.inc=-1.579e-10 | fallback mean=0.063151 na=TRUE | determinism=0.000e+00 || E2.12a flip=TRUE raw.pick=(8,0) clip.pick=(60,2) max.eq.res=1.4e-17 n.out=263 det=0.0e+00 | E2.12b clip.pin=TRUE binders.unique=TRUE share>0.999=TRUE contrib.ratio=8.57 || probe_ok=TRUE
+study_rc: 0
+study_summary: E2.12 cross-clip STUDY: argmin@1e-15=support=60,degree=0 argmin@1e-6=support=60,degree=0 argmin@1e-3=support=60,degree=1 | margins 0.002192 / 0.002192 / 0.010586 | not stable (near-tie reselected; recorded, not gated)
+tree_clean_post_study: true
+executor: implementer-agent-t2
