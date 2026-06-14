@@ -1,0 +1,3 @@
+"unstable.action","fitted","fitted.is.na","attempted","converged","fallback.path.count","event.rate.fallback.count","na.failure.count","weighted.event.rate"
+"mean",0.0631513478491102,FALSE,1,0,1,1,0,0.0631513478491102
+"na",NA,TRUE,1,0,1,0,1,0.0631513478491102

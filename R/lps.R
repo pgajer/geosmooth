@@ -80,10 +80,58 @@
 #'   ordinary numeric-response LPS behavior. \code{"bernoulli"} treats
 #'   \code{0/1} responses as numeric conditional-expectation targets for
 #'   \eqn{\Pr(Y=1\mid X)}, keeps the same local least-squares fitting core,
-#'   clips reported response-scale probabilities to \code{[0,1]}, and records
-#'   Brier/log-loss probability diagnostics. \code{"binomial"} uses local
-#'   weighted logistic polynomial fits, selects candidates by observed CV log
-#'   loss, and reports probability diagnostics on the fitted probabilities.
+#'   clips reported response-scale probabilities to \code{[0,1]}, selects
+#'   candidates by the observed CV Brier score of the clipped predictions
+#'   (E2.12: the selection score is the deployed metric, which requires
+#'   per-point CV predictions, so \code{"bernoulli"} -- like
+#'   \code{"binomial"} -- always uses the R backend: \code{backend =
+#'   "auto"} resolves to \code{"R"} and an explicit C++ backend is an
+#'   error), and records Brier/log-loss probability
+#'   diagnostics. \code{"binomial"} uses local weighted logistic polynomial
+#'   fits, selects candidates by observed CV log loss with the log-loss
+#'   probability truncation pinned at \code{1e-6} (E2.12) and with any
+#'   candidate having a non-finite CV prediction scored \code{Inf} --
+#'   unselectable, the same rule as the gaussian/bernoulli selection
+#'   scores (E2.15) -- and reports probability diagnostics on the fitted
+#'   probabilities.
+#'   The local logistic IRLS uses deviance step-halving (E2.14): a Newton
+#'   update is accepted only if the weighted binomial deviance does not
+#'   increase by more than \code{1e-8}; otherwise the step is halved toward
+#'   the current iterate (at most 30 times, after which the solve is declared
+#'   non-convergent). The deviance is evaluated on the same \code{[-35, 35]}
+#'   clamped linear predictor the IRLS update uses, so it is finite for every
+#'   finite iterate. A solve that does not converge within the iteration cap
+#'   (including under exact separation, where the unpenalized logistic MLE
+#'   does not exist) falls back deterministically to the local weighted event
+#'   rate under \code{unstable.action = "mean"} or to \code{NA} under
+#'   \code{unstable.action = "na"}; every fallback is counted in
+#'   \code{logistic.diagnostics} (\code{fallback.path},
+#'   \code{event.rate.fallback}, \code{na.failure}).
+#' @param keep.cv.predictions Logical; if \code{TRUE}, the returned object
+#'   additionally carries \code{cv.predictions}, the matrix of out-of-fold
+#'   CV predictions with one column per \code{cv.table} row, so selection
+#'   scores can be recomputed from the actual CV predictions (E2.12).
+#'   \code{NULL} on the C++ CV paths (reachable only for
+#'   \code{outcome.family = "gaussian"}), which do not materialize
+#'   per-point predictions. Default \code{FALSE} leaves the returned object
+#'   exactly as before.
+#' @param ridge.shrinkage.target Shrinkage target of the local ridge
+#'   penalty in the least-squares solve (E2.13). The default \code{"zero"}
+#'   preserves the historical behavior bit-for-bit: in the orthogonal
+#'   design bases the penalty acts on every transformed direction,
+#'   including the constant, so a large ridge multiplier shrinks the local
+#'   prediction toward 0. \code{"local.mean"} -- the statistically
+#'   recommended setting -- leaves the constant direction unpenalized via a
+#'   weighted-centering reparametrization, so a large ridge shrinks the
+#'   prediction toward the local weighted mean instead, and \code{rho = 0}
+#'   remains the unpenalized weighted least-squares solve. The two settings
+#'   coincide for the non-orthogonal design bases (\code{"monomial"},
+#'   \code{"weighted.qr"}, \code{"weighted.qr.drop"}), whose constant
+#'   column is already unpenalized, and at \code{rho = 0}. The setting
+#'   applies to the least-squares solve (\code{outcome.family "gaussian"} /
+#'   \code{"bernoulli"}); it has \emph{no effect} on the
+#'   \code{"binomial"} local logistic solver, whose ridge keeps the
+#'   historical structure (a warning is issued if combined).
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -93,8 +141,9 @@
 #'   probabilities in \code{[0,1]},
 #'   \code{fitted.values.raw} are the un-clipped conditional-expectation
 #'   estimates for \code{"bernoulli"} and the fitted probabilities for
-#'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is
-#'   \code{cv.table$cv.rmse.observed^2}, and
+#'   \code{"binomial"}, \code{cv.table$cv.brier.observed} is the observed CV
+#'   Brier score of the response-scale (clipped) predictions with
+#'   \code{Inf} for candidates having any non-finite prediction, and
 #'   \code{probability.diagnostics} records raw/clipped probability ranges,
 #'   out-of-range fractions, and Brier/log-loss diagnostics.  The Brier and
 #'   log-loss diagnostics are defined only when the fitted predictions have the
@@ -124,11 +173,25 @@ fit.lps <- function(
     ridge.multiplier.grid = c(0, 1e-10, 1e-8),
     ridge.condition.max = 1e12,
     unstable.action = c("na", "mean"),
-    outcome.family = c("gaussian", "bernoulli", "binomial")) {
+    outcome.family = c("gaussian", "bernoulli", "binomial"),
+    keep.cv.predictions = FALSE,
+    ridge.shrinkage.target = c("zero", "local.mean")) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
     outcome.family <- match.arg(outcome.family)
+    keep.cv.predictions <- isTRUE(keep.cv.predictions)
+    ridge.shrinkage.target <- match.arg(ridge.shrinkage.target)
+    if (identical(outcome.family, "binomial") &&
+        identical(ridge.shrinkage.target, "local.mean")) {
+        # E2.13 scope (S G4 resolution): the alignment applies to the
+        # least-squares ridge only; the binomial logistic solver's penalty
+        # is unchanged.
+        warning("'ridge.shrinkage.target = \"local.mean\"' has no effect ",
+                "in outcome.family = \"binomial\" mode: the alignment ",
+                "applies to the least-squares ridge solve only.",
+                call. = FALSE)
+    }
     if (!is.numeric(X) || !length(X) || any(!is.finite(X))) {
         stop("'X' must be a finite numeric matrix.", call. = FALSE)
     }
@@ -180,13 +243,22 @@ fit.lps <- function(
         ridge.multiplier.grid,
         ridge.condition.max
     )
-    if (identical(outcome.family, "binomial") &&
+    if (outcome.family %in% c("bernoulli", "binomial") &&
         identical(backend, "auto")) {
         backend.used <- "R"
     } else if (identical(outcome.family, "binomial") &&
         !identical(backend.used, "R")) {
         stop("'outcome.family = \"binomial\"' currently uses the R backend; ",
              "use backend = 'R' or backend = 'auto'.", call. = FALSE)
+    } else if (identical(outcome.family, "bernoulli") &&
+        !identical(backend.used, "R")) {
+        # E2.12 (audit-required): bernoulli selection scores the deployed
+        # (clipped) Brier metric, which needs per-point CV predictions; the
+        # C++ CV kernels return only the aggregate raw RMSE.
+        stop("'outcome.family = \"bernoulli\"' currently uses the R backend ",
+             "(selection scores the deployed clipped Brier, which requires ",
+             "per-point CV predictions); use backend = 'R' or ",
+             "backend = 'auto'.", call. = FALSE)
     }
     if (.klp.is.local.auto.chart.dim(chart.dim)) {
         if (!identical(coordinate.method, "local.pca")) {
@@ -234,7 +306,8 @@ fit.lps <- function(
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
-        logistic.telemetry = logistic.cv.telemetry
+        logistic.telemetry = logistic.cv.telemetry,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     cv.table <- cv.result$cv.table
     cv.table <- .klp.decorate.outcome.cv.table(cv.table, outcome.family)
@@ -280,7 +353,8 @@ fit.lps <- function(
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         logistic.telemetry = logistic.final.telemetry,
-        return.chart.diagnostics = TRUE
+        return.chart.diagnostics = TRUE,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     fitted <- if (is.list(fitted.result) &&
                   !is.null(fitted.result$predictions)) {
@@ -351,10 +425,18 @@ fit.lps <- function(
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
+        ridge.shrinkage.target = ridge.shrinkage.target,
         probability.diagnostics = probability.diagnostics,
         logistic.diagnostics = logistic.diagnostics,
         call = match.call()
     )
+    if (keep.cv.predictions) {
+        # E2.12: the per-candidate out-of-fold prediction matrix (columns in
+        # cv.table row order), so the selection score can be recomputed from
+        # the actual CV predictions. NULL on the legacy C++ CV paths, which
+        # do not materialize per-point predictions.
+        out$cv.predictions <- cv.result$predictions
+    }
     class(out) <- c("lps", "list")
     out
 }
@@ -425,7 +507,8 @@ predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
             c(0, 1e-10, 1e-8),
         ridge.condition.max = object$ridge.condition.max %||% 1e12,
         unstable.action = object$unstable.action %||% "mean",
-        outcome.family = object$outcome.family %||% "gaussian"
+        outcome.family = object$outcome.family %||% "gaussian",
+        ridge.shrinkage.target = object$ridge.shrinkage.target %||% "zero"
     )
     if (identical(type, "raw")) {
         return(pred)
@@ -452,6 +535,10 @@ print.lps <- function(x, ...) {
     if (!is.null(x$outcome.family) &&
         !identical(x$outcome.family, "gaussian")) {
         cat("  outcome family:", x$outcome.family, "\n")
+    }
+    if (!is.null(x$ridge.shrinkage.target) &&
+        !identical(x$ridge.shrinkage.target, "zero")) {
+        cat("  ridge shrinkage target:", x$ridge.shrinkage.target, "\n")
     }
     cat("  selected support.size:", x$selected$support.size[[1L]], "\n")
     cat("  selected degree:", x$selected$degree[[1L]], "\n")
@@ -642,7 +729,10 @@ lps.backend.diagnostics <- function(object) {
     invisible(TRUE)
 }
 
-.klp.clip.probability <- function(p, eps = 1e-15) {
+# E2.12: the log-loss probability truncation is pinned at 1e-6. The previous
+# 1e-15 made the selection score unstable: a single confident-wrong point
+# contributes up to -log(1e-15)/n and can decide the selected candidate.
+.klp.clip.probability <- function(p, eps = 1e-6) {
     p <- as.numeric(p)
     pmin(1 - eps, pmax(eps, p))
 }
@@ -797,10 +887,22 @@ lps.backend.diagnostics <- function(object) {
     if (!outcome.family %in% c("bernoulli", "binomial")) {
         return(cv.table)
     }
-    cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
-    if (identical(outcome.family, "binomial") &&
-        !"cv.logloss.observed" %in% names(cv.table)) {
-        cv.table$cv.logloss.observed <- NA_real_
+    # E2.12 (audit-required): the binary families always run the R CV path
+    # (enforced at backend resolution), which computes cv.brier.observed
+    # -- and, for "binomial", cv.logloss.observed -- directly from the
+    # response-scale predictions. A missing column would mean selection
+    # could silently fall back to a raw metric again, so fail loudly
+    # instead of decorating.
+    required <- c("cv.brier.observed",
+                  if (identical(outcome.family, "binomial")) {
+                      "cv.logloss.observed"
+                  })
+    missing <- setdiff(required, names(cv.table))
+    if (length(missing)) {
+        stop("Internal error: binary-family CV table lacks ",
+             paste(missing, collapse = ", "),
+             "; the deployed-metric selection columns must be computed by ",
+             "the R CV path.", call. = FALSE)
     }
     cv.table
 }
@@ -808,6 +910,10 @@ lps.backend.diagnostics <- function(object) {
 .klp.selection.score.column <- function(outcome.family) {
     if (identical(outcome.family, "binomial")) {
         "cv.logloss.observed"
+    } else if (identical(outcome.family, "bernoulli")) {
+        # E2.12: Bernoulli-mode selection scores the deployed (clipped)
+        # Brier metric, not the raw-prediction RMSE.
+        "cv.brier.observed"
     } else {
         "cv.rmse.observed"
     }
@@ -860,7 +966,8 @@ lps.backend.diagnostics <- function(object) {
                           ridge.condition.max = 1e12,
                           unstable.action = "mean",
                           outcome.family = "gaussian",
-                          logistic.telemetry = NULL) {
+                          logistic.telemetry = NULL,
+                          ridge.shrinkage.target = "zero") {
     cand$chart.dim <- NA_integer_
     local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
     if (identical(coordinate.method, "coordinates") &&
@@ -993,7 +1100,8 @@ lps.backend.diagnostics <- function(object) {
                             ridge.condition.max = ridge.condition.max,
                             unstable.action = unstable.action,
                             outcome.family = outcome.family,
-                            logistic.telemetry = logistic.telemetry
+                            logistic.telemetry = logistic.telemetry,
+                            ridge.shrinkage.target = ridge.shrinkage.target
                         )
                     }
                 } else {
@@ -1024,7 +1132,8 @@ lps.backend.diagnostics <- function(object) {
                             ridge.condition.max = ridge.condition.max,
                             unstable.action = unstable.action,
                             outcome.family = outcome.family,
-                            logistic.telemetry = logistic.telemetry
+                            logistic.telemetry = logistic.telemetry,
+                            ridge.shrinkage.target = ridge.shrinkage.target
                         )
                     }
                 }
@@ -1037,15 +1146,41 @@ lps.backend.diagnostics <- function(object) {
         function(j) .klp.rmse(pred[, j], y),
         numeric(1L)
     )
-    if (identical(outcome.family, "binomial")) {
+    if (outcome.family %in% c("bernoulli", "binomial")) {
+        # E2.12: the selection-facing Brier column is the deployed (clipped)
+        # metric -- the mean squared error of the response-scale predictions
+        # -- with the same Inf-on-any-non-finite semantics .klp.rmse gives
+        # the raw selection score, so a candidate that was unselectable
+        # under unstable.action = "na" stays unselectable. For "binomial"
+        # the fitted probabilities already lie in [0, 1], so clipping is a
+        # no-op there and the column value is unchanged.
         cv.table$cv.brier.observed <- vapply(
             seq_len(ncol(pred)),
-            function(j) .klp.brier(y, pred[, j]),
+            function(j) {
+                .klp.rmse(.klp.response.scale(pred[, j], outcome.family),
+                          y)^2
+            },
             numeric(1L)
         )
+    }
+    if (identical(outcome.family, "binomial")) {
+        # E2.15: the selection-facing log loss uses the same
+        # Inf-on-any-non-finite convention as the gaussian/bernoulli
+        # selection scores (.klp.rmse), so a candidate that cannot predict
+        # everywhere is unselectable. The previous behavior delegated to
+        # .klp.logloss, which DROPS non-finite pairs -- letting an NA-heavy
+        # candidate win on the subset of points it happened to predict.
+        # .klp.logloss itself is unchanged: it still backs the
+        # logloss.clipped probability DIAGNOSTIC, where scoring the
+        # observed pairs is the intended reporting semantics.
         cv.table$cv.logloss.observed <- vapply(
             seq_len(ncol(pred)),
-            function(j) .klp.logloss(y, pred[, j]),
+            function(j) {
+                if (!all(is.finite(pred[, j]))) {
+                    return(Inf)
+                }
+                .klp.logloss(y, pred[, j])
+            },
             numeric(1L)
         )
     }
@@ -1286,7 +1421,8 @@ lps.backend.diagnostics <- function(object) {
                                           unstable.action = "mean",
                                           outcome.family = "gaussian",
                                           logistic.telemetry = NULL,
-                                          return.chart.diagnostics = FALSE) {
+                                          return.chart.diagnostics = FALSE,
+                                          ridge.shrinkage.target = "zero") {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
@@ -1355,7 +1491,8 @@ lps.backend.diagnostics <- function(object) {
             ridge.condition.max = ridge.condition.max,
             unstable.action = unstable.action,
             outcome.family = outcome.family,
-            logistic.telemetry = logistic.telemetry
+            logistic.telemetry = logistic.telemetry,
+            ridge.shrinkage.target = ridge.shrinkage.target
         )
     }
     if (!return.chart.diagnostics) return(out)
@@ -1441,7 +1578,8 @@ lps.backend.diagnostics <- function(object) {
                                ridge.condition.max = 1e12,
                                unstable.action = "mean",
                                outcome.family = "gaussian",
-                               logistic.telemetry = NULL) {
+                               logistic.telemetry = NULL,
+                               ridge.shrinkage.target = "zero") {
     .klp.fit.intercept.lazy(
         z = z,
         y = y,
@@ -1455,7 +1593,8 @@ lps.backend.diagnostics <- function(object) {
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
-        logistic.telemetry = logistic.telemetry
+        logistic.telemetry = logistic.telemetry,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
 }
 
@@ -1469,7 +1608,8 @@ lps.backend.diagnostics <- function(object) {
                                     ridge.condition.max = 1e12,
                                     unstable.action = "mean",
                                     outcome.family = "gaussian",
-                                    logistic.telemetry = NULL) {
+                                    logistic.telemetry = NULL,
+                                    ridge.shrinkage.target = "zero") {
     ok <- is.finite(y) & is.finite(weights) & weights > 0
     if (!any(weights > 0)) {
         weights[] <- 1
@@ -1507,7 +1647,8 @@ lps.backend.diagnostics <- function(object) {
         design.drop.tol = design.drop.tol,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
-        unstable.action = unstable.action
+        unstable.action = unstable.action,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
 }
 
@@ -1518,7 +1659,8 @@ lps.backend.diagnostics <- function(object) {
                                       ridge.multiplier.grid =
                                           c(0, 1e-10, 1e-8),
                                       ridge.condition.max = 1e12,
-                                      unstable.action = "mean") {
+                                      unstable.action = "mean",
+                                      ridge.shrinkage.target = "zero") {
     design.ok <- rowSums(is.finite(design)) == ncol(design)
     ok <- is.finite(y) & is.finite(weights) & weights > 0 & design.ok
     if (!any(weights > 0)) {
@@ -1542,7 +1684,8 @@ lps.backend.diagnostics <- function(object) {
         design.drop.tol = design.drop.tol,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
-        prediction.row = prediction.row
+        prediction.row = prediction.row,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
     if (!is.null(solved) && isTRUE(solved$ok) &&
         length(solved$prediction) && is.finite(solved$prediction[[1L]])) {
@@ -1677,12 +1820,31 @@ lps.backend.diagnostics <- function(object) {
         diag(c(0, rep(1, max(0L, ncol(design) - 1L))),
              nrow = ncol(design))
     }
+    # Weighted binomial deviance of an iterate. mu is computed from the same
+    # clamped eta the IRLS update uses, so the deviance is finite for every
+    # finite beta (E2.14: the trajectory must be assertable, never NaN).
+    deviance.at <- function(beta) {
+        eta <- pmax(-35, pmin(35, as.numeric(design %*% beta)))
+        mu <- stats::plogis(eta)
+        -2 * sum(weights * (y * log(mu) + (1 - y) * log1p(-mu)))
+    }
+    # E2.14: a Newton candidate may be halved toward the current iterate at
+    # most this many times before the solve is declared non-convergent.
+    max.step.halvings <- 30L
+    deviance.slack <- 1e-8
     last.status <- "not_run"
+    last.trace <- numeric(0)
+    last.iterations <- 0L
+    last.halvings <- 0L
     for (rho in ridge.multiplier.grid) {
         beta <- beta0
         converged <- FALSE
         ridge.used <- NA_real_
         cond.used <- NA_real_
+        deviance.current <- deviance.at(beta)
+        deviance.trace <- deviance.current
+        step.halvings <- 0L
+        iterations <- 0L
         for (iter in seq_len(as.integer(max.iter))) {
             eta <- as.numeric(design %*% beta)
             mu <- stats::plogis(pmax(-35, pmin(35, eta)))
@@ -1712,16 +1874,40 @@ lps.backend.diagnostics <- function(object) {
                 last.status <- "logistic_solve_failed"
                 break
             }
-            if (max(abs(beta.new - beta)) <
-                tolerance * (1 + max(abs(beta)))) {
-                beta <- beta.new
+            # E2.14 step-halving: accept the Newton candidate only if the
+            # deviance does not increase beyond the slack; otherwise halve
+            # toward the current iterate. When the full Newton step already
+            # satisfies the slack (every well-behaved solve), zero halvings
+            # occur and the iterate sequence is identical to plain IRLS.
+            deviance.candidate <- deviance.at(beta.new)
+            halvings <- 0L
+            while (deviance.candidate > deviance.current + deviance.slack &&
+                   halvings < max.step.halvings) {
+                beta.new <- (beta + beta.new) / 2
+                deviance.candidate <- deviance.at(beta.new)
+                halvings <- halvings + 1L
+            }
+            step.halvings <- step.halvings + halvings
+            if (deviance.candidate > deviance.current + deviance.slack) {
+                last.status <- "step_halving_failed"
+                break
+            }
+            step.converged <- max(abs(beta.new - beta)) <
+                tolerance * (1 + max(abs(beta)))
+            beta <- beta.new
+            deviance.current <- deviance.candidate
+            deviance.trace <- c(deviance.trace, deviance.current)
+            iterations <- iter
+            if (step.converged) {
                 converged <- TRUE
                 last.status <- "ok"
                 break
             }
-            beta <- beta.new
             last.status <- "not_converged"
         }
+        last.trace <- deviance.trace
+        last.iterations <- iterations
+        last.halvings <- step.halvings
         if (isTRUE(converged) && all(is.finite(beta))) {
             pred <- if (is.null(prediction.row)) {
                 NA_real_
@@ -1737,15 +1923,25 @@ lps.backend.diagnostics <- function(object) {
                 condition = cond.used,
                 prediction = pred,
                 kept.columns = kept.columns,
-                original.ncol = original.ncol
+                original.ncol = original.ncol,
+                converged = TRUE,
+                iterations = iterations,
+                step.halvings = step.halvings,
+                deviance.trace = deviance.trace
             ))
         }
     }
+    # Failure return: the trace/iteration fields describe the LAST attempted
+    # ridge multiplier (each rho restarts from beta0).
     list(
         ok = FALSE,
         status = last.status,
         kept.columns = kept.columns,
-        original.ncol = original.ncol
+        original.ncol = original.ncol,
+        converged = FALSE,
+        iterations = last.iterations,
+        step.halvings = last.halvings,
+        deviance.trace = last.trace
     )
 }
 
@@ -1897,7 +2093,8 @@ lps.backend.diagnostics <- function(object) {
                                  design.drop.tol = 1e-8,
                                  ridge.multiplier.grid = c(0, 1e-10, 1e-8),
                                  ridge.condition.max = 1e12,
-                                 prediction.row = NULL) {
+                                 prediction.row = NULL,
+                                 ridge.shrinkage.target = "zero") {
     design <- as.matrix(design)
     y <- as.numeric(y)
     weights <- as.numeric(weights)
@@ -2029,7 +2226,74 @@ lps.backend.diagnostics <- function(object) {
         diag(c(0, rep(1, max(0L, ncol(cross) - 1L))),
              nrow = ncol(cross))
     }
+    # E2.13 (S G4 resolution): opt-in aligned ridge. In the orthogonal basis
+    # the legacy penalty acts on every transformed direction including the
+    # constant, so large ridge shrinks the prediction toward 0. With
+    # ridge.shrinkage.target = "local.mean" the solve is reparametrized by
+    # weighted centering: fit deviations from the local weighted mean
+    # (every centered column has zero weighted mean, so the constant
+    # function is unpenalized) and add the mean back. rho -> Inf then tends
+    # to the local weighted mean exactly; rho = 0 falls through to the
+    # legacy unpenalized solve, where the two targets coincide. The
+    # non-orthogonal bases already leave the constant column unpenalized
+    # (penalty.base above), so the aligned branch is orthogonal-basis only
+    # and the two settings coincide elsewhere.
+    aligned <- identical(ridge.shrinkage.target, "local.mean") &&
+        isTRUE(orthogonal.basis)
+    if (aligned) {
+        w.sum <- sum(weights)
+        ybar.w <- sum(weights * y) / w.sum
+        col.wmeans <- colSums(design * weights) / w.sum
+        design.centered <- sweep(design, 2L, col.wmeans, "-")
+        xw.centered <- design.centered * sqrt(weights)
+        yw.centered <- (y - ybar.w) * sqrt(weights)
+        cross.centered <- crossprod(xw.centered)
+        rhs.centered <- crossprod(xw.centered, yw.centered)
+        scale.centered <- .klp.local.ridge.scale(cross.centered)
+        prediction.row.centered <- if (is.null(prediction.row)) {
+            NULL
+        } else {
+            sweep(prediction.row, 2L, col.wmeans, "-")
+        }
+    }
     for (rho in ridge.multiplier.grid) {
+        if (aligned && rho > 0) {
+            ridge <- rho * scale.centered
+            normal <- cross.centered +
+                ridge * diag(1, nrow = ncol(cross.centered))
+            cond <- .klp.local.design.condition(normal)
+            if (is.finite(ridge.condition.max) &&
+                (!is.finite(cond) || cond > ridge.condition.max)) {
+                next
+            }
+            gamma <- tryCatch(as.numeric(solve(normal, rhs.centered)),
+                              error = function(e) {
+                                  rep(NA_real_, ncol(normal))
+                              })
+            if (length(gamma) && all(is.finite(gamma))) {
+                return(list(
+                    ok = TRUE,
+                    status = "ok",
+                    # Deviation coefficients in the weighted-centered basis;
+                    # the prediction below adds the local weighted mean
+                    # back, so callers must use $prediction (always finite
+                    # here when gamma is), not $coefficients[[1L]].
+                    coefficients = gamma,
+                    ridge.multiplier = rho,
+                    ridge.lambda = ridge,
+                    condition = cond,
+                    prediction = if (is.null(prediction.row)) {
+                        NA_real_
+                    } else {
+                        as.numeric(ybar.w +
+                                       prediction.row.centered %*% gamma)
+                    },
+                    kept.columns = kept.columns,
+                    original.ncol = original.ncol
+                ))
+            }
+            next
+        }
         ridge <- rho * scale
         normal <- cross + ridge * penalty.base
         cond <- .klp.local.design.condition(normal)
