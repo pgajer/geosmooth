@@ -1,0 +1,53 @@
+=== E1.10 Study b' acceptance bundle manifest ===
+generated_local: Sun Jun 14 15:38:45 EDT 2026
+git_head (certified source commit): 2474de036e6cd464dc9b3121a561dd0ee44f2c0b
+
+--- tracked-source status (must show no modified tracked files; only
+    untracked entry is this bundle being committed) ---
+?? reports/e1_10_bprime/
+?? scripts/ci/e1_10_bprime_manifest.sh
+[end status]
+
+--- FROZEN-source verification vs Part-B audit (must be unchanged) ---
+expected:
+  588762790b651091717fedc5c424b6dd78ae348ac0bd70a5af1691c68c4ff2ee  R/lps.R
+  db1e6fdb3ab4befd25a126d4e9884dbd5c34ca9c3d1212eb6a3f4e35a1ee0a0a  R/lps_cv_utils.R
+  98c0a3f7ea764549097704d0ce4b273f1d35c4f1d34c0862b494cf51cdf1d1f3  validation/e1_10_nested_grouped_cv.R
+  8bd66a2ff8cfb7f4f39b356127b3918bf41b7da9af648de8e9672599e573d9d2  tests/testthat/test-lps-nested-grouped-cv.R
+realized:
+588762790b651091717fedc5c424b6dd78ae348ac0bd70a5af1691c68c4ff2ee  R/lps.R
+db1e6fdb3ab4befd25a126d4e9884dbd5c34ca9c3d1212eb6a3f4e35a1ee0a0a  R/lps_cv_utils.R
+98c0a3f7ea764549097704d0ce4b273f1d35c4f1d34c0862b494cf51cdf1d1f3  validation/e1_10_nested_grouped_cv.R
+8bd66a2ff8cfb7f4f39b356127b3918bf41b7da9af648de8e9672599e573d9d2  tests/testthat/test-lps-nested-grouped-cv.R
+
+--- gate battery (regression) ---
+E1.9+E1.10 gates: tests=15 failed=0 error=0 warning=0 skipped=0
+
+--- run metadata (seeds, fit args, BLAS) ---
+study: E1.10b' (grouped CV relative-improvement + LOCO confirmatory)
+mode: acceptance
+generator_source: registry
+git_head: 2474de036e6cd464dc9b3121a561dd0ee44f2c0b
+generated_utc: 20260614T193636Z
+r_version: R version 4.5.2 (2025-10-31)
+blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+fit_args:
+list(support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian", 
+"tricube"), backend = "R", design.basis = "orthogonal.polynomial.drop", 
+    ridge.multiplier.grid = c(0, 1e-10, 1e-08), ridge.condition.max = 1e+12, 
+    unstable.action = "na")
+core: K=40 m=20 K_test=100 R=40 rho=0.3,0.6 seed0=70000 closure_f=0.50
+armC: K=40,80,160 m=20 rho=0.6 R_C=10 (diagnostic, non-gated)
+
+--- core verdict (primary relative + LOCO confirmatory) ---
+"study","mode","generator","rho.nominal","gated","R","K","m","K.test","closure.f","mean.realized.icc","mean.rel.random","mean.rel.groupedA","se.rel.groupedA","mean.rel.loco","se.rel.loco","mean.gap.primary","se.gap.primary","closure.fraction","primary.verdict","loco.confirmatory.verdict","all.groupedA.whole","all.loco.whole","all.random.split","rule","acceptance.evidence"
+"E1.10b'","acceptance","registry",0.3,FALSE,40,40,20,100,0.5,0.31484762812341,0.433020857201792,0.259834782413244,0.0261202920944564,0.17519659003253,0.0201882183904618,0.173186074788548,0.0292996774509566,0.3999485750125,"REPORTED-ONLY","REPORTED-ONLY",TRUE,TRUE,TRUE,"primary: gap>0.10 & rel.groupedA<=(1-0.5)*rel.random; confirmatory: rel.loco<0.10; SE<0.0333 (rho=0.6 gated)",TRUE
+"E1.10b'","acceptance","registry",0.6,TRUE,40,40,20,100,0.5,0.590758941180808,0.530057794656376,0.288096944628436,0.0543147465826249,0.158501916545207,0.0211071707996355,0.24196085002794,0.0503443831189029,0.456480128143003,"INCONCLUSIVE","FAIL",TRUE,TRUE,TRUE,"primary: gap>0.10 & rel.groupedA<=(1-0.5)*rel.random; confirmatory: rel.loco<0.10; SE<0.0333 (rho=0.6 gated)",TRUE
+
+--- arm C summary (diagnostic K-sweep) ---
+"study","K","m","rho.nominal","R_C","mean.rel.cluster","se.rel.cluster","mean.realized.icc","note"
+"E1.10b'-armC",40,20,0.6,10,0.12138434532114,0.0301031451659178,0.604983333390413,"diagnostic, non-gated; expect rel.cluster decreasing in K"
+"E1.10b'-armC",80,20,0.6,10,0.12644734352652,0.0326835613431403,0.592811495342834,"diagnostic, non-gated; expect rel.cluster decreasing in K"
+"E1.10b'-armC",160,20,0.6,10,0.0511270769707018,0.0127179371313149,0.590159386903683,"diagnostic, non-gated; expect rel.cluster decreasing in K"
+
+--- realized rho per replicate: see realized_rho_per_replicate.csv ---
