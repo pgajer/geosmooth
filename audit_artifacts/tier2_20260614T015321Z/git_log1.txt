@@ -1,0 +1,4 @@
+83218b6bc65d6e403bd49190bce00c7192c82cf6
+pgajer <pgajer@gmail.com>
+2026-06-13T19:50:31-04:00
+Promote E0.6 binomial median-fallback telemetry to an enforceable bound

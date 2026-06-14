@@ -1,0 +1,1 @@
+E2.14 near: status=ok halvings=1 max.inc=1.776e-15 pred=0.124668 | exact: status=not_converged max.inc=-1.579e-10 | fallback mean=0.063151 na=TRUE | determinism=0.000e+00 || E2.12a flip=TRUE raw.pick=(8,0) clip.pick=(60,2) max.eq.res=1.4e-17 n.out=263 det=0.0e+00 | E2.12b clip.pin=TRUE binders.unique=TRUE share>0.999=TRUE contrib.ratio=8.57 || probe_ok=TRUE

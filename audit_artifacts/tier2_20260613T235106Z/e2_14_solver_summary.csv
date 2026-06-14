@@ -1,0 +1,3 @@
+"arm","status","ok","converged","iterations","step.halvings","trace.length","max.deviance.increase","n.increases.gt.slack","trace.all.finite","beta.all.finite","prediction","prediction.in.open.unit"
+"near.separable","ok",TRUE,TRUE,9,1,10,1.77635683940025e-15,0,TRUE,TRUE,0.124668166032953,TRUE
+"exactly.separable","not_converged",FALSE,FALSE,50,0,51,-1.57948123958524e-10,0,TRUE,FALSE,NA,FALSE

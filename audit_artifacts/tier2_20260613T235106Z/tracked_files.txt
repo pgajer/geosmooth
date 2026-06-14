@@ -1,0 +1,10 @@
+R/lps.R
+scripts/ci/tier2_binary_probe.R
+tests/testthat/test-lps-binary-metric-consistency.R
+tests/testthat/test-lps-binary-separation.R
+tests/testthat/test-lps-binomial-na-consistency.R
+tests/testthat/test-lps-degenerate.R
+tests/testthat/test-lps-ridge-alignment.R
+tests/testthat/test-lps-tier0-correctness-extended.R
+tests/testthat/test-lps-tier0-correctness.R
+validation/e2_12_crossclip_stability_study.R
