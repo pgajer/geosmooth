@@ -1,0 +1,13 @@
+"check","observed","expected","passed"
+"planned_task_count",2240,2240,TRUE
+"planned_pair_count",1120,1120,TRUE
+"two_methods_per_pair",1120,1120,TRUE
+"one_bernoulli_brier_arm_per_pair",1120,1120,TRUE
+"one_binomial_logistic_arm_per_pair",1120,1120,TRUE
+"response_seed_matched_per_pair",1120,1120,TRUE
+"fold_seed_matched_per_pair",1120,1120,TRUE
+"sample_index_matched_per_pair",1120,1120,TRUE
+"asset_paths_present",2240,2240,TRUE
+"sample_index_paths_present",2240,2240,TRUE
+"source_hashes_malformed",0,0,TRUE
+"balanced_dataset_profile_sample_rep_chart_method_counts",2240,2240,TRUE

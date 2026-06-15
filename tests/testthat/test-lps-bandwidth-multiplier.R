@@ -1,7 +1,8 @@
 # E1.9 GATEs -- decouple bandwidth from support size.
 #
-# Contract: audit_contracts/lps_tiers1to4 (sB / E1.9); frozen spec
-# project_briefs/lps_experimental_plan_2026-06-09.tex (E1.9).
+# Contract: dev/methods/lps/audit_contracts/lps_tiers1to4 (sB / E1.9);
+# frozen spec dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex
+# (E1.9).
 # Fixtures: helper-lps-e1-9.R (configurations) and
 # helper-lps-e1-9-reference.R (pre-change pinned values; provenance in its
 # header).
@@ -15,7 +16,7 @@
 #   tau_alg = 1e-10 (they are bit-identical at authorship; the tolerance is
 #   the contract's frozen threshold).
 # Sub-item (c) (benefit STUDY over G3a/G3d) is NOT here: it is a
-#   validation/ study deferred until Amendment 1 binds the consolidated DGP
+#   dev/methods/lps/ci study deferred until Amendment 1 binds the consolidated DGP
 #   generators.
 
 test_that("E1.9a characterization: ESS/K and last-weight pin current kernel-weight behavior", {

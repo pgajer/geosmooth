@@ -1,7 +1,0 @@
-E0.6 family=bernoulli prevalence=0.1 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3182 ci_hi=-0.2963 max_na=0.0000 median_fallback=NA
-E0.6 family=bernoulli prevalence=0.3 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3219 ci_hi=-0.3021 max_na=0.0000 median_fallback=NA
-E0.6 family=bernoulli prevalence=0.5 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3310 ci_hi=-0.3088 max_na=0.0000 median_fallback=NA
-E0.6 family=binomial prevalence=0.1 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3181 ci_hi=-0.2973 max_na=0.0000 median_fallback=0.0020
-E0.6 family=binomial prevalence=0.3 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3175 ci_hi=-0.2980 max_na=0.0000 median_fallback=0.0000
-E0.6 family=binomial prevalence=0.5 support=22/30/38,36/48/60,57/76/95,90/120/150 slope=-0.3269 ci_hi=-0.3060 max_na=0.0000 median_fallback=0.0000
-tests=29 failed=0 error=0 warning=0 skipped=1 

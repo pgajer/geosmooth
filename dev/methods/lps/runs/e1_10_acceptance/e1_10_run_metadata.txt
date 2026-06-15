@@ -1,0 +1,13 @@
+mode: acceptance
+generator_source: registry
+git_head: 79b94bfc3b2d14ede4fbc5a98d02588112fc9c10
+generated_utc: 20260614T152334Z
+r_version: R version 4.5.2 (2025-10-31)
+blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+fit_args:
+list(support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian",
+"tricube"), backend = "R", design.basis = "orthogonal.polynomial.drop",
+    ridge.multiplier.grid = c(0, 1e-10, 1e-08), ridge.condition.max = 1e+12,
+    unstable.action = "na")
+study_a: n_train=800 n_test=4000 R=40 sigma=0.10 seed0=61000
+study_b: K=40 m=20 K_test=100 R=40 rho=0.3,0.6 seed0=62000

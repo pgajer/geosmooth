@@ -1,0 +1,514 @@
+\documentclass[11pt]{article}
+
+%==============================================================================
+%  LPS / PS-LPS Program: Plan of Action and Phase Sequencing  (v2, refined)
+%  Reframed as an algebra: two base estimators (LPS, LCov) crossed with
+%  orthogonal refinement axes (prediction synchronization; the local
+%  dimension/scale ladder), plus a cross-cutting anchoring choice.
+%  Supersedes lps_program_plan_of_action_2026-06-10.tex.
+%==============================================================================
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{microtype}
+\microtypesetup{expansion=false}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{datetime2}
+\DTMsetup{showzone=false}
+\usepackage[hidelinks]{hyperref}
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+\definecolor{ink}{HTML}{24303D}
+\definecolor{accent}{HTML}{2563EB}
+\definecolor{accent3}{HTML}{15803D}
+\setlist{topsep=3pt,itemsep=2pt,parsep=1pt}
+
+\newtcolorbox{gate}{
+  enhanced, colback=accent3!5, colframe=accent3!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=Go/no-go gate,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent3!45!black,
+  attach title to upper={\quad}}
+\newtcolorbox{note}{
+  enhanced, colback=accent!4, colframe=accent!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=Why this ordering,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent!50!black,
+  attach title to upper={\quad}}
+
+\newcommand{\field}[1]{\smallskip\noindent\textbf{\textsf{#1.}}\ }
+
+\title{\textbf{LPS / PS-LPS Program: Plan of Action and Phase Sequencing}\\[3pt]
+\large \textnormal{v2 --- refined as a base $\times$ refinement algebra}\\[4pt]
+\normalsize A dependency-ordered roadmap: two base estimators (LPS, local
+covariance), the prediction-synchronization and local dimension/scale refinement
+axes, the anchoring choice, the simplicial-complex integration, and the occupancy
+capstone}
+\author{\small Internal program plan --- LPS / \texttt{geosmooth} program\\[2pt]
+\footnotesize source: \nolinkurl{/Users/pgajer/current_projects/geosmooth/project_briefs/lps_program_plan_of_action_2026-06-13.tex}\\[1pt]
+\footnotesize supersedes \nolinkurl{lps_program_plan_of_action_2026-06-10.tex}}
+\date{\DTMnow\ \textnormal{\footnotesize ET}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+The first plan listed the program as a linear sequence of phases. Working through
+the local-chart geometry made a cleaner structure visible: the program is a small
+\emph{algebra}. There are two \textbf{base estimators} --- LPS (the local-polynomial
+conditional mean) and LCov (the local conditional covariance/association) --- and a
+short list of \textbf{refinement operators} that apply to either base and
+\emph{compose}. The operators fall on two orthogonal axes: \textbf{(A) prediction
+synchronization} (PS), which couples overlapping local models across anchors, and
+\textbf{(B) the local dimension/scale ladder}, which sets each anchor's local chart.
+Axis~B has four rungs of increasing structure --- fixed dimension/scale (the base);
+\textbf{LDS}, the joint per-anchor estimation of \emph{both} local dimension and
+scale, unregularized; \textbf{LDR}, regularization of the dimension field with scale
+held fixed (the original framing); and \textbf{LDSR}, co-regularization of dimension
+\emph{and} scale together. A third, cross-cutting axis is the \textbf{anchoring}
+choice: local models centered at the data points, or at a regular/derived grid. The
+two refinement axes are genuinely orthogonal --- and they \emph{meet} at the chart
+nerve, which is therefore named as the integration phase rather than a sub-part of
+any one operator. The validated base emits the reusable $S$/df/LOO/band toolkit; the
+synthetic-data enabler runs throughout; everything converges into the nerve
+integration and then the occupancy / quasi-equilibrium capstone and the terminal
+16S application. The whole program runs under the two-agent audit-independence
+workflow. As of this revision, Tier-0 (the LPS base) is validated and merged, and the
+Tier 1--4 estimator gates are in integration.
+\end{abstract}
+
+{\small\tableofcontents}
+
+%==============================================================================
+\section{How to read this, and the one rule that wraps every phase}\label{sec:read}
+%==============================================================================
+
+This is a sequencing document, not a methods document; the methods live in the
+design notes referenced at the end, and each phase points to its note. The job here
+is to say what is built first, in what combinations, and why the order is forced by
+dependencies rather than preference.
+
+One rule wraps every phase: each is executed under the \emph{two-agent
+audit-independence workflow} --- an implementer builds; an independent auditor
+validates against a fixed charter (the auditor's scope is not set by the
+implementer; the handoff carries evidence and admitted limitations but not the
+audit's questions; ``report rendered'' is never ``phase accepted''; and a gate is
+real only if it can be made to fail). A phase is not complete --- and dependents do
+not start --- until its go/no-go gate is passed by that independent audit or
+adjudicated by the investigator.
+
+%==============================================================================
+\section{The map: two bases, two refinement axes, one anchoring choice}\label{sec:map}
+%==============================================================================
+
+\field{Two base estimators} \textbf{LPS} estimates the conditional mean
+$\mathbb{E}[y\mid x]$ by local polynomial regression in a local chart. \textbf{LCov}
+estimates the local conditional second-order structure (covariance / precision /
+association) in the same chart geometry. They share the chart machinery; they differ
+in what is fit on the chart.
+
+\field{Axis A --- prediction synchronization (PS)} An operator that couples
+\emph{overlapping} local models: where two anchors' charts share data, their
+predictions are regularized toward agreement (prediction-overlap coupling, strength
+$\lambda_{\mathrm{sync}}$). PS acts \emph{across} anchors, on the overlap graph. It
+applies to LPS (the existing PS-LPS) and, by analogy, to LCov.
+
+\field{Axis B --- the local dimension/scale ladder} An operator that sets
+\emph{each} anchor's local chart --- its intrinsic dimension $d_i$ and its scale
+$K_i$ (support size / bandwidth). Four rungs:
+\begin{description}[leftmargin=1.1em,style=nextline]
+\item[base] $d$ and $K$ fixed (a numeric \texttt{chart.dim} and one CV-selected
+global $K$): the current default.
+\item[LDS --- local dimension \emph{and} scale, unregularized] Estimate \emph{both}
+fields per anchor, jointly. This rung is itself two coupled directions --- dimension
+and scale --- because the scale at which a neighborhood is read determines its
+apparent dimension and vice versa. No spatial smoothing: the honest raw estimator.
+\item[LDR --- local dimension regularization] Regularize the dimension field
+($\ell_1$/TV over a graph) while holding scale fixed/global. This is the
+program's \emph{original} way of thinking about local dimension; it is the special
+case of the next rung with scale-regularization switched off.
+\item[LDSR --- local dimension \emph{and} scale regularization] Co-regularize both
+fields together over the chart nerve, subject to the points-per-parameter coupling.
+The full object; it nests LDR.
+\end{description}
+
+\field{Axis C (cross-cutting) --- anchoring} Where the local models are centered:
+at the \textbf{data points} (the current choice), or at a \textbf{regular/derived
+grid} that decouples the anchor set from the sample (\S\ref{sec:grid}). This choice
+crosses every cell of the base$\times$refinement product.
+
+\field{The product} The named variants are the cells of
+$\{\text{LPS},\text{LCov}\}\times\{\text{base},\,\text{PS},\,\text{LDS},\,\text{LDR},
+\,\text{LDSR},\,\text{PS+LDSR}\}$, each under a choice of anchoring:
+
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\textbf{Refinement} & \textbf{base $=$ LPS} & \textbf{base $=$ LCov}\\
+\midrule
+none & LPS & LCov\\
+$+$ PS (synchronization) & LPS+PS \ (\,$=$ PS-LPS\,) & LCov+PS\\
+$+$ LDS (local dim \& scale, raw) & LPS+LDS & LCov+LDS\\
+$+$ LDR (dim regularization, scale fixed) & LPS+LDR & LCov+LDR\\
+$+$ LDSR (dim \& scale co-regularization) & LPS+LDSR & LCov+LDSR\\
+$+$ PS $+$ LDSR (full) & LPS+PS+LDSR & LCov+PS+LDSR\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{note}
+The two refinement axes are \emph{orthogonal}: PS chooses how anchors talk to each
+other; the dimension/scale ladder chooses what each anchor's chart is. That is why
+they compose into LPS+PS+LDSR rather than competing --- and why both ultimately live
+on the same object, the nerve of the chart cover (\S\ref{sec:nerve}): PS's overlap
+graph and LDSR's co-regularization graph are the \emph{same} graph. The nerve is
+therefore the integration phase, not a sub-part of either operator.
+\end{note}
+
+%==============================================================================
+\section{Phase 0 --- the LPS base (the foundation that emits the tools)}\label{sec:phase0}
+%==============================================================================
+
+\field{Objective} Prove the base smoother is what it claims, and produce the
+reusable estimator toolkit every refinement reuses.
+\field{Inputs} None (the foundation).
+\field{Deliverables} The Tier-0 correctness battery (polynomial reproduction; the
+linear-smoother identity $\hat y = Sy$ with $\mathrm{tr}\,S$ and analytic LOO/GCV;
+boundary behaviour; consistency; binary recovery and calibration; CV no-leakage;
+degenerate geometry), then the Tier 1--4 plan (honest nested/grouped CV; bandwidth
+and kernel semantics; binary-mode hygiene; uncertainty bands). Spec: the experimental
+plan note.
+\field{Gate} \begin{gate} The Tier-0 battery passes deterministically and the
+linear-smoother toolkit ($S$, df, LOO/GCV, bands) is implemented and tested. This is
+both the correctness gate and the \emph{source} of the tools the refinements
+require: df-matched comparisons (PS), per-anchor local GCV (the dimension/scale
+ladder), and bands (LCov, capstone).\end{gate}
+\field{Status (this revision)} \emph{Met.} Tier-0 is validated and merged to
+\texttt{main}; the $S$/df/LOO/band toolkit exists (\texttt{R/lps\_uncertainty.R}).
+Tier 1--4 gates (bandwidth multiplier; nested/grouped CV; binary hygiene and the
+ridge-alignment and NA-consistency fixes; pointwise bands) are in integration.
+
+%==============================================================================
+\section{Axis B --- the local dimension/scale ladder}\label{sec:ladder}
+%==============================================================================
+
+This axis is the heart of the refinement. It is developed bottom-up: build the raw
+joint estimator (LDS) first, then the two regularizations (LDR, LDSR). Spec: the
+implementation notes (dimension) and the per-point-scale sketch.
+
+\subsection{LDS --- joint local dimension and scale (the estimator)}\label{sec:lds}
+\field{Objective} Estimate, per anchor, \emph{both} the intrinsic dimension $d_i$
+and the scale $K_i$ (support / bandwidth), recognizing that they are coupled: the
+locally MSE-optimal scale depends on local curvature, density, noise, and $d_i$, and
+$d_i$ is read off the neighborhood spectrum at scale $K_i$.
+\field{Inputs} Phase 0 (the chart machinery and the $S_{ii}$/LOO toolkit); the toy
+synthetic generators.
+\field{Deliverables} The joint per-anchor $(d_i,K_i)$ fields. \emph{One design fork
+decides whether the Phase-0 toolkit survives unchanged:} an \textbf{X-only} scale
+(geometry/density-driven; keeps $\hat y = Sy$ linear and the df/LOO/band toolkit
+exact) versus a \textbf{y-aware} scale (local GCV/LOO or Lepski; better MSE but
+$S$ becomes $y$-dependent, so df/bands move to the selection-aware path). The honest
+caveat: response-removal LOO $\neq$ training-removal LOO for a $k$-NN bandwidth, so
+the cheap $S_{ii}$ shortcut is a biased proxy for \emph{scale} selection (favour
+Lepski, or a leave-a-block-out, for the scale field).
+\field{Gate} \begin{gate} On a known varying-scale / varying-dimension DGP, the raw
+$(d_i,K_i)$ fields track the truth (smaller $K$ in finer regions; $d_i$ matching the
+stratum dimension), and the X-only variant preserves the $\hat y = Sy$ identity
+exactly. The fields will be high-variance --- that is expected and is what the next
+two rungs address.\end{gate}
+\field{Unblocks} LDR, LDSR.
+
+\subsection{LDR --- local dimension regularization (scale fixed)}\label{sec:ldr}
+\field{Objective} Stabilize the per-anchor dimension field by $\ell_1$/total-variation
+regularization over a graph, holding scale at the global value. (The program's
+original local-dimension picture.)
+\field{Inputs} Phase 0; LDS's raw dimension field; the toy generators.
+\field{Deliverables} The exact graph-cut/TV solve; the test battery T1--T9
+(graph-cut exactness, $\ell_1$-keeps-the-boundary vs $\ell_2$-blurs, denoising, the
+boundary safeguard, scale/persistence, the coordinate trap, the support cap and soft
+face, the frontier, downstream Truth-RMSE). Spec: the implementation notes.
+\field{Gate} \begin{gate} The implementation notes' go/no-go: \emph{(the nominal$-$
+effective dimension gap is large)} $\wedge$ \emph{(the field improves Truth-RMSE on
+the stratum-mixture generator)}, without blurring a true dimension boundary. If
+either fails, the within-face field is not promoted; the cheaper soft-face-and-cap
+refinement is kept.\end{gate}
+\field{Unblocks} The nerve integration; it is also the scale-frozen baseline LDSR
+must beat.
+
+\subsection{LDSR --- co-regularized dimension and scale}\label{sec:ldsr}
+\field{Objective} Co-regularize the $(d,K)$ fields jointly over the chart nerve,
+subject to the points-per-parameter coupling, so scale adapts where the data's
+natural scale changes and the two fields stay spatially coherent.
+\field{Inputs} LDS (the raw fields); LDR (the dimension-field solver and its
+$\ell_1$-boundary property); the chart nerve (\S\ref{sec:nerve}).
+\field{Deliverables} The coupled objective
+$\sum_i \ell_i(K_i,d_i) + \lambda_K\,\mathrm{TV}_G(K) + \lambda_d\,\mathrm{TV}_G(d)$
+subject to $\binom{d_i+p}{p}\le K_i$, solved on the nerve graph $G$ with the LDR
+machinery; identifiability guards (the points-per-parameter constraint; a parsimony
+tie-break; never selecting scale on in-sample RSS). Spec: the per-point-scale sketch.
+\field{Gate} \begin{gate} LDSR beats LDR (scale-frozen) at \emph{matched df} on
+heteroscale DGPs, and reduces to $\approx$ the global $K$ on a homogeneous truth (no
+spurious variation); the $\ell_1$ co-regularization preserves a true joint
+scale/dimension boundary that $\ell_2$ would smooth away.\end{gate}
+\field{Unblocks} LPS+PS+LDSR; the LCov ladder; the capstone's basin geometry.
+
+%==============================================================================
+\section{Axis A --- prediction synchronization (PS / PS-LPS)}\label{sec:ps}
+%==============================================================================
+
+\field{Objective} Validate, and put on firm footing, the synchronization of
+overlapping local models through prediction-overlap regularization.
+\field{Inputs} Phase 0 (the validated base \emph{and} the toolkit). PS is independent
+of the dimension/scale ladder --- it can be developed in parallel.
+\field{Deliverables} Exploit PS-LPS's linearity in the response: exact effective
+df $=\mathrm{tr}\,S(\lambda_{\mathrm{sync}})$ and analytic LOO/GCV in place of
+$K$-fold CV; compare to LPS at \emph{matched df} (not matched $\lambda$); fix the
+ridge-path discontinuity at $\lambda_{\mathrm{sync}}=0$; make the synchronization
+graph and weights explicit; characterize the estimand and the
+$\lambda_{\mathrm{sync}}\to\infty$ limit; add bands. Spec: the audit memo's PS-LPS
+sections and the chart-aware synchronization.
+\field{Gate} \begin{gate} On synthetic data, PS improves over a \emph{df-matched}
+LPS where the geometry predicts; $\lambda_{\mathrm{sync}}$ selection is well-founded
+via $\mathrm{tr}\,S$ (no grid-boundary railing); $\lambda_{\mathrm{sync}}=0$
+reproduces LPS exactly and the path is continuous.\end{gate}
+\field{Unblocks} LPS+PS+LDSR; the nerve integration.
+
+%==============================================================================
+\section{Composition --- LPS+PS+LDSR}\label{sec:compose}
+%==============================================================================
+
+The two axes compose because they are orthogonal: LDSR sets each anchor's chart;
+PS couples the anchors' predictions. The natural order is to fix the chart field
+first (LDS$\to$LDR/LDSR), then synchronize on it (PS), because PS's overlap graph is
+defined by chart overlaps, which the scale field determines. The fully composed
+object LPS+PS+LDSR is exactly the cochain picture of the nerve substrate: one
+consistency objective over the overlaps combining prediction agreement (PS) and a
+coherent chart-geometry field (LDSR). It is built in \S\ref{sec:nerve}, not before,
+because it depends on all of its parts.
+
+%==============================================================================
+\section{The local covariance base (LCov) and its parallel expansions}\label{sec:lcov}
+%==============================================================================
+
+\field{Objective} Build and validate the local conditional covariance / precision /
+association on the boundary-safe compositional ($L^\infty$ / Aitchison) geometry ---
+the second base estimator --- and carry the \emph{same} refinement algebra onto it.
+\field{Inputs} Phase 0; the realistic 16S generators; a boundary-aware compositional
+front end (structural-zero and soft-face handling) that this base must establish
+first.
+\field{Deliverables} Recovery of a known local covariance on synthetic 16S; the
+two-layer association object (co-occurrence support $+$ conditional-abundance
+precision) with soft-face and $\ell_1$-fusion. Then the parallel expansions:
+\textbf{LCov+PS} (synchronize overlapping local covariances --- the second-order
+analogue of PS-LPS), \textbf{LCov+LDS/LDR/LDSR} (the \emph{same} chart-geometry
+ladder; the dimension/scale machinery is shared with LPS), and \textbf{LCov+PS+LDSR}.
+Spec: the chart-aware association design and its addendum.
+\field{Gate} \begin{gate} The covariance/precision is recovered on synthetic data
+with known structure; the boundary-safe path never reintroduces a pseudocount; the
+$\ell_1$ fusion preserves a planted reorganization across a community-state boundary
+that $\ell_2$ would smooth away. LCov+LDSR reuses the validated LPS ladder, so its
+gate is the recovery gate plus the ladder's reduction/tracking checks.\end{gate}
+\field{Unblocks} The nerve integration; the capstone.
+
+\begin{note}
+The chart-geometry ladder (Axis B) is genuinely \emph{shared} between LPS and LCov:
+both fit something on a local chart whose dimension and scale must be chosen, so the
+same $(d_i,K_i)$ field machinery serves both. Only the synchronization analogue (PS
+for second-order objects) and the compositional front end are new to LCov.
+\end{note}
+
+%==============================================================================
+\section{Axis C (cross-cutting) --- grid anchoring}\label{sec:grid}
+%==============================================================================
+
+\field{Objective} Decouple the \emph{anchor set} (where local models are centered)
+from the \emph{sample}: instead of one local model per data point, center them at a
+chosen set of anchors --- a regular or derived grid.
+\field{Why it matters} The estimand becomes a function on a controlled anchor set
+(resolution chosen, not dictated by sampling density); charts are reusable
+(predictable cost); the synchronization graph and the nerve are built on the anchors,
+so the anchor choice is upstream of PS and the nerve, not a detail.
+\field{Ways to define the grid} A naive ambient lattice is wrong (anchors land in
+empty regions); useful constructions all keep anchors \emph{on the data manifold}:
+farthest-point / Poisson-disk sampling of the data; a lattice on the estimated
+manifold (intrinsic coordinates); coarse-to-fine adaptive refinement driven by the
+local-scale field $K_i$ (denser anchors where scale is fine); or the nerve vertices
+themselves. The local-scale field of LDSR is the natural driver of an adaptive grid
+--- closing a loop between Axis~B and Axis~C.
+\field{Gate} \begin{gate} On synthetic data, grid-anchored LPS matches
+data-anchored LPS in accuracy at equal effective resolution, with anchors provably
+covering the data support (no anchor with an empty or degenerate neighborhood); an
+adaptive grid driven by $K_i$ uses fewer anchors at equal accuracy than a uniform
+grid.\end{gate}
+\field{Unblocks} A cleaner nerve (a controlled cover) and predictable cost for the
+capstone on large real data.
+
+%==============================================================================
+\section{Cross-cutting --- the synthetic-data and VALENCIA enabler}\label{sec:data}
+%==============================================================================
+
+\field{Objective} Supply known-ground-truth, increasingly realistic non-manifold
+datasets, because every refinement's gate needs an answer key the real data cannot
+give.
+\field{Deliverables} Early: the toy stratified generators (the DGP library, now
+frozen as Amendment~1) needed by LDS/LDR. Adding for this revision: a
+\textbf{varying-scale} generator (a localized region of finer structure / higher
+curvature) for the scale ladder, alongside the varying-dimension (G4) and curved
+(G3) generators. Maturing: the VALENCIA E1/E2/E3 exploration producing realistic
+16S generators for LCov and the capstone. Spec: the implementation notes.
+\field{Gate} \begin{gate} Toy and varying-scale generators ready before the ladder's
+gates; realistic generators pass a posterior-predictive fidelity check before any
+LCov/capstone result built on them is trusted.\end{gate}
+
+\begin{note}
+This workstream leads and runs throughout: it is a \emph{dependency} of the ladder,
+LCov, and the capstone, so it cannot trail them. The Tier-0 DGP library
+(Amendment~1, G1--G7) is the first installment and is already audited and merged.
+\end{note}
+
+%==============================================================================
+\section{Integration --- the simplicial complex (nerve)}\label{sec:nerve}
+%==============================================================================
+
+\field{Objective} Unify, on the nerve of the chart cover, the pieces that the
+product structure keeps separate: synchronization (PS), the dimension/scale field
+(LDSR), and the covariance (LCov), as one consistency objective over the overlaps.
+\field{Inputs} The PS axis, the LDSR rung, the LCov base; the anchoring choice that
+defines the cover.
+\field{Deliverables} Minimal-first: replace PS's pairwise overlap graph with the
+nerve $1$-skeleton of variable-size charts; add $2$-simplices (higher-order
+synchronization at junctions); co-regularize chart size and dimension over the nerve
+(this \emph{is} LDSR's graph $G$); and, if it pays, the single cochain objective
+combining prediction, covariance, and dimension/scale. Spec: the chart-nerve
+substrate note.
+\field{Gate} \begin{gate} On synthetic data, the nerve $1$-skeleton of variable-size
+charts beats the fixed $k$-NN overlap graph on held-out accuracy; $2$-simplex
+synchronization either measurably helps at junctions or is dropped; the integrated
+objective is validated on known truth.\end{gate}
+\field{Unblocks} Phase 3 --- it supplies the basin-and-corridor skeleton.
+
+%==============================================================================
+\section{Capstone --- occupancy / quasi-equilibrium / support}\label{sec:capstone}
+%==============================================================================
+
+\field{Objective} Find the pure components (recurrent ecological basins) and the
+transition phases between them.
+\field{Inputs} LCov, the nerve / basin-corridor skeleton, the realistic 16S
+generators, and the COT occupation-measure machinery.
+\field{Deliverables} Level-set basins on the chart cover; the geometric corridor
+discriminator (overlap mass $+$ elongated covariance); the local-covariance basin
+shape; alignment of per-subject basins onto shared components; and the transfer
+operator on the coarse basin-and-corridor skeleton that earns the
+``quasi-equilibrium'' label. Spec: the COT bridge note.
+\field{Gate} \begin{gate} On synthetic 16S with \emph{known} components:
+geometry-first level-set basins are more stable across scales/bootstraps than the
+dictionary-factorization atoms; the transfer-operator metastable count agrees with
+the cluster-tree count; the corridor discriminator removes spurious components. Then,
+and only then, the HMP/152-subject experiment.\end{gate}
+\field{Unblocks} The terminal application.
+
+%==============================================================================
+\section{Terminal --- the real 16S / omics application}\label{sec:terminal}
+%==============================================================================
+
+\field{Objective} Estimate conditional expectations of binary and continuous
+features, and the community occupancy/component structure, on real 16S and other
+omics data, with honest uncertainty.
+\field{Deliverables} Real-data conditional-expectation surfaces with bands;
+occupancy/component decompositions; reported under nested and grouped (subject-level)
+cross-validation so the headline numbers are not selection-optimistic or
+leakage-inflated.
+\field{Gate} \begin{gate} Held-out predictive validity on real data and biological
+interpretability of the components --- judged, as throughout, by prediction, not by
+intrinsic-geometry scores.\end{gate}
+
+%==============================================================================
+\section{Dependencies and decision gates that can re-route the program}\label{sec:dag}
+%==============================================================================
+
+The forced order, stated as dependencies:
+\begin{enumerate}[leftmargin=1.6em]
+\item \textbf{LPS base (Phase 0)} first --- it emits the $S$/df/LOO/band toolkit the
+refinements reuse. \emph{(Met.)}
+\item \textbf{The two refinement axes develop in parallel on the base.} PS
+(\S\ref{sec:ps}) and the dimension/scale ladder (\S\ref{sec:ladder}) are independent;
+within the ladder, \textbf{LDS before LDR/LDSR} (regularize an estimator you have).
+\item \textbf{LCov base} after Phase 0; it \emph{reuses} the chart-geometry ladder,
+so LCov's ladder rungs follow the LPS ones cheaply.
+\item \textbf{Anchoring (Axis C)} can be developed alongside, but the \emph{adaptive}
+grid depends on the scale field (LDSR), and the nerve depends on the anchor cover.
+\item \textbf{Nerve integration} depends on PS, LDSR, and LCov; \textbf{capstone}
+depends on the nerve and LCov; \textbf{terminal} depends on all.
+\end{enumerate}
+
+\noindent Gates that prune whole branches:
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{After LDS.} If the X-only scale already captures the structure (the
+y-aware variant adds little Truth-RMSE), keep X-only and the exact toolkit; do not
+pay the selection-aware df/band cost.
+\item \textbf{After LDR.} If the dimension field does not improve Truth-RMSE, it is
+not promoted; a global chart dimension is kept and LDSR reduces to scale-only.
+\item \textbf{After LDSR.} If co-regularized scale does not beat scale-frozen LDR at
+matched df, the program stays on LDR (fixed scale).
+\item \textbf{After the nerve.} If $2$-simplex synchronization does not help, stay on
+the $1$-skeleton.
+\item \textbf{After the capstone on synthetic.} If geometry-first basins are not more
+stable than the existing factorization, the capstone falls back to the COT
+dictionary route.
+\end{itemize}
+
+%==============================================================================
+\section{Immediate next actions (this revision)}\label{sec:next}
+%==============================================================================
+
+\begin{enumerate}[leftmargin=1.6em]
+\item \textbf{Land the Tier 0--4 integration.} dgp and t4 (uncertainty/bands) are
+merged; e19 (bandwidth/CV) and t2 (binary hygiene + the re-opened E0.6) are in their
+final audits and merges. This closes the validated LPS base and its toolkit.
+\item \textbf{Decide the ladder sequencing.} Build \textbf{LDS} (the joint
+dimension/scale estimator) next, choosing the X-only-default / y-aware-opt-in fork;
+then choose whether LDR and LDSR land as one joint field (E1.11 absorbs scale) or
+staged (LDR, then LDSR/E1.12). Spec in hand: the per-point-scale sketch.
+\item \textbf{In parallel}, keep the synthetic enabler ahead: add the varying-scale
+generator so the ladder's gates have known-truth inputs.
+\end{enumerate}
+
+Once the base is fully landed, the two refinement axes proceed in parallel, LCov
+inherits the ladder, the anchoring choice is exercised, and the nerve integrates
+them.
+
+%==============================================================================
+\begin{thebibliography}{9}\small
+\bibitem{plan} \emph{LPS Correctness and Validation: A Precise Experimental Plan}
+  (the LPS base / Tier 0--4 spec),
+  \nolinkurl{project_briefs/lps_experimental_plan_2026-06-09}.
+\bibitem{audit} \emph{LPS/PS-LPS JASA-style audit memo} (PS-LPS linearity, df,
+  $\lambda_{\mathrm{sync}}$ selection),
+  \nolinkurl{project_briefs/lps_ps_lps_jasa_style_audit_2026-06-09}.
+\bibitem{impl} \emph{LPS Local Dimension Regularization: Implementation Notes}
+  (the LDR rung; the synthetic generators),
+  \nolinkurl{project_briefs/lps_local_dimension_regularization_implementation_notes_2026-06-10}.
+\bibitem{scale} \emph{Per-point / co-regularized chart scale for LPS} (the LDS/LDSR
+  sketch; the X-only vs y-aware fork),
+  \nolinkurl{project_briefs/lps_per_point_scale_sketch_2026-06-13}.
+\bibitem{chartaware} \emph{Chart-Aware Local Association Structure on the
+  $L^\infty$ Atlas} (the LCov base),
+  \nolinkurl{project_briefs/chart_aware_local_association_design_2026-06-09}.
+\bibitem{nerve} \emph{The Local-Chart Simplicial Complex as an Organizing Substrate
+  for LPS} (the nerve integration),
+  \nolinkurl{project_briefs/lps_chart_nerve_substrate_2026-06-10}.
+\bibitem{bridge} \emph{Occupancy Supports as Basins on the Chart Cover} (the
+  capstone),
+  \nolinkurl{vaginal_community_trajectory_types/docs/occupancy_basins_on_chart_cover_bridge_2026-06-10}.
+\bibitem{workflow} \emph{Worker--Auditor Research Project Workflow} (the
+  audit-independence governance),
+  \nolinkurl{~/.codex/notes/workflows/worker_auditor_workflow}.
+\end{thebibliography}
+
+\end{document}

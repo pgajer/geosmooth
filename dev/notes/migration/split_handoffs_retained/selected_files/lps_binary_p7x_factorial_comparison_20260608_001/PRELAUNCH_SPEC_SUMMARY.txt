@@ -1,0 +1,12 @@
+LPS binary P7X factorial manifest pre-launch QA
+run_id: lps_binary_p7x_factorial_comparison_20260608_001
+run_dir: /Users/pgajer/current_projects/geosmooth/split_handoffs/lps_binary_p7x_factorial_comparison_20260608_001
+planned_tasks: 2240
+planned_pairs: 1120
+frozen_geometries: 14
+probability_profiles: 4
+sample_policies: n250,full
+reps_per_cell: 5
+seed_matched_pairs: 1120
+mismatched_pairs: 0
+qa_passed: TRUE

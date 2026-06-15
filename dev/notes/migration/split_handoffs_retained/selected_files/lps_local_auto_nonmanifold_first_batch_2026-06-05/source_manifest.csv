@@ -1,0 +1,6 @@
+"source.name","source.path","bytes","sha256"
+"valencia_tx","/Users/pgajer/current_projects/valencia/tx.13k.rds",2581544,"be282c13f87c0407da1dee3cc0bba32690dad2686b3e00dc45004d61685c2e74"
+"valencia_cst","/Users/pgajer/current_projects/valencia/cst.tx.13k.rds",31016,"04ce9d17b9ad94f69061788b050c111baaaeb122210a610745f2d3f48e8335c1"
+"linf_depth2","/Users/pgajer/current_projects/linf/data/valencia13k_dcst_depth2_merged.rda",41256,"a68a10093530431b18c47fcdac5db38d7cf438dc8a4acbb6c60f0d9181da798b"
+"linf_depth3","/Users/pgajer/current_projects/linf/data/valencia13k_dcst_depth3_merged.rda",63648,"0b367bca9158afa46ef979c9b9cd18f4383e29831230d09559285b51d2a43c10"
+"linf_hypercube_1k","/Users/pgajer/current_projects/linf/data/valencia_linf_hypercube_1k.rda",34780,"d9dd446c46d076aa5956283db5b991ab000d4330fe39f28e2cf07457b167ff09"

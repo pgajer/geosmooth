@@ -1,0 +1,2 @@
+"run_id","run_dir","design_manifest","n_workers","task_timeout_sec","n_reps","base_seed","planned_tasks","planned_pairs","qa_passed"
+"lps_binary_gm_ff_full_20260608_001","/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_full_20260608_001","/Users/pgajer/current_projects/geosmooth/split_handoffs/experiment_catalogue_20260608/lps_binary_gaussian_factorial_design_manifest.csv",14,3600,10,20260608,11520,5760,TRUE

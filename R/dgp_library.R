@@ -2,11 +2,13 @@
 # dgp_library.R -- Plan-conformant data-generating processes (DGP library)
 #
 # Contract: LPS Tiers 1-4, Amendment 1 (consolidate the DGP library).
-#   audit_contracts/lps_tiers1to4/lps_tiers1to4_contract_2026-06-11.md
+#   dev/methods/lps/audit_contracts/lps_tiers1to4_contract_2026-06-11.md
 # Frozen science spec (the EXACT G1-G7 definitions matched here): see
-#   project_briefs/lps_experimental_plan_2026-06-09.tex  (section \label{sec:dgp}).
+#   dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex
+#   (section \label{sec:dgp}).
 # Standard dataset-object common contract: see
-#   split_handoffs/lps_local_auto_nonmanifold_dataset_specs_2026-06-05.md
+#   dev/notes/migration/split_handoffs_retained/selected_files/
+#   lps_local_auto_nonmanifold_dataset_specs_2026-06-05.md
 #
 # This module exposes ONE exported generator per plan G-tag. Each generator
 # returns the standard dataset object (see `.dgp.dataset`) and materializes the

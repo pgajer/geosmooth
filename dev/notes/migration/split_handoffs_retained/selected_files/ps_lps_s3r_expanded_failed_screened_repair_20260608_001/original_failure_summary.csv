@@ -1,0 +1,10 @@
+"dataset_id","chart_dim_rule","error_message","n"
+"LA-D2-RAW-N500","auto","could not find function ""rcpp_local_pca_chart""",1
+"SYN-SIMPLEX-FACES-N600","auto","No candidate has a finite selection score in 'cv.rmse.observed'.  Check local-design conditioning, support sizes, degree, backend, and unstable.action.",20
+"LA-D3-RAW-N500","local.auto","No candidate has a finite selection score in 'cv.rmse.observed'.  Check local-design conditioning, support sizes, degree, backend, and unstable.action.",4
+"SYN-SIMPLEX-FACES-N600","local.auto","No candidate has a finite selection score in 'cv.rmse.observed'.  Check local-design conditioning, support sizes, degree, backend, and unstable.action.",20
+"LA-D3-RAW-N500","local.auto","unused argument (logistic.telemetry = logistic.cv.telemetry)",1
+"LA-D3-RAW-N500","auto","unused argument (logistic.telemetry = logistic.telemetry)",1
+"LA-D3-RAW-N500","local.auto","unused argument (logistic.telemetry = logistic.telemetry)",1
+"LA-D2-HC-TOP1-N500","auto","unused argument (outcome.family = outcome.family)",1
+"LA-D2-HC-TOP1-N500","local.auto","unused argument (outcome.family = outcome.family)",2

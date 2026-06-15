@@ -1,0 +1,11 @@
+"check","observed","expected","passed"
+"planned_task_count",560,560,TRUE
+"planned_pair_count",280,280,TRUE
+"two_methods_per_pair",280,280,TRUE
+"one_bernoulli_brier_arm_per_pair",280,280,TRUE
+"one_binomial_logistic_arm_per_pair",280,280,TRUE
+"response_seed_matched_per_pair",280,280,TRUE
+"fold_seed_matched_per_pair",280,280,TRUE
+"asset_paths_present",560,560,TRUE
+"source_hashes_malformed",0,0,TRUE
+"balanced_dataset_profile_rep_chart_method_counts",560,560,TRUE

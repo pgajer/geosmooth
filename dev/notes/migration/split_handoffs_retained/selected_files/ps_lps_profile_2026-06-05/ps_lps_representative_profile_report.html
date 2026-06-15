@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <title>PS-LPS Representative Profile</title>
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 32px; color: #1f2933; line-height: 1.45; }
+h1, h2 { line-height: 1.15; }
+.note { max-width: 1040px; }
+.figure { margin: 24px 0 30px; }
+.figure img { max-width: 100%; border: 1px solid #ddd; }
+.caption { font-size: 0.94rem; color: #53606c; max-width: 1040px; }
+.data-table { border-collapse: collapse; font-size: 0.88rem; margin: 12px 0 24px; }
+.data-table th, .data-table td { border: 1px solid #ddd; padding: 5px 7px; text-align: right; }
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<html>
+  <body>
+    <h1>PS-LPS Representative Profile</h1>
+    <p class="note">
+      This profile uses a small set of frozen first-batch PS-LPS cases to
+      separate setup time, synchronization-row construction, CV fold solves,
+      and full-data solves. It is intended to guide optimization before an
+      extended S2 synchronization search.
+    </p>
+    <h2>Phase Timings</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_profile_phase_timings.png"/>
+      <p class="caption">
+        Representative elapsed times by phase. CV all folds is the cost
+        paid for each candidate during tuning.
+      </p>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>chart_dim_rule</th>
+          <th>n</th>
+          <th>p</th>
+          <th>support_size</th>
+          <th>degree</th>
+          <th>kernel</th>
+          <th>chart_dim_median</th>
+          <th>chart_dim_max</th>
+          <th>lambda_sync</th>
+          <th>lambda_ridge</th>
+          <th>phase_prepare_frames_sec</th>
+          <th>phase_prepare_sync_rows_sec</th>
+          <th>phase_one_fold_solve_sec</th>
+          <th>phase_cv_all_folds_sec</th>
+          <th>phase_full_solve_sec</th>
+          <th>phase_total_candidate_sec</th>
+          <th>n_system_rows</th>
+          <th>n_coefficients</th>
+          <th>n_sync_pairs</th>
+          <th>n_sync_rows</th>
+          <th>ridge_max</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>500</td>
+          <td>4</td>
+          <td>35</td>
+          <td>2</td>
+          <td>gaussian</td>
+          <td>2</td>
+          <td>2</td>
+          <td>10</td>
+          <td>1e-08</td>
+          <td> 0.094</td>
+          <td> 0.029</td>
+          <td> 0.267</td>
+          <td> 0.629</td>
+          <td> 0.119</td>
+          <td> 0.871</td>
+          <td>51102</td>
+          <td>3000</td>
+          <td>1037</td>
+          <td>33602</td>
+          <td>8.78255506386762e-05</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>500</td>
+          <td>178</td>
+          <td>15</td>
+          <td>2</td>
+          <td>gaussian</td>
+          <td>3</td>
+          <td>3</td>
+          <td>10</td>
+          <td>1e-08</td>
+          <td> 0.541</td>
+          <td> 0.029</td>
+          <td> 0.066</td>
+          <td> 0.343</td>
+          <td> 0.069</td>
+          <td> 0.982</td>
+          <td>19269</td>
+          <td>5000</td>
+          <td>1089</td>
+          <td>11769</td>
+          <td>1.26093648246077e-05</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>600</td>
+          <td>100</td>
+          <td>35</td>
+          <td>2</td>
+          <td>gaussian</td>
+          <td>6</td>
+          <td>6</td>
+          <td>10</td>
+          <td>1e-08</td>
+          <td>  1.46</td>
+          <td>  0.03</td>
+          <td> 0.933</td>
+          <td> 3.365</td>
+          <td> 0.688</td>
+          <td> 5.543</td>
+          <td>55392</td>
+          <td>16800</td>
+          <td>1318</td>
+          <td>34392</td>
+          <td>0.000325566749690526</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>local.auto</td>
+          <td>600</td>
+          <td>100</td>
+          <td>35</td>
+          <td>2</td>
+          <td>gaussian</td>
+          <td>6</td>
+          <td>6</td>
+          <td>10</td>
+          <td>1e-08</td>
+          <td> 1.431</td>
+          <td>  0.03</td>
+          <td> 0.655</td>
+          <td> 2.751</td>
+          <td> 0.606</td>
+          <td> 4.818</td>
+          <td>55392</td>
+          <td>15065</td>
+          <td>1318</td>
+          <td>34392</td>
+          <td>0.000325566749690526</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Internal Solve Phase Timings</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_profile_solve_phase_timings.png"/>
+      <p class="caption">
+        Breakdown from inside .ps.lps.solve(): row counting, triplet fill,
+        sparse matrix construction, A'A crossproduct, A'y crossproduct,
+        ridge-normal formation, sparse solve, fallback solve, diagnostics,
+        and fitted-value extraction.
+      </p>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>batch_id</th>
+          <th>dataset_id</th>
+          <th>chart_dim_rule</th>
+          <th>scope</th>
+          <th>phase</th>
+          <th>elapsed_sec</th>
+          <th>case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_count_sec</td>
+          <td> 0.002</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.226</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.009</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.237</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.011</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td> 0.001</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.006</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_solve_sec</td>
+          <td> 0.002</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.009</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fitted_sec</td>
+          <td> 0.001</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.489</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_count_sec</td>
+          <td> 0.005</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_crossprod_sec</td>
+          <td>  0.05</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.034</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.447</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fitted_sec</td>
+          <td> 0.003</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td> 0.005</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.008</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_solve_sec</td>
+          <td> 0.005</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.037</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_count_sec</td>
+          <td> 0.002</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.091</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.008</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.101</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_crossprod_sec</td>
+          <td>  0.01</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td>0</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.002</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_solve_sec</td>
+          <td> 0.002</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.004</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB01</td>
+          <td>LA-D1-RAW-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fitted_sec</td>
+          <td>0</td>
+          <td>FB01 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_count_sec</td>
+          <td> 0.001</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.034</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.004</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.039</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.011</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td> 0.001</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.004</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_solve_sec</td>
+          <td> 0.005</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.006</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fitted_sec</td>
+          <td>0</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.203</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_count_sec</td>
+          <td> 0.005</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.055</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.021</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.172</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_fitted_sec</td>
+          <td> 0.004</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td> 0.001</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.028</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_solve_sec</td>
+          <td> 0.028</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.026</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_count_sec</td>
+          <td> 0.001</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.035</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.005</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.041</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.011</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td>0</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.005</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_solve_sec</td>
+          <td> 0.006</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.005</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB09</td>
+          <td>LA-13K-SUB-N500</td>
+          <td>auto</td>
+          <td>full</td>
+          <td>phase_fitted_sec</td>
+          <td> 0.001</td>
+          <td>FB09 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_count_sec</td>
+          <td> 0.001</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fill_triplets_sec</td>
+          <td> 0.187</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_sparse_matrix_sec</td>
+          <td> 0.098</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.286</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.167</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_rhs_crossprod_sec</td>
+          <td> 0.002</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_ridge_normal_sec</td>
+          <td> 0.233</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_solve_sec</td>
+          <td> 0.234</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fallback_solve_sec</td>
+          <td>0</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_diagnostics_sec</td>
+          <td> 0.009</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>one_fold</td>
+          <td>phase_fitted_sec</td>
+          <td> 0.001</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_assembly_sec</td>
+          <td> 0.919</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_count_sec</td>
+          <td> 0.007</td>
+          <td>FB14 auto</td>
+        </tr>
+        <tr>
+          <td>FB14</td>
+          <td>SYN-RANK-BLOCKS-N600-P100</td>
+          <td>auto</td>
+          <td>cv_all_folds</td>
+          <td>phase_crossprod_sec</td>
+          <td> 0.816</td>
+          <td>FB14 auto</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Rprof Hot Spots</h2>
+    <div class="figure">
+      <img src="figures/ps_lps_profile_rprof_top_total.png"/>
+      <p class="caption">
+        Top sampled functions by total time for the heaviest representative
+        profile target.
+      </p>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>function_name</th>
+          <th>total.time</th>
+          <th>total.pct</th>
+          <th>self.time</th>
+          <th>self.pct</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"profile.case"</td>
+          <td>  5.43</td>
+          <td>   100</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"time.block"</td>
+          <td>  5.42</td>
+          <td> 99.82</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"force"</td>
+          <td>  5.13</td>
+          <td> 94.48</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>".ps.lps.solve"</td>
+          <td>  3.77</td>
+          <td> 69.43</td>
+          <td>   0.7</td>
+          <td> 12.89</td>
+        </tr>
+        <tr>
+          <td>".Call"</td>
+          <td>  2.89</td>
+          <td> 53.22</td>
+          <td>  2.89</td>
+          <td> 53.22</td>
+        </tr>
+        <tr>
+          <td>".local"</td>
+          <td>  2.07</td>
+          <td> 38.12</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>".ps.lps.prepare.frames"</td>
+          <td>  1.33</td>
+          <td> 24.49</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"standardGeneric"</td>
+          <td>  1.13</td>
+          <td> 20.81</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"doTryCatch"</td>
+          <td>  1.12</td>
+          <td> 20.63</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"Matrix::solve"</td>
+          <td>  1.12</td>
+          <td> 20.63</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"tryCatch"</td>
+          <td>  1.12</td>
+          <td> 20.63</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"tryCatchList"</td>
+          <td>  1.12</td>
+          <td> 20.63</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"tryCatchOne"</td>
+          <td>  1.12</td>
+          <td> 20.63</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"Cholesky"</td>
+          <td>  1.09</td>
+          <td> 20.07</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"Matrix::crossprod"</td>
+          <td>  0.95</td>
+          <td>  17.5</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>".klp.local.coordinates"</td>
+          <td>  0.86</td>
+          <td> 15.84</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"rcpp_local_pca_chart"</td>
+          <td>  0.82</td>
+          <td>  15.1</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"forceSymmetric"</td>
+          <td>   0.5</td>
+          <td>  9.21</td>
+          <td>  0.13</td>
+          <td>  2.39</td>
+        </tr>
+        <tr>
+          <td>"+"</td>
+          <td>   0.5</td>
+          <td>  9.21</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>"callGeneric"</td>
+          <td>   0.5</td>
+          <td>  9.21</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Output Tables</h2>
+    <ul>
+      <li>
+        <a href="tables/ps_lps_profile_phase_timings.csv">Phase timing table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_profile_solve_phase_timings.csv">Internal solve phase timing table</a>
+      </li>
+      <li>
+        <a href="tables/ps_lps_profile_Rprof_by_total_top80.csv">Rprof by-total top 80 table</a>
+      </li>
+    </ul>
+  </body>
+</html>
+</html>

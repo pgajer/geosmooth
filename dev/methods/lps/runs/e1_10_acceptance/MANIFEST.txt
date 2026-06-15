@@ -1,0 +1,52 @@
+=== E1.10 Part B acceptance bundle manifest ===
+generated_local: Sun Jun 14 11:28:17 EDT 2026
+git_head (certified source commit): 79b94bfc3b2d14ede4fbc5a98d02588112fc9c10
+
+--- tracked-source status (must show no modified tracked files; the
+    only untracked entries are this bundle being committed) ---
+?? reports/e1_10_acceptance/
+?? scripts/ci/_e110_daemon_launch.py
+?? scripts/ci/e1_10_acceptance_manifest.sh
+[end status]
+
+--- source-hash verification against Part B audit (audits/e1_10_partB_audit_2026-06-14.md) ---
+expected (audit Bundle Validity):
+  588762790b651091717fedc5c424b6dd78ae348ac0bd70a5af1691c68c4ff2ee  R/lps.R
+  db1e6fdb3ab4befd25a126d4e9884dbd5c34ca9c3d1212eb6a3f4e35a1ee0a0a  R/lps_cv_utils.R
+  98c0a3f7ea764549097704d0ce4b273f1d35c4f1d34c0862b494cf51cdf1d1f3  validation/e1_10_nested_grouped_cv.R
+  8bd66a2ff8cfb7f4f39b356127b3918bf41b7da9af648de8e9672599e573d9d2  tests/testthat/test-lps-nested-grouped-cv.R
+realized:
+588762790b651091717fedc5c424b6dd78ae348ac0bd70a5af1691c68c4ff2ee  R/lps.R
+db1e6fdb3ab4befd25a126d4e9884dbd5c34ca9c3d1212eb6a3f4e35a1ee0a0a  R/lps_cv_utils.R
+98c0a3f7ea764549097704d0ce4b273f1d35c4f1d34c0862b494cf51cdf1d1f3  validation/e1_10_nested_grouped_cv.R
+8bd66a2ff8cfb7f4f39b356127b3918bf41b7da9af648de8e9672599e573d9d2  tests/testthat/test-lps-nested-grouped-cv.R
+
+--- gate battery ---
+E1.9+E1.10 gates: tests=15 failed=0 error=0 warning=0 skipped=0
+
+--- run metadata (seeds, fit args, BLAS) ---
+mode: acceptance
+generator_source: registry
+git_head: 79b94bfc3b2d14ede4fbc5a98d02588112fc9c10
+generated_utc: 20260614T152334Z
+r_version: R version 4.5.2 (2025-10-31)
+blas: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+fit_args:
+list(support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian",
+"tricube"), backend = "R", design.basis = "orthogonal.polynomial.drop",
+    ridge.multiplier.grid = c(0, 1e-10, 1e-08), ridge.condition.max = 1e+12,
+    unstable.action = "na")
+study_a: n_train=800 n_test=4000 R=40 sigma=0.10 seed0=61000
+study_b: K=40 m=20 K_test=100 R=40 rho=0.3,0.6 seed0=62000
+
+--- Study (a) verdict ---
+"study","mode","generator","R","n.train","n.test","sigma","mean.rel.nested","se.rel.nested","mean.rel.selectedmin","mean.optimism.delta","se.optimism.delta","wilcoxon.p.greater","rule","verdict","acceptance.evidence"
+"E1.10a","acceptance","registry",40,800,4000,0.1,0.0321321135388682,0.00392977557371172,0.0322751972123884,2.53313265655406e-05,2.53313265655405e-05,0.5,"mean(rel.nested)<0.10 & mean(optimism.delta)>=0; SE of BOTH gated means < 0.0333","PASS",TRUE
+
+--- Study (b) verdict ---
+"study","mode","generator","rho.nominal","gated","R","K","m","K.test","mean.realized.icc","mean.gap.primary","se.gap.primary","mean.rel.nested.random","mean.rel.nested.cluster","se.rel.nested.cluster","mean.gap.selmin","all.cluster.arm.whole","rule","verdict","acceptance.evidence"
+"E1.10b","acceptance","registry",0.3,FALSE,40,40,20,100,0.29215861621956,0.196410723921997,0.0388541536469054,0.444214956076069,0.247804232154072,0.0307160799181928,0.259776066570218,TRUE,"at rho=0.6: mean(gap.primary)>0.10 & mean(rel.nested.cluster)<0.10; SE<0.0333","REPORTED-ONLY",TRUE
+"E1.10b","acceptance","registry",0.6,TRUE,40,40,20,100,0.5867219923961,0.344152590289626,0.0267883531103957,0.504856439738479,0.160703849448853,0.020825040861038,0.366972907618076,TRUE,"at rho=0.6: mean(gap.primary)>0.10 & mean(rel.nested.cluster)<0.10; SE<0.0333","FAIL",TRUE
+
+--- realized rho per replicate: see realized_rho_per_replicate.csv
+    (rho.nominal, replicate, seed.base, realized.icc; 80 rows) ---

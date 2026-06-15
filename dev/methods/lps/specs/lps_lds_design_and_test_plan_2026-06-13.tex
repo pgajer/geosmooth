@@ -1,0 +1,870 @@
+\documentclass[11pt]{article}
+
+%==============================================================================
+%  LDS -- Local Dimension and Scale: Design and Test Plan
+%  Phase spec for the geosmooth program. Written to be implementable without
+%  gaps and auditable. Plain language; every term defined on first use.
+%==============================================================================
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{microtype}
+\microtypesetup{expansion=false}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{datetime2}
+\DTMsetup{showzone=false}
+\usepackage[hidelinks]{hyperref}
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+\definecolor{ink}{HTML}{24303D}
+\definecolor{accent}{HTML}{2563EB}
+\definecolor{accent3}{HTML}{15803D}
+\definecolor{accent4}{HTML}{B45309}
+\setlist{topsep=3pt,itemsep=2pt,parsep=1pt}
+
+\newtcolorbox{gate}[1]{
+  enhanced, colback=accent3!5, colframe=accent3!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title={#1},
+  fonttitle=\bfseries\sffamily\small, coltitle=accent3!42!black,
+  attach title to upper={\quad}}
+\newtcolorbox{decide}{
+  enhanced, colback=accent4!6, colframe=accent4!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=Decision needed from the orchestrator,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent4!50!black,
+  attach title to upper={\quad}}
+\newtcolorbox{plain}{
+  enhanced, colback=accent!4, colframe=accent!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=In plain words,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent!50!black,
+  attach title to upper={\quad}}
+
+\newcommand{\field}[1]{\smallskip\noindent\textbf{\textsf{#1.}}\ }
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{LDS --- Local Dimension and Scale}\\[3pt]
+\large Design and Test Plan (implementation-grade)\\[5pt]
+\normalsize Make the neighborhood size local, and choose it together with the local
+dimension. The raw estimator; spatial smoothing of the two fields is a later phase.}
+\author{\small geosmooth / LPS program\\[2pt]
+\footnotesize \nolinkurl{project_briefs/lps_lds_design_and_test_plan_2026-06-13.tex}}
+\date{\DTMnow\ \textnormal{\footnotesize ET}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+Today the method uses one neighborhood size for the whole dataset and, separately,
+guesses how many directions the data spreads in (the ``local dimension'') at each
+point using that one fixed size. This phase, \textbf{LDS} (Local Dimension and
+Scale), makes the neighborhood size \emph{local} --- different at different points
+--- and chooses it \emph{together} with the local dimension, because the two affect
+each other: a neighborhood that is too wide sees structure that is not local, too
+narrow sees only noise, and the dimension you read off changes with the width. The
+output is, at every point, a neighborhood size and a dimension. These are
+\emph{raw}: each point decides on its own, with no smoothing across points. Smoothing
+the two fields is the job of the next phases (LDR, LDSR); LDS produces the fields they
+will smooth. This document is written so an implementer can build LDS without filling
+any gaps, and an auditor can check it. Every technical term is defined on first use.
+\end{abstract}
+
+{\small\tableofcontents}
+
+%==============================================================================
+\section{Plain-language glossary (read once)}\label{sec:glossary}
+%==============================================================================
+
+\begin{description}[leftmargin=0em,style=nextline]
+\item[Anchor.] A point at which we build one small local model. Today the anchors
+are the data points themselves.
+\item[Neighborhood (support).] The set of data points closest to an anchor that the
+local model uses. Its \emph{size} is the count $K$ (how many points) and equivalently
+a \emph{radius} $h$ (the distance to the farthest of those $K$ points).
+\item[Scale.] How wide the neighborhood is. ``Choosing the scale'' means choosing
+$K$ (or $h$). A larger scale uses more, farther points.
+\item[Local dimension.] How many independent directions the data genuinely spreads
+in, close to the anchor. On a curved sheet sitting in 3-D space the local dimension
+is $2$, even though the points have $3$ coordinates. We will write it $d$.
+\item[Local chart.] A small local coordinate system at the anchor, built by finding
+the few directions of largest spread (principal directions) of the neighborhood. The
+local model is fit in these coordinates.
+\item[Degree $p$.] The order of the local polynomial fit ($p=1$ is a local straight
+fit/plane; $p=2$ adds curvature). Fixed per candidate.
+\item[Singular values.] Numbers $\sigma_1\ge\sigma_2\ge\cdots\ge0$ measuring how much
+the neighborhood spreads along each principal direction. Big then small means the
+data is essentially low-dimensional.
+\item[Effective sample size (ESS).] With weighted points, the ``honest'' number of
+points contributing. If the weights are $w_1,\dots,w_K$, then
+$\mathrm{ESS}=\left(\sum_j w_j\right)^2/\sum_j w_j^2$. It is at most $K$ and drops when
+a few points dominate. More ESS $=$ less noise in the local estimate.
+\item[Linear smoother.] A method whose prediction at each point is a fixed weighted
+average of the responses, $\hat y = S\,y$, where the weight matrix $S$ depends only on
+\emph{where} the data points are (their inputs $X$), not on the response values $y$.
+Why it matters: when this holds, exact, cheap formulas exist for the uncertainty and
+the ``degrees of freedom'', and the program's existing toolkit applies unchanged. This
+holds \emph{conditional on a fixed configuration}; when the scale is chosen from the
+data (as it already is, globally, by cross-validation), \S\ref{sec:conditional} states
+exactly what survives.
+\item[Degrees of freedom (df).] A single number measuring how flexible the fit is,
+equal to $\mathrm{tr}\,S$ (the sum of the diagonal of $S$). Two methods are compared
+fairly only at the \emph{same} df.
+\item[Self-influence $S_{ii}$.] How much a point's own response affects its own
+prediction. Near $1$ means the fit nearly interpolates that point.
+\item[Leave-one-out (LOO) error.] The error a method makes at a point when that
+point is not used to fit it --- an honest out-of-sample error. For a linear smoother
+there is a cheap shortcut: $\big(y_i-\hat y_i\big)/\big(1-S_{ii}\big)$.
+\item[Bias and variance.] Bias is systematic error from over-smoothing (a too-wide
+neighborhood flattens real structure). Variance is random error from under-smoothing
+(a too-narrow neighborhood chases noise). The best scale trades them off.
+\end{description}
+
+%==============================================================================
+\section{What exists today (the starting point)}\label{sec:today}
+%==============================================================================
+
+The implementer should read these existing pieces first; LDS extends them, it does
+not replace them.
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{One global scale, chosen by cross-validation.} The fitter tries a few
+candidate neighborhood sizes (\code{support.grid}, e.g.\ $\{10,15,20\}$) crossed with
+degree and kernel, scores each by cross-validated error, and picks \emph{one}
+$K$ for the whole dataset (\code{.klp.cv.table} $\to$ \code{.klp.select.best.idx} $\to$
+the single \code{selected\$support.size}). That one $K$ is used at every anchor
+(\code{.klp.predict.local.polynomial}).
+\item \textbf{A per-point dimension, at that fixed scale.} With
+\code{chart.dim = "local.auto"}, the code already estimates a dimension at each anchor
+(\code{.klp.resolve.prediction.chart.dim} $\to$
+\code{.klp.local.auto.chart.dim.from.order}), returning a vector
+\code{chart.dim.by.eval}. The estimate uses the singular values of the neighborhood
+(\S\ref{sec:dimrule}).
+\item \textbf{The points-per-parameter cap.} The dimension is capped so the local
+polynomial is fittable: you need at least $\binom{d+p}{p}$ points to fit a degree-$p$
+polynomial in $d$ dimensions, so the code requires $\binom{d+p}{p}\le K$
+(\code{.local.pca.max.chart.dim.for.support}). This is the one place scale and
+dimension are already tied.
+\item \textbf{The uncertainty toolkit.} \code{R/lps\_uncertainty.R} can produce the
+smoother matrix $S$, its diagonal $S_{ii}$, $\mathrm{df}=\mathrm{tr}\,S$, and bands,
+for a fixed configuration. LDS reuses this to score scales cheaply.
+\item \textbf{A per-anchor bandwidth knob already exists.} The bandwidth multiplier
+(\code{bandwidth.multiplier.grid}) added in the Tier-1 work lets the bandwidth be
+scaled; LDS will set it (or $K$) per anchor.
+\end{itemize}
+
+\begin{plain}
+Right now: the method decides ``use the 20 nearest points everywhere,'' then at each
+point guesses the dimension from those 20. LDS changes the first part: decide the
+number of nearest points \emph{per point}, and decide it jointly with the dimension.
+\end{plain}
+
+%==============================================================================
+\section{The one decision that shapes everything: how the scale is chosen}\label{sec:fork}
+%==============================================================================
+
+The neighborhood size has to be chosen somehow, and there are two honest criteria.
+First, what is \emph{not} in question: a geometry floor --- enough points to fit the
+local polynomial (the points-per-parameter cap, \S\ref{sec:dimrule}) and a
+well-conditioned design (\S\ref{sec:criteria}) --- is enforced for every candidate size.
+The real decision is which criterion \emph{picks among the geometry-feasible sizes}, and
+the machinery for both is built behind a switch.
+
+\field{Option B --- ``error-driven'' scale (the localization of what we do today)}
+Choose the size at each point to make the local \emph{prediction error} small, using the
+response (local cross-validation / GCV, or Lepski's rule, \S\ref{sec:criteria}). This is
+the faithful \emph{localization of the current method}: today's single global $K$ is
+already chosen by cross-validation, which reads $y$; Option~B applies that same principle
+per point instead of once for the whole dataset. It is also the classical move
+(Friedman's variable-span supersmoother; Fan--Gijbels variable bandwidth; Lepski), and
+it is the criterion that adapts to how \emph{wiggly} the function is --- tighter
+neighborhoods where it changes fast --- which is the main reason to localize the scale
+at all. Cost: the choice depends on $y$, so the method is not a fixed linear smoother;
+df and bands are computed the selection-aware way (\S\ref{sec:conditional}). That is the
+\emph{same} regime today's global CV already lives in, only more local --- more
+selections, hence a larger selection-inflation, a difference of degree not of kind
+(\S\ref{sec:conditional}). One caution: \emph{naive} per-point CV is unstable (a
+near-single-residual criterion), so the robust forms are the smoothed-CV supersmoother
+idea or Lepski's rule --- \textbf{Mode~B--Lepski is the recommended local mode}.
+
+\field{Option A --- ``geometry-only'' scale (the conservative floor and fallback)}
+Choose the size at each point using \emph{only the positions of the data points} --- hold
+a target effective sample size (\S\ref{sec:criteria}) --- never the response. Its appeal
+is that the per-anchor choice ignores $y$, so the fit stays a \emph{linear smoother} given
+its target and the exact toolkit applies (\S\ref{sec:conditional}). But it adapts only
+\emph{geometrically} --- tightening the radius $h$ where points are dense and raising the
+count only where the feasibility floor demands it (G8) --- not to the function's wiggliness,
+so it forgoes the main adaptivity prize; and per \S\ref{sec:conditional} its linearity is
+\emph{conditional-only} anyway
+(the default target derives from the global $y$-selected pick) --- one global selection
+away from B in degree, not a difference in kind. Option~A is the right \emph{floor and
+fallback}: the minimum well-posed size under both modes, the mode to use when the exact
+toolkit is required, and the safe landing for a degenerate anchor.
+
+\begin{decide}
+\textbf{D1 --- recommended local mode, and how the shipped default is set.} The API
+default is unchanged: a single global $K$, bit-for-bit (\S\ref{sec:impl}, I1) --- this
+decision is only about the recommended mode \emph{when per-point scale is enabled}.
+Recommended front-runner: \textbf{Mode~B--Lepski} (local error-driven, stabilized), with
+Mode~A (geometry-only) as the exact-toolkit fallback and the well-posedness floor under
+both. The \emph{shipped} default is not pre-judged here --- studies S1/S2 decide it on
+D-VARSCALE at \emph{matched df} (accuracy gain), with the oracle gap (S4) as a diagnostic,
+in phase LDS2 (\S\ref{sec:sequence}); the unconditional GDF / coverage cost (S3) is a later
+LDS3 consideration, not an early gate. If the error-driven gain is marginal, A is the safe
+default; otherwise B--Lepski ships.
+\end{decide}
+
+%==============================================================================
+\section{What ``linear smoother'' guarantees --- conditional vs.\ unconditional}\label{sec:conditional}
+%==============================================================================
+
+The phrase ``linear smoother'' (\S\ref{sec:glossary}) carries an exact-toolkit promise
+--- df $=\mathrm{tr}\,S$, the leave-one-out shortcut, uncertainty bands --- and it is
+worth saying precisely \emph{when} that promise holds, because the scale is
+\emph{chosen} from the data and choosing is not a linear operation. The test plan
+(\S\ref{sec:tests}) and decision D6 (\S\ref{sec:decisions}) refer back to this section.
+
+\field{Conditional on a fixed configuration, the fit is exactly linear}
+Fix the neighborhood size, degree, kernel, and the per-anchor fields $(K_i,d_i)$. Then
+the prediction is $\hat y=S\,y$ with $S$ built entirely from the inputs $X$ --- the
+neighborhoods, the local charts, the kernel weights, and (under \code{local.auto}) the
+singular values --- none of which read $y$. So $S$, $\mathrm{tr}\,S$, the $S_{ii}$, and
+the bands are \emph{exact for that configuration}. (This is a statement about the
+Gaussian/weighted-least-squares fit; the logistic/binomial fit is non-linear in $y$
+regardless of selection.)
+
+\field{Selecting the scale makes the whole pipeline non-linear}
+The selected size is itself a function of the responses, $\hat K=\hat K(y)$, so the
+end-to-end map is $\hat y=S\big(\hat K(y)\big)\,y$: the matrix is data-chosen and the
+composition is \emph{not} linear in $y$. \textbf{This is already true today}, before
+LDS --- the single global $K$ is picked by cross-validation, which reads $y$. LDS does
+not introduce the issue; it only changes \emph{how many} selections happen and how
+local they are.
+
+\field{The non-linearity is piecewise, so the conditional toolkit is locally exact}
+The selection criterion (CV error, local GCV, Lepski) is a continuous, piecewise-smooth
+function of $y$, and $\hat K$ is its arg-best over a \emph{finite} grid. So
+$y\mapsto\hat K(y)$ is a step function --- locally constant in $y$ except on a
+measure-zero set where two candidate sizes tie --- and $y\mapsto\hat y$ is
+\emph{piecewise linear}. At the observed $y$ (away from ties) the local sensitivity
+$\partial\hat y/\partial y$ is exactly $S(\hat K)$. So $S(\hat K)$ is the exact
+\emph{local} influence matrix and $\mathrm{tr}\,S(\hat K)$ the exact \emph{conditional}
+degrees of freedom: the toolkit computes the right \emph{conditional} object, not a
+wrong one.
+
+\field{What is lost is unconditional honesty, not local linearity}
+Across repeated samples $\hat K$ fluctuates, adding a between-configuration variance
+component that $\sigma^2 SS^\top$ ignores. So $\mathrm{tr}\,S(\hat K)$ \emph{understates}
+the effective degrees of freedom of the adaptive procedure, and the conditional bands
+are \emph{optimistically narrow}: they answer ``if we had pre-specified this scale,''
+not ``what did choosing the scale from this data cost.'' The formally correct
+unconditional notions are the \emph{generalized degrees of freedom}
+$\mathrm{GDF}=\sum_i \partial\hat y_i/\partial y_i$ (Ye, 1998, \emph{JASA}) and the
+equivalent covariance-penalty df $\sum_i \mathrm{cov}(\hat y_i,y_i)/\sigma^2$ (Efron,
+2004, \emph{JASA}); both equal $\mathrm{tr}\,S$ for a fixed linear smoother and
+\emph{exceed} it once selection is in the loop.
+
+\field{How much it bites, and what this says about the two modes}
+The gap grows with the number and fineness of the selections and the flatness of the
+criterion (frequent near-ties $=$ unstable selection $=$ larger selection variance).
+This orders the modes:
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Mode A (geometry-only)} reads no $y$ in its per-anchor choice, so
+\emph{given its target} it is exactly conditionally linear, and G2 verifies it. But its
+default target is the ESS of the global CV pick (\S\ref{sec:criteria}, D2), so the
+pipeline still inherits \emph{one} global, coarse, $y$-dependent selection --- the same
+one today's method already carries. Mild, and unchanged from the status quo.
+\item \textbf{Mode B (error-driven)} adds a \emph{per-anchor}, $y$-driven selection at
+every point; this is where the unconditional gap can become non-trivial. It is the
+price of the accuracy benefit, and it must be reported the selection-aware way (I6, S2,
+S3).
+\end{itemize}
+
+\begin{plain}
+Once you fix how wide each neighborhood is, the method is a clean weighted average and
+every exact formula applies. But the width is chosen from the data --- already today,
+globally; and at every point if we let each point choose --- and choosing isn't a
+linear step. So the usual df and error bars are exactly right \emph{for the width that
+was picked}, and a little too optimistic as a statement about the whole pick-then-fit
+procedure. The fix is either to say plainly that the bars are conditional on the chosen
+width, or to measure the extra cost of choosing (GDF / covariance penalty, or an outer
+split).
+\end{plain}
+
+\noindent\textbf{Practical resolutions} (the menu D6 picks from): (i) report
+conditionally and label it; (ii) split selection from inference --- choose the scale on
+one fold, fit and infer on another (the nested-CV logic); (iii) estimate the inflated
+df directly by the Ye perturbation / Efron covariance penalty (jitter $y$ by small
+i.i.d.\ noise, refit \emph{including reselection of the scale}, read off
+$\sum_i\mathrm{cov}(\hat y_i,y_i)/\sigma^2$); (iv) bootstrap the whole pipeline
+including reselection. Mode~A defaults to (i); Mode~B should additionally report (iii)
+so the cost is visible (S3).
+
+%==============================================================================
+\section{The estimator, step by step}\label{sec:algorithm}
+%==============================================================================
+
+This is the complete per-anchor procedure. Inputs: training inputs $X$ ($n$ points,
+$D$ ambient coordinates), the anchor center $c$, a candidate scale grid
+$\mathcal{K}$ (\S\ref{sec:grid}), the degree $p$, the kernel, the design basis, the
+scale mode (A or B), and the mode's target/criterion. Output: a chosen size $K^\star$
+and dimension $d^\star$ at this anchor, plus diagnostics.
+
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Order by distance.} Compute the distance from $c$ to every training
+point and sort. (One sort serves all candidate sizes.)
+\item \textbf{For each candidate size $K\in\mathcal{K}$ with $K\le n$:}
+  \begin{enumerate}[leftmargin=1.4em,label=(\alph*)]
+  \item \textbf{Take the neighborhood.} The $K$ nearest points; set the radius
+  $h=$ distance to the $K$-th nearest; weights $w_j=\text{kernel}(\text{dist}_j/h)$.
+  \item \textbf{Read the spread.} Center the $K$ points at $c$; take the singular
+  values $\sigma_1\ge\sigma_2\ge\cdots$ of the centered block.
+  \item \textbf{Estimate the dimension $d(K)$} by the rule of \S\ref{sec:dimrule}
+  (which already enforces the points-per-parameter cap for this $K$ and $p$).
+  \item \textbf{Score the size} by the chosen mode:
+    \begin{itemize}[leftmargin=1.2em]
+    \item Mode A: $\text{score}(K)=\big|\mathrm{ESS}(K)-\mathrm{ESS}_{\text{target}}\big|$,
+    among sizes that pass the well-posedness filter (\S\ref{sec:criteria}).
+    \item Mode B (local GCV, \emph{diagnostic only}): $\text{score}(K)=$ the local
+    leave-one-out error at the anchor for the fit at $(K,d(K))$ (\S\ref{sec:criteria});
+    the scale-field decision rule is Lepski, next.
+    \item Mode B (Lepski): handled by the separate widen-until-it-moves rule
+    (\S\ref{sec:criteria}); it does not fit the simple ``score then argmin'' shape.
+    \end{itemize}
+  \end{enumerate}
+\item \textbf{Pick.} $K^\star=$ the chosen size: \textbf{Mode~A} --- the smallest ESS-gap
+score; \textbf{Mode~B} --- Lepski's largest accepted size. (Local GCV is computed only as a
+diagnostic, never as the decision.) $d^\star=d(K^\star)$.
+\item \textbf{Guard.} If no size passes the filter (e.g.\ a degenerate anchor),
+fall back to the global size and the summary dimension, and record the fallback in
+the diagnostics (never silently).
+\end{enumerate}
+
+\begin{plain}
+For each point: sort the others by closeness; try a handful of neighborhood sizes;
+for each size read off how many directions the data spreads in; keep the size that
+best meets the rule (geometry target, or the Lepski stability rule); report that size and
+that dimension.
+\end{plain}
+
+%==============================================================================
+\section{The scale-selection criteria, written out}\label{sec:criteria}
+%==============================================================================
+
+\subsection{Mode A --- geometry-only (effective sample size target)}
+At each anchor and size $K$, compute $\mathrm{ESS}(K)=\big(\sum_j w_j\big)^2/\sum_j w_j^2$
+from the kernel weights at scale $K$. Choose the smallest $K\in\mathcal{K}$ with
+$\mathrm{ESS}(K)\ge \mathrm{ESS}_{\text{target}}$; if none reaches the target, take
+the largest available $K$. Apply two hard filters first: (i) points-per-parameter on the
+\emph{effective} sample size, $\mathrm{ESS}(K)\ge \rho\binom{d(K)+p}{p}$ --- \emph{not} raw
+$K$: with tricube/Gaussian weights $\mathrm{ESS}(K)$ can fall well below $K$, so a raw-$K$
+feasibility test over-promises (a $K=30$ neighborhood with heavy down-weighting may carry
+$\mathrm{ESS}=12$, too few to fit a degree-2 surface in 3-D stably), with safety factor
+$\rho\ge1$ (default $1.5$; \S\ref{sec:decisions}, D7) --- this refines the existing raw-$K$
+cap; and (ii) well-conditioned design --- the local polynomial design matrix in the chart
+has condition number $\le$ \code{ridge.condition.max}; if not, that $K$ is skipped.
+
+\begin{plain}
+``Use just enough nearby points to get a target amount of effective data, and at
+least enough to fit the local shape stably.'' Where points are sparse the radius
+grows automatically; where dense it stays tight. The noise level of the estimate is
+roughly constant across the data.
+\end{plain}
+
+\noindent Default $\mathrm{ESS}_{\text{target}}$: the ESS of the global
+cross-validation-selected $K$ (so on uniform data LDS reproduces today's behavior),
+or a fixed value the orchestrator pins (\S\ref{sec:decisions}, D2).
+
+\subsection{Mode B --- error-driven, local GCV (a diagnostic, not the first decision rule)}
+Fit the local model at $(K,d(K))$. The fit is a weighted average
+$\hat m(c)=\sum_j s_j\,y_j$; the self-influence of the anchor's own point is
+$s_{\text{self}}$ (the entry of $S$ for the anchor on itself). The local
+leave-one-out error proxy is $e(K)=\big(y_{\text{self}}-\hat m(c)\big)/\big(1-s_{\text{self}}\big)$;
+take $\text{score}(K)=e(K)^2$ (optionally averaged over the anchor and its few nearest
+neighbors for stability). Choose the $K$ minimizing it.
+\emph{Status:} per \S\ref{sec:conditional} and the instability of this
+near-single-residual criterion, local GCV is implemented as a \emph{reported diagnostic}
+and research comparator, \emph{not} the scale-field decision rule. The decision rule is
+Mode~B--Lepski below; the honest-LOO caveat is the reason, and the sequencing
+(\S\ref{sec:sequence}) builds Lepski first.
+
+\begin{gate}{Honest caveat (do not skip --- the auditor checks this)}
+For a $K$-nearest-neighborhood, \emph{removing} the anchor's own point changes which
+points are the $K$ nearest (the $K$-th neighbor shifts), so the cheap shortcut above
+is slightly optimistic for \emph{scale} selection. Mitigate one of three ways, and
+state which: (i) recompute the neighborhood without the anchor (true leave-one-out)
+for the scored points only; (ii) leave a small block out within the neighborhood; or
+(iii) prefer Mode B--Lepski below, which compares sizes directly and avoids the
+shortcut entirely.
+\end{gate}
+
+\subsection{Mode B --- error-driven, Lepski (recommended for the scale field)}
+For increasing $K$, compute the local estimate $\hat m_K(c)$ and its standard error
+$\mathrm{SE}_K=\hat\sigma\,\lVert s_{\cdot}\rVert$ (from the toolkit).
+\emph{Pinned project variant} (the auditor checks this exact rule, not a re-interpretation):
+process the grid $K_1<K_2<\cdots$ from the smallest; call $K_j$ \emph{admissible} if it
+agrees with \emph{every} smaller grid size,
+$\big|\hat m_{K_j}-\hat m_{K_i}\big|\le \tau\,(\mathrm{SE}_{K_j}+\mathrm{SE}_{K_i})$ for all
+$i<j$; \emph{stop at the first inadmissible size} and set $K^\star$ to the largest size
+reached before it (the monotone Lepski stopping rule). If even $K_2$ is inadmissible,
+$K^\star=K_1$. The tolerance $\tau$ is fixed (default $\tau=2$; \S\ref{sec:decisions}, D8).
+
+\smallskip\noindent The noise level $\hat\sigma$ in $\mathrm{SE}_K$ must be \emph{pinned}:
+Lepski's choice is sensitive to it and to $\tau$. Default --- a \emph{global, robust}
+$\hat\sigma$ from a pilot global-$K$ fit (a MAD- or difference-based residual-scale
+estimate, homoscedastic assumption); in the synthetic gates use the \emph{known} $\sigma$
+so the test isolates scale selection from $\hat\sigma$-estimation error. Local /
+heteroscedastic $\hat\sigma$ is a later extension (\S\ref{sec:decisions}, D8). The
+$S$-studies report sensitivity to $(\hat\sigma,\tau)$.
+
+\begin{plain}
+``Keep widening the neighborhood until widening it would change the answer by more
+than the noise allows; stop just before.'' This balances over- and under-smoothing at
+each point on its own, and it naturally re-reads the dimension at every width.
+\end{plain}
+
+%==============================================================================
+\section{The dimension rule at a given scale (reuse, stated exactly)}\label{sec:dimrule}
+%==============================================================================
+
+This is the existing rule (\code{.local.pca.auto.chart.dim.from.singular.values}); LDS
+calls it once per candidate size, with \emph{one refinement} --- the feasibility cap
+(step~2) uses the \emph{effective} sample size $\mathrm{ESS}(K)$ rather than raw $K$
+(\S\ref{sec:criteria}, D7). \textbf{This refinement is gated to the LDS local-scale path
+only}: the existing global-$K$ \code{chart.dim = "local.auto"} path keeps the raw-$K$ cap
+unchanged, so the bit-for-bit default preservation (I1) is untouched. Given positive
+singular values $\sigma_1\ge\cdots$, neighborhood size $K$, degree $p$, ambient $D$:
+
+\begin{enumerate}[leftmargin=1.5em]
+\item Energy $\epsilon_j=\sigma_j^2$; total $T=\sum_j \epsilon_j$.
+\item Points-per-parameter cap (ESS-based): the largest $d$ with
+$\binom{d+p}{p}\le \mathrm{ESS}(K)/\rho$ (the effective-sample-size feasibility of
+\S\ref{sec:criteria}, safety factor $\rho$); call it $d_{\text{cap}}$. The existing code
+uses $K-1$; LDS substitutes $\mathrm{ESS}(K)/\rho$.
+\item Maximum allowed dimension: $d_{\max}=\min\big(D,\ d_{\text{cap}},\ \#\{\sigma_j\},\ K-1\big)$.
+\item Variance dimension $d_{\text{var}}=$ the smallest $d$ with
+$\big(\sum_{j\le d}\epsilon_j\big)/T\ge 0.95$, clamped to $[1,d_{\max}]$.
+\item Eigengap dimension: among $j=1,\dots,d_{\max}-1$ find the largest ratio
+$\sigma_j/\sigma_{j+1}$; if that largest ratio is $\ge 4$, $d_{\text{gap}}=$ its index,
+else none.
+\item Selected $d=d_{\text{var}}$ if there is no eigengap, else
+$\min(d_{\text{var}},d_{\text{gap}})$; clamp to $[1,D]$.
+\end{enumerate}
+
+\begin{plain}
+``Keep enough directions to explain 95\% of the spread, but if there is a sharp drop
+in spread (a factor of $4$) cut there instead; never keep more directions than the
+neighborhood can support a fit for.''
+\end{plain}
+
+%==============================================================================
+\section{The candidate scale grid}\label{sec:grid}
+%==============================================================================
+
+A geometric grid of neighborhood sizes, wide enough to bracket the per-anchor optimum
+and fine enough to resolve it. Default $\mathcal{K}=\{12,18,27,40,60,90,135\}$
+(roughly $\times1.5$ steps), clipped to $[\,d_{\min}\text{-feasible},\,n-1\,]$. The
+lower end must always satisfy points-per-parameter for $d=1$ and the degree in use.
+The grid is a parameter; the orchestrator may pin it (D3).
+
+%==============================================================================
+\section{Outputs and diagnostics}\label{sec:outputs}
+%==============================================================================
+
+LDS returns, alongside the prediction, two per-anchor vectors and a diagnostics
+table:
+\begin{itemize}[leftmargin=1.4em]
+\item \code{support.size.by.eval} --- the chosen $K^\star_i$ at each anchor (new).
+\item \code{chart.dim.by.eval} --- the chosen $d^\star_i$ at each anchor (already
+exists; now produced jointly with $K$).
+\item per-anchor diagnostics: the scored sizes, the realized ESS, the dimension rule
+that fired (variance vs eigengap), $s_{\text{self}}$, any fallback flag, the mode used.
+\end{itemize}
+These two raw fields are the input to the later smoothing phases (LDR, LDSR).
+
+%==============================================================================
+\section{Implementation plan (API, functions, defaults)}\label{sec:impl}
+%==============================================================================
+
+\begin{enumerate}[leftmargin=1.5em]
+\item[I1.] \textbf{New mode value.} Allow the neighborhood size to be a per-anchor
+field: a new accepted value \code{support.size = "local.auto"} (parallel to
+\code{chart.dim = "local.auto"}), plus arguments \code{scale.mode = c("geometry",
+"error.gcv", "error.lepski")}, \code{ess.target = NULL} (NULL $\Rightarrow$ derive
+from the global pick), \code{lepski.tau = 2}, \code{scale.grid = NULL} (NULL
+$\Rightarrow$ the default of \S\ref{sec:grid}). \textbf{Every default reproduces
+today's behavior bit-for-bit} (a single global $K$); the field mode is opt-in.
+\item[I2.] \textbf{New resolver.} \code{.klp.resolve.prediction.support.size}
+mirroring \code{.klp.resolve.prediction.chart.dim}: loops over anchors, runs
+\S\ref{sec:algorithm}, returns \code{support.size.by.eval}. For the joint product,
+a single \code{.klp.resolve.prediction.scale.and.dim} that returns both fields so the
+$(K,d)$ choice is made together (one sort, one SVD sweep per anchor).
+\item[I3.] \textbf{Prediction loop.} \code{.klp.predict.local.polynomial} already
+loops per anchor and reads \code{chart.dim.by.eval[[i]]}; replace the scalar
+\code{support.size} with \code{support.size.by.eval[[i]]}. Everything downstream
+(neighborhood, weights, chart, fit) is already per-anchor.
+\item[I4.] \textbf{Criterion helpers.} ESS from the kernel weights (reuse the Tier-1
+ESS code) --- used both for the Mode~A target and for the \emph{ESS-based feasibility cap}
+(\S\ref{sec:criteria}); Lepski from the $S_{i\cdot}$/SE machinery (the scale-field decision
+rule); local GCV from the influence row in \code{R/lps\_uncertainty.R} as a
+\emph{diagnostic only}.
+\item[I5.] \textbf{Backend.} R backend only at first (as \code{local.auto} already
+is). The native backends stay on the global path; document that the field mode forces
+R.
+\item[I6.] \textbf{Selection-aware bookkeeping (Mode B only).} When the scale is
+error-driven, mark the fit as selection-dependent so the df/band code routes through
+the selection-aware path; in Mode A, assert and record that $S$ stayed
+response-independent. Additionally expose a \emph{generalized-df estimate} for Mode~B
+--- the Ye perturbation / Efron covariance penalty, which \emph{reselects the scale and
+refits} on each jittered $y$ (not a refit at frozen fields) --- so S3 and the band
+reporting (D6) can report the selection cost $\mathrm{GDF}-\mathrm{tr}\,S(\hat K)$.
+\end{enumerate}
+
+%==============================================================================
+\section{Synthetic test data}\label{sec:dgp}
+%==============================================================================
+
+Three generators give the answer keys the tests need. The first is new and must be
+added to the frozen DGP library; the other two already exist.
+
+\field{D-VARSCALE (new) --- a known scale change}
+A 2-D surface in 3-D, sampled like the paraboloid generator (latent
+$u\sim\text{Uniform}$ on the unit disk; $X=(u_1,u_2,(u_1^2+u_2^2)/(2R))$, curvature
+knob $R$). The truth on the surface has a \emph{smooth half} and a \emph{wiggly half}:
+\[
+ f(u)=\sin(\pi\,g(u_1)\,u_1)\,\cos(\pi\,u_2),\qquad
+ g(u_1)=1+\tfrac{k-1}{2}\big(1+\tanh(u_1/w)\big),
+\]
+so the oscillation frequency rises smoothly from $1$ on the left ($u_1\ll0$) to $k$ on
+the right ($u_1\gg0$) across a transition of width $w$. Parameters (defaults):
+$R=2$, $k=4$, $w=0.15$, $n=1500$, homoscedastic noise $\sigma=0.05$, recorded seed.
+The \emph{known} property the tests use: the best local neighborhood is \emph{small}
+on the right (fast oscillation) and \emph{large} on the left (smooth).
+
+\smallskip\noindent\emph{No confound (the auditor checks this).} On the paraboloid, density
+and curvature depend only on the \emph{radius} $\rho=\sqrt{u_1^2+u_2^2}$ (the surface area
+element and the curvature are functions of $\rho$), hence are \emph{symmetric in $u_1$} and
+identical on the two sides; only the frequency $g(u_1)$ is asymmetric in $u_1$. So the
+smooth-vs-wiggly contrast is a \emph{pure frequency contrast}, not a density, boundary, or
+curvature contrast. The generator records, per point: the side label, the radius $\rho$,
+and a mask flagging the transition band ($|u_1|\le w$) and the domain boundary (an
+outer-$\rho$ quantile), so the tracking gates (G3, G8) compare deep-smooth vs deep-wiggly
+interior anchors only. The transition is excluded partly because the ramp's own derivative
+adds local frequency there: the effective $u_1$-frequency of $f$ is
+$\pi\big(g(u_1)+u_1\,g'(u_1)\big)$, and $g'$ peaks at the transition, so $|u_1|\le w$
+carries extra wiggliness belonging to neither the deep-smooth nor the deep-wiggly regime. A
+separate \emph{density-gradient variant} (more points where $u_1>0$, identical truth) is
+provided for G8's positive control --- it is the only version that deliberately breaks the
+density symmetry.
+
+\field{G4 (existing) --- varying dimension}
+The two-glued-strata generator: a $1$-D segment joined to a $2$-D patch, with the
+true local dimension $1$ on one stratum and $2$ on the other, and region labels.
+
+\field{G3a (existing) --- a clean curved surface}
+The paraboloid with $f_{\text{smooth}}$, used as the homogeneous control (no real
+scale or dimension change), to check LDS does \emph{not} invent variation.
+
+%==============================================================================
+\section{Test plan}\label{sec:tests}
+%==============================================================================
+
+Each test states its type, the data and configuration, the exact pass condition, and
+the single change (``mutation'') that must make it fail. \textbf{GATE} $=$ a
+deterministic pass/fail check; \textbf{STUDY} $=$ a decision rule on a measured
+quantity. The implementer writes the tests; the auditor independently confirms each
+mutation reddens the named test (the implementer does not run the mutations as
+acceptance evidence).
+
+\noindent\emph{What each mode is held to.} Mode~A (geometry-only) is tested for
+\emph{reduction, linearity, well-posedness, and determinism}, and for adapting to
+\emph{density/geometry but not function wiggliness} (G1, G2, G5, G6, G8). Mode~B--Lepski
+is the mode tested for adapting to \emph{smooth-vs-wiggly truth} (G3, S1). Expecting
+geometry-only to track frequency is a category error: on a DGP whose geometry is identical
+on both sides, only an error-driven rule can see the frequency change.
+
+\begin{gate}{G1 --- reduction to today (GATE)}
+On G3a (homogeneous) with Mode A and $\mathrm{ESS}_{\text{target}}$ set to the global
+pick's ESS, the chosen \code{support.size.by.eval} is (near) constant and its fitted
+values match the current single-global-$K$ fit to algebraic tolerance $10^{-10}$ in
+the degenerate case where the grid contains only the global $K$. \emph{Mutation:} make
+the ESS target depend on the anchor index $\Rightarrow$ the field varies and the match
+breaks.
+\end{gate}
+
+\begin{gate}{G2 --- linearity preserved in Mode A (GATE)}
+In Mode A (geometry-only), the method is a linear smoother: extract $S$ by the
+column-by-column probe (the E0.2 protocol) at the resolved fields, and confirm
+$\hat y = S y$ to $10^{-10}$ for several random $y$, and $\mathrm{df}=\mathrm{tr}\,S$.
+\emph{Mutation:} let the ESS target read $y$ (e.g.\ widen where $|y|$ is large)
+$\Rightarrow$ $S$ becomes $y$-dependent and the identity fails. (This mutation is also
+the proof that Mode~B is \emph{not} a fixed linear smoother --- expected, documented.)
+\end{gate}
+
+\begin{gate}{G3 --- the scale field tracks a known wiggliness change (Mode~B, GATE)}
+On D-VARSCALE, under \textbf{Mode~B--Lepski}, the median chosen $K$ on the smooth (left)
+side is materially larger than on the wiggly (right) side --- pin a margin, e.g.\ left
+median $K \ge 1.5\times$ right median $K$ --- judged on interior anchors, excluding the
+transition band ($|u_1|\le w$) and the domain boundary. \textbf{Mode~A is not expected to
+pass this}, and must not: the geometry is identical on both sides (\S\ref{sec:dgp}), so
+only an error-driven rule can see the frequency change --- the geometry-only behavior is
+the control gate G8. \emph{Mutation:} replace the per-anchor Lepski choice with the global
+$K$ $\Rightarrow$ the two sides' medians equalize and the check fails.
+\end{gate}
+
+\begin{gate}{G4 --- the dimension field tracks a known change (GATE)}
+On the G4 generator, the per-anchor $d^\star$ equals $1$ on the $1$-D stratum and $2$ on
+the $2$-D stratum for a large majority of interior anchors, \emph{excluding a transition
+band around the glued-strata boundary} (where a neighborhood straddles both strata and the
+local dimension is legitimately ambiguous); pin a fraction on the non-transition interior,
+e.g.\ $\ge 0.9$, with the joint $(K,d)$ search. \emph{Mutation:} drop the eigengap branch
+of the dimension rule $\Rightarrow$ the $1$-D stratum is over-estimated and the fraction
+falls.
+\end{gate}
+
+\begin{gate}{G5 --- well-posedness always holds (GATE)}
+At every anchor, $\binom{d^\star+p}{p}\le \mathrm{ESS}(K^\star)/\rho$ (the ESS-based
+feasibility of \S\ref{sec:criteria}) and the local design's condition number $\le$
+\code{ridge.condition.max}; on healthy data no anchor returns NA. \emph{Mutation:} switch
+the feasibility test back to raw $K$ (or remove it) $\Rightarrow$ a heavily down-weighted
+neighborhood selects a $(K,d)$ whose \emph{effective} points are too few and the design
+becomes ill-conditioned.
+\end{gate}
+
+\begin{gate}{G6 --- determinism (GATE)}
+Same data and seed $\Rightarrow$ bitwise-identical \code{support.size.by.eval} and
+\code{chart.dim.by.eval}. \emph{Mutation:} introduce an unseeded tie-break in the
+distance ordering $\Rightarrow$ two runs differ.
+\end{gate}
+
+\begin{gate}{G7 --- conditional linearity is exact even in Mode B (GATE)}
+Run a Mode~B fit and \emph{freeze} the resolved fields $(K^\star_i,d^\star_i)$ it
+produced. With those fields held fixed (no reselection), extract $S$ by the
+column-by-column probe (the E0.2 protocol) and confirm $\hat y=S\,y$ to $10^{-10}$ for
+several random $y$, with $\mathrm{df}=\mathrm{tr}\,S$. This isolates the claim of
+\S\ref{sec:conditional}: the fit \emph{given the configuration} is exactly linear; the
+only non-linearity lives in the selection map. \emph{Mutation:} re-resolve the fields
+against each probe vector $y$ instead of freezing them $\Rightarrow$ the column probe no
+longer reconstructs a single $S$ and the identity fails --- exhibiting precisely the
+selection non-linearity that \S\ref{sec:conditional} describes.
+\end{gate}
+
+\begin{gate}{G8 --- geometry-only does not chase wiggliness (Mode~A control, GATE)}
+On the same D-VARSCALE (uniform latent density, and curvature symmetric in $u_1$; only the
+frequency $g(u_1)$ is asymmetric), \textbf{Mode~A}'s chosen $K$ is statistically flat across
+the ramp: the smooth/wiggly side-median ratio lies in a tight band around $1$ (e.g.\
+$[0.8,1.25]$) on interior anchors away from the boundary. This is the intended
+\emph{negative} result --- a geometry-only rule cannot, and must not, read frequency; it is
+the companion to G3.
+\emph{Geometry-response check (in the right variable):} on a density-gradient variant of
+D-VARSCALE (more points where $u_1>0$, identical truth), the adaptivity must appear in the
+\emph{radius}, not the count. With a $K$-nearest-neighbor bandwidth ($h=$ the $K$-th-NN
+distance), $\mathrm{ESS}(K)$ is nearly density-invariant, so the correct check is: $h_i$
+shrinks in the denser region, $K_i$ stays $\approx$ stable, and $\mathrm{ESS}_i$ stays near
+target. (Genuine $K$ movement, where it occurs, comes from the \emph{feasibility floor} ---
+higher local dimension $\Rightarrow$ larger minimum $K$ --- which G4/G5 exercise; so the
+flat-$K$ result here is the correct null, not an insensitive test.) \emph{Mutation:} let
+Mode~A's ESS target read $y$ (widen where $|y|$ or the local oscillation is large)
+$\Rightarrow$ the side ratio leaves the band --- the same response-leak G2 forbids, seen
+here in the $K$-field.
+\end{gate}
+
+\begin{gate}{S1 --- accuracy benefit (STUDY)}
+On D-VARSCALE (and as a secondary, G4), compare Truth-RMSE of LDS (Modes A and B)
+against the global-$K$ baseline \emph{at matched df} (tune the baseline's $K$ and
+LDS's target so both spend the same total df), paired on the same data and noise draw,
+$R$ replicates. Pre-declared ``material'': median per-replicate
+$\Delta\text{RMSE}>5\%$ in LDS's favor with a signed-rank $p<0.05$. Report both modes;
+report where the gain concentrates (expected: the wiggly region and the dimension
+boundary). \emph{Reporting allowance (LDS2):} matched df can be awkward to hit exactly for
+adaptive fields, so the first LDS2 report may carry \emph{both} the raw selected-field fits
+and the matched-df fits, with the \textbf{matched-df row as the decision} and the raw row as
+context.
+\end{gate}
+
+\begin{gate}{S2 --- which mode, and what it does conditionally (STUDY)}
+On the same data (LDS2), report Mode A vs Mode B: Truth-RMSE, the realized
+\emph{conditional} df ($\mathrm{tr}\,S(\hat K)$), the selected scale/dimension summaries
+(per-side $K$/$d$ medians and the $(K,d)$ fields), and --- for Mode B --- the honest
+(training-removal / Lepski) versus shortcut LOO gap, so the bias of the cheap shortcut is
+visible. The \emph{unconditional} cost (GDF versus $\mathrm{tr}\,S(\hat K)$) is
+\emph{deferred to S3 / LDS3}, not reported here. This informs decision D1 (whether the
+error-driven gain justifies leaving the exact-toolkit guarantee); the band-reporting choice
+D6 is settled with S3 in LDS3.
+\end{gate}
+
+\begin{gate}{S3 --- selection-induced undercoverage, and its correction (STUDY)}
+On a known-truth generator (D-VARSCALE, with G3a as the homogeneous control), over $R$
+replicates with fresh noise, fit Mode~B and form pointwise bands two ways: the
+\emph{conditional} band from $\mathrm{tr}\,S(\hat K)$ / $SS^\top$ at the selected
+fields, and a \emph{selection-aware} band (the GDF / covariance-penalty-corrected df
+from the I6 estimate, or a whole-pipeline bootstrap). Measure empirical coverage of the
+true mean at the anchors. Pre-declared rule: the conditional band \emph{undercovers}
+(coverage materially below nominal --- e.g.\ $\le 0.90$ for a nominal-$0.95$ band ---
+concentrated in the wiggly region where reselection is most active), while the
+selection-aware band restores coverage to within a pinned tolerance of nominal. Report
+the realized $\mathrm{GDF}-\mathrm{tr}\,S(\hat K)$ gap. As a control, Mode~A's
+conditional coverage should already sit near nominal (its only selection is the single
+global target), quantifying that the two modes differ in exactly this respect.
+\emph{Mutation (negative control):} feed the selection-aware path a frozen-field refit
+(no reselection) in place of the reselect-and-refit estimate $\Rightarrow$ the corrected
+df collapses back to $\mathrm{tr}\,S$ and the restored coverage disappears.
+\emph{Phase \& cost:} this study is \emph{deferred to LDS3} (\S\ref{sec:sequence}) and is
+\emph{not} an early blocking gate --- the GDF perturb-and-refit is computationally
+expensive and statistically noisy, so it gates nothing in LDS0--LDS2; it informs D6 once
+the cheaper checks pass.
+\end{gate}
+
+\begin{gate}{S4 --- oracle scale gap (STUDY, diagnostic)}
+Using the \emph{truth} for evaluation only, compute the \emph{oracle} local scale map
+$K^{\mathrm{orc}}_i=\arg\min_{K}\big(\hat m_K(c_i)-f(c_i)\big)^2$ (the size minimizing each
+anchor's squared error against the known truth; average over noise draws to stabilize).
+Report, per mode: the agreement between the chosen $K_i$ and $K^{\mathrm{orc}}_i$ (rank
+correlation, and the smooth/wiggly side medians against the oracle's), and the Truth-RMSE
+\emph{gap} to the oracle fit. This says how much of the available adaptivity each mode
+recovers --- Mode~B--Lepski should track $K^{\mathrm{orc}}$; Mode~A should not (it has no
+access to it), which is the quantitative form of G8. Diagnostic, not a blocking gate.
+\end{gate}
+
+\begin{gate}{S5 --- dimension-rule threshold sensitivity (STUDY, diagnostic)}
+The dimension rule's $95\%$ energy and eigengap-$4$ thresholds (\S\ref{sec:dimrule}) are
+reasonable first defaults, not derived constants. Sweep them --- energy
+$\in\{0.90,0.95,0.99\}$, eigengap $\in\{2,4,8\}$ --- on the G4 generator (and D-VARSCALE)
+and report the stability of the recovered dimension field and of Truth-RMSE. Soft
+pass-for-robustness: the modal $d^\star$ per stratum is unchanged across the central part
+of the sweep. This guards against the defaults being load-bearing flukes; sensitivity
+diagnostic, not a blocking gate.
+\end{gate}
+
+\noindent\textbf{Reuse and conventions.} Tests use explicit fold ids and recorded
+seeds; thresholds are pinned in the test files; the execution bundle follows the
+Tier-0 pattern (clean committed tree, checksums, session info, realized quantities).
+Mode~A tests assert the linear-smoother identity; Mode~B tests assert it does
+\emph{not} hold and use the selection-aware error instead.
+
+%==============================================================================
+\section{Build-and-validation sequence (LDS0--LDS3)}\label{sec:sequence}
+%==============================================================================
+
+Implement and validate in four steps; each unlocks the next. This puts the cheap, decisive
+checks first and the expensive selection-aware analysis last.
+
+\begin{description}[leftmargin=0em,style=nextline]
+\item[LDS0 --- geometry-only resolver.] Build the joint $(K_i,d_i)$ resolver in Mode~A and
+prove \emph{reduction} (G1), \emph{linearity} (G2), \emph{determinism} (G6),
+\emph{ESS-based well-posedness} (G5), and the \emph{geometry-not-wiggliness} control (G8).
+No response-driven selection yet; this is the safe floor and the exact-toolkit baseline.
+\item[LDS1 --- Mode~B--Lepski.] Add the Lepski scale rule and show it adapts to true local
+smoothness on D-VARSCALE (G3), with conditional linearity at frozen fields still exact
+(G7). Local GCV is wired only as a diagnostic.
+\item[LDS2 --- comparison at matched df.] Compare global-$K$, Mode~A, and Mode~B at matched
+\emph{conditional} df by Truth-RMSE (S1, S2), with the oracle gap (S4) and the
+dimension-threshold sensitivity (S5) as diagnostics. \textbf{This is what decides the
+shipped default (D1)} --- on accuracy at matched df, not on the unconditional cost.
+\item[LDS3 --- selection-aware inference, and the smoothing question.] Only now study the
+\emph{unconditional} cost (GDF / coverage, S3) and whether the raw $(K_i,d_i)$ fields need
+spatial smoothing (the LDR / LDSR question, \S\ref{sec:program}). S3's perturb-and-refit is
+expensive and noisy, so it lands here, never as an early gate.
+\end{description}
+
+%==============================================================================
+\section{What the auditor checks}\label{sec:audit}
+%==============================================================================
+
+\begin{itemize}[leftmargin=1.4em]
+\item Every mutation in \S\ref{sec:tests} reddens its named test (the central
+deliverable); a test that stays green under its mutation is rejected.
+\item Mode A genuinely never touches $y$ (read the criterion code, not just the
+output): a gaussian fit's $S$ is response-independent (G2).
+\item The honest LOO caveat is handled as one of the three stated mitigations, not
+papered over (the local-GCV shortcut is not used as the headline error for $k$-NN).
+\item The conditional-vs-unconditional distinction (\S\ref{sec:conditional}) is stated,
+and any df/band claim says which it is: $\mathrm{tr}\,S(\hat K)$ is presented as the
+\emph{conditional} df, never as the unconditional df of the pick-then-fit procedure.
+G7 must show the fit is conditionally linear; S3 must show the conditional band
+undercovers under Mode~B and the selection-aware correction restores coverage.
+\item The GDF / covariance-penalty estimate (I6, S3) \emph{reselects} the scale on each
+perturbed or bootstrapped $y$, not merely refits at frozen fields; an estimate that
+freezes the fields measures $\mathrm{tr}\,S$, not GDF, and is rejected.
+\item D-VARSCALE matches its specification (the frequency ramp $g(u_1)$, the curvature
+$R$, the noise) \emph{and} the density/curvature symmetry in $u_1$ holds, so the ``known
+scale change'' is a \emph{pure frequency contrast} (\S\ref{sec:dgp}); the G3/G8 tracking
+gates exclude the transition band and boundary and are not vacuous.
+\item The G3/G8 split is respected: Mode~A is judged by the geometry-only \emph{control}
+(G8 --- flat $K$ across the frequency ramp), \emph{not} expected to track wiggliness; only
+Mode~B--Lepski is held to G3. G8's positive control (density-gradient variant) confirms the
+null is a real null, not an insensitive test.
+\item Feasibility is on the \emph{effective} sample size,
+$\mathrm{ESS}(K)\ge\rho\binom{d+p}{p}$ (not raw $K$); the G5 mutation (revert to raw $K$)
+reddens. The ESS cap is \emph{gated to the LDS local-scale path}: the existing global-$K$
+\code{chart.dim = "local.auto"} dimension is byte-for-byte unchanged (covered by the
+bit-for-bit default pin).
+\item Local GCV is treated as a \emph{diagnostic}, not the scale-field decision rule
+(Lepski is); the build sequence (\S\ref{sec:sequence}) implements Lepski first.
+\item The GDF / coverage study (S3) is \emph{not} used as an early blocking gate (deferred
+to LDS3), and the dimension-rule defaults ($95\%$ energy, eigengap $4$) carry the S5
+sensitivity diagnostic rather than being asserted as derived constants.
+\item For G4, dimension recovery is judged \emph{off} the glued-strata transition band.
+\item Defaults reproduce today's single-global-$K$ behavior bit-for-bit (the
+backward-compatibility pin).
+\item The accuracy study is paired and df-matched (not a comparison that lets the two
+methods differ on flexibility as well as on locality).
+\end{itemize}
+
+%==============================================================================
+\section{Decisions needed before implementation starts}\label{sec:decisions}
+%==============================================================================
+
+\begin{decide}
+\textbf{D1.} Recommended local mode and shipped default: the API default stays today's
+global $K$ bit-for-bit (I1); when per-point scale is enabled, the recommended front-runner
+is Mode~B--Lepski (local error-driven, stabilized) with Mode~A as the exact-toolkit
+fallback/floor, and the \emph{shipped} default is decided empirically by S1/S2 at matched
+df (accuracy gain) in phase LDS2, with the GDF/coverage cost (S3) a later LDS3 check.
+Confirm, or keep Mode~A as the default.\\
+\textbf{D2.} $\mathrm{ESS}_{\text{target}}$ for Mode A: derive from the global pick
+[recommended, gives the clean reduction], or pin a fixed value?\\
+\textbf{D3.} The candidate scale grid (the \S\ref{sec:grid} default, or a pinned set).\\
+\textbf{D4.} Mode~B--GCV honest-LOO mitigation (GCV is now a \emph{diagnostic},
+\S\ref{sec:criteria}; Lepski is the decision rule): true leave-one-out on scored points,
+leave-a-block-out, or Lepski-only [Lepski recommended for the scale field].\\
+\textbf{D5.} Sequencing with the next phase: does the regularization phase
+\emph{absorb} scale (one joint dimension-and-scale field, LDSR, built directly on
+LDS), or land dimension-only regularization (LDR) first and add scale (LDSR) after?\\
+\textbf{D6.} Band/df reporting under selection (\S\ref{sec:conditional}): report
+\emph{conditional} bands on the selected scale, clearly labeled [recommended default],
+or report \emph{unconditional} (selection-aware) bands via the GDF / covariance-penalty
+correction or an outer split? Mode~A may stay conditional (its only selection is the
+single global target); Mode~B should at least \emph{report} the GDF gap (S3) even if the
+default band stays conditional.\\
+\textbf{D7.} ESS feasibility factor $\rho$ in $\mathrm{ESS}(K)\ge\rho\binom{d+p}{p}$
+(\S\ref{sec:criteria}): default $\rho=1.5$ [recommended --- effective points comfortably
+above the parameter count], $\rho=1$ (bare feasibility), or another pinned value.\\
+\textbf{D8.} Lepski noise estimate $\hat\sigma$ and tolerance $\tau$: global robust (pilot
+global-$K$ residual scale) [recommended first default], local, CV-derived, or
+known-in-synthetic, with $\tau=2$ default. Lepski's selected scale is sensitive to both, so
+both must be pinned before LDS1.
+\end{decide}
+
+%==============================================================================
+\section{How LDS fits the wider program}\label{sec:program}
+%==============================================================================
+
+LDS produces the two raw per-anchor fields $(K_i,d_i)$. The next phases smooth them
+over the chart nerve: \textbf{LDR} (dimension only, scale held fixed) and
+\textbf{LDSR} (both fields, co-regularized). LDS is therefore the prerequisite for
+both, and is independent of the prediction-synchronization axis (PS), so it can be
+built in parallel with PS once the LPS base (Tier 0--4) closes.
+
+Two sibling plans are to be written next and can proceed in parallel with LDS, since
+they share the chart machinery but address different objects: (i) \textbf{local
+covariance (LCov)} --- the second-order analogue, which will reuse this same
+dimension/scale ladder; and (ii) the \textbf{16S stratification-deconvolution} data
+models --- the realistic synthetic generators and the component/stratum recovery that
+the capstone consumes. This document is scoped to LDS only; it is written so those two
+can reference its ladder rather than re-derive it.
+\end{document}

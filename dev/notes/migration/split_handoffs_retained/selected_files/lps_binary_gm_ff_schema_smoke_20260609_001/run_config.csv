@@ -1,0 +1,2 @@
+"run_id","run_dir","design_manifest","n_workers","task_timeout_sec","n_reps","base_seed","planned_tasks","planned_pairs","qa_passed"
+"lps_binary_gm_ff_schema_smoke_20260609_001","/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_schema_smoke_20260609_001","/Users/pgajer/current_projects/geosmooth/split_handoffs/lps_binary_gm_ff_schema_smoke_20260609_001/smoke_design_manifest.csv",2,900,1,20260608,8,4,TRUE

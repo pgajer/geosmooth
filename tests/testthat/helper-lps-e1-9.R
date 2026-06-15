@@ -3,7 +3,7 @@
 #
 # These constructors are the single source of truth for the b = 1
 # backward-compatibility GATE's data and fit.lps argument lists. They are
-# sourced by BOTH validation/e1_9_pin_reference_fits.R (which generated the
+# sourced by BOTH dev/methods/lps/ci/e1_9_pin_reference_fits.R (which generated the
 # pre-change reference values in helper-lps-e1-9-reference.R at the commit
 # recorded there) and tests/testthat/test-lps-bandwidth-multiplier.R (the
 # GATE itself). Editing any constructor invalidates the pinned references;

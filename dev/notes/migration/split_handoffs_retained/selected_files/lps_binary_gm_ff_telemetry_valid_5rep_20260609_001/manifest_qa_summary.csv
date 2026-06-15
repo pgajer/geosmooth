@@ -1,0 +1,7 @@
+"check","observed","expected","passed"
+"task_count",5760,5760,TRUE
+"pair_count",2880,2880,TRUE
+"two_arms_per_pair",2880,2880,TRUE
+"method_matched_pairs",2880,2880,TRUE
+"response_seed_matched_pairs",2880,2880,TRUE
+"fold_seed_matched_pairs",2880,2880,TRUE
