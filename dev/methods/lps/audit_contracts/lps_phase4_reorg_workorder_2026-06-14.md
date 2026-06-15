@@ -56,10 +56,14 @@ prefer it filed as an acceptance record.)*
 **`dev/notes/lps/`** — LPS-specific design/implementation notes:
 `lps_per_point_scale_sketch_2026-06-13.md`.
 
-**`dev/project_briefs/`** — repo/program-level coordination:
-`lps_integration_plan_2026-06-12.md`, `lps_program_plan_of_action_2026-06-13.{tex,pdf}`,
-`lps_program_plan_of_action_2026-06-10.tex`. *(Routing call: the program plan spans LPS+LCov+capstone, so
-`dev/project_briefs/` is recommended over `dev/methods/lps/specs/`; flip if you consider it LPS-only.)*
+**`dev/project_briefs/`** — repo-level coordination:
+`lps_integration_plan_2026-06-12.md`.
+
+**`dev/programs/lps_lcov_omics_program/`** — cross-method/cross-application program roadmap:
+`lps_lcov_omics_program_plan.{tex,pdf}`. *(Routing call: the program plan spans LPS, PS-LPS,
+LCov, synthetic compositional models, 16S community-type applications, and omics association use
+cases, so it is broader than a project brief and should not live under `dev/methods/lps/specs/`.
+The filenames are stable; git carries the version history.)*
 
 **`dev/methods/lcov/specs/`** (new method dir) — the local-covariance design:
 `chart_aware_local_association_design_2026-06-09.{tex,pdf}`. *(Routing call: a new `dev/methods/lcov/`
