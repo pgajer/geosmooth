@@ -2,9 +2,9 @@
 """Generate the geosmooth development dashboard.
 
 The dashboard is a generated navigation surface for development notes, project
-briefs, shared/archive references, and selected method reports under ``dev/``.
-Source Markdown and report artifacts remain canonical; files under
-``dev/html/`` are generated.
+briefs, program roadmaps, shared/archive references, and selected method
+reports under ``dev/``. Source Markdown and report artifacts remain canonical;
+files under ``dev/html/`` are generated.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ DASHBOARD_DIR = DEV_ROOT / "html"
 ASSETS_DIR = DASHBOARD_DIR / "assets"
 NOTES_ROOT = DEV_ROOT / "notes"
 PROJECT_BRIEFS_ROOT = DEV_ROOT / "project_briefs"
+PROGRAMS_ROOT = DEV_ROOT / "programs"
 METHODS_ROOT = DEV_ROOT / "methods"
 SHARED_ROOT = DEV_ROOT / "shared"
 ARCHIVE_ROOT = DEV_ROOT / "archive"
@@ -276,6 +277,7 @@ def build_section(
 def build_dashboard(
     notes: list[dict[str, str]],
     project_briefs: list[dict[str, str]],
+    programs: list[dict[str, str]],
     shared_refs: list[dict[str, str]],
     archive_refs: list[dict[str, str]],
     reports: list[dict[str, object]],
@@ -288,6 +290,10 @@ def build_dashboard(
     briefs_body = build_markdown_tree(
         project_briefs,
         "No project briefs have been added under dev/project_briefs yet.",
+    )
+    programs_body = build_markdown_tree(
+        programs,
+        "No program roadmaps have been added under dev/programs yet.",
     )
     shared_body = build_markdown_tree(
         shared_refs,
@@ -313,6 +319,13 @@ def build_dashboard(
             "Repository-level briefs and cross-method coordination.",
             len(project_briefs),
             briefs_body,
+        ),
+        build_section(
+            "programs",
+            "Programs",
+            "Cross-method and cross-project roadmaps linking package methods to scientific applications.",
+            len(programs),
+            programs_body,
         ),
         build_section(
             "shared",
@@ -351,7 +364,7 @@ def build_dashboard(
     <div>
       <p class="eyebrow">geosmooth</p>
       <h1>Development Dashboard</h1>
-      <p class="lede">A generated map of notes, project briefs, shared assets, retained archive references, and method reports.</p>
+      <p class="lede">A generated map of notes, project briefs, program roadmaps, shared assets, retained archive references, and method reports.</p>
     </div>
     <div class="build-meta">
       <span>Generated</span>
@@ -363,6 +376,7 @@ def build_dashboard(
     <nav class="quick-links" aria-label="Dashboard sections">
       <a href="#notes">Notes <span>{len(notes)}</span></a>
       <a href="#project-briefs">Project Briefs <span>{len(project_briefs)}</span></a>
+      <a href="#programs">Programs <span>{len(programs)}</span></a>
       <a href="#shared">Shared Assets <span>{len(shared_refs)}</span></a>
       <a href="#archive">Archive <span>{len(archive_refs)}</span></a>
       <a href="#method-reports">Method Reports <span>{sum(len(group["files"]) for group in reports)}</span></a>
@@ -764,6 +778,7 @@ def main() -> None:
     generated_at = dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
     notes = discover_markdown(NOTES_ROOT)
     project_briefs = discover_markdown(PROJECT_BRIEFS_ROOT)
+    programs = discover_markdown(PROGRAMS_ROOT)
     shared_refs = discover_markdown(SHARED_ROOT)
     archive_refs = discover_markdown(ARCHIVE_ROOT)
     reports = discover_reports()
@@ -773,6 +788,7 @@ def main() -> None:
         build_dashboard(
             notes,
             project_briefs,
+            programs,
             shared_refs,
             archive_refs,
             reports,
@@ -786,6 +802,7 @@ def main() -> None:
     print(f"Dashboard: {DASHBOARD_DIR / 'index.html'}")
     print(f"Notes: {len(notes)}")
     print(f"Project briefs: {len(project_briefs)}")
+    print(f"Programs: {len(programs)}")
     print(f"Shared references: {len(shared_refs)}")
     print(f"Archive references: {len(archive_refs)}")
     print(f"Report files: {sum(len(group['files']) for group in reports)}")

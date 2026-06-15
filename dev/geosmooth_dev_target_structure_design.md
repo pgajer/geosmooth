@@ -42,6 +42,7 @@ dev/
     build_dev_dashboard.py
 
   project_briefs/
+  programs/
   archive/
 
   shared/
@@ -117,6 +118,29 @@ tested, put it in `dev/methods/<method>/specs/`. If it assigns work, defines
 gates, or directs an auditor or implementer, put it in
 `dev/methods/<method>/audit_contracts/`. If it is historical branch integration
 context, put it in `dev/notes/migration/`.
+
+### `dev/programs/`
+
+Use for active program-level roadmaps that cut across multiple methods and may
+also bridge into downstream biological, omics, or application projects outside
+the package. These documents are broader than project briefs: they define a
+research program, its dependency ordering, and the way package methods connect
+to external scientific applications.
+
+Example:
+
+```text
+dev/programs/lps_lcov_omics_program/
+  README.md
+  lps_lcov_omics_program_plan.tex
+  lps_lcov_omics_program_plan.pdf
+```
+
+Do not place method-specific implementation specs here. Put those under
+`dev/methods/<method>/specs/` and link to them from the program roadmap.
+For living program plans, prefer stable canonical filenames and let git carry
+the version history. Create dated snapshots only for formal audit or release
+bundles.
 
 ### `dev/archive/`
 

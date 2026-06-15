@@ -6,6 +6,8 @@ planning material that should not live at the package root.
 - `notes/`: durable explanations, design notes, prompts, plans, and tutorials.
 - `methods/`: method-specific execution history such as audits, reports, runs,
   results, handoffs, and status records.
+- `programs/`: active cross-method or cross-project program roadmaps that
+  connect `geosmooth` method development to downstream scientific applications.
 - `project_briefs/`: true project-level briefs that cut across methods or
   package phases.
 - `shared/`: cross-method registries, DGPs, fixtures, benchmark specs, and
@@ -15,8 +17,8 @@ planning material that should not live at the package root.
 
 New development artifacts should be placed directly under this layout. The
 archive area is for retained legacy material only; promote archive files into
-`methods/`, `shared/`, `notes/`, or `project_briefs/` when they become active
-inputs to new work.
+`methods/`, `shared/`, `notes/`, `programs/`, or `project_briefs/` when they
+become active inputs to new work.
 
 ## Dashboard
 
