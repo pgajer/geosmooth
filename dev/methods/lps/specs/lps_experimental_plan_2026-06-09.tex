@@ -1,0 +1,835 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{codebg}{gray}{0.96}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=4pt,
+  literate={~}{{$\sim$}}1
+}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\rmse}{\mathrm{RMSE}}
+\newcommand{\Truth}{\mathrm{Truth}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\E}{\mathbb{E}}
+
+\title{\textbf{LPS Correctness and Validation: A Precise Experimental Plan}\\[2pt]
+\large Turning the pre-submission audit roadmap into implementable, confound-controlled experiments}
+\author{Pre-submission audit (companion to \texttt{lps\_ps\_lps\_jasa\_style\_audit\_2026-06-09.md})}
+\date{2026-06-09}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document specifies, for every item in the LPS roadmap (Tiers 0--4), an experiment
+or test that is detailed enough that two independent implementers would build the
+\emph{same} experiment and reach the \emph{same} verdict. Each entry states a falsifiable
+claim, the exact data-generating process (DGP), the exact \code{fit.lps} configuration,
+the statistic computed, a numeric acceptance criterion, and the validity safeguards that
+prevent the experiment from answering a confounded question. The shared conventions in
+Section~\ref{sec:conventions} (RNG discipline, tolerances, the canonical DGP library, the
+linear-smoother extraction procedure and its leave-one-out caveat, the paired-comparison
+protocol) are defined once and referenced throughout; they are mandatory, not advisory.
+The priority order is correctness-first: Tier~0 establishes that the estimator is what it
+claims to be before any comparative or accuracy experiment is run.
+\end{abstract}
+
+\tableofcontents
+
+\section{Scope and how to read this document}
+
+The object under test is the exported estimator \code{fit.lps} (and \code{predict.lps})
+in package \code{geosmooth}, with the signature and defaults
+\begin{lstlisting}
+fit.lps(X, y, foldid = NULL,
+        support.grid = c(10L, 15L, 20L), degree.grid = 0:2,
+        kernel.grid = c("gaussian", "tricube"),
+        cv.folds = 5L, cv.seed = 1L, X.eval = NULL,
+        coordinate.method = c("coordinates", "local.pca"),
+        chart.dim = NULL,
+        local.chart.method = c("pca", "second.order.svd"),
+        auto.chart.support.metric = c("coordinates", "operator", "both"),
+        auto.chart.selection.metric = c("coordinates", "operator"),
+        backend = c("auto", "R", "cpp", "cpp.local.pca"),
+        design.basis = c("orthogonal.polynomial.drop", "monomial",
+                         "weighted.qr", "weighted.qr.drop"),
+        design.drop.tol = 1e-8,
+        ridge.multiplier.grid = c(0, 1e-10, 1e-8),
+        ridge.condition.max = 1e12,
+        unstable.action = c("na", "mean"),
+        outcome.family = c("gaussian", "bernoulli", "binomial"))
+\end{lstlisting}
+
+PS-LPS (\code{fit.ps.lps}) is deliberately out of scope here; this plan concerns LPS
+alone, per the stated priority of LPS algorithmic and implementation correctness.
+
+Every experiment uses the same eight-field template: \textbf{Claim} (falsifiable);
+\textbf{Failure mode addressed}; \textbf{DGP}; \textbf{Configuration} (every non-default
+argument pinned); \textbf{Statistic}; \textbf{Acceptance criterion} (numeric);
+\textbf{Validity safeguards}; \textbf{Artifacts}. ``Tests'' (Tier~0, and the regression
+guards) are deterministic \code{testthat} assertions that must pass in CI. ``Studies''
+(the comparative items in Tiers~1--4) are scripted experiments with predeclared decision
+rules; their outputs are reports plus a machine-readable verdict row.
+
+\section{Global conventions and shared infrastructure}
+\label{sec:conventions}
+
+\subsection{Reproducibility and RNG discipline}
+\label{sec:rng}
+
+\begin{enumerate}[leftmargin=1.4em]
+\item Every stochastic quantity is generated immediately after an explicit
+\code{set.seed(s)}. Seeds are recorded in the result artifact. For replicated studies the
+replicate $r\in\{1,\dots,R\}$ uses seed $s_r = s_0 + r$ with a documented base $s_0$.
+\item Cross-validation fold assignment is \emph{always} supplied explicitly via the
+\code{foldid} argument; tests must not rely on the internal \code{cv.seed} default, because
+the internal fold construction is an implementation detail that may change. For paired
+comparisons the \emph{same} \code{foldid} vector is passed to both arms.
+\item Each result artifact stores \code{sessionInfo()}, the \code{geosmooth} package
+version and git commit hash, the BLAS/LAPACK identification, and the full argument list of
+every \code{fit.lps} call. A study whose artifact lacks these is invalid and must be re-run.
+\item Determinism requirement: re-running any Tier~0 test twice in the same environment
+must yield bitwise-identical numeric results. Any test that is not deterministic is a
+defect in the test, not a tolerance to be widened.
+\end{enumerate}
+
+\subsection{Tolerance conventions}
+\label{sec:tol}
+
+Let $a$ be a computed value and $b$ a reference. Define absolute error $|a-b|$ and relative
+error $|a-b|/(|b|+\delta)$ with floor $\delta=10^{-12}$.
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Algebraic identities} (e.g.\ $\hat y = Sy$, orthogonal vs.\ monomial span):
+absolute tolerance $\tau_{\mathrm{alg}}=10^{-10}$.
+\item \textbf{Polynomial reproduction / solver exactness:} $10^{-8}$ for
+\code{design.basis} $\in\{$\code{orthogonal.polynomial.drop}, \code{weighted.qr},
+\code{weighted.qr.drop}$\}$; relaxed to $10^{-6}$ for \code{monomial} on raw coordinates,
+where conditioning is worse \emph{by design}. The relaxation must be justified in the test
+comment by reporting the realized design condition number.
+\item \textbf{Iterative solves} (local logistic IRLS): convergence tolerance $10^{-7}$ on
+the coefficient step (matching the implementation), comparison tolerance $10^{-6}$.
+\item \textbf{Monte-Carlo quantities} (coverage, calibration, rates): no fixed tolerance;
+the acceptance criterion is a confidence interval or hypothesis test with the replicate
+count $R$ chosen so the Monte-Carlo standard error is below one third of the decision
+threshold (state the power calculation in the script header).
+\end{itemize}
+
+\subsection{Canonical data-generating processes (DGP library)}
+\label{sec:dgp}
+
+These are defined once. Every experiment references a DGP by tag and overrides only the
+parameters it names. All coordinates are double precision; all latent draws use
+Section~\ref{sec:rng}.
+
+\begin{description}[leftmargin=0em,style=nextline]
+\item[G1 — ambient polynomial.] Ambient $D\in\{2,3\}$. $X_i \overset{iid}{\sim}
+\mathrm{Unif}([-1,1]^D)$, $i=1,\dots,n$. Truth a fixed polynomial of degree $p$; for
+$D=2,p=2$ use $f(x)=0.5+1.0x_1-0.7x_2+0.4x_1^2+0.3x_1x_2-0.6x_2^2$. Noiseless unless stated.
+Used for ambient reproduction and df checks.
+\item[G2 — flat embedded subspace.] Intrinsic $d$, ambient $D>d$. Latent
+$u_i\sim\mathrm{Unif}([-1,1]^d)$; a fixed random orthonormal $Q\in\mathbb{R}^{D\times d}$
+(seed recorded); $X_i = Qu_i$. Truth a degree-$p$ polynomial in the \emph{intrinsic} $u$.
+The embedding is a linear isometry, so a degree-$p$ local fit in the tangent chart
+reproduces $f$ exactly. Used for intrinsic reproduction.
+\item[G3a — paraboloid (known curvature).] $d=2,D=3$. $u\sim\mathrm{Unif}$ on the disk of
+radius $\rho_0=1$; $X=(u_1,u_2,(u_1^2+u_2^2)/(2R))$. Principal curvature $\kappa=1/R$ at the
+apex; $R$ is the curvature knob. Truth options: $f_{\mathrm{lin}}(u)=u_1$ (intrinsic-linear,
+isolates curvature bias) and $f_{\mathrm{smooth}}(u)=\sin(\pi u_1)\cos(\pi u_2)$.
+\item[G3b — sphere cap (constant curvature).] $d=2,D=3$. A cap of a sphere of radius $R$:
+latent $u\sim\mathrm{Unif}$ on the planar disk $\lVert u\rVert\le\rho_0<R$, with
+$X=(u_1,u_2,\,R-\sqrt{R^2-\lVert u\rVert^2})$. Constant Gaussian curvature $1/R^2$ --- a
+constant-positive-curvature complement to G3a's position-varying paraboloid curvature. Truth
+options as in G3a.
+\item[G3c — 1-D curve.] $d=1,D=3$. Helix $X(t)=(\cos t,\sin t, c\,t)$, $t\sim\mathrm{Unif}[0,2\pi)$.
+\item[G3d — torus patch.] $d=2,D=3$, standard torus with radii $(R_1,R_2)$, latent angles on
+a sub-rectangle to avoid wrap-around.
+\item[G4 — stratified / varying dimension.] Two glued strata sharing a boundary: stratum A is
+a 1-D segment $\{(t,0,0):t\in[-1,0]\}$ (thickened by noise $\eta$), stratum B is a 2-D patch
+$\{(s_1,s_2,0):s_1\in[0,1],s_2\in[-0.5,0.5]\}$. True local intrinsic dimension is $1$ on A and
+$2$ on B. Used to verify a dimension stabilizer does \emph{not} blur the true boundary.
+\item[G5 — clustered / repeated measures.] $K$ clusters; centers $c_k\sim\mathrm{Unif}([-1,1]^2)$;
+within cluster, $m$ points $x=c_k+\zeta$, $\zeta\sim N(0,\sigma_x^2 I)$. Response
+$y=g(x)+b_k+\varepsilon$, $b_k\sim N(0,\tau^2)$, $\varepsilon\sim N(0,\sigma^2)$, intra-class
+correlation $\rho=\tau^2/(\tau^2+\sigma^2)$. Used for grouped-CV validity.
+\item[G6 — binary surface.] Smooth bounded log-odds $\eta(x)$ with offset $\alpha$ chosen so
+$\E[p]$ hits a target prevalence; $p(x)=\mathrm{expit}(\alpha+\eta(x))$ clipped by construction
+to $[0.05,0.95]$ (no spike profiles); $Y_i\sim\mathrm{Bernoulli}(p(x_i))$. Default
+$\eta(x)=1.5\sin(\pi x_1)$ on $x\in[-1,1]^2$.
+\item[G7 — compositional / structural zeros.] $X_i$ a $D$-part composition: draw
+$\mathrm{Dirichlet}(\boldsymbol\alpha)$, set a documented subset of parts to exact $0$, renormalize
+to the simplex. Used to characterize behavior on 16S-like inputs.
+\end{description}
+
+\subsection{Linear-smoother extraction, degrees of freedom, and the leave-one-out caveat}
+\label{sec:smoother}
+
+Several experiments rely on the fact that, \emph{for a single fixed configuration} $\theta$
+(one support size, one degree, one kernel, a fixed \code{chart.dim}, a fixed ridge), the LPS
+fitted vector is linear in the response:
+\begin{equation}
+\hat y = S(\theta)\,y, \qquad S(\theta)\ \text{depends only on } X,\ \text{weights},\ \theta,\ \text{not on } y.
+\label{eq:linear}
+\end{equation}
+
+\paragraph{Mandatory restriction.} Equation~\eqref{eq:linear} holds only when no
+data-driven selection occurs. Therefore every experiment that uses $S$ must call
+\code{fit.lps} with \emph{singleton} grids (\code{support.grid}, \code{degree.grid},
+\code{kernel.grid} of length one) and an explicit numeric \code{chart.dim} (never
+\code{"auto"}/\code{"local.auto"}, whose estimate, although $y$-independent, is a separate
+map). Using the CV-selected pipeline and then asserting linearity is a known trap: the
+selected $\hat\theta(y)$ depends on $y$, so the end-to-end pipeline is \emph{not} linear,
+and the assertion would (correctly) fail for the wrong reason.
+
+\paragraph{Extraction procedure.} With $X.\mathrm{eval}=X$, fixed $\theta$, and the chosen
+\code{design.basis}: column $j$ of $S$ is $S_{\cdot j} = \texttt{fit}(e_j)$ where $e_j$ is the
+$j$-th unit response vector (linearity makes finite differencing exact, so no step size is
+needed). Assemble $S\in\mathbb{R}^{n\times n}$, then $\hat y = Sy$, effective degrees of
+freedom $\mathrm{df}=\tr S$, and pointwise sensitivities $S_{ii}$.
+
+\paragraph{Two distinct leave-one-out notions (do not conflate).}
+\begin{enumerate}[leftmargin=1.4em]
+\item \emph{Response-removal LOO}: hold the geometry fixed, set $y_i$'s influence to zero.
+For a linear smoother this is \emph{exactly} $\hat y^{(-i)}_{\mathrm{resp}}(x_i)=(\hat y_i - S_{ii}y_i)/(1-S_{ii})$.
+\item \emph{Training-removal LOO}: delete observation $i$ from the training set and refit.
+For a $k$-NN-bandwidth smoother this \emph{changes the support} of $x_i$ (its $k$-th neighbor
+and hence the bandwidth $h=\max$ distance change), so it is \emph{not} equal to the
+response-removal shortcut.
+\end{enumerate}
+The honest generalization target is training-removal LOO; the cheap shortcut is
+response-removal. Their gap is a real property of $k$-NN local regression and must be
+\emph{measured}, not assumed away (see E0.3b). Asserting the $(1-S_{ii})$ identity against a
+training-removal refit is invalid and is explicitly prohibited.
+
+\subsection{Paired-comparison protocol}
+\label{sec:paired}
+
+Any ``method A vs.\ method B'' accuracy comparison must hold fixed, across the two arms:
+the geometry $X$, the truth $f$ (or $p$), the realized response $y$ (same noise draw), the
+\code{foldid}, and—unless the comparison is explicitly \emph{about} that axis—the support
+size, degree, kernel, and \code{chart.dim}. The unit of analysis is the per-case delta
+$\Delta = M_A - M_B$ of the target metric. Report the sign-test / Wilcoxon signed-rank
+across cases and replicates, the median $\Delta$ with a bootstrap CI, and the full per-case
+table. A study that lets both arms re-select tuning by CV (so the arms differ on multiple
+axes at once) may be run only \emph{in addition} to the matched comparison, never as its
+replacement.
+
+\subsection{Decision-rule conventions}
+\label{sec:decision}
+
+Each study predeclares: the primary metric, the effect-size threshold that constitutes
+``materially better'', the replicate count $R$ with its Monte-Carlo-error justification, and
+the statistical test. ``Promote'' / ``do not promote'' verdicts are emitted as a one-row
+machine-readable summary. Post-hoc threshold changes invalidate the study.
+
+\section{Tier 0 — Statistical-correctness battery (deterministic tests)}
+
+These are the cheapest possible proofs that the estimator is what it claims to be. They are
+\code{testthat} tests, must be deterministic (Section~\ref{sec:rng}), and gate everything
+downstream. None of them involves model selection.
+
+\subsection{E0.1 — Polynomial reproduction (ambient and intrinsic)}
+
+\paragraph{Claim.} A degree-$p$ LPS reproduces any global polynomial of degree $\le p$ with
+error at machine-solve precision, for every kernel and every \code{design.basis}, and—on a
+\emph{flat} manifold—for the \code{local.pca} chart at the correct intrinsic dimension.
+
+\paragraph{Failure mode addressed.} Centering, design-matrix construction, or
+chart-coordinate bugs that introduce bias even on data the model can represent exactly. This
+is the single most diagnostic LPS test and is currently absent.
+
+\paragraph{DGP.} (a) Ambient: G1 with $D\in\{2,3\}$, $p\in\{1,2\}$, $n=200$, noiseless.
+(b) Intrinsic: G2 with $d\in\{1,2\}$, $D=d+2$, $p\in\{1,2\}$, $n=200$, noiseless.
+
+\paragraph{Configuration.} Singleton grids; support large enough for full rank.
+\begin{lstlisting}
+# (a) ambient reproduction
+fit.lps(X, y, foldid = rep(1:2, length.out = n),
+        support.grid = K, degree.grid = p, kernel.grid = ker,
+        coordinate.method = "coordinates", backend = "R",
+        design.basis = basis, ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf, unstable.action = "na")
+# (b) intrinsic reproduction: coordinate.method = "local.pca", chart.dim = d
+\end{lstlisting}
+Sweep \code{ker} over all four kernels, \code{basis} over all four design bases, with
+$K = 3\cdot c_p$ where $c_p$ is the design-column count $c_p=1+d+\binom{d+1}{2}\mathbf{1}\{p=2\}$
+(ambient uses $d=D$). The factor $3$ guarantees the support is over-determined for the degree.
+
+\paragraph{Statistic.} $\max_i |\hat f(x_i)-f(x_i)|$ over $X.\mathrm{eval}=X$.
+
+\paragraph{Acceptance criterion.} $<10^{-8}$ for orthogonal/QR bases, $<10^{-6}$ for
+\code{monomial} (Section~\ref{sec:tol}), for \emph{all} kernel $\times$ basis $\times$ degree
+combinations. The test also asserts the reported minimum design rank equals $c_p$.
+
+\paragraph{Validity safeguards.} (i) The intrinsic case uses a \emph{flat} (isometric)
+embedding only: on a curved manifold exact reproduction is false (curvature bias), so using
+G3 here would be a spurious failure. (ii) $X$ drawn from a continuous distribution with a
+fixed seed so supports are in general position (no accidental collinearity); the rank
+assertion guards this. (iii) \code{chart.dim} set to the true $d$, never \code{"auto"}, so
+the test isolates reproduction from dimension estimation.
+
+\paragraph{Artifacts.} \code{testthat} file \code{test-lps-reproduction.R}; on failure,
+dump the offending neighborhood's design, weights, and condition number.
+
+\subsection{E0.2 — Linear-smoother identity and degrees of freedom}
+
+\paragraph{Claim.} For a fixed configuration, (i) $\hat y = Sy$ exactly; (ii) $S$ is
+independent of $y$; (iii) $\mathrm{df}=\tr S$ equals the finite-difference trace
+$\sum_i \partial \hat y_i/\partial y_i$.
+
+\paragraph{Failure mode addressed.} Any hidden $y$-dependence in the weighting or support
+(which would break every downstream df / variance / CV-shortcut claim), and an incorrect df
+accounting.
+
+\paragraph{DGP.} G1, $D=2$, $n=120$, $y$ realized once with $N(0,1)$ entries (the values are
+irrelevant; only linearity is tested).
+
+\paragraph{Configuration.} Singleton grids; \code{coordinate.method} both
+\code{"coordinates"} and \code{"local.pca"} with explicit \code{chart.dim=2};
+\code{design.basis = "orthogonal.polynomial.drop"}; fixed ridge.
+
+\paragraph{Statistic.} Build $S$ per Section~\ref{sec:smoother}. Compute
+(i) $\max|{\texttt{fit}(y)}-Sy|$ for three independent random $y$; (ii) $\max|S^{(y_a)}-S^{(y_b)}|$
+for two different base responses; (iii) $|\tr S - \sum_i (\texttt{fit}(y+ \epsilon e_i)_i-\texttt{fit}(y)_i)/\epsilon|$
+with $\epsilon=1$ (exact by linearity).
+
+\paragraph{Acceptance criterion.} (i) $<\tau_{\mathrm{alg}}=10^{-10}$; (ii) $<10^{-12}$
+(literally the same matrix); (iii) $<10^{-10}$.
+
+\paragraph{Validity safeguards.} Singleton grids and numeric \code{chart.dim} per
+Section~\ref{sec:smoother}; assert that the run performed no candidate selection (CV table
+has one row).
+
+\paragraph{Artifacts.} \code{test-lps-linear-smoother.R}; persist one $S$ matrix as a fixture
+for E0.3 and E4.
+
+\subsection{E0.3a — Response-removal LOO shortcut (algebraic)}
+
+\paragraph{Claim.} Whatever leave-one-out / GCV residual the LPS (or GCV) code reports matches
+the analytic shortcut $(y_i-\hat y_i)/(1-S_{ii})$ formed from the \emph{independently} extracted
+$S$ of E0.2. This is a unit test of the \textbf{GCV/LOO formula implementation}, not a validation
+of the estimator: response-removal LOO equals that shortcut \emph{by derivation}, so it cannot
+test anything beyond whether the code computes the formula correctly. The scientifically
+meaningful leave-one-out question --- training-removal, where the $k$-NN support changes --- is
+E0.3b, which carries the weight.
+
+\paragraph{Failure mode addressed.} An incorrect GCV/LOO algebra in the code that would silently
+bias any $S$-based selection.
+
+\paragraph{DGP / Configuration.} As E0.2.
+
+\paragraph{Statistic.} Compare the code-reported per-point LOO/GCV residual to
+$(y_i-\hat y_i)/(1-S_{ii})$ with $S$ from E0.2. If the package has no separate GCV/LOO path for
+LPS, this test has no independent target: it is then deferred (folded into E0.2) and must
+\emph{not} be reconstructed purely from $S$ and then ``verified'' against itself --- that would
+be tautological.
+
+\paragraph{Acceptance criterion.} $\max_i$ relative error $<10^{-8}$ against the independent code
+path (or deferred if no such path exists); rows with $S_{ii}\ge 1-10^{-6}$ are reported and
+excluded (near-interpolation).
+
+\paragraph{Validity safeguards.} Do \emph{not} compare against a training-removal refit here
+(Section~\ref{sec:smoother}).
+
+\subsection{E0.3b — Training-removal vs.\ shortcut gap (characterization study)}
+
+\paragraph{Claim (characterization, not pass/fail).} Quantify how far the cheap response-removal
+shortcut is from honest training-removal LOO for $k$-NN-bandwidth LPS, as a function of $k$.
+
+\paragraph{Failure mode addressed.} Silently using the $(1-S_{ii})$ shortcut as if it were
+honest CV when the $k$-NN support change makes it optimistic.
+
+\paragraph{DGP.} G3a ($f_{\mathrm{smooth}}$), $n=400$, noise $\sigma=0.05$; $k\in\{8,15,30,60\}$;
+$R=20$ replicates.
+
+\paragraph{Configuration.} Fixed degree $1$, \code{chart.dim=2}, \code{gaussian};
+training-removal LOO for a random subsample of $200$ indices via re-fitting on $X[-i]$ and
+predicting $x_i$.
+
+\paragraph{Statistic.} Per $i$: $g_i=\hat y^{(-i)}_{\mathrm{train}}(x_i)-\hat y^{(-i)}_{\mathrm{resp}}(x_i)$;
+report median and 90th percentile of $|g_i|/\mathrm{sd}(y)$ by $k$.
+
+\paragraph{Acceptance criterion (advisory threshold).} If median relative gap $<0.05$ for the
+$k$ used in practice, the shortcut may stand in for honest CV in reports; otherwise reports
+must use training-removal CV (or grouped CV, E1.10). The verdict is recorded, not asserted.
+
+\paragraph{Validity safeguards.} Same noise draw across the two LOO notions; exclude
+near-interpolation rows; hold $k$ fixed within a cell.
+
+\subsection{E0.4 — Boundary-bias property (local linear vs.\ local constant)}
+
+\paragraph{Claim.} Local linear (degree $1$) is first-order boundary-bias-free whereas local
+constant (degree $0$) carries $O(h)$ boundary bias: near the domain edge the degree-$1$ error
+is a small multiple of its interior error, while the degree-$0$ boundary/interior error ratio
+is large.
+
+\paragraph{Failure mode addressed.} A degree-$1$ implementation that has lost the
+boundary-correction property (e.g.\ through mis-centering).
+
+\paragraph{DGP.} 1-D design $x_i$ on $[0,1]$, $n=300$ (equally spaced plus a fixed jitter,
+seed recorded); truth $f(x)=e^{x}$ (nonzero slope and curvature at the boundary); noiseless.
+
+\paragraph{Configuration.} \code{coordinate.method="coordinates"}, singleton $K=30$,
+\code{gaussian}, degrees $0$ and $1$ in separate fits, \code{ridge.multiplier.grid=0}.
+
+\paragraph{Statistic.} Boundary set $B=\{x_i: x_i< h\ \text{or}\ x_i>1-h\}$ with $h$ the
+realized $K$-NN bandwidth at the edge; interior set $I$ the complement. Compute
+$\bar e_B^{(p)}=\mathrm{mean}_{B}|\hat f-f|$ and $\bar e_I^{(p)}$ for $p\in\{0,1\}$.
+
+\paragraph{Acceptance criterion.} $\bar e_B^{(1)}/\bar e_B^{(0)} < 0.5$ \emph{and}
+$\bar e_B^{(1)}/\bar e_I^{(1)} < 3$ \emph{and} $\bar e_B^{(0)}/\bar e_I^{(0)} > 5$.
+
+\paragraph{Validity safeguards.} Noiseless (isolates bias); same $x$, $h$, kernel across the
+degree arms (paired); truth chosen nonlinear so degree~1 does not reproduce it exactly (which
+would make all errors $0$ and the ratio undefined).
+
+\subsection{E0.5 — Consistency and rate (mean-response)}
+
+\paragraph{Claim.} With the bandwidth schedule below, Truth-RMSE decreases at the local-linear
+manifold rate $\rmse \asymp n^{-2/(d+4)}$ on a curved $d$-manifold.
+
+\paragraph{Failure mode addressed.} A bias floor masquerading as inconsistency (the trap of
+fixing $k$ so bias never vanishes), or an estimator that fails to converge.
+
+\paragraph{DGP.} G3a ($f_{\mathrm{smooth}}$, $d=2$), noise $\sigma=0.1$;
+$n\in\{200,400,800,1600,3200\}$; $R=30$ replicates per $n$.
+
+\paragraph{Configuration.} Fixed degree $1$, \code{chart.dim=2}, \code{gaussian},
+\code{design.basis="orthogonal.polynomial.drop"}. Support grows as
+$k(n)=\mathrm{round}\!\big(c\,n^{4/(d+4)}\big)$ (for $d=2$: $k\propto n^{2/3}$), with $c$ fixed
+so $k(200)=20$; \code{support.grid=k(n)} (singleton, so no selection).
+
+\paragraph{Statistic.} $\rmse_p(n)=\big(\tfrac1n\sum_i(\hat f(x_i)-f(x_i))^2\big)^{1/2}$,
+averaged over replicates; fit $\log \rmse = a + b\log n$.
+
+\paragraph{Acceptance criterion.} (Smoke, required) the 95\% CI for $b$ lies entirely below
+$-0.1$. (Rate, recommended) the CI for $b$ contains the theoretical $-2/(d+4)=-1/3$, or the
+deviation is explained by a stated finite-sample/boundary argument.
+
+\paragraph{Validity safeguards.} Bandwidth schedule pinned to the optimal growth (otherwise a
+bias floor invalidates the rate); same seed structure across $n$; report bias and variance
+components separately so a plateau is correctly attributed.
+
+\subsection{E0.6 — Binary recovery and calibration}
+
+\paragraph{Claim.} Both binary modes produce probability estimates that (i) are consistent
+($\rmse_p\!\downarrow$ with $n$) and (ii) are calibrated at large $n$ (calibration slope
+$\approx 1$, intercept $\approx 0$).
+
+\paragraph{Failure mode addressed.} Mis-scaled or mis-clipped probabilities; a selection
+metric that does not target probability quality; silent degradation under class imbalance.
+
+\paragraph{DGP.} G6 on $x\in[-1,1]^2$ (treated as \code{coordinates}), prevalence
+$\E[p]\in\{0.1,0.3,0.5\}$, $n\in\{500,1000,2000,4000\}$, $R=40$.
+
+\paragraph{Configuration.} \code{outcome.family} $\in\{$\code{"bernoulli"},\code{"binomial"}$\}$,
+\code{support.grid}/\code{degree.grid}/\code{kernel.grid} as the routine grids (selection
+\emph{is} allowed here—this is an accuracy study, not an $S$ study), \code{backend="R"}.
+
+\paragraph{Statistic.} $\rmse_p$ vs.\ the known $p$; reliability via $10$ equal-count bins of
+$\hat p$ (observed frequency vs.\ mean $\hat p$); calibration slope/intercept from the logistic
+regression $Y\sim \mathrm{logit}(\hat p)$ on a held-out half.
+
+\paragraph{Acceptance criterion.} (i) the $\log\rmse_p$ vs.\ $\log n$ slope CI lies below
+$-0.1$ at every prevalence; (ii) at $n=4000$, calibration slope $\in[0.8,1.25]$ and intercept
+$\in[-0.25,0.25]$. The Bernoulli-vs-binomial difference is \emph{reported}, not asserted.
+
+\paragraph{Validity safeguards.} $p$ bounded in $[0.05,0.95]$ (no spike profiles); calibration
+fit on data disjoint from the LPS fit; at prevalence $0.1$ with $n=500$ expect logistic
+fallbacks—stratify all metrics by \code{logistic.diagnostics} fallback fraction and report it.
+
+\subsection{E0.7 — Cross-validation has no response leakage}
+
+\paragraph{Claim.} Perturbing a held-out response $y_i$ leaves $i$'s own out-of-fold
+prediction exactly unchanged.
+
+\paragraph{Failure mode addressed.} Any leakage of held-out responses into their own
+out-of-fold predictions (which would make CV optimistic).
+
+\paragraph{DGP.} G1, $D=2$, $n=100$, explicit \code{foldid} with $5$ folds.
+
+\paragraph{Configuration.} Fixed configuration (singleton grids) so no selection confounds the
+test. Out-of-fold prediction of fold $f$ obtained by \code{fit.lps} on
+$\{j:\code{foldid}_j\ne f\}$ with $X.\mathrm{eval}=\{j:\code{foldid}_j=f\}$.
+
+\paragraph{Statistic.} For a held-out index $i$ (in fold $f$): refit after replacing $y_i$ by
+$y_i+\Delta$ ($\Delta=10$) and recompute the out-of-fold prediction at $i$. Report
+$|\hat y^{\mathrm{oof}}_i(\text{perturbed})-\hat y^{\mathrm{oof}}_i(\text{original})|$.
+
+\paragraph{Acceptance criterion.} $<10^{-12}$ (exactly zero up to roundoff). As a positive
+control, perturbing $y_i$ \emph{does} change the prediction of some $j$ in another fold that has
+$i$ in its training support (assert change $>0$), proving the test is not vacuous.
+
+\paragraph{Validity safeguards.} Fixed config; the geometry (and any \code{auto} dimension) is
+$y$-independent, so the test isolates response leakage.
+
+\subsection{E0.8 — Degenerate-geometry pathologies}
+
+\paragraph{Claim.} On each pathology, LPS terminates, returns finite predictions where defined,
+and exhibits the specified guarded behavior (no silent mean fallback when
+\code{unstable.action="na"}; correct diagnostics).
+
+\paragraph{Failure mode addressed.} Crashes, silent fallbacks, or NaNs on inputs that
+real omics data routinely produce.
+
+\paragraph{DGP / cases (each a separate test).}
+\begin{enumerate}[leftmargin=1.4em,nosep]
+\item \emph{Duplicate points}: replicate a single $x$ value $k$ times in a support. Expect
+finite prediction; a fully-degenerate support collapses to the weighted mean (degree~$0$
+behavior) and the rank diagnostic equals $1$.
+\item \emph{Collinear support}: points on a line in $\mathbb{R}^2$ with degree $2$. Expect
+rank-deficient quadratic dropped by \code{orthogonal.polynomial.drop}; with
+\code{unstable.action="na"} a configuration that cannot be solved yields \code{NA} (and is thus
+avoided by selection), never a silent mean.
+\item \emph{Constant response}: $y\equiv c$. Expect $\hat f\equiv c$ within $10^{-10}$ for all
+degrees, kernels, bases.
+\item \emph{Distance ties}: symmetric $X$ with exact ties. Expect deterministic support choice
+(index tie-break) and bitwise-identical results across repeated runs.
+\item \emph{Class imbalance (binary)}: G6 at prevalence $0.02$, $n=300$, \code{outcome.family="binomial"}.
+Expect no crash; \code{logistic.diagnostics} reports the event-rate fallback count; fitted
+probabilities $\in[0,1]$; selection either returns a finite log-loss or fails fast with the
+documented ``no finite selection score'' error.
+\item \emph{Compositional / structural zeros}: G7, $D=6$. Expect finite predictions; record the
+fraction of supports with zero bandwidth ($h=0$) and the fallback handling.
+\end{enumerate}
+
+\paragraph{Acceptance criterion.} Per case as stated; all assertions deterministic.
+
+\paragraph{Validity safeguards.} Test both \code{unstable.action} settings where relevant so the
+guarded-vs-legacy behavior is pinned; assert on diagnostics, not only on non-crashing.
+
+\paragraph{Artifacts.} \code{test-lps-degenerate.R}; one fixture per case.
+
+\section{Tier 1 — Honest selection and bandwidth}
+
+\subsection{E1.9 — Decouple bandwidth from support size}
+
+\paragraph{Claim.} (a) The current kernel weighting ties the effective bandwidth to the
+$K$-NN radius, so ``gaussian'' is near-flat (effective sample size $\approx K$) and compact
+kernels zero the $K$-th neighbor (effective support $K-1$); (b) a bandwidth multiplier $b$ that
+sets $h=b\cdot(\text{$K$-th NN distance})$ reproduces current behavior exactly at $b=1$;
+(c) adding $b$ to the selection grid does not worsen, and on curved truths improves, Truth-RMSE.
+
+\paragraph{Failure mode addressed.} Kernel selection silently selecting an effective-sample-size
+artifact; an unexposed bandwidth that prevents reaching the curvature-relevant scale.
+
+\paragraph{DGP.} (a)/(b) deterministic on a single fixed support (any G1 neighborhood).
+(c) G3a and G3d, $n=600$, $\sigma\in\{0.03,0.1\}$, $R=30$, paired (Section~\ref{sec:paired}).
+
+\paragraph{Configuration / statistic.}
+\begin{enumerate}[leftmargin=1.4em,nosep]
+\item Characterization (regression test): call the internal weight function on a fixed
+distance vector for each kernel; compute Kish effective sample size
+$\mathrm{ESS}=(\sum w)^2/\sum w^2$ and the $K$-th weight. Assert
+$\mathrm{ESS}/K>0.9$ for \code{gaussian}, $\mathrm{ESS}/K<0.85$ for \code{tricube}, and
+$w_{(K)}/\max_j w_j<10^{-6}$ for all compact kernels. This \emph{pins current behavior} so a
+future change is visible.
+\item Backward-compatibility (after implementing $b$): assert fits with $b=1$ equal the
+current fits within $\tau_{\mathrm{alg}}$.
+\item Benefit study: arms = \{select over $(K)$ only\} vs.\ \{select over $(K,b)$, $b\in\{0.5,1,2,4\}$\};
+metric Truth-RMSE; predeclared ``material'' $=$ median $\Delta>5\%$ with Wilcoxon $p<0.05$.
+\end{enumerate}
+
+\paragraph{Acceptance criterion.} (a) assertions hold; (b) $b=1$ exactness; (c) verdict
+recorded; promotion only if the material threshold is met and runtime cost is reported.
+
+\paragraph{Validity safeguards.} The benefit study is matched on $(K,\text{degree},\text{kernel},
+\code{chart.dim})$ except the bandwidth axis; same noise draw; the characterization uses the
+\emph{actual} internal weighting routine, not a re-implementation.
+
+\subsection{E1.10 — Nested and grouped cross-validation}
+
+\paragraph{Claim.} (a) The selected-minimum CV score is optimistic; nested CV corrects it and
+tracks held-out test error. (b) Random $K$-fold underestimates error under cluster dependence;
+leave-cluster-out CV closes the gap.
+
+\paragraph{Failure mode addressed.} Reporting a selection-optimistic number on real data; CV
+leakage through dependent (subject/replicate) samples.
+
+\paragraph{DGP.} (a) G3a, $n=800$ train $+$ $n_{\mathrm{test}}=4000$ independent test, $R=40$.
+(b) G5 with $K=40$ clusters, $m=20$, $\rho\in\{0.3,0.6\}$; an independent test set of fresh
+clusters; $R=40$.
+
+\paragraph{Configuration.} Routine grids (selection is the object of study). Outer loop: $5$
+folds; inner loop: $5$ folds for selection. For (b) compare \code{foldid} built by random
+assignment vs.\ by cluster id.
+
+\paragraph{Statistic.} (a) $|\,\widehat{\rmse}_{\bullet}-\rmse_{\mathrm{test}}\,|/\rmse_{\mathrm{test}}$
+for $\bullet\in\{\text{selected-min},\ \text{nested}\}$. (b) the same for random-fold and
+cluster-fold estimates against fresh-cluster test error.
+
+\paragraph{Acceptance criterion.} (a) nested relative error $<0.10$ \emph{and} nested $\ge$
+selected-min in expectation (optimism sign correct). (b) random-fold relative error exceeds
+cluster-fold relative error by a predeclared margin ($>0.10$ at $\rho=0.6$); cluster-fold within
+$0.10$ of truth.
+
+\paragraph{Validity safeguards.} Test clusters disjoint from training clusters (no cluster
+appears in both); identical truth across arms; report the realized $\rho$.
+
+\subsection{E1.11 — Stabilizing the local intrinsic-dimension estimate}
+
+\paragraph{Claim.} (a) Per-anchor dimension estimates from small supports are high-variance;
+(b) shrinkage-to-global and graph-smoothing of the dimension field reduce misclassification
+\emph{without} blurring a true dimension boundary and without worsening Truth-RMSE; (c) a
+points-per-parameter gate prevents pathological degree-$2$-in-high-dimension selections.
+
+\paragraph{Failure mode addressed.} The documented harm from dimension over-estimation
+(the FB01 finding); a stabilizer that over-smooths across genuine dimension changes.
+
+\paragraph{DGP.} (a)/(b) homogeneous: G3a ($d=2$), $n\in\{200,800\}$, $K\in\{10,20,40\}$, $R=50$.
+(b) boundary safeguard: G4 (true dim $1$ on stratum A, $2$ on B). (c) any G2 with $d=3,D=5$.
+
+\paragraph{Configuration.} \code{coordinate.method="local.pca"}, \code{chart.dim="local.auto"};
+record \code{chart.dim.by.eval}. Stabilizers implemented as post-processors of the per-anchor
+estimate: shrink-to-global (mode/median of the field) and $k$-NN majority vote.
+
+\paragraph{Statistic.} (a) misclassification rate $\frac1n\sum_i\mathbf{1}\{\hat d_i\ne d\}$
+and its across-replicate variance. (b) on G4, the misclassification rate \emph{within} each
+stratum and at anchors whose support straddles the boundary. (c) whether the gated selector
+ever returns degree $2$ with $K<c\cdot c_2$ (set $c=1.5$).
+
+\paragraph{Acceptance criterion.} (a) report the variance decay with $K$ (characterization).
+(b) a stabilizer is acceptable only if it reduces homogeneous-region misclassification by a
+predeclared margin ($>30\%$ at $K=10$) \emph{and} does not increase boundary-straddling
+misclassification on G4 by more than $5$ percentage points \emph{and} is non-inferior on
+Truth-RMSE (CI of $\Delta$ excludes a $>2\%$ degradation). (c) with the gate, the offending
+candidates receive a non-finite/penalized score; without it, they can be selected (positive
+control).
+
+\paragraph{Validity safeguards.} The G4 boundary test is mandatory: a stabilizer that looks
+good only on homogeneous data but smears the stratified boundary is rejected. Dimension truth
+on G4 is defined per stratum and recorded with the geometry.
+
+\section{Tier 2 — Binary path and numerical hygiene}
+
+\subsection{E2.12 — Binary selection metric consistency and log-loss clipping}
+
+\paragraph{Claim.} (a) Bernoulli-mode selection currently scores \emph{unclipped} predictions
+while deployment is clipped, and this can change the selected candidate; the fix is to score the
+deployed (clipped) metric. (b) A log-loss truncation of $10^{-15}$ makes the selection score
+unstable; $10^{-6}$ is stable.
+
+\paragraph{Failure mode addressed.} Train/deploy metric mismatch; a high-variance selection
+criterion dominated by a single confident error.
+
+\paragraph{DGP.} (a) a constructed case: G6 with a sharp region forcing some raw predictions
+outside $[0,1]$, $n=400$, where clipped vs.\ unclipped Brier rank two candidates differently.
+(b) G6 with one deliberately confident-wrong held-out point.
+
+\paragraph{Statistic.} (a) selected candidate under clipped vs.\ unclipped Brier. (b) selected
+candidate and log-loss value under clip $\in\{10^{-15},10^{-6},10^{-3}\}$.
+
+\paragraph{Acceptance criterion.} (a) a regression test asserting the selection score equals the
+deployed (clipped) metric after the fix; the pre-fix discrepancy is demonstrated in the same
+file as a documented motivating case. (b) the \emph{score} at clip $10^{-15}$ is demonstrably
+dominated by a single confident-wrong point (the actual defect); adopt and pin a documented
+finite clip ($10^{-6}$). Selection \emph{stability} across $\{10^{-6},10^{-3}\}$ is reported as a
+diagnostic, \textbf{not gated} --- near-ties may legitimately reselect, so cross-clip invariance
+is a robustness goal, not a hard correctness criterion.
+
+\paragraph{Validity safeguards.} Construct the (a) case so the ranking flip is real (verify by
+hand), not a tie; hold all else fixed.
+
+\subsection{E2.13 — Ridge penalty structure alignment}
+
+\paragraph{Claim.} In the orthogonal basis the ridge currently penalizes the constant direction,
+so as the ridge grows the prediction shrinks toward $0$ rather than toward the local weighted
+mean; after aligning the penalty (leave the constant direction unpenalized), large ridge shrinks
+toward the local weighted mean, and tiny ridge is prediction-invariant.
+
+\paragraph{Failure mode addressed.} A statistically wrong shrinkage target hidden behind
+currently-tiny ridge multipliers.
+
+\paragraph{DGP.} G1, $D=2$, $n=150$, mild noise.
+
+\paragraph{Configuration.} Fixed config; \code{design.basis="orthogonal.polynomial.drop"};
+sweep \code{ridge.multiplier.grid} as singletons $\rho\in\{0,10^{-8},10^{-2},1,10^2\}$ (with
+\code{ridge.condition.max=Inf} so the chosen $\rho$ is actually applied).
+
+\paragraph{Statistic.} For each anchor, $\hat f_\rho(x_i)$; compare $\hat f_{\rho\to\infty}$ to
+the local weighted mean $\bar y_i^{w}$ and to $0$.
+
+\paragraph{Acceptance criterion.} After the fix: $|\hat f_{\rho=10^2}-\bar y^{w}|$ small relative
+to $|\hat f_{\rho=10^2}-0|$ (shrinks to the local mean, not to zero); and
+$|\hat f_{\rho=10^{-8}}-\hat f_{\rho=0}|<10^{-6}$ (tiny-ridge invariance). A pre-fix test
+documents the shrink-to-zero behavior so the change is intentional and visible.
+
+\paragraph{Validity safeguards.} \code{ridge.condition.max=Inf} so the guard does not silently
+skip the large-$\rho$ candidate; paired across $\rho$ on the same data.
+
+\subsection{E2.14 — Local logistic robustness (separation)}
+
+\paragraph{Claim.} The local logistic IRLS is monotone and bounded under near-separation: with
+step-halving the deviance is non-increasing across iterations, coefficients and fitted
+probabilities stay finite and in range, and non-convergence triggers a deterministic, telemetered
+fallback.
+
+\paragraph{Failure mode addressed.} IRLS divergence/oscillation under separation, NaNs, or a
+``win'' that is actually a mass of event-rate fallbacks.
+
+\paragraph{DGP.} A single near-separable support: $z\in\mathbb{R}$ with $y=\mathbf{1}\{z>0\}$ plus
+one flipped label to avoid exact separation; weights from \code{gaussian}.
+
+\paragraph{Configuration.} Call the local logistic solver (degree $1$, \code{outcome.family="binomial"},
+\code{backend="R"}) directly on the constructed support; record per-iteration deviance.
+
+\paragraph{Statistic.} Per-iteration deviance sequence; final coefficients; fitted probability;
+telemetry (\code{converged}, \code{fallback.path}, \code{event.rate.fallback}).
+
+\paragraph{Acceptance criterion.} With step-halving, deviance is non-increasing to within
+$10^{-8}$ per step; final $\hat p\in(0,1)$ and $|\hat\beta|<\infty$; if the convergence tolerance
+is not met within the iteration cap, the documented fallback fires and is recorded. Exact
+separation (no flipped label) must hit the fallback, not loop or NaN.
+
+\paragraph{Validity safeguards.} Test both the near-separable and exactly-separable cases; assert
+on the deviance \emph{trajectory}, not only the endpoint, so oscillation is caught.
+
+\section{Tier 3 — Curvature-chart re-evaluation, done correctly}
+
+The H4/H5 ``no gains'' result for \code{second.order.svd} is confounded: both arms selected
+degree~$2$ (the diagnostics' own top predictor of the effect is the cross-arm degree
+difference), the error budget was noise-dominated ($\sigma\!\approx\!$ Truth-RMSE), curvature was
+estimated from $\le 18$-point supports, and the metric averaged over the whole manifold. A
+degree-$2$ polynomial in tangent coordinates already absorbs much of the leading curvature
+signal, so a degree-$2$-vs-degree-$2$ comparison cannot isolate the chart's contribution. The
+two are not identical mechanisms --- a degree-$2$ tangent polynomial adds function-side
+flexibility, whereas the second-order chart corrects the coordinate map itself --- but they
+overlap heavily on the leading bias term, which is enough to make the old test uninformative.
+The following isolates the curvature chart's value.
+
+\subsection{E3.1 — Curvature-chart benefit under a degree-$1$, low-noise, curvature-stratified design}
+
+\paragraph{Claim.} On genuinely curved manifolds, at \emph{degree~$1$} and adequate support, the
+\code{second.order.svd} chart reduces Truth-RMSE in high-curvature regions relative to the
+\code{pca} chart; and degree-$1$+\code{second.order.svd} approaches degree-$2$+\code{pca}
+(confirming that degree-$2$ tangent polynomials make the chart correction \emph{largely redundant
+in this regime} --- not that the two are identical mechanisms).
+
+\paragraph{Failure mode addressed.} A confounded comparison (degree-$2$ both arms; noise-dominated;
+whole-manifold averaging) that cannot reveal a curvature effect even if present.
+
+\paragraph{DGP.} G3a, G3b (sphere cap), G3d (torus patch); curvature knob giving a low- and a
+high-curvature setting per family; $n\in\{400,1600\}$; noise $\sigma\in\{0.01,0.03\}$ (low, so
+bias is visible); $R=30$; plus the VALENCIA-derived real-geometry probe as an external check.
+
+\paragraph{Configuration.} \emph{Matched} arms differing only in \code{local.chart.method}
+$\in\{$\code{"pca"},\code{"second.order.svd"}$\}$. Fix degree $=1$, \code{chart.dim} $=$ true $d$,
+the same kernel, and support $K\ge 3\cdot q_2$ where $q_2=d+\binom{d+1}{2}$ is the curvature
+parameter count (for $d=2$, $q_2=5$, so $K\ge 20$; sweep $K\in\{25,40,60\}$). A third reference
+arm: degree $2$ + \code{pca}, same $K$. Paired (Section~\ref{sec:paired}).
+
+\paragraph{Statistic.} Local curvature magnitude $\kappa(x)$ is known analytically; bin eval
+points into curvature deciles. Primary metric: Truth-RMSE within the top curvature decile,
+$\rmse^{\mathrm{hi}}$. Secondary: whole-manifold Truth-RMSE; and
+$\rmse(\text{deg1}+\text{2nd})-\rmse(\text{deg2}+\text{pca})$.
+
+\paragraph{Acceptance / promotion criterion (predeclared).} Promote the curvature chart beyond
+``experimental'' only if median over cases of $\Delta^{\mathrm{hi}}=\rmse^{\mathrm{hi}}_{\mathrm{pca}}-\rmse^{\mathrm{hi}}_{\mathrm{2nd}}$
+is $>10\%$ relative with a sign-test $p<0.05$ across cases\,$\times$\,replicates, \emph{and}
+runtime ratio is reported, \emph{and} the fallback rate (chart dim $=$ ambient, rank deficiency)
+is $<10\%$ in the promoted regime. Separately, report whether degree-$1$+2nd $\approx$
+degree-$2$+pca (redundancy confirmation).
+
+\paragraph{Validity safeguards.} Degree fixed at $1$ in both compared arms (the central fix);
+support sized for stable curvature estimation; low noise so bias dominates; curvature-stratified
+metric so localized gains are not averaged away; matched seeds/support/kernel/dim; fallback
+accounting mandatory; flat datasets excluded.
+
+\subsection{E3.2 — Curvature-bias unit test (theory-anchored)}
+
+\paragraph{Claim.} For an intrinsic-linear truth on a known-curvature manifold, degree-$1$+\code{pca}
+exhibits the analytically predicted $O(\kappa h^2)$ bias, and degree-$1$+\code{second.order.svd}
+removes its leading term.
+
+\paragraph{Failure mode addressed.} A curvature-correction implementation that is plausible but
+does not actually cancel the known curvature term (a correctness question independent of accuracy
+gains).
+
+\paragraph{DGP.} G3a with $f_{\mathrm{lin}}(u)=u_1$ (intrinsic-linear), noiseless; curvature
+$\kappa=1/R$ swept over $R\in\{1,2,4,8\}$; support radius held fixed so $h$ is comparable across $R$.
+
+\paragraph{Statistic.} At anchors in the high-curvature region, bias
+$\beta^{(p,\mathrm{chart})}(x)=\hat f(x)-f(x)$; fit $|\bar\beta_{\mathrm{pca}}|$ vs.\ $\kappa h^2$
+(expect linear through the origin); ratio $|\bar\beta_{\mathrm{2nd}}|/|\bar\beta_{\mathrm{pca}}|$.
+
+\paragraph{Acceptance criterion.} $|\bar\beta_{\mathrm{pca}}|$ vs.\ $\kappa h^2$ has slope
+significantly $>0$ and $R^2>0.9$ (the predicted scaling), and
+$|\bar\beta_{\mathrm{2nd}}|/|\bar\beta_{\mathrm{pca}}|<0.3$ at the highest curvature (leading term
+removed). If the chart does \emph{not} reduce the bias here, the correction is wrong regardless of
+E3.1.
+
+\paragraph{Validity safeguards.} Noiseless (pure bias); intrinsic-linear truth so degree-$1$ would
+be exact \emph{but for} curvature, isolating the curvature term; $h$ held fixed across $R$ so the
+$\kappa h^2$ scaling is identifiable.
+
+\section{Tier 4 — Uncertainty quantification}
+
+\subsection{E4.1 — Pointwise variance and confidence-band coverage}
+
+\paragraph{Claim.} The linear-smoother variance $\Var(\hat y_i)=\sigma^2\sum_j S_{ij}^2$ yields
+pointwise bands whose empirical coverage matches nominal in the interior; coverage degrades where
+bias dominates (boundary/high curvature), as expected, and this is reported rather than masked.
+
+\paragraph{Failure mode addressed.} Shipping point estimates with no uncertainty; or claiming
+nominal coverage globally where bias guarantees undercoverage.
+
+\paragraph{DGP.} G3a ($f_{\mathrm{smooth}}$), homoskedastic $\varepsilon\sim N(0,\sigma^2)$ with
+$\sigma=0.1$ \emph{known}; $n=1200$; $R=500$ replicates (so coverage Monte-Carlo SE
+$\approx\sqrt{0.95\cdot0.05/500}\approx 0.01$).
+
+\paragraph{Configuration.} Fixed config (singleton grids), \code{chart.dim=2}, degree $1$. Build
+$S$ (Section~\ref{sec:smoother}); band
+$\hat y_i \pm z_{0.975}\,\hat\sigma\,\lVert S_{i\cdot}\rVert_2$ with $\hat\sigma^2=\mathrm{RSS}/(n-\tr S)$.
+
+\paragraph{Statistic.} Per eval point, empirical coverage of $f(x_i)$ across replicates; stratify
+into interior, boundary ($x$ within $h$ of the disk edge), and top-curvature-decile sets.
+
+\paragraph{Acceptance criterion.} Interior average coverage $\in[0.93,0.97]$ (using known $\sigma$);
+with the plug-in $\hat\sigma$, $\in[0.92,0.98]$. Boundary/high-curvature undercoverage is reported
+with its magnitude; if a bias-corrected band is implemented, re-test that its interior$+$boundary
+coverage both fall in range.
+
+\paragraph{Validity safeguards.} Known $\sigma$ first (separates variance estimation from band
+construction); honest stratification—do \emph{not} average interior and boundary coverage into one
+headline number, since bias-driven boundary undercoverage is real and must be visible.
+
+\section{Execution order and dependency map}
+
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Tier 0 first, as CI gates.} E0.2 (linear smoother) and E0.1 (reproduction) are the
+keystones: E0.3a, E0.5, E4.1 reuse the $S$ machinery from E0.2, and any failure of E0.1/E0.2
+invalidates everything downstream, so they run before any study.
+\item \textbf{Tier 1 next}, because honest selection and bandwidth semantics underlie every
+accuracy number reported in Tiers 3--4. E1.10 (nested/grouped CV) should be in place before any
+real-data Truth-unknown claim.
+\item \textbf{Tier 2} can proceed in parallel with Tier 1 (independent code paths).
+\item \textbf{Tier 3} depends on E0.1 (reproduction on flat manifolds) and the matched-arm
+protocol; E3.2 depends on E0.2's bias-extraction style.
+\item \textbf{Tier 4} depends on E0.2 ($S$) and E0.5 (rate, for the bias/variance split).
+\end{enumerate}
+
+\paragraph{Per-experiment validity-threat summary.} Each experiment's ``Validity safeguards''
+field is the controlling list. The recurring threats and their controls are: selection confounds
+(use singleton grids for any $S$-based or bias-isolation test); bias floors (use the optimal
+bandwidth schedule for rate tests); noise domination (use low $\sigma$ for bias-isolation tests);
+averaging dilution (stratify by curvature/boundary); dependence leakage (grouped folds, disjoint
+test clusters); and metric/deploy mismatch (score the deployed quantity). A result whose safeguards
+were not met is reported as \emph{inconclusive}, never as evidence.
+
+\end{document}

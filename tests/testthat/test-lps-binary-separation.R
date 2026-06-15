@@ -1,6 +1,7 @@
 # E2.14 — local logistic robustness under separation (Tier 2 GATE).
 #
-# Contract (audit_contracts/lps_tiers1to4 via project_briefs, frozen spec
+# Contract (dev/methods/lps/audit_contracts/lps_tiers1to4 via
+# dev/methods/lps/specs, frozen spec
 # S E2.14): with IRLS step-halving the deviance trajectory is non-increasing
 # to within 1e-8 per step; the final fitted probability lies strictly in
 # (0, 1) and the coefficients are finite; non-convergence within the
@@ -21,7 +22,7 @@
 # pre-fix plain-Newton iteration on this support overshoots (measured
 # deviance increase of about 4.9e2 at step 2, eight increases > 1e-8 in 50
 # iterations, no convergence; replication script:
-# validation/e2_14_prefix_newton_overshoot.R), while a mid-cluster flip
+# dev/methods/lps/ci/e2_14_prefix_newton_overshoot.R), while a mid-cluster flip
 # (e.g. index 5) yields a monotone plain-Newton trajectory and would make
 # the step-halving mutation undetectable. Step-halving recovers a genuine
 # converged fit on this support (one halving, convergence at iteration 9).

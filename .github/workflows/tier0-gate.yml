@@ -11,9 +11,9 @@ name: tier0-gate
       - "tests/testthat/test-lps-tier0-correctness.R"
       - "tests/testthat/test-lps-tier0-correctness-extended.R"
       - "tests/testthat/test-lps-degenerate.R"
-      - "scripts/ci/**"
+      - "dev/methods/lps/ci/**"
       - ".github/workflows/tier0-gate.yml"
-      - "audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md"
+      - "dev/methods/lps/audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md"
 
 jobs:
   tier0:
@@ -37,12 +37,12 @@ jobs:
           extra-packages: any::pkgload, any::testthat
 
       - name: Run Tier-0 execution-artifact harness
-        run: bash scripts/ci/run_tier0_execution_artifact.sh
+        run: bash dev/methods/lps/ci/run_tier0_execution_artifact.sh
 
       - name: Enforce Tier-0 smoke artifact contract (section 4)
         run: |
           set -uo pipefail
-          AID="$(ls -d audit_artifacts/tier0_* | tail -n1)"
+          AID="$(ls -d dev/methods/lps/audit_artifacts/tier0_* | tail -n1)"
           echo "::group::manifest"; cat "$AID/execution_manifest.txt"; echo "::endgroup::"
           M="$AID/execution_manifest.txt"; S="$AID/testthat_summary.txt"; H="$AID/headroom_summary.csv"
           fail(){ echo "FAIL: $1"; exit 1; }
@@ -86,5 +86,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tier0-execution-artifact-${{ matrix.native_backend }}
-          path: audit_artifacts/
+          path: dev/methods/lps/audit_artifacts/
           if-no-files-found: error

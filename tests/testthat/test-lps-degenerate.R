@@ -1,7 +1,8 @@
 # =============================================================================
 # Tier-0 E0.8 -- Degenerate-geometry pathologies
 #
-# Frozen spec: project_briefs/lps_experimental_plan_2026-06-09.tex, section E0.8.
+# Frozen spec: dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex,
+# section E0.8.
 # One test per pathology. Each asserts the SPECIFIED guarded behaviour (finite
 # where defined, NA rather than a silent mean under unstable.action="na",
 # probabilities in range, deterministic tie-breaking), and asserts on

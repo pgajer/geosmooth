@@ -2,6 +2,9 @@
 ^\.gitignore$
 ^\.Rproj\.user$
 ^\.claude$
+^dev$
+^validation$
+^scripts$
 ^geosmooth\.Rproj$
 ^Makefile$
 ^AGENTS\.md$

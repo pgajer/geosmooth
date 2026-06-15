@@ -13,7 +13,7 @@
 #       per spec-memo item 11b: unique binder; > 99.9% of the cross-clip
 #       score change; largest single contributor by > 5x on the selected
 #       candidate). Cross-clip selection stability over {1e-6, 1e-3} is a
-#       STUDY (validation/e2_12_crossclip_stability_study.R), NOT gated
+#       STUDY (dev/methods/lps/ci/e2_12_crossclip_stability_study.R), NOT gated
 #       here.
 #
 # DGP: constructed G6 cases, n = 400, deterministic seeds, no replication
@@ -157,7 +157,8 @@ test_that("E2.12 keep.cv.predictions default reproduces the prior fit object exa
 })
 
 test_that("E2.12 bernoulli always uses the R CV path (no raw-metric backend corner)", {
-    # Audit-required fix (audits/tier2_audit_2026-06-11.md): a legal
+    # Audit-required fix (dev/methods/lps/audits/tier2_audit_2026-06-11.md):
+    # a legal
     # bernoulli configuration (monomial basis, singleton ridge 0,
     # ridge.condition.max = Inf, coordinates) used to reach the C++ CV
     # kernels, which return only the aggregate raw RMSE, silently reverting

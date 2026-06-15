@@ -1,8 +1,8 @@
 # E1.10 Part A GATEs -- nested and grouped cross-validation machinery.
 #
-# Contract: project_briefs/lps_tiers1to4_contract_2026-06-11.md sB / E1.10
+# Contract: dev/methods/lps/audit_contracts/lps_tiers1to4_contract_2026-06-11.md sB / E1.10
 # (sub-item typing per sA1); plan sE1.10 + sec:paired. Spec memo:
-# audit_contracts/lps_tiers1to4/e1_10_spec_questions_implementer_2026-06-11.md.
+# dev/methods/lps/audit_contracts/lps_tiers1to4/e1_10_spec_questions_implementer_2026-06-11.md.
 #
 # Deterministic GATEs on inline fixtures (no DGP library):
 #   E1.10A1  no selection leakage -- the held-out outer fold never enters
@@ -12,7 +12,7 @@
 #   E1.10A3  paired discipline -- both arms of a comparison run on the same
 #            recorded foldid; fold plumbing cannot be bypassed.
 # The E1.10(a)/(b) STUDY decision rules are NOT here; they live in
-# validation/e1_10_nested_grouped_cv.R and are gated on the audited DGP
+# dev/methods/lps/ci/e1_10_nested_grouped_cv.R and are gated on the audited DGP
 # library.
 
 e110.fixture <- function() {

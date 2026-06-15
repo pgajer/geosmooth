@@ -5,8 +5,13 @@
 .claude/
 __pycache__/
 .auctex-auto/
+dev/html/
+dev/index.html
 split_handoffs/
 audit_artifacts/
+!dev/methods/*/audit_artifacts/
+dev/methods/*/audit_artifacts/*
+!dev/methods/*/audit_artifacts/.gitkeep
 man/
 *.rds
 *.RDS

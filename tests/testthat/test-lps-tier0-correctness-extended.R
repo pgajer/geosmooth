@@ -2,7 +2,7 @@
 # Tier-0 statistical-correctness battery, continued: E0.3a, E0.4, E0.5, E0.6, E0.7
 #
 # Companion to test-lps-tier0-correctness.R (E0.1, E0.2). These gates implement
-# the FROZEN spec in project_briefs/lps_experimental_plan_2026-06-09.tex
+# the FROZEN spec in dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex
 # (sections E0.3a..E0.7). Acceptance thresholds below are copied verbatim from
 # that spec; do not relax them without a spec change (post-hoc threshold changes
 # invalidate the gate).
@@ -149,7 +149,7 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
     # consistent (RMSE_p decreasing in n) and (ii) calibrated at large n.
     #
     # Tier-0 amendment (2026-06-12, orchestrator-adjudicated; raised by the
-    # Tier-2 implementer in audit_contracts/lps_tiers1to4/
+    # Tier-2 implementer in dev/methods/lps/audit_contracts/lps_tiers1to4/
     # e2_15_e06_interaction_raise_2026-06-12.md): the BINOMIAL arm runs
     # unstable.action = "mean" (deployed event-rate fallback predictions at
     # every point) instead of "na". Rationale: (i) under E2.15 a candidate

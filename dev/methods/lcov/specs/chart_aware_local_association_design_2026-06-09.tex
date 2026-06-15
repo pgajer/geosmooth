@@ -1,0 +1,1292 @@
+\documentclass[11pt]{article}
+
+%==============================================================================
+% Chart-Aware Local Association Structure on the L-infinity Atlas
+% Design brief: model object + bridge from conditional measures of association
+%              + experimental program for vaginal 16S / metagenomic data
+% Saved to: ~/current_projects/geosmooth/project_briefs/
+% Date: 2026-06-09
+%==============================================================================
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+\usepackage{datetime2}
+\newfloat{algorithm}{t}{loa}
+\floatname{algorithm}{Algorithm}
+
+\setlist{topsep=2pt,itemsep=1pt,parsep=1pt}
+
+%---- theorem environments ----------------------------------------------------
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{construction}[definition]{Construction}
+\newtheorem{assumption}[definition]{Assumption}
+\theoremstyle{plain}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{lemma}[definition]{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+\newtheorem{experiment}{Experiment}
+
+%---- macros ------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\RP}{\mathbb{RP}}
+\newcommand{\Rnn}{\R^{d+1}_{\ge 0}}
+\newcommand{\RPnn}{\mathbb{RP}^{d}_{\ge 0}}
+\newcommand{\Linf}{L^{\infty}}
+\newcommand{\Dinf}{\Delta^{d}_{\infty}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Corr}{\operatorname{Corr}}
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\mono}{\operatorname{mono}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\cell}{Q}
+\newcommand{\chart}{\varphi}
+\newcommand{\1}{\mathbf{1}}
+\newcommand{\Sym}{\operatorname{Sym}}
+\newcommand{\Prec}{\Omega}
+\newcommand{\Pres}{\pi}
+\newcommand{\Edge}{B}
+\newcommand{\Field}{\mathcal{A}}
+\newcommand{\dcorr}{\Delta\mathrm{corr}}
+\newcommand{\cc}{\mathsf{c}}              % chart index
+\newcommand{\norm}[1]{\lVert #1 \rVert}
+\newcommand{\abs}[1]{\lvert #1 \rvert}
+\newcommand{\inner}[2]{\langle #1, #2 \rangle}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\title{\textbf{Chart-Aware Local Association Structure on the
+    $\Linf$ Atlas}\\[4pt]
+\large A model object, a bridge from conditional measures of association,\\
+and an experimental program for vaginal 16S and metagenomic data}
+\author{\small Design brief\\[2pt]
+  \footnotesize source: \nolinkurl{/Users/pgajer/current_projects/geosmooth/project_briefs/}\\[1pt]
+  \footnotesize\nolinkurl{chart_aware_local_association_design_2026-06-09.tex}}
+\date{\DTMnow}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The LPS/PS-LPS program equips every sample with a chart (a local PCA
+parametrization) over a neighbor graph, and fits the local \emph{conditional
+mean} of features and outcomes on that chart. The conditional measures of
+association developed in the \texttt{no5} manuscript (functional divergences
+$\delta^0,\delta^1$, the monotonicity coefficient, order-0 and order-1
+conditional correlations, the signature correlation, the co-change correlation,
+and correlation typing) summarize how those mean surfaces co-move. This brief
+argues that, for boundary-supported compositional data such as the vaginal
+microbiome, the biologically interesting object --- microbes interacting with
+each other and with the host immune system --- is \emph{not} captured by mean
+co-movement, and is also not addressable by interior-only models (Aitchison
+log-ratios, logistic-normal, Poisson--log-normal), because those models place
+zero probability on the boundary where the data actually live. We build the
+association layer on the $\Linf$ atlas of \cite{linf} instead, where the
+max-reference chart is zero-safe and subcompositionally coherent. The resulting
+\emph{chart-aware local association object} factorizes into two layers that the
+existing measures cannot see: a \textbf{co-occurrence layer} (a discrete
+graphical model on presence indicators, living on the face lattice of the
+$\Linf$ cube) and a \textbf{conditional-abundance layer} (a Gaussian/nonparanormal
+graphical model on max-referenced log-ratios of the present taxa). We make both
+layers precise, give weighted local estimators and a PS-LPS-style synchronized
+field estimator (Algorithms~\ref{alg:local}--\ref{alg:sync}), prove that the
+\texttt{no5} suite factors through the mean field and is therefore blind to both
+new layers (Section~\ref{sec:bridge}), and lay out a falsifiable experimental
+program (Section~\ref{sec:exp}) wired to the \texttt{gflow}/\texttt{geosmooth}
+tooling and to the France et al.\ (2020) VALENCIA 16S data ($n\approx13{,}231$)
+and the ZAPPS/PreSSMat metagenomic data ($n\approx2{,}600$).
+\end{abstract}
+
+\tableofcontents
+
+%==============================================================================
+\section{Setup, notation, and the object we want}\label{sec:setup}
+%==============================================================================
+
+\paragraph{Data.}
+We observe $n$ samples. For sample $j$, let $x_j=(x_{j0},\dots,x_{jd})\in\Rnn$ be
+a vector of nonnegative abundances over $p=d+1$ features (ASVs, genes, or
+metabolites), and let $h_j\in\R^{q}$ be host/clinical covariates (e.g.\ pH,
+Nugent score, gestational age, cytokine panel, pregnancy status, outcome
+labels). Compositional data carry information only up to scale, so a sample is a
+point of the nonnegative real projective space
+$\RPnn=\{[\,x\,] : x\in\Rnn\setminus\{0\}\}$, where $[\,x\,]$ is the ray spanned
+by $x$. Write $s_j=\1\{x_j>0\}\in\{0,1\}^{p}$ for the \emph{presence pattern}
+(applied coordinatewise) and $A_j=\supp(x_j)=\{i:x_{ji}>0\}$ for the
+\emph{active set}.
+
+\paragraph{The three-layer stack.}
+The current pipeline is a tower:
+\begin{enumerate}[label=(\roman*)]
+\item a \emph{graph} $G=(V,E)$ on samples (adaptive-radius / intersection kNN)
+  that answers ``who is my neighbor'';
+\item a \emph{chart} at each anchor (local PCA giving Euclidean coordinates) on
+  which LPS/PS-LPS fits the local conditional mean of a response or feature;
+\item an \emph{association} read-out (the \texttt{no5} measures) summarizing how
+  fitted mean surfaces co-move locally.
+\end{enumerate}
+The premise of this brief is that the omics snapshot is a projection of a deeper
+generative process --- a microbial community and a host immune system in mutual
+regulation --- so that the natural object sitting on each chart is not a single
+fitted mean but a \emph{local conditional joint law}
+$P\big(x,\,h \mid \text{chart coordinates near } x\big)$, or at least its
+dependence structure. Every \texttt{no5} measure is a scalar or matrix functional
+(a compression) of that law. The goal of Sections~\ref{sec:atlas}--\ref{sec:est}
+is to name the richer object and make it estimable; Section~\ref{sec:bridge}
+recovers the existing measures as functionals of it.
+
+\paragraph{Why interior models are the wrong substrate.}
+The closure/normalization of compositional data introduces a sign artifact in
+raw correlations, and the standard fixes assume strictly positive support.
+
+\begin{proposition}[Closure sign bias]\label{prop:closure}
+Let $P=(P_0,\dots,P_d)$ be a random composition.
+\begin{enumerate}[label=(\alph*)]
+\item If $X\sim\mathrm{Multinomial}(N,p)$ then for $i\neq k$,
+  $\Cov(X_i,X_k)=-Np_ip_k<0$ and
+  $\Corr(X_i,X_k)=-\sqrt{\tfrac{p_ip_k}{(1-p_i)(1-p_k)}}<0$.
+\item If $P\sim\mathrm{Dirichlet}(\alpha)$ with $\alpha_0=\sum_m\alpha_m$ then
+  $\Corr(P_i,P_k)=-\sqrt{\tfrac{\alpha_i\alpha_k}{(\alpha_0-\alpha_i)(\alpha_0-\alpha_k)}}<0$
+  for all $i\neq k$.
+\end{enumerate}
+Hence every pair is negatively associated by construction, and the
+Dirichlet covariance is a rank-deficient, sign-locked function of the mean: it
+cannot represent a co-occurring guild.
+\end{proposition}
+
+The interior-only repair (additive/centered log-ratio, logistic-normal, and the
+count-level Poisson--log-normal) moves the dependence into an unconstrained
+latent space where it can take either sign, but it assumes
+$x_{ji}>0$ for all $i,j$. For the human vaginal microbiome this is biologically
+false: most taxa are genuinely absent from most women (a \emph{structural}
+zero), not merely undersampled. Poisson--log-normal in particular models every
+zero as a sampling zero of a strictly positive latent intensity, fabricating a
+fully connected latent network. The presence pattern $s_j$ is itself the
+dominant signal (it is essentially what a community state type encodes), so the
+substrate must treat the boundary --- and the support --- as first-class.
+
+\paragraph{Notation summary.}
+$\chart_k$ is the $\Linf$ chart of cell $k$; $\xi=\chart_k(x)\in[0,1]^d$ its cube
+coordinate; $u_i=\log(x_i/x_{\max})\le 0$ the max-referenced log-ratio;
+$w_{\cc}(\cdot)$ kernel weights at chart $\cc$; $\Pres$ presence probabilities,
+$\Edge$ co-occurrence (Ising) edges, $\mu$ abundance mean, $\Prec$ abundance
+precision; $\Field(x)=(\Pres,\Edge,\mu,\Prec)(x)$ the local association object;
+$\Theta(x)$ the LPS conditional-mean field that the \texttt{no5} measures read.
+
+%==============================================================================
+\section{The $\Linf$ atlas as the modeling substrate}\label{sec:atlas}
+%==============================================================================
+
+We recall the $\Linf$ parametrization \cite{linf} and add the two pieces the
+association layer needs: a \emph{soft} partition of unity (so charts overlap, as
+PS-LPS requires) and the face stratification (so the support is explicit).
+
+\begin{definition}[$\Linf$ normalization and cells]\label{def:linf}
+The $\Linf$ normalization $\pi_\infty:\Rnn\setminus\{0\}\to\Dinf$,
+$\pi_\infty(x)=x/\norm{x}_\infty$ with $\norm{x}_\infty=\max_i x_i$, is the
+single-component (max) ratio transform. The $\Linf$ simplex decomposes into
+$d+1$ top cells $\Dinf=\bigcup_{k=0}^d \cell_k$, where
+$\cell_k=\{x\in\Dinf : x_k=1\}=\{x : x_k\ge x_i\ \forall i\}$ is the set of
+samples whose dominant (argmax) component is $k$. Each $\cell_k$ is homeomorphic
+to the cube $[0,1]^d$ via the chart
+\[
+  \chart_k([\,x\,]) \;=\; \Big(\tfrac{x_i}{x_k}\Big)_{i\neq k}\ \in[0,1]^d ,
+  \qquad x_k=\max_i x_i .
+\]
+\end{definition}
+
+\begin{proposition}[Zero-safety and coherence]\label{prop:safe}
+On $\cell_k$ the chart $\chart_k$ is well defined (the denominator $x_k$ is the
+maximum, hence strictly positive for $x\neq0$) and extends continuously to the
+boundary strata where other coordinates vanish; a structural zero $x_i=0$ maps
+to $\xi_i=0$, an interior point of the cube's parametrization rather than a
+singularity. Moreover $\chart_k$ is subcompositionally coherent with respect to
+deletion of non-maximal (low-abundance) components \cite{linf}: deleting
+components $i\notin\{k\}$ commutes with coordinate projection.
+\end{proposition}
+
+This is exactly the property the log-ratio charts lack: the additive log-ratio
+$\phi_0(x)=(x_i/x_0)_{i\neq0}$ blows up when the fixed reference $x_0=0$, and the
+centered log-ratio is not subcompositionally coherent (Example~3-B of
+\cite{linf}). The max reference is adaptive and never zero.
+
+\begin{construction}[Soft $\Linf$ atlas / partition of unity]\label{con:soft}
+Hard cell assignment by the argmax is unstable for near-tie samples (two taxa
+almost co-dominant), which are precisely the community-state transitions where
+dysbiosis lives. Replace the hard indicator by overlapping chart weights. For
+inverse temperature $\beta>0$ define
+\[
+  \omega_k(x)\;=\;\frac{(x_k/\norm{x}_\infty)^{\beta}}
+       {\sum_{m}(x_m/\norm{x}_\infty)^{\beta}},
+  \qquad \sum_k \omega_k(x)=1 .
+\]
+As $\beta\to\infty$, $\omega_k(x)\to\1\{k=\argmax_i x_i\}$ and we recover the
+hard $\Linf$ cells. For finite $\beta$, a sample contributes to every chart whose
+reference is near-maximal, with weight decaying in the gap to the dominant
+component. We call $\{(\cell_k,\chart_k,\omega_k)\}_{k}$ the soft $\Linf$ atlas.
+Truncation/merging of low-occupancy cells into $\Linf$-CSTs \cite{linf} is
+applied first, so $k$ ranges over the retained CSTs.
+\end{construction}
+
+\begin{definition}[Face stratification]\label{def:face}
+Within a cell, the cube $[0,1]^d$ is stratified by which coordinates are zero:
+for an active set $A\ni k$, the open face
+$F_A=\{\xi : \xi_i>0\ (i\in A\setminus k),\ \xi_i=0\ (i\notin A)\}$ collects
+samples with presence pattern $A$. The association object will be defined
+\emph{conditional on the face} $F_A$: a discrete law over which face a sample
+occupies, and, given the face, a continuous law on its interior.
+\end{definition}
+
+\begin{remark}[Local charts compose with the atlas]
+Inside a cell, the LPS chart (data-adaptive local PCA) is applied to the cube
+coordinates $\xi$, or to the present log-ratios $u=(u_i)_{i\in A\setminus k}$,
+not to raw abundances. Thus the LPS/PS-LPS machinery runs unchanged on
+$\Linf$-chart coordinates; \texttt{chart.dim} (\texttt{auto}/\texttt{local.auto})
+controls the local dimension of \emph{both} the mean model and, below, the
+abundance covariance model.
+\end{remark}
+
+%==============================================================================
+\section{The model object: a two-layer local association law}\label{sec:model}
+%==============================================================================
+
+Fix a chart (anchor) and, conditionally on the soft atlas, work in its cube /
+log-ratio coordinates. The central claim is that for boundary-supported data the
+local dependence structure \emph{factorizes} into a combinatorial support layer
+and a continuous abundance layer, and that these are biologically distinct
+objects (guild membership vs.\ within-guild interaction) that must be modeled
+separately.
+
+%------------------------------------------------------------------
+\subsection{Layer A --- co-occurrence (support) structure}\label{sec:layerA}
+%------------------------------------------------------------------
+The presence pattern $s=\1\{x>0\}$ records which face of the cube a sample
+occupies. Model it as a conditional discrete graphical model (an Ising / pairwise
+log-linear model), localized to cell $k$ and modulated by host covariates $h$.
+
+\begin{definition}[Co-occurrence layer]\label{def:layerA}
+Conditional on cell $k$ and covariates $h$, the presence vector $s\in\{0,1\}^{p}$
+follows
+\[
+  P(s\mid k,h)\;\propto\;
+  \exp\!\Big(\textstyle\sum_{i} a_i(k,h)\,s_i
+            \;+\;\sum_{i<j} \Edge_{ij}(k)\,s_i s_j\Big),
+\]
+with node potentials $a_i(k,h)=a_i^0(k)+\langle c_i(k),h\rangle$ (host covariates
+shift colonization log-odds) and edge potentials $\Edge_{ij}(k)$. The
+\emph{co-occurrence graph} of cell $k$ has an edge $\{i,j\}$ iff
+$\Edge_{ij}(k)\neq0$, equivalently $s_i\perp s_j\mid s_{\setminus\{i,j\}},h$ fails:
+two taxa are conditionally co-present (mutually attracting, $\Edge_{ij}>0$) or
+mutually exclusive ($\Edge_{ij}<0$) given the rest of the community and the host
+state.
+\end{definition}
+
+This is the layer that is structurally invisible to interior models (no zeros, so
+$s\equiv\1$) and, as Section~\ref{sec:bridge} shows, to the mean-based
+\texttt{no5} measures. For the vaginal microbiome it should encode
+\emph{Lactobacillus} mutual exclusion and the \emph{Gardnerella}--\emph{Atopobium}--%
+\emph{Sneathia}--\emph{Prevotella} anaerobe consortium.
+
+%------------------------------------------------------------------
+\subsection{Layer B --- conditional-abundance dependence}\label{sec:layerB}
+%------------------------------------------------------------------
+Conditional on the active set $A=\supp(x)\ni k$, the present taxa carry
+continuous information through the max-referenced log-ratios
+$u_i=\log(x_i/x_k)\le0$, $i\in A\setminus\{k\}$, which are zero-safe by
+conditioning (every $x_i$, $i\in A$, is strictly positive). Let
+$\mu_A(x)=\E[u\mid \text{chart at }x]$ be the local conditional mean (the LPS
+surface) and $r=u-\mu_A(x)$ the residual.
+
+\begin{definition}[Conditional-abundance layer]\label{def:layerB}
+On face $F_A$, assume a nonparanormal model: there exist monotone marginal
+transforms $g=(g_i)$ such that
+$g\big(r\big)\sim\mathcal{N}\!\big(0,\Sigma_A(x)\big)$, with precision
+$\Prec_A(x)=\Sigma_A(x)^{-1}$. The \emph{conditional-abundance graph} has an edge
+$\{i,j\}$ iff $\Prec_{A,ij}(x)\neq0$ ($u_i\perp u_j\mid u_{\setminus\{i,j\}}$
+fails), and the signed local interaction strength is the partial correlation
+\[
+  \rho_{ij}(x)\;=\;-\,\Prec_{A,ij}(x)\big/\sqrt{\Prec_{A,ii}(x)\,\Prec_{A,jj}(x)} .
+\]
+Setting $g=\mathrm{id}$ recovers a Gaussian graphical model on log-ratios (the
+$\Linf$-chart analogue of SPIEC-EASI \cite{spieceasi}, but on the boundary-safe
+max reference rather than the clr); the nonparanormal $g$ relaxes Gaussianity and
+is the natural continuation of the monotonicity-first viewpoint of \texttt{no5}.
+\end{definition}
+
+\begin{remark}[Two orthogonal kinds of association]\label{rem:two}
+Layer A is about \emph{whether} taxa appear together; Layer B is about
+\emph{how}, among those present, abundances co-fluctuate beyond what their mean
+surfaces explain. A microbe--microbe ``interaction'' in the biological sense ---
+conditional dependence given community context --- is an edge of A (colonization
+dependence) and/or of B (abundance regulation), never a property of the mean
+surfaces alone.
+\end{remark}
+
+%------------------------------------------------------------------
+\subsection{The chart-aware association field and host coupling}\label{sec:field}
+%------------------------------------------------------------------
+\begin{definition}[Local association object and field]\label{def:field}
+At location $x$ define the \emph{local association object}
+\[
+  \Field(x)\;=\;\big(\Pres(x),\,\Edge(x),\,\mu(x),\,\Prec(x)\big),
+\]
+collecting presence probabilities $\Pres_i(x)=P(s_i=1\mid x)$, co-occurrence
+edges $\Edge(x)$, abundance mean $\mu(x)$, and abundance precision $\Prec(x)$,
+all defined as soft-atlas, neighborhood-weighted quantities at $x$. The
+assignment $x\mapsto\Field(x)$ is the \emph{chart-aware association field}; it is
+piecewise-defined over the $\Linf$ atlas and glued across cell boundaries by
+Construction~\ref{con:soft}.
+\end{definition}
+
+Host/immune variables enter both layers, giving a single mixed graphical model
+over heterogeneous nodes (Bernoulli $s_i$, Gaussian $u_i$, and $h$) in the
+exponential-family MRF sense \cite{mixedmgm}. Its blocks are interpretable:
+microbe--microbe edges (within A and within B), microbe--host edges (host
+modulating presence in A, host modulating abundance coupling in B), and
+host--host edges. This is the precise object behind ``microbes and the host
+immune system interacting'': it is now a field of graphs over the community-state
+space, and an edge may appear in one $\Linf$-CST and vanish in another.
+
+%==============================================================================
+\section{Estimation and PS-LPS-style synchronization}\label{sec:est}
+%==============================================================================
+
+%------------------------------------------------------------------
+\subsection{Local weighted estimator}\label{sec:localfit}
+%------------------------------------------------------------------
+At a chart $\cc$ with anchor $x_\cc$ and cell $k(\cc)$, define neighborhood
+weights combining the soft-atlas membership and a graph kernel,
+\[
+  w_{\cc,j}\;=\;\omega_{k(\cc)}(x_j)\,
+       K\!\big(d_G(x_\cc,x_j)/h_{\mathrm{band}}\big),
+\]
+with $d_G$ the graph distance and $K$ a kernel. Layer A is fit by weighted
+$\ell_1$-penalized nodewise logistic regression (neighborhood selection
+\cite{ravikumar}); Layer B by a weighted graphical lasso \cite{glasso} on the
+LPS residuals of the present log-ratios (optionally after a nonparanormal
+marginal transform \cite{nonparanormal}).
+
+\begin{algorithm}[t]
+\caption{\textsc{LocalTwoLayerFit} --- association object at one chart}
+\label{alg:local}
+\textbf{Require:} anchor $x_\cc$, cell $k$, soft weights $\omega_k$, bandwidth
+  $h_{\mathrm{band}}$, presence threshold $\tau$, penalties $\lambda_A,\lambda_B$.
+\begin{enumerate}[label=\arabic*:,leftmargin=2.4em,topsep=2pt,itemsep=1pt]
+\item $w_{\cc,j}\gets \omega_k(x_j)\,K(d_G(x_\cc,x_j)/h_{\mathrm{band}})$ for all
+  $j$ \hfill\textit{(neighborhood weights)}
+\item \textbf{Layer A:} for each $i$, weighted $\ell_1$-logistic regression of
+  $s_{\cdot i}$ on $(s_{\cdot,\setminus i},h)$ with weights $w_{\cc,\cdot}$;
+  collect into $\widehat\Edge_\cc$, symmetrize (AND-rule); set
+  $\widehat\Pres_{\cc,i}$ to the weighted fitted presence probability at $x_\cc$.
+\item $A_\cc\gets\{i:\ \text{weighted presence fraction}\ \ge\tau\}$
+  \hfill\textit{(active set)}
+\item $u_{ji}\gets\log(x_{ji}/\max_m x_{jm})$ for $i\in A_\cc\setminus\{k\}$.
+\item $\widehat\mu_\cc\gets\textsc{fit.lps}\big(u \mid \Linf\text{-chart};
+  \texttt{chart.dim},\texttt{design.basis}\big)$;\quad
+  $r_{ji}\gets u_{ji}-\widehat\mu_{\cc,i}(x_j)$.
+\item (optional) nonparanormal transform $r\gets \widehat g(r)$.
+\item $\widehat\Prec_\cc\gets \textsc{wglasso}\big(r,\,w_{\cc,\cdot},\,
+  \lambda_B\big)$;\quad
+  $\widehat\rho_{\cc,ij}\gets -\widehat\Prec_{\cc,ij}/\sqrt{\widehat\Prec_{\cc,ii}\widehat\Prec_{\cc,jj}}$.
+\end{enumerate}
+\textbf{return} $\Field_\cc=(\widehat\Pres_\cc,\widehat\Edge_\cc,\widehat\mu_\cc,\widehat\Prec_\cc)$.
+\end{algorithm}
+
+%------------------------------------------------------------------
+\subsection{Synchronized field --- the PS-LPS analogue for second moments}
+\label{sec:sync}
+%------------------------------------------------------------------
+PS-LPS synchronizes neighboring charts' \emph{predictions} (first moments) via a
+prediction-overlap penalty. The association field admits the identical move on
+\emph{second moments} and on the support layer: tie overlapping charts'
+parameters together, and tie adjacent cells along their shared boundary faces.
+
+\begin{definition}[Synchronized field objective]\label{def:sync}
+Let $\zeta_{\cc\cc'}\ge0$ measure chart overlap (shared weighted samples, or
+$\sum_j \min(w_{\cc,j},w_{\cc',j})$). Estimate $\{\Field_\cc\}$ by minimizing
+\[
+  \sum_{\cc}\Big[\ \ell^{A}_\cc(\Edge_\cc,a_\cc)
+     +\ell^{B}_\cc(\mu_\cc,\Prec_\cc)
+     +\lambda_A\norm{\Edge_\cc}_1+\lambda_B\norm{\Prec_\cc}_1\ \Big]
+  \;+\;\gamma\!\!\sum_{\cc\sim\cc'}\!\!\zeta_{\cc\cc'}\,
+     D_{\cc\cc'}\big(\Field_\cc,\Field_{\cc'}\big),
+\]
+where $\ell^A,\ell^B$ are the weighted (pseudo-)log-likelihoods of
+Layers~A and~B, and the fusion term, restricted to coordinates shared by the two
+charts, is
+\[
+  D_{\cc\cc'}=\underbrace{\norm{\mu_\cc-\mu_{\cc'}}_2^2}_{\text{PS-LPS term}}
+  +\,\eta_A\norm{\Edge_\cc-\Edge_{\cc'}}_F^2
+  +\,\eta_B\norm{\Prec_\cc-\Prec_{\cc'}}_F^2 .
+\]
+The first term is exactly the PS-LPS prediction-overlap penalty; the other two
+are its lifts to the co-occurrence and precision layers. Across a cell boundary,
+$\cc$ and $\cc'$ are charts of different cells sharing a near-tie face, so
+$D_{\cc\cc'}$ enforces continuity of the association field through community-state
+transitions.
+\end{definition}
+
+\begin{algorithm}[t]
+\caption{\textsc{SynchronizedField} --- fused estimation over the atlas}
+\label{alg:sync}
+\textbf{Require:} charts $\{\cc\}$, overlaps $\zeta$, penalties
+  $\lambda_A,\lambda_B,\gamma,\eta_A,\eta_B$.
+\begin{enumerate}[label=\arabic*:,leftmargin=2.4em,topsep=2pt,itemsep=1pt]
+\item warm start: $\Field_\cc\gets\textsc{LocalTwoLayerFit}(\cc)$ for all $\cc$
+  (Algorithm~\ref{alg:local}), in parallel.
+\item \textbf{repeat} \textit{(block coordinate / ADMM)}, for each chart $\cc$:
+  \begin{enumerate}[label=(\alph*),leftmargin=1.9em,topsep=1pt,itemsep=1pt]
+  \item update $(\mu_\cc,\Prec_\cc)$: weighted graphical-lasso step with a
+    proximal pull toward $\sum_{\cc'}\zeta_{\cc\cc'}(\mu_{\cc'},\Prec_{\cc'})$;
+  \item update $(\Edge_\cc,a_\cc)$: weighted nodewise-logistic step with a
+    proximal pull toward $\sum_{\cc'}\zeta_{\cc\cc'}\Edge_{\cc'}$;
+  \end{enumerate}
+  \textbf{until} the change in $\{\Field_\cc\}$ is below tolerance.
+\end{enumerate}
+\textbf{return} synchronized field $\{\Field_\cc\}$.
+\end{algorithm}
+
+%------------------------------------------------------------------
+\subsection{Uncertainty, identifiability, and cost}\label{sec:uq}
+%------------------------------------------------------------------
+\emph{Uncertainty.} Reuse the \texttt{no5} Bayesian-bootstrap + permutation
+machinery: resample Dirichlet sample weights to obtain posterior draws of each
+edge ($\Edge_{ij}$, $\rho_{ij}$) and of the presence probabilities, and permute
+host labels for null distributions; report edges by posterior sign-stability and
+by the Wasserstein significance measure already used for $\delta^1$. Stability
+selection \cite{stabsel} over subsamples gives per-edge selection frequencies.
+
+\emph{Identifiability and cost.} A full $p\times p$ precision per chart is
+infeasible, but is never required: Layer~B lives on the active set $A_\cc$, which
+is small (typical vaginal communities have a handful of co-present dominant taxa),
+so $\Prec_\cc$ is low-dimensional; the fusion term borrows strength across charts;
+and \texttt{chart.dim} bounds the working dimension. Layer~A is $p$-dimensional
+but sparse and is fit by $p$ independent weighted logistic regressions
+(embarrassingly parallel). The main statistical risk is rare-taxon edges in
+Layer~A (few presence events): regularize hard and report selection frequency
+rather than point edges.
+
+%==============================================================================
+\section{The bridge: \texttt{no5} measures as read-outs of the field}\label{sec:bridge}
+%==============================================================================
+
+We now make precise the claim that the existing conditional measures of
+association are a (lossy) compression of $\Field$. Let
+$\Theta(x)=\big(\Theta_i(x)\big)_i$ be the \emph{mean field}: the vector of fitted
+conditional expectations $\Theta_i(x)=\widehat\E[\,\cdot_i\mid X=x]$ (the LPS
+surfaces $\widehat y_G,\widehat z_G$). Note $\Theta$ is exactly the $\mu$-block of
+$\Field$; the support law $\Pres,\Edge$ and the residual precision $\Prec$ are the
+remaining blocks.
+
+\begin{proposition}[The \texttt{no5} suite factors through the mean field]
+\label{prop:factor}
+Each of the functional divergences $\delta^0,\delta^1$, the monotonicity
+coefficient $\mono$, the order-0 and order-1 conditional correlations
+$\mathrm{corr}^0_X,\mathrm{corr}^1_X$, the signature correlation
+$\mathrm{corr}^1_{\mathrm{sign}}$, the co-change correlation $\dcorr$, and the
+correlation-typing map is a functional of $\Theta$ and $\nabla\Theta$ alone.
+Consequently, if two association fields $\Field,\Field'$ share the same mean field
+$\Theta$ but differ in $(\Pres,\Edge,\Prec)$, every measure in the suite returns
+identical values.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+By inspection of the \texttt{no5} definitions: $\delta^k(Y\|Z)$ and
+$\Delta^k(Y\|Z)$ integrate $|d^kE(Y|Z)/dZ^k|$, functionals of a single mean
+surface; $\mono$ is their ratio. $\mathrm{corr}^0_X(Y,Z)$ correlates the
+standardized conditional means $E(Y|X),E(Z|X)$; $\mathrm{corr}^1_X$ takes the
+cosine of $\nabla E(Y|X),\nabla E(Z|X)$; the signature correlation reads the sign
+pattern of those gradients; $\dcorr$ averages $\sign$ of products of increments of
+$\widehat y_G,\widehat z_G$. All reference only $\Theta=\widehat E(\cdot|X)$ and
+its gradient/differences; none references the residual covariance $\Sigma$ (hence
+$\Prec$) or the presence law (hence $\Pres,\Edge$). The claim follows. \end{proof}
+
+\begin{proposition}[Co-change is sign-concordance of the mean field]\label{prop:cochange}
+For fitted means,
+\[
+  \dcorr_G(\widehat y_G,\widehat z_G\mid x)=\frac{1}{|U_x|}
+  \sum_{x'\in U_x}\sign\!\big[(\Theta_y(x')-\Theta_y(x))
+                                (\Theta_z(x')-\Theta_z(x))\big],
+\]
+which depends on $\Theta$ only through the \emph{signs} of its local increments;
+it is invariant to any strictly monotone reparametrization of $\Theta$ and to
+$(\Pres,\Edge,\Prec)$. In the chain-graph (1D) limit it equals
+$\sign(\dot\Theta_y\dot\Theta_z)$, the order-1 conditional correlation. Thus
+co-change is a discrete sign-concordance --- a coarsened Kendall functional --- of
+the mean field.
+\end{proposition}
+
+\begin{remark}[What the suite cannot see, made operational]\label{rem:blind}
+Proposition~\ref{prop:factor} says the two new layers live in the kernel of the
+\texttt{no5} suite. Two falsifiable contrasts isolate them:
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Co-occurrence invisibility.} Two taxa that are mutually exclusive
+  (never co-present) have a strong negative Layer-A edge $\Edge_{ij}\ll0$, yet
+  their co-change is undefined/ vanishing because they are rarely simultaneously
+  present to difference. Layer A detects them; the suite does not.
+\item \emph{Residual-interaction invisibility.} Two taxa whose mean surfaces are
+  parallel ($\nabla\Theta_i\parallel\nabla\Theta_j$, so
+  $\mathrm{corr}^1\approx1$, co-change $\approx1$) but whose residual log-ratios
+  are conditionally independent have $\Prec_{ij}=0$: strong mean coupling, no
+  interaction. The suite reports near-perfect association; Layer B reports none.
+\end{enumerate}
+These power Experiment~\ref{exp:bridge}.
+\end{remark}
+
+\paragraph{Signature correlation, precisely.}
+The \texttt{no5} signature correlation classifies the mean-gradient vector
+$\nabla\Theta$ by which face of the $L_1$ sphere it occupies --- it is the
+combinatorial type of the \emph{mean} coupling. Its natural companion at Layer~B
+is the sign-and-support pattern of $\Prec(x)$ (the partial-correlation graph),
+and at Layer~A the sign pattern of $\Edge(x)$ (attraction vs.\ exclusion). The
+existing construction supplies the first; the model object adds the other two,
+giving a full combinatorial fingerprint
+$\big(\sign\nabla\Theta,\ \sign\Edge,\ \sign\Prec\big)(x)$ at each location.
+
+\paragraph{Correlation typing, upgraded.}
+The \texttt{no5} typing map $x\mapsto[\mathrm{corr}^{0/1}(z_i,z_j\mid x)]_{ij}
+\in\Sym^{p}(\R)$ is, by Proposition~\ref{prop:factor}, a $\Theta$-level matrix
+field. Replace it by the \emph{augmented typing}
+\[
+  \mathcal{T}(x)\;=\;\big(\Edge(x),\,\Prec(x)\big)\ \in\
+  \{\text{signed graphs}\}\times\Sym^{|A|}(\R),
+\]
+optionally with the $\Theta$ block retained. Because the original typing is a
+function of the mean block alone, $\mathcal{T}$ strictly refines it; clustering
+the image $\mathcal{T}(G)$ yields metabo-types / CST-subtypes defined by
+\emph{co-occurrence and residual interaction}, not merely by mean co-movement,
+and these can then be tested against clinical outcomes exactly as in \texttt{no5}.
+
+\paragraph{Repurposing the existing primitives.}
+Crucially, the same \texttt{gflow} backends estimate the new layers if fed the
+right inputs: the symmetric edge-difference engine behind \texttt{lcor} computes
+Layer-B quantities when applied to residual log-ratios $r$ (Algorithm~\ref{alg:local},
+line~7) instead of fitted means, and \texttt{pearson.wcor} is the weighted inner
+product engine for the precision step.
+
+\begin{table}[t]\centering\small
+\caption{Existing \texttt{gflow}/\texttt{no5} constructs as functionals of the
+association field, the layer they see, and how they are repurposed for the model
+object. $\Theta$: mean field; $\nabla\Theta$: mean gradient; $\Prec$: abundance
+precision (Layer~B); $\Edge,\Pres$: co-occurrence (Layer~A).}
+\label{tab:bridge}
+\begin{tabular}{@{}lll l@{}}
+\toprule
+Construct & Functional computed & Layer seen & Repurposing \\
+\midrule
+$\delta^0,\delta^1,\mono$ & shape/monotonicity of $\Theta_i$ & $\Theta$ &
+  per-feature mean diagnostics \\
+$\mathrm{corr}^0_X$ & corr of conditional means & $\Theta$ & mean-coupling block \\
+$\mathrm{corr}^1_X$ & cosine of $\nabla\Theta_i,\nabla\Theta_j$ & $\nabla\Theta$ &
+  mean-coupling block \\
+$\mathrm{corr}^1_{\mathrm{sign}}$ & $L_1$-face of $\nabla\Theta$ & $\sign\nabla\Theta$ &
+  one third of the fingerprint \\
+$\dcorr$ (\texttt{lcor} \texttt{sign}) & sign-concordance of increments &
+  $\sign\nabla\Theta$ & feed residuals $\to$ Layer~B sign graph \\
+\texttt{lcor} (\texttt{derivative}) & edge-difference correlation & $\Theta$/$\nabla\Theta$ &
+  on residuals $r$ $\Rightarrow$ $\widehat\rho_{ij}$ \\
+\texttt{lslope}, \texttt{lslope.neighborhood} & asymmetric $\nabla\Theta$ slope &
+  $\nabla\Theta$ & directed mean coupling \\
+\texttt{gfcor}, \texttt{gfassoc.*} & basin-level association & $\Theta$ over basins &
+  cell-level summaries of $\Field$ \\
+\texttt{pearson.wcor} & weighted correlation & --- & inner-product engine for $\Prec$ \\
+\texttt{lcor.with.posterior}, \texttt{permutation.test.lcor} & BB / null &
+  --- & uncertainty for $\Edge,\rho$ \\
+correlation typing & $x\mapsto[\mathrm{corr}]_{ij}$ & $\Theta$ &
+  augment to $\mathcal{T}=(\Edge,\Prec)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Experimental program}\label{sec:exp}
+%==============================================================================
+
+Each experiment targets one piece of the structure above and is stated with a
+\emph{falsification criterion}: a concrete result that would kill or seriously
+wound the corresponding claim. Two datasets are used: the combined vaginal 16S
+rRNA data of France et al.\ (2020) \cite{france2020} ($n\approx13{,}231$ samples,
+$199$ taxa, VALENCIA CST labels available) and the ZAPPS/PreSSMat metagenomic
+data ($n\approx2{,}600$, VIRGO~2 gene catalog). Tooling is named explicitly:
+\texttt{geosmooth::fit.lps}/\texttt{fit.ps.lps}; \texttt{gflow::lcor},
+\texttt{lslope}, \texttt{lslope.neighborhood}, \texttt{gfcor},
+\texttt{pearson.wcor}, \texttt{permutation.test.lcor}, \texttt{lcor.with.posterior};
+graph construction via \texttt{dgraphs}; and, for the new layers, the standard
+\texttt{glasso}/\texttt{huge}/\texttt{JGL} estimators plus \texttt{SpiecEasi} and
+\texttt{SparCC} as interior-model baselines.
+
+%------------------------------------------------------------------
+\subsection{E1 --- the atlas substrate}
+%------------------------------------------------------------------
+\begin{experiment}[$\Linf$ decomposition vs.\ VALENCIA CSTs]\label{exp:atlas}
+\textbf{Claim.} The $\Linf$ atlas is a zero-safe, sample-independent substrate
+whose cells reproduce the established CST structure (the premise of
+Sections~\ref{sec:atlas}).\\
+\textbf{Procedure.} Compute $\Linf$-cell assignment $k(j)=\argmax_i x_{ji}$ for
+all $13{,}231$ samples; build the $n_0{=}50$ truncated decomposition
+($\Linf$-CSTs); cross-tabulate against VALENCIA CST/sub-CST labels; report
+adjusted Rand index and the cell$\times$CST contingency table. Sweep $n_0$ and
+the sub-cube refinement depth; record cell occupancy (expect $\approx$13 cells
+covering $\ge96\%$ of samples, top two $\approx60\%$).\\
+\textbf{Expected.} High concordance (\emph{L.\ iners}$\to$III,
+\emph{L.\ crispatus}$\to$I, \emph{Gardnerella}/\emph{Atopobium}/\emph{Sneathia}$\to$IV-B,
+BVAB1$\to$IV-A, \emph{L.\ jensenii}$\to$V), matching Tables in \cite{linf}.\\
+\textbf{Falsification.} If $\Linf$-CSTs do not align with VALENCIA (ARI low) or
+occupancy is not concentrated, the atlas is not a faithful substrate and the
+stratification must be rethought before building layers on it.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E2 --- the co-occurrence layer}
+%------------------------------------------------------------------
+\begin{experiment}[Layer A recovers guilds; closure correlation does not]\label{exp:layerA}
+\textbf{Claim.} Definition~\ref{def:layerA} captures co-presence structure
+invisible to closure-biased correlation and to mean-based measures.\\
+\textbf{Procedure.} Within each major $\Linf$-CST, fit Layer~A by weighted
+nodewise $\ell_1$-logistic regression of presence indicators $s$
+(neighborhood-selected Ising), with stability selection over $200$ subsamples.
+Compare the resulting signed co-occurrence graph to (i) the empirical Pearson
+correlation of closed relative abundances and (ii) Layer~A without covariates.\\
+\textbf{Expected.} Positive edges within the anaerobe consortium
+(\emph{Gardnerella}--\emph{Atopobium}--\emph{Sneathia}--\emph{Prevotella}) and
+negative edges between \emph{Lactobacillus} spp.\ and anaerobes; the closure
+correlation (Proposition~\ref{prop:closure}) shows the spurious all-negative
+pattern, missing positive guild structure.\\
+\textbf{Falsification.} If Layer~A edges are unstable (selection frequency near
+chance) or coincide with the closure-correlation sign pattern everywhere, the
+co-occurrence layer adds nothing beyond the artifact.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E3 --- the conditional-abundance layer}
+%------------------------------------------------------------------
+\begin{experiment}[Max-reference precision vs.\ pseudocount log-ratio]\label{exp:layerB}
+\textbf{Claim.} Layer~B on the boundary-safe max reference avoids the
+pseudocount distortion that interior log-ratio methods incur near the boundary.\\
+\textbf{Procedure.} Within \emph{L.\ crispatus} and \emph{L.\ iners}
+$\Linf$-CSTs, estimate $\Prec$ on residual max-referenced log-ratios
+(Algorithm~\ref{alg:local}: \texttt{fit.lps} residuals $\to$ weighted
+\texttt{glasso}); compare partial-correlation networks to clr$+$pseudocount
+\texttt{glasso} / \texttt{SpiecEasi} and to \texttt{SparCC}. Sweep the pseudocount
+$\epsilon\in\{10^{-6},\dots,1\}$ and quantify edge turnover (the sensitivity
+analysis \cite{linf} flags as routinely neglected). Use \texttt{pearson.wcor} for
+the weighted second moments and \texttt{lcor.with.posterior} for edge BB
+intervals.\\
+\textbf{Expected.} Max-reference networks stable; clr$+$pseudocount networks
+swing materially with $\epsilon$, especially for taxa with many structural zeros.\\
+\textbf{Falsification.} If max-reference and clr networks agree and neither
+depends on $\epsilon$, the boundary problem is empirically negligible for these
+data and the interior repair suffices.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E4 --- boundary reorganization and dysbiosis}
+%------------------------------------------------------------------
+\begin{experiment}[The field reorganizes across CST transitions]\label{exp:boundary}
+\textbf{Claim.} The association field changes across $\Linf$-cell boundaries, and
+those boundaries are the dysbiosis transitions (Construction~\ref{con:soft}).\\
+\textbf{Procedure.} Identify near-tie samples
+($x_{(1)}/x_{(2)}<1+\epsilon$) on the \emph{L.\ crispatus}$\leftrightarrow$%
+\emph{Gardnerella} interface; estimate $\Field$ on each side and along the soft
+overlap; track edge appearance/disappearance and partial-correlation sign flips
+as a function of the dominance gap. Overlay a clinical outcome (Nugent/Amsel BV,
+or sPTB where available) and run the \texttt{no5} gradient-flow / \texttt{gfcor}
+machinery on the outcome to confirm flow concentrates at the interface.\\
+\textbf{Expected.} Distinct interaction graphs on the \emph{Lactobacillus} vs.\
+anaerobe sides, with reorganization (not mere rescaling) through the transition,
+co-located with elevated BV risk.\\
+\textbf{Falsification.} If $\Field$ is constant across the boundary, the
+``field of graphs'' framing is unnecessary --- a single global network would do.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E5 --- synchronization}
+%------------------------------------------------------------------
+\begin{experiment}[Fused field vs.\ independent per-chart fits]\label{exp:sync}
+\textbf{Claim.} PS-LPS-style synchronization (Algorithm~\ref{alg:sync}) improves
+the association layer as prediction synchronization improved the mean.\\
+\textbf{Procedure.} Compare independent \textsc{LocalTwoLayerFit} against the
+fused estimator on held-out log-likelihood (Layer~B), edge selection stability
+(Layer~A), and parameter-field smoothness; sweep $\gamma,\eta_A,\eta_B$. Mirror
+the PS-LPS screened-vs-full-grid protocol and the failure/telemetry accounting
+used in \texttt{geosmooth} runs.\\
+\textbf{Expected.} Fusion lowers held-out deviance and raises edge stability in
+low-occupancy charts, with the largest gains near boundaries.\\
+\textbf{Falsification.} If fusion never beats independent fits on held-out
+likelihood, second-moment synchronization is not justified (even if first-moment
+PS-LPS was).
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E6 --- the bridge, falsified directly}
+%------------------------------------------------------------------
+\begin{experiment}[The suite is blind to Layers A and B]\label{exp:bridge}
+\textbf{Claim.} Propositions~\ref{prop:factor}--\ref{prop:cochange}: the
+\texttt{no5} measures factor through $\Theta$ and miss $(\Pres,\Edge,\Prec)$.\\
+\textbf{Procedure.} (a) Mutual-exclusion contrast: pick taxa pairs with strong
+Layer-A negative edges (E2) and show their \texttt{lcor}/\texttt{lslope}
+co-change is null/undefined. (b) Parallel-mean contrast: pick pairs with
+$\mathrm{corr}^1\approx1$ (\texttt{lcor} \texttt{type="derivative"}) and show
+$\widehat\rho_{ij}\approx0$ after residualization. (c) Typing comparison: cluster
+the image of the $\Theta$-level typing vs.\ the augmented $\mathcal{T}=(\Edge,\Prec)$
+typing; compare cluster--CST and cluster--outcome association.\\
+\textbf{Expected.} Clear cases where the suite and the layers disagree; augmented
+typing associates more strongly with CST/outcome.\\
+\textbf{Falsification.} If no such pairs exist and augmented typing never beats
+$\Theta$-typing, the new layers carry no independent signal in these data.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E7 --- host/immune coupling}
+%------------------------------------------------------------------
+\begin{experiment}[Covariate-modulated presence and abundance]\label{exp:host}
+\textbf{Claim.} Host variables enter both layers (Section~\ref{sec:field}).\\
+\textbf{Procedure.} With available metadata (pH, Nugent, gestational age,
+pregnancy, and cytokines where measured), add $h$ to Layer~A node potentials and
+Layer~B means; test covariate-modulated colonization (does low pH / pregnancy
+shift anaerobe presence odds?) and covariate-modulated abundance coupling (does
+the \emph{Gardnerella}--\emph{Atopobium} partial correlation depend on host
+state?), with permutation nulls via \texttt{permutation.test.lcor}-style label
+shuffles.\\
+\textbf{Expected.} Significant microbe--host edges concentrated in the IV-B/IV-A
+$\Linf$-CSTs.\\
+\textbf{Falsification.} If host covariates never shift presence odds or coupling,
+the mixed-graph coupling is unsupported and microbe/host layers separate.
+\end{experiment}
+
+%------------------------------------------------------------------
+\subsection{E8 --- metagenomic transfer and cross-modal typing}
+%------------------------------------------------------------------
+\begin{experiment}[Gene-level atlas and 16S$\leftrightarrow$metagenome typing]\label{exp:mg}
+\textbf{Claim.} The construction transfers to gene-level metagenomics and
+supports cross-modal correlation typing (the $X_{\mathrm{TX}}/X_{\mathrm{MB}}$
+idea of \texttt{no5}).\\
+\textbf{Procedure.} Repeat E1--E3 on the $n\approx2{,}600$ VIRGO~2 data; test
+whether gene-level $\Linf$-cells (e.g.\ \emph{Limosilactobacillus oris},
+\emph{L.\ crispatus} genes) refine the 16S strata; compute the augmented typing
+$\mathcal{T}$ of metagenomic interactions conditional on the 16S $\Linf$-CST and
+vice versa, and cluster into metabo-/geno-types.\\
+\textbf{Expected.} Coherent gene-level cells nested within taxonomic CSTs;
+cross-modal types that stratify outcome.\\
+\textbf{Falsification.} If gene-level cells are incoherent or cross-modal typing
+yields no stable clusters, the multi-omics extension does not hold at this depth.
+\end{experiment}
+
+%==============================================================================
+\section{Practical notes, difficulties, and first sprint}\label{sec:notes}
+%==============================================================================
+
+\paragraph{Within-cell support heterogeneity.} A shared dominant taxon does not
+imply a shared present-set; samples in one $\Linf$-CST still occupy many faces.
+Layer~A carries this heterogeneity, so it needs adequate per-cell sample size;
+this is the main reason to run the truncated decomposition first and to fuse
+across charts (Algorithm~\ref{alg:sync}).
+
+\paragraph{Near-tie instability and the bandwidth $\beta$.} Hard argmax
+assignment is unstable when $x_{(1)}\approx x_{(2)}$. The soft atlas
+(Construction~\ref{con:soft}) regularizes this, but $\beta$ is a genuine tuning
+parameter: too large reproduces hard-cell instability, too small over-smooths
+across biologically distinct CSTs. Select $\beta$ by held-out association-layer
+likelihood (it is the analogue of the LPS bandwidth).
+
+\paragraph{Parameter counts.} Layer~B is only as large as the active face, which
+is small; Layer~A is $p$-wide but sparse and parallelizable. The binding
+constraint is rare-taxon presence events in Layer~A --- regularize hard, lean on
+stability selection, and never report a Layer-A edge supported by a handful of
+co-presences.
+
+\paragraph{Zero handling is the whole point.} Validate that the pipeline never
+introduces a pseudocount in the max-reference path (Layer~B conditions on
+presence, so its log-ratios are finite by construction). E3 is partly a guard
+against accidentally reintroducing the interior assumption.
+
+\paragraph{Gaussian vs.\ nonparanormal.} Start Gaussian (plain \texttt{glasso} on
+residual log-ratios) for speed; switch to the nonparanormal transform if marginal
+residuals are visibly non-Gaussian. The nonparanormal also keeps the layer
+continuous with the monotonicity-first philosophy of \texttt{no5}.
+
+\begin{table}[h]\centering\small
+\caption{Claim $\to$ experiment $\to$ kill criterion.}
+\label{tab:falsify}
+\begin{tabular}{@{}p{5.4cm} c p{6.0cm}@{}}
+\toprule
+Claim & Exp. & Kills it if \dots \\
+\midrule
+$\Linf$ atlas is a faithful, zero-safe substrate & \ref{exp:atlas} &
+  $\Linf$-CSTs do not track VALENCIA; occupancy not concentrated \\
+Co-occurrence layer carries real guild signal & \ref{exp:layerA} &
+  edges unstable or identical to closure-artifact signs \\
+Boundary-safe precision $\neq$ pseudocount precision & \ref{exp:layerB} &
+  networks agree and are $\epsilon$-insensitive \\
+Field reorganizes across CST transitions & \ref{exp:boundary} &
+  $\Field$ constant across the boundary \\
+Second-moment synchronization helps & \ref{exp:sync} &
+  fusion never beats independent fits out-of-sample \\
+\texttt{no5} suite is blind to A and B & \ref{exp:bridge} &
+  no disagreeing pairs; augmented typing no better \\
+Host enters both layers & \ref{exp:host} &
+  covariates never shift presence odds or coupling \\
+Construction transfers to metagenomics & \ref{exp:mg} &
+  gene cells incoherent; no stable cross-modal types \\
+Soft-face / effective-dimension beats hard support & \ref{exp:softface} &
+  refined strata never beat exact-zero faces out-of-sample; $\xi$-vs-$u$ and
+  $\ell_1$-vs-$\ell_2$ diagnostics flat on synthetic truth \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Minimal first sprint.} The core thesis can be validated or killed with
+three runs on the 16S data, in order:
+\begin{enumerate}[label=\textbf{S\arabic*.}]
+\item \textbf{E1} --- confirm the substrate (cheap; mostly reuses the $\Linf$
+  decomposition and VALENCIA labels). If E1 fails, stop.
+\item \textbf{E2 + E6(a)} --- fit Layer~A in the two largest $\Linf$-CSTs and show
+  a concrete mutual-exclusion edge that \texttt{lcor}/co-change cannot see. This is
+  the cheapest decisive test of the central ``compression'' claim.
+\item \textbf{E3} --- fit Layer~B with the max reference and run the pseudocount
+  sensitivity sweep against \texttt{SpiecEasi}. This is the cleanest test that the
+  boundary geometry matters in practice.
+\end{enumerate}
+If S1--S3 land, proceed to synchronization (E5), boundaries/outcome (E4), host
+coupling (E7), and the metagenomic transfer (E8).
+
+%==============================================================================
+\section{Addendum: refining the face stratification with local intrinsic
+  dimension}\label{sec:addendum}
+%==============================================================================
+
+The face stratification of Definition~\ref{def:face} partitions each cell by
+\emph{which coordinates are exactly zero}: the face $F_A$ collects samples whose
+active set is $A=\supp(x)$, and it has nominal dimension $\abs{A}-1$. This is a
+\emph{combinatorial} stratification --- read directly off the presence pattern
+$s=\1\{x>0\}$ --- and it is the scaffold on which both layers sit. This addendum
+argues that the combinatorial face is only an \emph{upper bound} on the geometry
+the model should actually use; that the gap is exactly what local-PCA dimension
+estimation (\texttt{chart.dim}, in \texttt{auto}/\texttt{local.auto} mode) is
+built to find; and that closing the gap repairs three things the main text leaves
+slightly open --- the working dimension of Layer~B, the (currently unsoftened)
+presence threshold, and the choice of fusion penalty for the support layer.
+
+\paragraph{In plain terms.}
+The face tells you \emph{which} microbes are present in a sample. But ``present''
+is not the same as ``doing something.'' A taxon can be present yet pinned just
+above the detection limit, never really moving; and a handful of present taxa can
+move so tightly together that they trace out a curve rather than fill a region.
+So the count of present microbes (the face dimension) can badly overstate the
+number of \emph{independent directions the community actually explores} near a
+sample. That smaller number is the local intrinsic dimension, and it is what the
+charts and the covariance model should be built on.
+
+\subsection{Two notions of dimension, currently conflated}
+\label{sec:twodim}
+
+The remark after Definition~\ref{def:face} and the identifiability note of
+Section~\ref{sec:uq} let the active-set size $\abs{A}-1$ (equivalently
+\texttt{chart.dim}) set the working dimension of Layer~B: ``$\Prec_\cc$ is
+low-dimensional \dots\ \texttt{chart.dim} bounds the working dimension.'' But
+$\abs{A}-1$ is the \emph{combinatorial cap}; the \emph{statistical effective
+dimension} $k\le\abs{A}-1$, the number of directions in which the present taxa
+actually co-vary, is generally smaller. When $k<\abs{A}-1$, the
+$(\abs{A}-1)\times(\abs{A}-1)$ precision $\Prec_A$ is near-singular with
+$\abs{A}-1-k$ collapsed directions, and the weighted graphical lasso is being
+asked to estimate a model larger than the data support. The local-PCA dimension
+is precisely the \emph{effective rank} of that covariance.
+
+\begin{definition}[Effective local dimension and refined stratum]\label{def:effdim}
+Fix a chart $\cc$ with anchor $x_\cc$ in cell $k$ and active set $A=\supp(x_\cc)$.
+Let $\Sigma_\cc(h)$ be the soft-atlas, neighborhood-weighted covariance of the
+\emph{cube} coordinates $\xi_{A}=(\xi_i)_{i\in A\setminus k}$ at bandwidth $h$,
+with eigenvalues $\lambda_1\ge\cdots\ge\lambda_{\abs{A}-1}\ge0$. The
+\emph{effective local dimension} $k_\cc(h)$ is the complexity-penalized minimizer
+of the local reconstruction cost
+\[
+  c_\cc(r;h)\;=\;\sum_{m>r}\lambda_m(h)\;+\;\mathrm{pen}(r),
+  \qquad 1\le r\le \abs{A}-1,
+\]
+(equivalently, the rank before a scale-relative spectral gap). The \emph{refined
+stratum} at $x_\cc$ is the pair $(A,\,k_\cc)$: the combinatorial face $A$ gives
+the ambient (boundary) dimension, $k_\cc$ the dimension the community actually
+fills, $1\le k_\cc\le\abs{A}-1$.
+\end{definition}
+
+Consequence for Layer~B: estimate $\Prec$ on the $k_\cc$ retained directions (or
+ridge the $\abs{A}-1-k_\cc$ collapsed ones explicitly), rather than on the full
+active set. This is the principled answer to the ``parameter counts'' difficulty
+of Section~\ref{sec:notes}: the binding dimension is $k_\cc$, not $\abs{A}-1$.
+
+\paragraph{In plain terms.}
+Imagine three present taxa whose relative abundances always satisfy one fixed
+trade-off (when one rises another falls in lockstep). There are three taxa, but
+only \emph{two} of them move freely --- the third is determined. Fitting a full
+three-way interaction model invents structure that is not there. The effective
+dimension counts the freely-moving directions, and the covariance model should
+use that count.
+
+\subsection{The soft face: local dimension as the boundary analogue of $\beta$}
+\label{sec:softface}
+
+Construction~\ref{con:soft} carefully \emph{softens} the dominant-taxon (cell)
+assignment with the temperature $\beta$, precisely because a hard argmax is
+unstable at the near-ties ``where dysbiosis lives.'' But the \emph{face}
+assignment $A=\{i:x_i>0\}$ is a hard threshold on the minor coordinates --- and
+it is left unsoftened. With real 16S detection limits, ``$x_i>0$'' (one read
+versus zero) is noise, so the face boundary carries exactly the near-tie
+instability the design diagnosed for cells, now at the presence/absence edge. The
+fix is symmetric to $\beta$: a scale-aware effective active set.
+
+\begin{definition}[Soft face at scale $h$]\label{def:softface}
+Replace the hard active set by the \emph{effective active set}
+$A_h(x)=\{\,i:\bar\xi_i(x)>\tau_h\,\}\cup\{k\}$, where $\bar\xi_i$ is the
+neighborhood-weighted cube coordinate and $\tau_h$ a scale-coupled threshold: a
+taxon counts toward the face only if it is present \emph{and} sits above the
+resolution $h$. As $h\to0$, $A_h\to\supp(x)$ (the hard face); for finite $h$,
+taxa pinned within $\tau_h$ of the boundary are folded into the lower stratum.
+Select $\tau_h$ (equivalently the soft-face scale), as $\beta$ is selected, by
+held-out association-layer likelihood.
+\end{definition}
+
+Two reductions are now distinguished. The \emph{soft face} (Def.~\ref{def:softface})
+drops near-zero taxa --- an \emph{axis-aligned} reduction toward a lower simplex
+face, where the thin direction is a \emph{named} coordinate. The \emph{effective
+dimension} (Def.~\ref{def:effdim}) additionally drops collapsed \emph{oblique}
+directions among the retained taxa (the trade-off above), which are not aligned
+with any face. The axis-aligned case is the easier one, and the simplex helps:
+because you know \emph{which} coordinate is heading to zero, you can run a
+\emph{directed} variance-collapse test on that one coordinate, far more powerful
+than estimating the whole spectrum from a small neighborhood.
+
+\paragraph{In plain terms.}
+$\beta$ answers ``which taxon is in charge here?'' softly, so that a sample near a
+50/50 tie contributes to both charts. The soft face answers ``which taxa really
+count here?'' softly, so that a taxon barely above zero is not forced to be a full
+extra dimension. Both replace a brittle hard switch with a smooth, tunable one;
+the design built the first and skipped the second.
+
+\subsection{There is no single ``true'' dimension: tie the scale to the bandwidth}
+\label{sec:scale}
+
+Effective dimension is inherently \emph{scale-dependent}. Points sampled from a
+thin tube of radius $\rho$ around a $k$-dimensional sub-face read as
+$k$-dimensional at any resolution coarser than $\rho$ (the thin directions sit
+below the floor) and as $\abs{A}-1$-dimensional at resolutions finer than $\rho$.
+There is no scale-free answer; there is a dimension-versus-scale profile. The
+clean resolution for this program: \textbf{set the dimension scale equal to the
+LPS/association bandwidth $h_{\mathrm{band}}$}, because the chart only needs to be
+faithful at the scale the local model actually uses. Estimate $c_\cc(r;h)$ across
+a small band of scales and trust a dimension that is \emph{persistent} across
+scales; a dimension that drops only at large $h$ is a coarse-graining artifact,
+not structure. (This is the local, supervised-by-bandwidth analogue of
+multi-scale intrinsic-dimension and singularity detection;
+cf.~\cite{levinabickel,stratlearn}.)
+
+\paragraph{In plain terms.}
+Zoom out and a thin ribbon looks like a line; zoom in and you see it has width.
+Asking ``what dimension is it?'' has no answer until you say how closely you are
+looking. So look at exactly the scale the smoother smooths at, and only believe a
+dimension that survives across a range of zoom levels.
+
+\subsection{The coordinate trap: estimate dimension in $\xi$, model dependence in
+  $u$}\label{sec:trap}
+
+Layer~B lives in the max-referenced log-ratios $u_i=\log(x_i/x_k)\le0$. As a
+taxon heads toward a face, $x_i\to0$ and $u_i\to-\infty$ \emph{with growing
+variance}: in Layer~B's own coordinate a taxon approaching the boundary is a
+\emph{large}-variance direction --- the exact opposite of the thin, collapsing
+direction it is geometrically. Estimating effective dimension by PCA on the $u$'s
+would therefore \emph{inflate} the dimension near faces and hide the very
+concentration we want to detect. The cube coordinate $\xi_i=x_i/x_k\in[0,1]$ of
+Definition~\ref{def:linf} behaves correctly: $x_i\to0\Rightarrow\xi_i\to0$, a
+bounded variance collapse. The design already carries \emph{both} coordinates,
+so the rule is clean and free.
+
+\begin{remark}[Estimate where the boundary is thin; model where dependence is
+  unbounded]\label{rem:trap}
+Detect the effective dimension and the soft face in the cube coordinate $\xi$
+(boundary $=$ variance collapse); estimate the Layer~B precision $\Prec$ in the
+log-ratio coordinate $u$ (boundary $=$ unbounded dependence, where the Gaussian /
+nonparanormal graphical model is appropriate). Doing dimension estimation in $u$
+inverts the sign of the effect.
+\end{remark}
+
+\paragraph{In plain terms.}
+The log scale stretches an ``almost-absent'' taxon out toward minus infinity,
+which makes it look like the \emph{biggest} source of variation in the sample. On
+the raw cube scale the same taxon correctly looks tiny. So measure \emph{how many
+directions matter} on the cube scale, but model the fine-grained dependence among
+the taxa that do matter on the log scale.
+
+\subsection{Use $\ell_1$, not $\ell_2$, to fuse the support layer}
+\label{sec:l1fusion}
+
+The synchronized-field objective (Definition~\ref{def:sync}) fuses all three
+blocks across charts with \emph{squared} Frobenius terms,
+$\norm{\mu_\cc-\mu_{\cc'}}_2^2+\eta_A\norm{\Edge_\cc-\Edge_{\cc'}}_F^2
++\eta_B\norm{\Prec_\cc-\Prec_{\cc'}}_F^2$. The $\ell_2$ choice is right for the
+\emph{continuous} blocks $\mu$ and $\Prec$, which vary smoothly within a stratum.
+It is the wrong choice for the \emph{discrete support layer} ($\Edge$, and the
+face/dimension itself), which is supposed to \emph{reorganize sharply} across a
+community-state transition. Indeed Experiment~\ref{exp:boundary} (E4) states the
+thesis as ``the field reorganizes across CST transitions,'' with kill criterion
+``$\Field$ constant across the boundary'' --- yet an $\ell_2$ fusion of $\Edge$
+across a boundary face \emph{enforces continuity} of the co-occurrence graph,
+working directly against the effect E4 is trying to detect. The fix is to match
+the penalty to the nature of the field:
+\begin{itemize}[leftmargin=1.4em]
+\item fuse the continuous blocks $\mu,\Prec$ with $\ell_2$ (smooth within a
+  stratum, as now);
+\item fuse the discrete support blocks (presence $\Pres$, edges $\Edge$, and the
+  effective dimension / soft face) with an $\ell_1$/total-variation penalty
+  $\sum_{\cc\sim\cc'}\zeta_{\cc\cc'}\norm{\Edge_\cc-\Edge_{\cc'}}_1$ (and likewise
+  for the dimension field), which permits a clean switch at the boundary while
+  still denoising within a stratum.
+\end{itemize}
+Operationally the effective-dimension field \emph{gates the fusion graph}: a
+synchronization edge $\cc\sim\cc'$ that crosses a detected stratum boundary (a
+jump in $k_\cc$ or a change in the soft face) is down-weighted or cut for the
+\emph{discrete} layer while kept for the \emph{continuous} layer. Sharp where the
+geometry is sharp; smooth where it is smooth.
+
+\paragraph{In plain terms.}
+Averaging two neighboring wiring diagrams blurs them together. That is fine for
+gradually changing abundance \emph{levels}, but wrong for the on/off
+\emph{wiring}, which is meant to flip at a community-state boundary. Use a
+smoothing penalty for the levels and a switch-tolerant penalty (the kind that
+allows a few sharp jumps and otherwise stays flat) for the wiring --- and let the
+detected boundaries decide which neighboring charts are even allowed to be
+averaged together.
+
+\subsection{The stratified dimension field as an exactly-solvable graph problem}
+\label{sec:fieldsolve}
+
+The effective-dimension field is a labeling of the sample graph by integers
+$k_\cc\in\{1,\dots,D_{\max}\}$. Choosing it jointly is a graph-regularized
+labeling problem,
+\[
+  \min_{\{k_\cc\}}\ \sum_{\cc} c_\cc(k_\cc;h_{\mathrm{band}})
+  \;+\;\lambda\!\!\sum_{\cc\sim\cc'}\!\!\zeta_{\cc\cc'}\,\rho(k_\cc,k_{\cc'}),
+\]
+with per-anchor cost $c_\cc$ from Definition~\ref{def:effdim} (computed in $\xi$,
+at the bandwidth scale) and a pairwise penalty $\rho$. Two facts make this
+practical rather than heuristic.
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Convex TV is exactly minimizable.} For the total-variation penalty
+  $\rho(a,b)=\abs{a-b}$ on the linearly ordered label set
+  $\{1,\dots,D_{\max}\}$, the global optimum is found in polynomial time by a
+  single graph cut (Ishikawa's construction \cite{ishikawa}) --- no continuous
+  relaxation, no rounding, no local minima. TV penalizes the \emph{size} of a
+  dimension jump (a $1\!\to\!3$ jump costs more than $1\!\to\!2$), a sensible bias
+  near a singularity. This is the same fused-lasso \cite{fusedlasso} idea used
+  within charts, now on the integer dimension field.
+\item \textbf{Strata have a partial order.} A faithful stratification obeys a
+  frontier condition: the boundary of a $k$-stratum is a union of strata of
+  dimension $<k$ (the closure of a $2$-face contains its edges and vertices, not
+  vice versa), so dimension is lower-semicontinuous and jumps are
+  \emph{directional}. A symmetric penalty (TV or the Potts penalty
+  $\rho=\1\{a\neq b\}$, solved approximately by $\alpha$-expansion \cite{boykov})
+  ignores this; the faithful version encodes the simplex face lattice as a partial
+  order on labels, for which convex-prior MRF optimization is also available
+  \cite{poformrf}. This whole problem --- recovering strata and their dimensions
+  from a noisy point cloud near singularities --- is the subject of
+  \emph{stratification learning} \cite{stratlearn,localhomology}.
+\end{enumerate}
+
+\paragraph{In plain terms.}
+Each sample proposes a dimension from its own neighborhood; the penalty makes
+neighbors agree unless there is a real reason to disagree (a stratum boundary).
+Because the thing being chosen is an ordered whole number, this tug-of-war has a
+fast, exact solution --- you do not have to guess and round. And because real
+strata fit together like the faces of a shape (edges bound triangles, not the
+reverse), the most faithful version also remembers which jumps are allowed to go
+which way.
+
+\subsection{A new read-out: present-and-active versus present-but-dormant}
+\label{sec:dormant}
+
+Separating the combinatorial face from the effective dimension produces an object
+neither layer names alone. A taxon can be \emph{present} (an edge candidate in
+Layer~A) yet contribute a \emph{collapsed} direction (adding it does not raise
+$k_\cc$): it is \emph{present-but-dormant} --- hanging on near the detection limit
+without fluctuating. A taxon that is present \emph{and} raises the effective
+dimension is \emph{present-and-active}. This distinction --- a marginal colonizer
+versus an engaged community member --- is biologically meaningful and is invisible
+to Layer~A (presence only) and to Layer~B (dependence conditional on presence). It
+is a candidate read-out in its own right and a natural covariate for the host
+coupling of Section~\ref{sec:field}.
+
+\subsection{Honest scope and the detectability floor}
+\label{sec:scope}
+
+Two cautions keep this from being oversold.
+\emph{Where it pays.} In the vaginal communities the active sets are small (``a
+handful of co-present taxa''), so $\abs{A}-1$ is already $2$--$4$ and the further
+reduction to $k_\cc$ is often second-order. The within-face rank reduction earns
+its keep most where faces are large --- higher-diversity gut communities and the
+metagenomic transfer (E8). For the minimal sprint the two high-value pieces do
+\emph{not} depend on large faces: the \emph{soft face} (so the presence threshold
+stops being a hard, read-depth-confounded cut) and the \emph{$\ell_1$ fusion of
+the support layer} (so synchronization stops fighting the E4 boundary-
+reorganization thesis).
+\emph{Where it fails.} The detectability of a low-dimensional concentration is
+floored by measurement noise: in 16S the ``thickness'' of a near-face tube may
+\emph{be} finite-read-depth multinomial noise rather than real structure, and from
+$10$--$20$ local points one cannot cleanly separate ``structurally $k$-dimensional
+concentration'' from ``$\abs{A}-1$-dimensional process observed with thin-looking
+noise.'' The principled escapes are the multi-scale persistence of
+Section~\ref{sec:scale} and \emph{replicates} (technical or biological), which
+estimate the noise floor and let one ask whether a thin direction survives above
+it. Absent those, ``the dimension here is $k$'' is meaningful only with an
+attached scale and noise model.
+
+\subsection{Summary of changes to the model object}
+\label{sec:addsummary}
+
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Stratum.} Replace the single combinatorial face $A$ by the refined
+  stratum $(A,k_\cc)$ (Def.~\ref{def:effdim}); the face is the cap, $k_\cc$ the
+  working dimension.
+\item \textbf{Layer~B.} Estimate $\Prec$ on the $k_\cc$ retained directions, not
+  the full active set.
+\item \textbf{Face.} Soften the presence threshold into a scale-coupled effective
+  active set $A_h$ (Def.~\ref{def:softface}), selected like $\beta$ by held-out
+  association likelihood.
+\item \textbf{Coordinates.} Estimate dimension/soft-face in $\xi$, model
+  dependence in $u$ (Remark~\ref{rem:trap}).
+\item \textbf{Synchronization.} $\ell_2$ fusion for $\mu,\Prec$; $\ell_1$/TV
+  fusion for the support layer ($\Pres,\Edge$, dimension), gated by the
+  effective-dimension field (Section~\ref{sec:l1fusion}).
+\item \textbf{Read-out.} Add present-and-active versus present-but-dormant
+  (Section~\ref{sec:dormant}).
+\end{enumerate}
+
+\subsection{Experiment and kill criterion}
+\label{sec:addexp}
+
+\begin{experiment}[Soft-face / effective-dimension refinement]\label{exp:softface}
+On the two largest $\Linf$-CSTs, compare three substrates under identical Layer-A
+and Layer-B estimators and identical folds: (i) the hard-support face $A=\supp(x)$
+(baseline); (ii) the soft face $A_h$ (Def.~\ref{def:softface}); (iii) the refined
+stratum $(A_h,k_\cc)$ with $\Prec$ estimated at the effective rank
+(Def.~\ref{def:effdim}). Score by held-out association-layer log-likelihood and by
+out-of-sample edge stability (stability selection frequency). Sweep the soft-face
+scale and the dimension bandwidth jointly with the LPS bandwidth. As a directed
+diagnostic, on a synthetic boundary-supported truth (a known tube of radius $\rho$
+around a $k$-face), verify that the effective-dimension estimate in $\xi$ recovers
+$k$ at scales $\gtrsim\rho$ while the same estimate in $u$ inflates it
+(Remark~\ref{rem:trap}); and verify that $\ell_1$ support fusion preserves a
+planted edge reorganization across a boundary that $\ell_2$ fusion smooths away.
+\end{experiment}
+
+\paragraph{Kill criterion.}
+The refinement is falsified if, out-of-sample, the soft face and the
+refined-stratum substrates never beat the hard-support baseline on held-out
+association likelihood or edge stability, \emph{and} the $\xi$-versus-$u$ and
+$\ell_1$-versus-$\ell_2$ diagnostics show no difference on the synthetic truth.
+In that case the combinatorial face is already sufficient and the extra machinery
+should be dropped.
+
+%==============================================================================
+\begin{thebibliography}{99}\small
+
+\bibitem{linf} P.~Gajer et al.,
+  \emph{$L^{\infty}$-normalization and $\Linf$-decomposition of compositional
+  spaces} (the ``$\Linf$ paper''), working manuscript,
+  \texttt{\~{}/current\_projects/Linf\_paper}.
+
+\bibitem{no5} P.~Gajer et al.,
+  \emph{Conditional Measures of Association over Graphs}, working manuscript
+  (the ``\texttt{no5}'' paper),
+  \texttt{\~{}/current\_projects/gradient\_flow/no5\_cond\_meas\_assoc\_over\_graphs\_paper}.
+
+\bibitem{aitchison1986} J.~Aitchison,
+  \emph{The Statistical Analysis of Compositional Data}, Chapman \& Hall, 1986.
+
+\bibitem{greenacre2009} M.~Greenacre,
+  Power transformations in correspondence analysis,
+  \emph{Computational Statistics \& Data Analysis} 53 (2009).
+
+\bibitem{france2020} M.~France et al.,
+  VALENCIA: a nearest-centroid classification method for vaginal microbial
+  communities, \emph{Microbiome} 8:166 (2020).
+
+\bibitem{ravel2011} J.~Ravel et al.,
+  Vaginal microbiome of reproductive-age women,
+  \emph{PNAS} 108 (2011).
+
+\bibitem{glasso} J.~Friedman, T.~Hastie, R.~Tibshirani,
+  Sparse inverse covariance estimation with the graphical lasso,
+  \emph{Biostatistics} 9 (2008).
+
+\bibitem{ravikumar} P.~Ravikumar, M.~Wainwright, J.~Lafferty,
+  High-dimensional Ising model selection using $\ell_1$-regularized logistic
+  regression, \emph{Annals of Statistics} 38 (2010).
+
+\bibitem{nonparanormal} H.~Liu, J.~Lafferty, L.~Wasserman,
+  The nonparanormal: semiparametric estimation of high-dimensional undirected
+  graphs, \emph{JMLR} 10 (2009).
+
+\bibitem{spieceasi} Z.~Kurtz et al.,
+  Sparse and compositionally robust inference of microbial ecological networks
+  (SPIEC-EASI), \emph{PLoS Comput.\ Biol.} 11 (2015).
+
+\bibitem{sparcc} J.~Friedman, E.~Alm,
+  Inferring correlation networks from genomic survey data (SparCC),
+  \emph{PLoS Comput.\ Biol.} 8 (2012).
+
+\bibitem{jgl} P.~Danaher, P.~Wang, D.~Witten,
+  The joint graphical lasso for inverse covariance estimation across multiple
+  classes, \emph{JRSS-B} 76 (2014).
+
+\bibitem{mixedmgm} J.~Lee, T.~Hastie,
+  Learning the structure of mixed graphical models,
+  \emph{J.\ Comput.\ Graph.\ Stat.} 24 (2015);
+  E.~Yang et al., Graphical models via exponential families, AISTATS 2014.
+
+\bibitem{stabsel} N.~Meinshausen, P.~B\"uhlmann,
+  Stability selection, \emph{JRSS-B} 72 (2010).
+
+\bibitem{hoffniu} P.~Hoff, X.~Niu,
+  A covariance regression model, \emph{Statistica Sinica} 22 (2012).
+
+\bibitem{ishikawa} H.~Ishikawa,
+  Exact optimization for Markov random fields with convex priors,
+  \emph{IEEE Trans.\ Pattern Anal.\ Mach.\ Intell.} 25 (2003).
+
+\bibitem{fusedlasso} R.~Tibshirani, M.~Saunders, S.~Rosset, J.~Zhu, K.~Knight,
+  Sparsity and smoothness via the fused lasso, \emph{JRSS-B} 67 (2005).
+
+\bibitem{boykov} Y.~Boykov, O.~Veksler, R.~Zabih,
+  Fast approximate energy minimization via graph cuts,
+  \emph{IEEE Trans.\ Pattern Anal.\ Mach.\ Intell.} 23 (2001).
+
+\bibitem{poformrf} C.~Domokos, F.~R.~Schmidt, D.~Cremers,
+  MRF optimization with separable convex prior on partially ordered labels,
+  \emph{ECCV} (2018).
+
+\bibitem{levinabickel} E.~Levina, P.~J.~Bickel,
+  Maximum likelihood estimation of intrinsic dimension,
+  \emph{NeurIPS} (2004).
+
+\bibitem{stratlearn} G.~Haro, G.~Randall, G.~Sapiro,
+  Stratification learning: detecting mixed density and dimensionality in high
+  dimensional point clouds, \emph{NeurIPS} (2006); \emph{Int.\ J.\ Comput.\ Vis.}
+  (2008).
+
+\bibitem{localhomology} P.~Bendich, B.~Wang, S.~Mukherjee,
+  Local homology transfer and stratification learning, \emph{SODA} (2012).
+
+\end{thebibliography}
+
+\end{document}
