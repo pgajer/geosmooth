@@ -149,7 +149,7 @@ test_that("E0.6 binary modes recover and calibrate probabilities", {
     # consistent (RMSE_p decreasing in n) and (ii) calibrated at large n.
     #
     # Tier-0 amendment (2026-06-12, orchestrator-adjudicated; raised by the
-    # Tier-2 implementer in dev/methods/lps/audit_contracts/lps_tiers1to4/
+    # Tier-2 implementer in dev/methods/lps/audit_contracts/tiers1to4/
     # e2_15_e06_interaction_raise_2026-06-12.md): the BINOMIAL arm runs
     # unstable.action = "mean" (deployed event-rate fallback predictions at
     # every point) instead of "na". Rationale: (i) under E2.15 a candidate

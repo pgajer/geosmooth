@@ -15,7 +15,7 @@
 #  tests/testthat/test-lps-binary-metric-consistency.R).
 #
 # Cross-check: when a Tier-2 execution bundle directory is passed as the
-# first argument (e.g. audit_artifacts/tier2_20260611T084642Z), the
+# first argument (e.g. dev/methods/lps/audit_artifacts/tier2_20260611T084642Z), the
 # regenerated E2.12/E2.14 aggregates are compared against the bundle's CSVs
 # and the outcome is recorded in the manifest.
 #

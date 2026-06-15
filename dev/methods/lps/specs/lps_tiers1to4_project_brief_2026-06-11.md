@@ -5,10 +5,10 @@ Audience: the **implementer agent**, the **auditor agent**, and the orchestrator
 
 Authoritative documents (read in this order):
 
-1. Frozen science spec: `project_briefs/lps_experimental_plan_2026-06-09.tex` (Tiers 0–4, the DGP library, conventions).
-2. Tier 1–4 contract (the tightening layer): `audit_contracts/lps_tiers1to4/lps_tiers1to4_contract_2026-06-11.md`.
+1. Frozen science spec: `dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex` (Tiers 0–4, the DGP library, conventions).
+2. Tier 1–4 contract (the tightening layer): `audit_contracts/tiers1to4/lps_tiers1to4_contract_2026-06-11.md`.
 3. Worker-auditor workflow + **Audit Charter**: `/Users/pgajer/.codex/notes/workflows/worker_auditor_workflow.md`.
-4. Tier-0 execution-artifact contract (the pattern to reuse): `audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md`.
+4. Tier-0 execution-artifact contract (the pattern to reuse): `audit_contracts/tier0/lps_tier0_execution_artifact_contract_2026-06-10.md`.
 
 ## 0. Roles and the orchestration model
 
@@ -58,9 +58,9 @@ Facts both agents will rely on (validated in Tier 0):
 - **Tier-0 tests:** `tests/testthat/test-lps-tier0-correctness.R` (E0.1, E0.2 + a negative control), `…-extended.R` (E0.3a, E0.4, E0.5, E0.6, E0.7), `tests/testthat/test-lps-degenerate.R` (E0.8).
 - **Execution harness/probe (reuse pattern):** `scripts/ci/run_tier0_execution_artifact.sh`, `scripts/ci/tier0_headroom_probe.R`.
 - **CI:** `.github/workflows/tier0-gate.yml`.
-- **Contracts & audits:** `audit_contracts/lps_tier0/` (execution-artifact contract, bucket-2 remediation response, 2026-06-11 re-audit).
-- **Clean Tier-0 evidence:** `audit_artifacts/tier0_20260611T013246Z` (`cpp`), `…013248Z` (`cpp.local.pca`).
-- **Frozen spec:** `project_briefs/lps_experimental_plan_2026-06-09.tex`.
+- **Contracts & audits:** `audit_contracts/tier0/` (execution-artifact contract, bucket-2 remediation response, 2026-06-11 re-audit).
+- **Clean Tier-0 evidence:** `dev/methods/lps/audit_artifacts/tier0_20260611T013246Z` (`cpp`), `…013248Z` (`cpp.local.pca`).
+- **Frozen spec:** `dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex`.
 - **DGP / synthetic-dataset assets** (for the gates' DGP library — see contract **Amendment 1**; *consolidate, do not rebuild*): generator helpers `make.flat.dataset()` / `make.quadform.dataset()` / `make.1d.dataset()` / `add.noise()` (`~/current_projects/trend_filtering/development/ssrhe_hessian_energy/ssrhe_order3_l1_validation_helpers.R`); mature quadform `quadform.sample.dataset()` (`~/current_projects/gflow/R/quadform_geodesics.R`); geosmooth's own `scripts/lps_binary_gm_ff_helpers.R` (binary surfaces + curved/native/high-dim geometries) and `scripts/freeze_lps_local_auto_nonmanifold_first_batch.R`; the frozen non-manifold spec + batch `split_handoffs/lps_local_auto_nonmanifold_dataset_specs_2026-06-05.md` (LA-* / SYN-* datasets, registry `FB01`–`FB14`, `…/lps_local_auto_nonmanifold_first_batch_2026-06-05/asset_manifest.csv`); the binary factorial manifest `split_handoffs/experiment_catalogue_20260608/lps_binary_gaussian_factorial_design_manifest.csv`; P7 dataset panels `…/k8_p7_lps_backend_panel_comparison_2026-06-04/tables/k8_dataset_panel.csv` and `…/k11_p7_lps_post_k10_backend_panel_2026-06-04/tables/k11_dataset_panel_spec.csv`; and the reference notes under `~/.codex/notes/references/{synthetic_datasets,quadforms,evaluation_datasets}/`.
 - **Implementation history (branches):** `codex/geosmooth-ge0-skeleton → ge1-r-smoothers → ge2-{header-layout, native-lps-pca} → ge3-parity-smoke → ge4-ssrhe → ge5-graph-boundary → ge6-helper-cleanup → ge7-lps-api → ge8-remove-lps-alias → ge9-docs-examples`; current Tier-0 work on `codex/geosmooth-tier0-bucket2-isolated`.
 
@@ -108,4 +108,4 @@ The six cardinal rules (full text in the workflow file): (1) the auditee never s
 
 ## 7. Naming and directory conventions
 
-- Contracts: `audit_contracts/lps_tiers1to4/…`. Per-phase implementer handoffs: `phase_handoffs/<gate>_implementer_handoff_<date>.md` (facts + a mandatory "Limitations and unverified claims" section). Audits: `audits/<gate>_implementation_audit_<date>.md`; responses: `audits/<gate>_implementation_audit_response_<date>.md`. Execution bundles: `audit_artifacts/<gate>_<UTC>/`. Tests: `tests/testthat/test-lps-<feature>.R`. Study scripts/reports: `validation/` and `reports/` per the workflow.
+- Contracts: `audit_contracts/tiers1to4/…`. Per-phase implementer handoffs: `dev/methods/lps/handoffs/phase/<gate>_implementer_handoff_<date>.md` (facts + a mandatory "Limitations and unverified claims" section). Audits: `audits/<gate>_implementation_audit_<date>.md`; responses: `audits/<gate>_implementation_audit_response_<date>.md`. Execution bundles: `dev/methods/lps/audit_artifacts/<gate>_<UTC>/`. Tests: `tests/testthat/test-lps-<feature>.R`. Study scripts/reports: `validation/` and `reports/` per the workflow.

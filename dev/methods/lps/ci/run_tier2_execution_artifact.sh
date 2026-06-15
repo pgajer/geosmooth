@@ -4,7 +4,7 @@
 #
 # Reuses the Tier-0 execution-artifact pattern
 # (dev/methods/lps/ci/run_tier0_execution_artifact.sh; contract
-# dev/methods/lps/audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md):
+# dev/methods/lps/audit_contracts/tier0/lps_tier0_execution_artifact_contract_2026-06-10.md):
 # produces a self-contained, tamper-evident bundle that lets an INDEPENDENT
 # auditor verify the Tier-2 gates -- and that the Tier-0 battery still passes
 # after the Tier-2 source changes -- against a CLEAN, COMMITTED tree.

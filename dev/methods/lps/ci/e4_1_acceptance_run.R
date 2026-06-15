@@ -2,7 +2,7 @@
 # E4.1 Part B — ACCEPTANCE invocation (ratified configuration, pinned)
 #
 # Ratification: orchestrator 2026-06-12
-# (dev/methods/lps/audit_contracts/lps_tiers1to4/
+# (dev/methods/lps/audit_contracts/tiers1to4/
 # e4_1_k_ratification_orchestrator_2026-06-12.md):
 #   K = 20, kernel tricube, DGP = frozen audited row G3a-R1-smooth-s010-n1200
 #   (curvature R = 1, geometry seed 1, sigma = 0.1 KNOWN), n = 1200, R = 500,

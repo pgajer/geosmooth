@@ -1,8 +1,7 @@
-# geosmooth dev target structure design
+# geosmooth development layout contract
 
-Status: draft for review
-Scope: post-worktree-merge reorganization of development artifacts under
-`dev/`
+Status: current policy after the Phase-4 development-artifact reorganization
+Scope: organization of development artifacts under `dev/`
 
 ## Purpose
 
@@ -16,9 +15,10 @@ records, shared benchmark infrastructure, and project-level coordination.
 `dev/`, `validation/`, `scripts/`, and non-package tooling should be listed in
 `.Rbuildignore` so `R CMD build` yields a clean package tarball.
 
-This reorganization should happen after active `geosmooth-*` worktrees merge.
-Creating the scaffold early is safe, but moving existing root-level directories
-mid-flight would create avoidable merge noise.
+This document describes the current layout contract. The Phase-4 migration that
+moved the old root-level development directories has already happened; the
+historical migration record lives under `dev/notes/migration/`, while retained
+legacy snapshots live under `dev/archive/`.
 
 ## Design goals
 
@@ -42,6 +42,7 @@ dev/
     build_dev_dashboard.py
 
   project_briefs/
+  archive/
 
   shared/
     README.md
@@ -50,6 +51,8 @@ dev/
     fixtures/
     registries/
     specs/
+    experiments/
+    benchmarks/
 
   notes/
     README.md
@@ -92,6 +95,7 @@ dev/
       results/
       status/
       ci/
+    lcov/
     malps/
     lpl_tf/
     slpl_tf/
@@ -108,6 +112,30 @@ Use for true repository-level briefs: package-phase planning, cross-method
 coordination, release positioning, or project-level status. Do not use this as
 a catch-all for prompts, contracts, generated reports, or method design notes.
 
+If a document is method-specific and defines what should be implemented or
+tested, put it in `dev/methods/<method>/specs/`. If it assigns work, defines
+gates, or directs an auditor or implementer, put it in
+`dev/methods/<method>/audit_contracts/`. If it is historical branch integration
+context, put it in `dev/notes/migration/`.
+
+### `dev/archive/`
+
+Use for retained historical bundles that are useful for auditability or
+reconstruction, but that are not active canonical homes for new work.
+
+The archive is not a dumping ground for new artifacts. New reports, runs,
+handoffs, specs, and audits should go to `dev/methods/<method>/...`,
+`dev/shared/...`, `dev/notes/...`, or `dev/project_briefs/...` as appropriate.
+When an archived artifact becomes an active input to new work, promote it with
+`git mv` into its canonical home and update references.
+
+Current archive bundle:
+
+- `archive/split_handoffs_retained/`: selected durable files retained from the
+  formerly ignored root `split_handoffs/` tree. The bundle contains an
+  inventory CSV that records retained files and files intentionally left
+  externalized.
+
 ### `dev/shared/`
 
 Use for cross-method infrastructure and durable shared assets.
@@ -123,6 +151,10 @@ Suggested routing:
   and manifest schemas.
 - `shared/specs/`: canonical cross-method binding specifications and benchmark
   contracts.
+- `shared/experiments/`: experiment designs and manifests that compare more
+  than one method or define a reusable suite.
+- `shared/benchmarks/`: benchmark protocols, scoring conventions, and reusable
+  reporting templates.
 
 Large generated data, `.rds` files, and bulky results should not be tracked
 here unless explicitly accepted as small durable fixtures.
@@ -167,6 +199,7 @@ Recommended method names:
 
 - `lps`
 - `ps_lps`
+- `lcov`
 - `malps`
 - `lpl_tf`
 - `slpl_tf`
@@ -190,7 +223,7 @@ Subdirectory roles:
   contracts for how work is reviewed and accepted.
 - `audits/`: audit reports, audit responses, re-audits, and final acceptance
   reports.
-- `audit_artifacts/`: generated audit bundles and evidence dumps. Track only
+- `dev/methods/lps/audit_artifacts/`: generated audit bundles and evidence dumps. Track only
   manifests or small summaries by default.
 - `handoffs/`: implementer, auditor, phase, and split handoffs.
 - `reports/`: generated HTML/PDF reports and their local assets, organized by
@@ -201,6 +234,20 @@ Subdirectory roles:
 - `status/`: progress notes and operational state.
 - `ci/`: method-specific harnesses, report-export helpers, or gate
   orchestration that are not part of package-wide CI.
+
+For methods with many audit or contract records, create subdirectories by
+phase, tier, event, or named gate, for example:
+
+```text
+dev/methods/lps/audits/tier0/
+dev/methods/lps/audits/tier2/
+dev/methods/lps/audits/e1_10/
+dev/methods/lps/audit_contracts/tier0/
+dev/methods/lps/audit_contracts/tiers1to4/
+```
+
+Keep a flat file only when there is no stable grouping yet or the file is a
+method-wide index.
 
 ## CI tooling placement
 
@@ -266,17 +313,18 @@ If a script is reusable package-wide validation tooling, keep it in
 `dev/methods/<method>/ci/`. If it exists only to build one report, keep it
 beside that report under `scripts/`.
 
-## Routing current root-level directories
+## Historical routing from root-level directories
 
-The final migration should decompose the existing root-level development
-directories by content type. Do not simply rename a grab-bag into another
-grab-bag.
+The Phase-4 migration decomposed the old root-level development directories by
+content type. This section records the routing policy used for that migration
+and remains the rule for any future cleanup of legacy material. Do not simply
+rename a grab-bag into another grab-bag.
 
 Suggested routing:
 
 ```text
-audit_artifacts/
-  -> dev/methods/<method>/audit_artifacts/
+dev/methods/lps/audit_artifacts/
+  -> dev/methods/<method>/dev/methods/lps/audit_artifacts/
 
 audit_contracts/
   -> dev/methods/<method>/audit_contracts/
@@ -295,18 +343,21 @@ project_briefs/
   -> dev/notes/tutorials/ or dev/notes/foundations/
 
 split_handoffs/
-  -> dev/methods/<method>/handoffs/
-  -> dev/methods/<method>/runs/
-  -> dev/methods/<method>/reports/
-  -> dev/methods/<method>/results/
-  -> dev/methods/<method>/audit_contracts/
-  -> dev/shared/data/
-  -> dev/shared/registries/
+  -> dev/archive/split_handoffs_retained/        # retained legacy snapshot
+  -> dev/methods/<method>/handoffs/              # promoted active handoffs
+  -> dev/methods/<method>/runs/                  # promoted active run records
+  -> dev/methods/<method>/reports/               # promoted durable reports
+  -> dev/methods/<method>/results/               # promoted durable results
+  -> dev/methods/<method>/audit_contracts/       # promoted contracts
+  -> dev/shared/data/                            # promoted shared data specs
+  -> dev/shared/registries/                      # promoted shared registries
 ```
 
 The current `split_handoffs/` directory contains handoffs, run directories,
 dataset specs, contracts, experiment catalogues, reports, tables, and result
-bundles. It should be decomposed during migration.
+bundles. The retained snapshot is now under `dev/archive/`; new active use of
+those files should promote selected artifacts into canonical method or shared
+homes.
 
 ## Routing examples from current `project_briefs/`
 
@@ -373,6 +424,8 @@ Default tracked:
 
 - `dev/README.md`
 - `dev/scripts/build_dev_dashboard.py`
+- `dev/archive/**/*.md` and small archive inventories when retained for
+  auditability
 - `dev/project_briefs/**/*.md`
 - `dev/shared/**/*.md`
 - small `dev/shared` manifests, schemas, registries, and fixture definitions
@@ -391,6 +444,8 @@ Default ignored or externalized:
 
 - `dev/html/` generated dashboard files.
 - `dev/index.html` generated dashboard redirect.
+- bulky generated files inside archive bundles that are not selected for
+  durable retention.
 - `dev/methods/*/audit_artifacts/**` except selected manifests or `.gitkeep`.
 - `dev/methods/*/runs/**` except selected manifests or small status files.
 - bulky `dev/methods/*/reports/**/report_files/` or widget asset directories.
@@ -407,6 +462,8 @@ The generated dashboard should index:
 
 - `dev/notes/**/*.md`
 - `dev/project_briefs/**/*.md`
+- `dev/shared/**/*.md`
+- selected `dev/archive/**/*.md` retained for auditability
 - selected report entry points under
   `dev/methods/*/reports/**/*.{html,pdf}`
 
@@ -426,32 +483,25 @@ rebuild. If a browsable dashboard is needed without a build step, publish it to
 a separate site or `gh-pages`-style branch rather than carrying generated
 dashboard HTML on the main development branch.
 
-## Migration timing
+## Migration history and future cleanup
 
-Do not move existing root-level development directories until active
-`geosmooth-*` worktrees have merged.
+The root-to-`dev/` migration landed as a dedicated layout commit. Future cleanup
+should be smaller and semantic: promote selected archive files into canonical
+homes, add missing shared registries, or split oversized flat method
+directories into phase/tier subdirectories.
 
-Safe before merge:
+For future moves:
 
-- Create `dev/` scaffold.
-- Add README files and `.gitkeep` placeholders.
-- Add dashboard generator.
-- Tell agents where new reports should go.
-
-Post-merge migration:
-
-1. Confirm active worktrees have landed.
-2. Create a dedicated branch for the layout migration.
-3. Use `git mv` for tracked files.
-4. Decompose grab-bag directories by content type.
-5. For files now covered by the ignore policy, use `git rm --cached` rather
+1. Use `git mv` for tracked files.
+2. Decompose grab-bag directories by content type.
+3. For files now covered by the ignore policy, use `git rm --cached` rather
    than `git mv`; moving a tracked `.rds`, `.aux`, or bulky asset keeps it
    tracked.
-6. Update `.gitignore` and `.Rbuildignore`.
-7. Rebuild the `dev/` dashboard locally.
-8. Sweep references to old paths.
-9. Run focused checks.
-10. Commit as one atomic layout migration.
+4. Update `.gitignore`, `.Rbuildignore`, READMEs, and path references.
+5. Rebuild the `dev/` dashboard locally.
+6. Sweep references to old paths.
+7. Run focused checks.
+8. Commit as one atomic semantic cleanup.
 
 ## Reference sweep checklist
 
@@ -460,6 +510,12 @@ Search for old paths after moving:
 ```sh
 rg "audit_artifacts|audit_contracts|audits|phase_handoffs|project_briefs|split_handoffs"
 ```
+
+For a strict stale-path check, search for old root-specific path prefixes and
+review intentional archival references separately. Valid new paths under
+`dev/methods/...`, `dev/shared/...`, `dev/archive/...`, and `dev/notes/...`
+should not be counted as stale merely because they contain words such as
+`audits` or `project_briefs`.
 
 Check likely affected areas:
 
@@ -511,6 +567,12 @@ For `geosmooth`, the practical implications are:
 - Do not create `dev/build/`; delete reproducible build byproducts during
   migration.
 - Use R source-file stems as canonical method directory keys.
+- `lcov` is the method key for chart-aware local covariance/local association
+  development material.
+- `dev/archive/` is a retention home for historical snapshots, not a creation
+  target for new work.
+- `dev/shared/` is the canonical home for cross-method DGPs, registries,
+  fixtures, experiment designs, and benchmark specs.
 - Track report source and small manifests. Track rendered HTML/PDF only when
   cited as audit evidence.
 - Keep cross-method specs in one canonical `dev/shared/specs/` home and link to

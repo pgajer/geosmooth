@@ -8,10 +8,15 @@ planning material that should not live at the package root.
   results, handoffs, and status records.
 - `project_briefs/`: true project-level briefs that cut across methods or
   package phases.
+- `shared/`: cross-method registries, DGPs, fixtures, benchmark specs, and
+  dataset manifests.
+- `archive/`: retained historical bundles that are useful for auditability but
+  are not active canonical homes for new work.
 
-During active branch work, keep existing root-level development directories in
-place until dependent worktrees have merged. Move them here in a dedicated
-layout migration commit.
+New development artifacts should be placed directly under this layout. The
+archive area is for retained legacy material only; promote archive files into
+`methods/`, `shared/`, `notes/`, or `project_briefs/` when they become active
+inputs to new work.
 
 ## Dashboard
 
