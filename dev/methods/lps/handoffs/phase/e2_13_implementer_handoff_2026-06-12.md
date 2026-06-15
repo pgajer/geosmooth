@@ -63,7 +63,7 @@ EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execution_artifact.sh
 
 ## Result artifacts
 
-Execution bundle `audit_artifacts/tier2_20260612T201926Z/`:
+Execution bundle `dev/methods/lps/audit_artifacts/tier2_20260612T201926Z/`:
 `git_head = b79d041…`, `tree_clean: true`, `testthat_summary: tests=27
 failed=0 error=0 warning=0 skipped=1` (the sanctioned E0.3a skip),
 `gate_contexts: E0.1;…;E0.8;E2.12;E2.12a;E2.12b;E2.13;E2.14`,

@@ -25,7 +25,7 @@ Contract §E / E4.1, split per the orchestrator's assignment:
 
 ## 2. Spec-questions note (submitted before implementation)
 
-`audit_contracts/lps_tiers1to4/e4_1_spec_questions_implementer_2026-06-11.md`
+`audit_contracts/tiers1to4/e4_1_spec_questions_implementer_2026-06-11.md`
 (commit `b5229b8`). It contains the API proposal, the supported-configuration
 envelope, the NA/fallback semantics, the four unpinned Part B knobs
 (support size `K`, kernel, G3a curvature radius, boundary-stratum `h`
@@ -88,23 +88,23 @@ sigma.hat, sigma.source, df, rss, n.train, smoother.row.norm, configuration`;
 make document
 Rscript -e 'suppressMessages(pkgload::load_all(".", quiet = TRUE)); testthat::test_file("tests/testthat/test-lps-tier4-uncertainty.R")'
 make test
-Rscript validation/e4_1_coverage_study.R n=300 R.replicates=8 support.size=20 drift.check.every=4 out.dir=audit_artifacts/e4_1_dev_tiny
-Rscript validation/e4_1_coverage_study.R n=1200 R.replicates=100 support.size=30 kernel=tricube sigma=0.1 out.dir=audit_artifacts/e4_1_smoke_dev
-for K in 15 20 25; do Rscript validation/e4_1_coverage_study.R n=1200 R.replicates=100 support.size=$K kernel=tricube sigma=0.1 out.dir=audit_artifacts/e4_1_smoke_dev_K$K; done
+Rscript validation/e4_1_coverage_study.R n=300 R.replicates=8 support.size=20 drift.check.every=4 out.dir=dev/methods/lps/audit_artifacts/e4_1_dev_tiny
+Rscript validation/e4_1_coverage_study.R n=1200 R.replicates=100 support.size=30 kernel=tricube sigma=0.1 out.dir=dev/methods/lps/audit_artifacts/e4_1_smoke_dev
+for K in 15 20 25; do Rscript validation/e4_1_coverage_study.R n=1200 R.replicates=100 support.size=$K kernel=tricube sigma=0.1 out.dir=dev/methods/lps/audit_artifacts/e4_1_smoke_dev_K$K; done
 Rscript scripts/ci/e4_1_headroom_probe.R /tmp/e41_probe_test
 EXECUTOR="implementer-agent-e4.1@geosmooth-t4" bash scripts/ci/run_e4_1_execution_artifact.sh
 ```
 
 ## 6. Execution bundle (clean committed tree)
 
-`audit_artifacts/e4_1_20260611T074742Z/` at git head
+`dev/methods/lps/audit_artifacts/e4_1_20260611T074742Z/` at git head
 `7e4bd61ab84b9ec6449bb7090f3e77295f329b2e`, `tree_clean: true`,
 `gate_contexts: E4.1`, executor `implementer-agent-e4.1@geosmooth-t4`.
 Contents: `execution_manifest.txt`, `source_checksums.txt` (SHA-256 over
 `R/lps.R`, `R/lps_uncertainty.R`, the study, the probe, the gate file),
 `sessionInfo.txt`, `blas.txt`, `testthat_results.csv` + summary,
 `e4_1_probe.csv`, the smoke-study leg under `smoke_study/`, and
-`BUNDLE_CHECKSUMS.txt`. (`audit_artifacts/` is gitignored by repository
+`BUNDLE_CHECKSUMS.txt`. (`dev/methods/lps/audit_artifacts/` is gitignored by repository
 policy; the bundle lives on this machine at the path above and is
 reproducible from the committed scripts and recorded seeds.)
 
@@ -150,7 +150,7 @@ seeds: geometry 20260611, noise 20260611+r):**
   replicates {1,25,50,75,100}: max abs fitted/band discrepancies ≤
   `6.66e-16`, df discrepancy 0 (`smoke_study/e4_1_drift_guard.csv`).
 - Stratified tables and per-point coverage CSVs in each run directory
-  (`audit_artifacts/e4_1_smoke_dev*`, and the bundle's `smoke_study/`).
+  (`dev/methods/lps/audit_artifacts/e4_1_smoke_dev*`, and the bundle's `smoke_study/`).
   Strata are reported separately and never averaged into the interior
   headline.
 
@@ -188,7 +188,7 @@ seeds: geometry 20260611, noise 20260611+r):**
   out-of-scope PS-LPS); and "non-standard top-level files/directories",
   whose list (`audit_artifacts`, `audit_contracts`, `phase_handoffs`,
   `scripts`, `validation`) now includes the two directories this
-  deliverable introduces (`validation/`, `phase_handoffs/`) alongside
+  deliverable introduces (`validation/`, `dev/methods/lps/handoffs/phase/`) alongside
   pre-existing ones — I did not edit `.Rbuildignore` (repo policy, not
   mine to set). The E4.1 Rd files pass all Rd checks.
 - **Incident admission:** my first full-suite run was invalid — I launched
@@ -250,10 +250,10 @@ seeds: geometry 20260611, noise 20260611+r):**
     (`κ_max(r) = (1/R₀)/sqrt(1 + r²/R₀²)`, max at the apex) are my own
     derivations, written for wiring; they have not been independently
     checked and the audited G3a may parametrize curvature differently.
-11. Dev-run artifacts under `audit_artifacts/e4_1_dev_tiny`,
+11. Dev-run artifacts under `dev/methods/lps/audit_artifacts/e4_1_dev_tiny`,
     `…/e4_1_smoke_dev`, `…/e4_1_smoke_dev_K{15,20,25}` were produced at
     interim (uncommitted or pre-final) tree states during development; only
-    the bundle `audit_artifacts/e4_1_20260611T074742Z/` is bound to the
+    the bundle `dev/methods/lps/audit_artifacts/e4_1_20260611T074742Z/` is bound to the
     clean committed tree. The dev runs are reproducible from the committed
     script and the seeds recorded inside each run's provenance.
 12. **The full package suite is red for pre-existing reasons** (§8: 4

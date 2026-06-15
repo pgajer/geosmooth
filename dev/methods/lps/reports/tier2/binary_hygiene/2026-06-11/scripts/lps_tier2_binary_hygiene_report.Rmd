@@ -731,8 +731,8 @@ Related committed documents and machine-local evidence:
   [`test-lps-binary-separation.R`](../../../../../../../tests/testthat/test-lps-binary-separation.R),\
   [`test-lps-binary-metric-consistency.R`](../../../../../../../tests/testthat/test-lps-binary-metric-consistency.R);
 - implementer handoffs:
-  [`e2_14_implementer_handoff_2026-06-11.md`](../../../../../../../phase_handoffs/e2_14_implementer_handoff_2026-06-11.md),\
-  [`e2_12_implementer_handoff_2026-06-11.md`](../../../../../../../phase_handoffs/e2_12_implementer_handoff_2026-06-11.md);
+  [`e2_14_implementer_handoff_2026-06-11.md`](../../../../../handoffs/phase/e2_14_implementer_handoff_2026-06-11.md),\
+  [`e2_12_implementer_handoff_2026-06-11.md`](../../../../../handoffs/phase/e2_12_implementer_handoff_2026-06-11.md);
 - execution bundles (machine-local, gitignored):
   `audit_artifacts/tier2_20260611T075822Z` and\
   `audit_artifacts/tier2_20260611T084642Z`.

@@ -7,7 +7,7 @@
 #   dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex
 #   (section \label{sec:dgp}).
 # Standard dataset-object common contract: see
-#   dev/notes/migration/split_handoffs_retained/selected_files/
+#   dev/archive/split_handoffs_retained/selected_files/
 #   lps_local_auto_nonmanifold_dataset_specs_2026-06-05.md
 #
 # This module exposes ONE exported generator per plan G-tag. Each generator

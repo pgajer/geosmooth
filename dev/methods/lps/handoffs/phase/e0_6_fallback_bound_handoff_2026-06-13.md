@@ -8,7 +8,7 @@ assertion to E0.6's binomial arm … promotes the already-printed telemetry
 into an enforceable gate; no production-source change; re-bundle smoke +
 full-size."
 Builds on the E0.6 binomial-arm amendment (Tier-0 re-open) recorded in
-`phase_handoffs/e0_6_binomial_amendment_handoff_2026-06-12.md`.
+`dev/methods/lps/handoffs/phase/e0_6_binomial_amendment_handoff_2026-06-12.md`.
 
 ## Goal
 
@@ -64,17 +64,17 @@ LPS_TIER0_FULL=1 EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execu
 ```
 
 The bundles were generated against a pristine checkout of `83218b6` and then
-copied into this worktree and force-added (`audit_artifacts/` is gitignored
+copied into this worktree and force-added (`dev/methods/lps/audit_artifacts/` is gitignored
 by default), as with the prior E0.6 evidence.
 
 ## Result artifacts
 
-- Smoke bundle `audit_artifacts/tier2_20260613T235106Z/`:
+- Smoke bundle `dev/methods/lps/audit_artifacts/tier2_20260613T235106Z/`:
   `git_head = 83218b6…`, `tree_clean: true`, `testthat_summary: tests=29
   failed=0 error=0 warning=0 skipped=1` (sanctioned E0.3a skip),
   `gate_contexts: E0.1;…;E0.8;E2.12;E2.12a;E2.12b;E2.13;E2.14;E2.15`,
   `probe_rc: 0`, `study_rc: 0`, `tree_clean_post_study: true`.
-- Full-size bundle `audit_artifacts/tier2_20260614T015321Z/` (run under
+- Full-size bundle `dev/methods/lps/audit_artifacts/tier2_20260614T015321Z/` (run under
   `LPS_TIER0_FULL=1`): identical manifest fields — `git_head = 83218b6…`,
   `tree_clean: true`, `tests=29 failed=0 error=0 warning=0 skipped=1`, full
   gate coverage, `probe_rc: 0`, `study_rc: 0`, `tree_clean_post_study: true`.

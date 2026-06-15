@@ -127,7 +127,7 @@ summary), `source_checksums.txt`, `sessionInfo.txt`, `gate_battery_summary.txt`,
 `scripts/ci/e1_10_bprime_manifest.sh` (committed).
 
 Gate-battery regression evidence (clean committed tree, `git_head 92707c0`,
-`tree_clean: true`): `audit_artifacts/e1_10_20260614T193921Z/` (in-worktree,
+`tree_clean: true`): `dev/methods/lps/audit_artifacts/e1_10_20260614T193921Z/` (in-worktree,
 gitignored per convention) — `tests=31 failed=0 error=0 warning=0 skipped=1`,
 gate contexts `E0.1–E0.8; E1.9/a/b; E1.10A1–A3`.
 

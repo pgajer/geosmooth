@@ -78,9 +78,9 @@ Apply the schema's routing table (§ "Routing current root-level directories") t
 `main` in these roots — use `git status`/`git ls-files` to see what's actually tracked, then `git mv`:
 
 - `audits/` (the merged per-gate audits: e0_6, t2, e4_1, e1_9, e1_10, dgp, …) → `dev/methods/lps/audits/`.
-- `phase_handoffs/` (incl. the gathered `e1_phase2b_reconciliation_*`, `e1_10_*`, `e2_*`, `e4_1_*`, `e0_6_*`,
+- `dev/methods/lps/handoffs/phase/` (incl. the gathered `e1_phase2b_reconciliation_*`, `e1_10_*`, `e2_*`, `e4_1_*`, `e0_6_*`,
   `dgp_library_*`) → `dev/methods/lps/handoffs/`.
-- `audit_artifacts/` → `dev/methods/lps/audit_artifacts/` — but per the tracked-vs-ignored policy, **`git rm
+- `dev/methods/lps/audit_artifacts/` → `dev/methods/lps/audit_artifacts/` — but per the tracked-vs-ignored policy, **`git rm
   --cached`** the bulky bundles (`.rds`, large CSVs, `report_files/`); keep only manifests/`.gitkeep`.
 - `project_briefs/` tracked files → route with `git mv`: LPS specs to `dev/methods/lps/specs/`,
   LCov specs to `dev/methods/lcov/specs/`, repo/program briefs to `dev/project_briefs/`, and governance

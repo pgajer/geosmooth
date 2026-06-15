@@ -5,7 +5,7 @@ From: implementer agent (Tier 2, worktree `geosmooth-t2`, branch
 `codex/geosmooth-t2-binary-hygiene`)
 Gate: E2.12 (contract §C; frozen spec §E2.12) — sub-items (a) and (b) are
 correctness GATEs; cross-clip selection stability is the non-gated STUDY.
-Spec-questions memo: `audit_contracts/lps_tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
+Spec-questions memo: `audit_contracts/tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
 items 6–11 and addendum 11b (the addendum was written before the (b) test
 landed and corrects the dominance operationalization).
 
@@ -46,7 +46,7 @@ over `{1e-6, 1e-3}` reported as a STUDY, not gated.
   - `scripts/ci/tier2_binary_probe.R`, `scripts/ci/run_tier2_execution_artifact.sh`
     (modified): E2.12 realized-quantities sections; the harness now also
     runs the STUDY and records `tree_clean_post_study`.
-  - `audit_contracts/lps_tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
+  - `audit_contracts/tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
     (modified): addendum 11b.
 - Commit `3eaf9cf`: §A2 regression pin for the `keep.cv.predictions`
   default (object-shape and component-identity GATE) added to the same test
@@ -84,7 +84,7 @@ EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execution_artifact.sh
 
 ## Result artifacts
 
-- Execution bundle `audit_artifacts/tier2_20260611T084642Z/` (on disk,
+- Execution bundle `dev/methods/lps/audit_artifacts/tier2_20260611T084642Z/` (on disk,
   gitignored path): `git_head = 3eaf9cf…`, `tree_clean: true`,
   `testthat_summary: tests=22 failed=0 error=0 warning=0 skipped=1` (the
   skip is the sanctioned E0.3a deferral), `gate_contexts:
@@ -92,7 +92,7 @@ EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execution_artifact.sh
   `tree_clean_post_study: true`. Realized-quantity tables:
   `e2_12a_selection_metric.csv`, `e2_12b_clip_dominance.csv`,
   `e2_12_fit_args.txt`, plus the E2.14 tables and the copied STUDY CSVs.
-- An earlier bundle `audit_artifacts/tier2_20260611T083751Z/` (head
+- An earlier bundle `dev/methods/lps/audit_artifacts/tier2_20260611T083751Z/` (head
   `5065a18`, also fully green) predates the §A2 pin test; the `084642Z`
   bundle supersedes it.
 

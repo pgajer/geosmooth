@@ -5,7 +5,7 @@ From: implementer agent (Tier 2, worktree `geosmooth-t2`, branch
 `codex/geosmooth-t2-binary-hygiene`)
 Gate: E2.14 (contract §C; frozen spec §E2.14) — correctness GATE
 Spec-questions memo (submitted before implementation):
-`audit_contracts/lps_tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
+`audit_contracts/tiers1to4/t2_spec_questions_implementer_2026-06-11.md`
 (items 1–5 cover E2.14).
 
 ## Goal
@@ -21,7 +21,7 @@ hits the documented fallback without looping or producing NaN.
 All on branch `codex/geosmooth-t2-binary-hygiene`; base commit `b86b796`
 (the smoke-accepted Tier-0 base).
 
-- Commit `58fb1be` — `audit_contracts/lps_tiers1to4/t2_spec_questions_implementer_2026-06-11.md` (new).
+- Commit `58fb1be` — `audit_contracts/tiers1to4/t2_spec_questions_implementer_2026-06-11.md` (new).
 - Commit `75c1788`:
   - `R/lps.R` (modified): `.klp.solve.local.logistic` — deviance-based
     step-halving (slack `1e-8`, at most 30 halvings per Newton step, new
@@ -75,7 +75,7 @@ git worktree add --detach /tmp/geosmooth-base-e06 b86b796     # E0.6 smoke basel
 
 ## Result artifacts
 
-- Execution bundle: `audit_artifacts/tier2_20260611T075822Z/` (gitignored
+- Execution bundle: `dev/methods/lps/audit_artifacts/tier2_20260611T075822Z/` (gitignored
   path, on disk in the worktree), `git_head =
   75c1788b06f0c1811dc4f89f1ec52f1616c13a64`, `tree_clean: true`,
   `testthat_summary: tests=19 failed=0 error=0 warning=0 skipped=1`,

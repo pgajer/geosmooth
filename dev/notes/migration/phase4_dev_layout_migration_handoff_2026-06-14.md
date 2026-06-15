@@ -29,8 +29,8 @@ unchanged.
 
 - `audits/` -> `dev/methods/lps/audits/`
 - `audit_contracts/` -> `dev/methods/lps/audit_contracts/`
-- `phase_handoffs/` -> `dev/methods/lps/handoffs/phase/`
-- tracked `audit_artifacts/` evidence -> `dev/methods/lps/runs/audit_artifacts/`
+- `dev/methods/lps/handoffs/phase/` -> `dev/methods/lps/handoffs/phase/`
+- tracked `dev/methods/lps/audit_artifacts/` evidence -> `dev/methods/lps/runs/audit_artifacts/`
 - tracked LPS run outputs under `reports/` -> `dev/methods/lps/runs/`
 - method-specific `validation/` and `scripts/ci/` files ->
   `dev/methods/lps/ci/`
@@ -45,12 +45,12 @@ The ignored `split_handoffs/` directory was not moved wholesale. It was
 inventoried and selectively retained:
 
 - total files inventoried: 58,127
-- retained durable files copied into `dev/notes/migration/split_handoffs_retained/selected_files/`: 235
+- retained durable files copied into `dev/archive/split_handoffs_retained/selected_files/`: 235
 - intentionally externalized/ignored files: 57,892
 - inventory manifest:
-  `dev/notes/migration/split_handoffs_retained/split_handoffs_inventory_2026-06-14.csv`
+  `dev/archive/split_handoffs_retained/split_handoffs_inventory_2026-06-14.csv`
 - retention summary:
-  `dev/notes/migration/split_handoffs_retained/README.md`
+  `dev/archive/split_handoffs_retained/README.md`
 
 Retained files include durable `.md` handoffs/audits/contracts/specs/manifests,
 selected small tabular manifests, and selected cited reports. Bulky generated
@@ -76,7 +76,7 @@ The following remain ignored and should not be edited by hand:
 - `dev/index.html`
 - `dev/methods/*/audit_artifacts/*` except `.gitkeep`
 - root `split_handoffs/`
-- root `audit_artifacts/`
+- root `dev/methods/lps/audit_artifacts/`
 - package-generated `man/`
 
 ## Verification completed

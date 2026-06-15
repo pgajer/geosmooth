@@ -5,7 +5,7 @@ From: implementer agent (Tier 2, worktree `geosmooth-t2`, branch
 `codex/geosmooth-t2-binary-hygiene`)
 Authority: orchestrator adjudication of the E2.15 ⇄ E0.6 stop-and-raise
 (Option 1; resolution recorded in
-`audit_contracts/lps_tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`).
+`audit_contracts/tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`).
 This amends an accepted Tier-0 gate — the program's first Tier-0 re-open —
 executed only after the adjudication was forwarded as the go-ahead.
 
@@ -39,7 +39,7 @@ EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execution_artifact.sh
 
 ## Result artifacts
 
-Execution bundle `audit_artifacts/tier2_20260612T215842Z/`:
+Execution bundle `dev/methods/lps/audit_artifacts/tier2_20260612T215842Z/`:
 `git_head = 5fb3a1c…`, `tree_clean: true`, `testthat_summary: tests=29
 failed=0 error=0 warning=0 skipped=1` (the sanctioned E0.3a skip),
 `gate_contexts: E0.1;…;E0.8;E2.12;E2.12a;E2.12b;E2.13;E2.14;E2.15`,
@@ -81,7 +81,7 @@ bundle on a clean committed tree.
 
 ## Full-size re-acceptance evidence (added 2026-06-12, closing the open item)
 
-Execution bundle `audit_artifacts/tier2_20260612T233509Z/` — the full
+Execution bundle `dev/methods/lps/audit_artifacts/tier2_20260612T233509Z/` — the full
 battery under `LPS_TIER0_FULL=1` on the clean committed tree at
 `git_head = 4367d10…` (`tree_clean: true` before and after,
 `testthat_summary: tests=29 failed=0 error=0 warning=0 skipped=1` — the
@@ -93,7 +93,7 @@ LPS_TIER0_FULL=1 EXECUTOR="implementer-agent-t2" bash scripts/ci/run_tier2_execu
 ```
 
 This bundle is committed alongside this handoff update (force-added at its
-standard `audit_artifacts/` path, which is gitignored by default) per the
+standard `dev/methods/lps/audit_artifacts/` path, which is gitignored by default) per the
 orchestrator's instruction, as the Tier-0 E0.6 re-acceptance evidence.
 
 Full-size E0.6 binomial-arm consistency (n ∈ {500, 1000, 2000, 4000},

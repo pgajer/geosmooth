@@ -3,8 +3,8 @@
 Date: 2026-06-11
 Author: implementer agent (E1.9)
 Contract: `project_briefs/lps_tiers1to4_contract_2026-06-11.md` §B / E1.9 (resolved §G1/§G2/§G5; Amendment 1)
-Frozen spec: `project_briefs/lps_experimental_plan_2026-06-09.tex`, E1.9
-Spec memo (pre-implementation): `audit_contracts/lps_tiers1to4/e1_9_spec_questions_implementer_2026-06-11.md`
+Frozen spec: `dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex`, E1.9
+Spec memo (pre-implementation): `audit_contracts/tiers1to4/e1_9_spec_questions_implementer_2026-06-11.md`
 
 ## 1. Scope delivered
 
@@ -62,7 +62,7 @@ a dedicated git worktree at `/Users/pgajer/current_projects/geosmooth-e19`
   dirty `R/lps.R` unless `FORCE=1`).
 - `scripts/ci/run_e1_9_execution_artifact.sh`,
   `scripts/ci/e1_9_realized_quantities_probe.R` — bundle harness + probe.
-- `audit_contracts/lps_tiers1to4/e1_9_spec_questions_implementer_2026-06-11.md`
+- `audit_contracts/tiers1to4/e1_9_spec_questions_implementer_2026-06-11.md`
   — pre-implementation spec memo (9 items; backend coupling, grid validation,
   tie-breaking, bit-for-bit interpretation, schema additions, fixed distance
   vector, STUDY deferral, naming/position).
@@ -88,8 +88,8 @@ EXECUTOR="implementer-agent-e19-worktree" bash scripts/ci/run_e1_9_execution_art
 
 ## 5. Artifacts
 
-- Execution bundle: `audit_artifacts/e1_9_20260611T061704Z/` **in the
-  worktree** (`/Users/pgajer/current_projects/geosmooth-e19`; `audit_artifacts/`
+- Execution bundle: `dev/methods/lps/audit_artifacts/e1_9_20260611T061704Z/` **in the
+  worktree** (`/Users/pgajer/current_projects/geosmooth-e19`; `dev/methods/lps/audit_artifacts/`
   is gitignored). Manifest: `git_head f0eeb7a`, `tree_clean true`,
   `testthat_rc 0`, `probe_rc 0`, gate contexts
   `E0.1;E0.2;E0.3a;E0.4;E0.5;E0.6;E0.7;E0.8;E1.9;E1.9a;E1.9b`.

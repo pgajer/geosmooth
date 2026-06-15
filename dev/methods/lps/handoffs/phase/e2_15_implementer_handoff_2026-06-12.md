@@ -12,7 +12,7 @@ E2.13 pass by `project_briefs/lps_t2_e2_13_work_order_2026-06-12.md`).
 orchestrator decision.** The amendment's own stop-condition fired: the
 full-battery rerun shows material E0.6 movement (7 of 72 binomial smoke
 cells error), raised in
-`audit_contracts/lps_tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`
+`audit_contracts/tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`
 rather than absorbed. No E0.6 change was made.
 
 ## Goal
@@ -37,7 +37,7 @@ Commit `fe57126`:
 - `tests/testthat/test-lps-binomial-na-consistency.R` (new): the E2.15
   GATE, 2 tests / 15 assertions.
 - `scripts/ci/run_tier2_execution_artifact.sh`: gate file added.
-- `audit_contracts/lps_tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`
+- `audit_contracts/tiers1to4/e2_15_e06_interaction_raise_2026-06-12.md`
   (new): the stop-and-raise memo.
 
 ## Fixture (deterministic, no RNG; pinned exactly in the GATE)
@@ -87,13 +87,13 @@ The decision changes an accepted Tier-0 gate and is the orchestrator's.
 
 ## Result artifacts
 
-Execution bundle `audit_artifacts/tier2_20260612T202904Z/`:
+Execution bundle `dev/methods/lps/audit_artifacts/tier2_20260612T202904Z/`:
 `git_head = fe57126…`, `tree_clean: true`, `testthat_summary: tests=29
 failed=0 error=1 warning=0 skipped=1` — the one **error is the E0.6
 binomial interaction documented above** (deliberately not masked),
 `gate_contexts: E0.1;…;E2.13;E2.14;E2.15`, `probe_rc: 0`, `study_rc: 0`.
 The E2.13 bundle one commit earlier
-(`audit_artifacts/tier2_20260612T201926Z`, head `b79d041`) is fully green
+(`dev/methods/lps/audit_artifacts/tier2_20260612T201926Z`, head `b79d041`) is fully green
 and unaffected by E2.15.
 
 ## Whether source/tests were run

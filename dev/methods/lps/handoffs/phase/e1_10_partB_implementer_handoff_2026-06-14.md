@@ -132,7 +132,7 @@ generator, sizes, or ρ grid.
 Generated reproducibly by `scripts/ci/e1_10_acceptance_manifest.sh` (committed).
 
 Gate-battery regression evidence (clean committed tree, `git_head de0f861`,
-`tree_clean: true`): `audit_artifacts/e1_10_20260614T152852Z/` (in-worktree,
+`tree_clean: true`): `dev/methods/lps/audit_artifacts/e1_10_20260614T152852Z/` (in-worktree,
 gitignored per the established convention; reviewed in place as for Part A) —
 `testthat tests=31 failed=0 error=0 warning=0 skipped=1`, gate contexts
 `E0.1–E0.8; E1.9/a/b; E1.10A1–A3`; probe: leakage max-delta 0, grouped folds
@@ -188,7 +188,7 @@ auditor's own untracked report).
    are wide ([0.44, 0.73] at ρ=0.6). The decision uses nominal ρ for gating and
    reports realized ρ as required; I did not re-weight or condition on realized
    ρ.
-6. **Gate-battery bundle is gitignored.** `audit_artifacts/…` follows the
+6. **Gate-battery bundle is gitignored.** `dev/methods/lps/audit_artifacts/…` follows the
    established Part A/E1.9 convention (in-worktree, reviewed in place). The
    *acceptance* evidence is the committed `reports/e1_10_acceptance/` bundle;
    if the auditor requires the gate-battery bundle tracked as well, it can be

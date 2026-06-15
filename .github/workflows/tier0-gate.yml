@@ -13,7 +13,7 @@ name: tier0-gate
       - "tests/testthat/test-lps-degenerate.R"
       - "dev/methods/lps/ci/**"
       - ".github/workflows/tier0-gate.yml"
-      - "dev/methods/lps/audit_contracts/lps_tier0/lps_tier0_execution_artifact_contract_2026-06-10.md"
+      - "dev/methods/lps/audit_contracts/tier0/lps_tier0_execution_artifact_contract_2026-06-10.md"
 
 jobs:
   tier0:

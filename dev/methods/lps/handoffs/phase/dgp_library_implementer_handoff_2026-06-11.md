@@ -11,7 +11,7 @@ Provide one geosmooth-local, plan-conformant DGP module exposing one exported
 generator per plan G-tag (G1–G7), each returning the standard dataset object,
 plus a frozen registry with seeds and SHA-256 checksums and a fidelity +
 determinism test file. The generators materialize the frozen science spec's
-`sec:dgp` definitions (`project_briefs/lps_experimental_plan_2026-06-09.tex`).
+`sec:dgp` definitions (`dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex`).
 
 ## Files created / changed
 
@@ -23,7 +23,7 @@ Created:
 - `inst/dgp_registry/dgp_registry.csv` — frozen registry (24 rows).
 - `inst/dgp_registry/dgp_registry_manifest.md` — provenance + checksum manifest.
 - `inst/dgp_registry/sessionInfo.txt` — full session environment.
-- `phase_handoffs/dgp_library_implementer_handoff_2026-06-11.md` — this file.
+- `dev/methods/lps/handoffs/phase/dgp_library_implementer_handoff_2026-06-11.md` — this file.
 
 Changed:
 - `DESCRIPTION` — added `digest` to `Suggests` (used by the checksum helper and
@@ -200,7 +200,7 @@ Rscript -e 'roxygen2::roxygenise(load_code = "source")'   # NAMESPACE + man/*.Rd
 - **Evidence channel.** The testthat run was executed in the interactive
   implementer session via `pkgload::load_all`, not through
   `scripts/ci/run_tier0_execution_artifact.sh` or CI; no committed
-  `audit_artifacts/` bundle exists (`audit_artifacts/` is gitignored). The
+  `dev/methods/lps/audit_artifacts/` bundle exists (`dev/methods/lps/audit_artifacts/` is gitignored). The
   committed evidence is `inst/dgp_registry/` (registry, manifest, sessionInfo).
 - **Mutation / falsification not run.** Per authorship independence, I did not
   run any mutation, falsification, or independent re-derivation of these

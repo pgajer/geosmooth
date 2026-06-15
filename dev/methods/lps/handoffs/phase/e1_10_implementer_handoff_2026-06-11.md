@@ -3,8 +3,8 @@
 Date: 2026-06-11
 Author: implementer agent (E1.10)
 Contract: `project_briefs/lps_tiers1to4_contract_2026-06-11.md` §B / E1.10, §A1–A6
-Plan: `project_briefs/lps_experimental_plan_2026-06-09.tex` §E1.10, §sec:paired
-Spec memo (pre-implementation): `audit_contracts/lps_tiers1to4/e1_10_spec_questions_implementer_2026-06-11.md`
+Plan: `dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex` §E1.10, §sec:paired
+Spec memo (pre-implementation): `audit_contracts/tiers1to4/e1_10_spec_questions_implementer_2026-06-11.md`
 Base: branch `codex/geosmooth-e1-9-bandwidth-multiplier`, worktree
 `/Users/pgajer/current_projects/geosmooth-e19`, on top of the accepted E1.9
 verdict (`d231bb1`).
@@ -68,8 +68,8 @@ EXECUTOR="implementer-agent-e110-worktree" bash scripts/ci/run_e1_10_execution_a
 
 ## 5. Artifacts
 
-- Execution bundle `audit_artifacts/e1_10_20260611T211913Z/` (worktree;
-  `audit_artifacts/` is gitignored): `git_head 36e7806`, `tree_clean true`,
+- Execution bundle `dev/methods/lps/audit_artifacts/e1_10_20260611T211913Z/` (worktree;
+  `dev/methods/lps/audit_artifacts/` is gitignored): `git_head 36e7806`, `tree_clean true`,
   `testthat_rc 0`, `probe_rc 0`, gate contexts
   `E0.1–E0.8; E1.9; E1.9a; E1.9b; E1.10A1; E1.10A2; E1.10A3`; per-test CSV,
   probe CSVs (`e110_leakage_invariance.csv`, `e110_grouped_balance.csv`,

@@ -12,17 +12,17 @@ audit-accepted (`audits/e4_1_partA_audit_2026-06-11.md`, tracked at
 ## 1. Ratified configuration and its provenance chain
 
 - Spec-questions resolution (orchestrator, 2026-06-12):
-  `audit_contracts/lps_tiers1to4/e4_1_spec_questions_resolution_orchestrator_2026-06-12.md`
+  `audit_contracts/tiers1to4/e4_1_spec_questions_resolution_orchestrator_2026-06-12.md`
   (committed `a809511`) — pinned kernel `tricube`, DGP row
   `G3a-R1-smooth-s010-n1200`, conditional-on-design coverage, fast path with
   drift guards; required a K calibration before acceptance.
 - K calibration + proposal (implementer, 2026-06-12):
-  `audit_contracts/lps_tiers1to4/e4_1_k_calibration_proposal_2026-06-12.md`
+  `audit_contracts/tiers1to4/e4_1_k_calibration_proposal_2026-06-12.md`
   (committed `6e717c3`); calibration artifacts
-  `audit_artifacts/e4_1_k_calibration_20260612T192750Z/`, confirmatory smokes
-  `audit_artifacts/e4_1_kcal_smoke_K22/`, `…_K20/`.
+  `dev/methods/lps/audit_artifacts/e4_1_k_calibration_20260612T192750Z/`, confirmatory smokes
+  `dev/methods/lps/audit_artifacts/e4_1_kcal_smoke_K22/`, `…_K20/`.
 - K ratification (orchestrator, 2026-06-12): **K = 20** —
-  `audit_contracts/lps_tiers1to4/e4_1_k_ratification_orchestrator_2026-06-12.md`
+  `audit_contracts/tiers1to4/e4_1_k_ratification_orchestrator_2026-06-12.md`
   (verbatim copy of the orchestrator's document, SHA-256
   `f0b5fdeb…23dd34`, committed `0f2c086`). The K was selected from the
   pre-declared calibration **before** the acceptance run and ratified in
@@ -57,16 +57,16 @@ summary; acceptance driver; harness `E4_ACCEPT` leg + manifest fields).
 ```sh
 # calibration + confirmatory smokes (pre-ratification, sanctioned)
 Rscript validation/e4_1_k_calibration.R
-Rscript -e 'source("validation/e4_1_k_calibration.R"); lib <- e41.load.audited.dgp.library(); fn <- e41.audited.g3a.dgp.fn(lib); for (K in c(22L, 20L)) run.e4.1.coverage.study(n=1200L, R.replicates=100L, sigma=0.1, support.size=K, kernel="tricube", curvature.radius=1, geometry.seed=1L, dgp.fn=fn, dgp.source="amendment1-g3a (K-calibration smoke)", out.dir=paste0("audit_artifacts/e4_1_kcal_smoke_K", K))'
+Rscript -e 'source("validation/e4_1_k_calibration.R"); lib <- e41.load.audited.dgp.library(); fn <- e41.audited.g3a.dgp.fn(lib); for (K in c(22L, 20L)) run.e4.1.coverage.study(n=1200L, R.replicates=100L, sigma=0.1, support.size=K, kernel="tricube", curvature.radius=1, geometry.seed=1L, dgp.fn=fn, dgp.source="amendment1-g3a (K-calibration smoke)", out.dir=paste0("dev/methods/lps/audit_artifacts/e4_1_kcal_smoke_K", K))'
 # study-schema shakeout (tiny, inline)
-Rscript validation/e4_1_coverage_study.R n=200 R.replicates=5 support.size=15 drift.check.every=3 out.dir=audit_artifacts/e4_1_dev_tiny2
+Rscript validation/e4_1_coverage_study.R n=200 R.replicates=5 support.size=15 drift.check.every=3 out.dir=dev/methods/lps/audit_artifacts/e4_1_dev_tiny2
 # ACCEPTANCE bundle (clean committed tree, ratified config)
 EXECUTOR="implementer-agent-e4.1@geosmooth-t4" E4_ACCEPT=1 E4_SMOKE=0 bash scripts/ci/run_e4_1_execution_artifact.sh
 ```
 
 ## 4. Acceptance execution bundle
 
-`audit_artifacts/e4_1_20260612T195644Z/` at git head
+`dev/methods/lps/audit_artifacts/e4_1_20260612T195644Z/` at git head
 `0f2c086210b7a8ba5d1862b650e60f99ad233706`, `tree_clean: true`,
 `accept_rc: 0`, `accept_context: acceptance-candidate`,
 `accept_dgp_source: amendment1-g3a`, executor
@@ -159,10 +159,10 @@ pre-existing `test-ge7-lps-api.R` failures present at base `b86b796`
    observed; I have not decomposed how much comes from σ̂'s finite-sample
    distribution versus the bias inflation of RSS, beyond noting both gates
    pass.
-7. Dev/calibration artifacts under `audit_artifacts/` other than the
+7. Dev/calibration artifacts under `dev/methods/lps/audit_artifacts/` other than the
    acceptance bundle were produced at interim tree states; each records its
    own provenance and is reproducible from committed scripts and recorded
-   seeds. Only `audit_artifacts/e4_1_20260612T195644Z/` is the acceptance
+   seeds. Only `dev/methods/lps/audit_artifacts/e4_1_20260612T195644Z/` is the acceptance
    evidence bundle.
 8. I have not run any mutation of the coverage gate or the variance formula
    as acceptance evidence (authorship independence; mutation-qualification

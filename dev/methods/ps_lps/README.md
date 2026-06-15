@@ -2,7 +2,7 @@
 
 Use this directory for pointwise-selective or penalized LPS execution history.
 
-- `audit_artifacts/`: generated audit bundles and supporting evidence.
+- `dev/methods/lps/audit_artifacts/`: generated audit bundles and supporting evidence.
 - `audit_contracts/`: work orders, acceptance criteria, and audit contracts.
 - `audits/`: audit reports and audit responses.
 - `handoffs/`: implementer, auditor, and phase handoffs.
