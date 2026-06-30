@@ -2,6 +2,10 @@
 
 Use this directory for pointwise-selective or penalized LPS execution history.
 
+Strategic context: [LPS / LCov / Omics Program](../../programs/lps_lcov_omics_program/README.md).
+
+Research lineage: [provenance.md](provenance.md).
+
 - `dev/methods/lps/audit_artifacts/`: generated audit bundles and supporting evidence.
 - `audit_contracts/`: work orders, acceptance criteria, and audit contracts.
 - `audits/`: audit reports and audit responses.

@@ -1,0 +1,620 @@
+\documentclass[11pt]{article}
+
+%==============================================================================
+%  LPS Local Dimension Regularization -- Implementation Notes
+%  Test and experiment specifications + a VALENCIA-inspired non-manifold set.
+%  Companion to dev/notes/foundations/lps_local_dimension_regularization.tex (the expository
+%  note) and lps_experimental_plan_2026-06-09.tex (the experimental plan).
+%  All figures are original schematics; no data or figures are reproduced.
+%==============================================================================
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{datetime2}
+\DTMsetup{showzone=false}        % timestamp shown in US Eastern time (build sets TZ); see latexmkrc
+\usepackage[hidelinks]{hyperref}
+\usepackage[section]{placeins}
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+\definecolor{ink}{HTML}{24303D}
+\definecolor{accent}{HTML}{2563EB}
+\definecolor{accent2}{HTML}{B45309}
+\definecolor{accent3}{HTML}{15803D}
+\captionsetup{font=small,labelfont=bf}
+\setlist{topsep=3pt,itemsep=2pt,parsep=1pt}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{dgp}{DGP}[section]
+
+\newtcolorbox{plain}{
+  enhanced, colback=accent!4, colframe=accent!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=In plain terms,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent!50!black,
+  attach title to upper={\quad}}
+
+\newtcolorbox{decision}{
+  enhanced, colback=accent3!5, colframe=accent3!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=Decision rule,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent3!45!black,
+  attach title to upper={\quad}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\tr}{\operatorname{tr}}
+
+% test/experiment field labels
+\newcommand{\field}[1]{\smallskip\noindent\textbf{\textsf{#1.}}\ }
+
+\newcommand{\fig}[3]{%
+  \begin{figure}[htbp]\centering
+  \includegraphics[width=#2]{../../../notes/foundations/figures_ldr/#1}%
+  \caption{#3}\label{fig:#1}\end{figure}}
+
+\title{\textbf{LPS Local Dimension Regularization: Implementation Notes}\\[4pt]
+\large Precise test and experiment specifications, and a VALENCIA-inspired
+non-manifold example set with known ground-truth dimension}
+\author{\small Internal implementation note --- LPS / \texttt{geosmooth} program\\[2pt]
+\footnotesize source: \nolinkurl{~/current_projects/geosmooth/dev/methods/lps/specs/lps_local_dimension_regularization_implementation_notes.tex}}
+\date{\DTMnow\ \textnormal{\footnotesize ET}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+This is the implementation companion to the expository note
+\emph{Local Dimension Regularization in Local Polynomial Smoothing} and to the
+\emph{LPS Experimental Plan}. It specifies, precisely enough to implement without
+further design, two distinct kinds of evaluation. \textbf{Tests} are
+deterministic, pass/fail checks of the local-dimension-field machinery, run on
+\emph{synthetic} data whose ground-truth dimension field we designed and therefore
+know exactly. \textbf{Experiments} are exploratory studies of the \emph{real}
+VALENCIA 16S data (the France et al.\ collection, $n\approx 13{,}231$), restricted
+to relative abundances on the simplex; they have no ground truth, and their
+purpose is to characterize the data and to \emph{guide next steps}. The two are
+connected by a single loop: the experiments measure the structure of the real
+data --- which support patterns (naive strata) occur, and how the mass
+concentrates near lower-dimensional faces --- and those measurements parameterize
+a family of \emph{purely synthetic} generators that reproduce that structure while
+carrying a known local-dimension field. Those generators become the expanded
+non-manifold example set on which the tests run. Every test and experiment is
+stated with its objective, exact procedure or configuration, the statistic
+computed, and a numeric acceptance criterion or decision rule.
+\par\medskip\noindent\footnotesize\textit{On the figures.} All figures are
+original schematics drawn for this note; the ``VALENCIA'' panels are illustrative
+sketches of the \emph{shape} of the outputs the experiments will produce, not
+computed results (the data are not used in producing this document).
+\end{abstract}
+
+{\small\tableofcontents}
+
+%==============================================================================
+\section{Scope, and the tests--experiments distinction}\label{sec:scope}
+%==============================================================================
+
+The expository note argued, conceptually, that the local chart dimension in LPS
+should be estimated as a \emph{field} over the neighbor graph and regularized with
+an $\ell_1$ (total-variation) penalty so that it denoises within strata while
+keeping the jumps between strata sharp. This note turns that argument into an
+implementable validation program. The single most important design decision is
+to keep two kinds of evaluation rigorously separate.
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Tests} (Section~\ref{sec:tests}) are deterministic and pass/fail.
+They run on synthetic data whose true local-dimension field is \emph{known by
+construction}, so ``correct'' is well defined and a continuous-integration suite
+can enforce it. They answer: \emph{does the estimator do what it claims?}
+\item \textbf{Experiments} (Section~\ref{sec:experiments}) are exploratory. They
+run on the real VALENCIA data, which has \emph{no} ground-truth dimension, so they
+produce descriptive statistics and figures rather than verdicts. They answer:
+\emph{what does the real data look like, and what should we build and try next?}
+\end{itemize}
+
+These must not be conflated. A statistic measured on real data (an estimated
+effective dimension, say) is evidence about the data and about our estimator's
+behavior, but it can never be a pass/fail test, because there is nothing to check
+it against. Conversely, a test that passed on a synthetic toy says nothing about
+realism. The two are joined by the loop in Figure~\ref{fig:fig_flow.pdf}: the
+experiments characterize the real data; that characterization parameterizes
+synthetic generators (Section~\ref{sec:synthetic}) that carry a known dimension
+field; and the tests run on those generators. Real data supplies \emph{realism};
+synthetic data supplies \emph{ground truth}; neither alone suffices.
+
+\fig{fig_flow.pdf}{\linewidth}{How the pieces fit. The real VALENCIA data is
+explored (experiments E1--E3, no ground truth) to characterize its stratified
+structure. That structure parameterizes synthetic generators with a \emph{known}
+local-dimension field, which become the example set on which the deterministic
+tests T1--T9 run. Test outcomes and experiment findings together feed the
+next-step decisions.}
+
+\begin{plain}
+We are checking a tool that guesses the ``local dimension'' of a data cloud.
+To check a tool you need an answer key, and real biological data does not come
+with one. So we do two things. We \emph{explore} the real microbiome data to learn
+its shape (no answer key --- this guides what to build). Then we \emph{build}
+fake data that has the same shape but where we wrote the answer key ourselves, and
+we grade the tool against that. The fake data is realistic because the exploration
+told us how; it is gradeable because we made it.
+\end{plain}
+
+%==============================================================================
+\section{The object under test, and shared conventions}\label{sec:object}
+%==============================================================================
+
+We recall the estimator precisely, because the tests are written against it. Over
+the neighbor graph $G=(V,E)$ on $n$ anchors, the local-dimension field
+$d=(d_1,\dots,d_n)\in\{1,\dots,D_{\max}\}^n$ minimizes
+\begin{equation}\label{eq:field}
+  \widehat d \;=\; \argmin_{d}\;
+  \sum_{i\in V} c_i(d_i)\;+\;\lambda\!\!\sum_{(i,j)\in E}\!\! w_{ij}\,\rho(d_i,d_j),
+\end{equation}
+where the per-anchor cost $c_i(d)$ is a complexity-penalized fit of dimension $d$
+to anchor $i$'s neighborhood (e.g.\ the residual eigen-energy beyond $d$ principal
+components measured at the smoother's bandwidth scale, plus a penalty), $w_{ij}$
+are graph weights, $\lambda\ge 0$ is the regularization strength, and the pairwise
+penalty is the total variation $\rho(d_i,d_j)=|d_i-d_j|$ (the $\ell_2$ comparison
+penalty $(d_i-d_j)^2$ appears only in tests that contrast the two). Because the
+labels are linearly ordered integers and $\rho$ is convex, \eqref{eq:field} is
+minimized \emph{exactly} by a single graph cut (Ishikawa). The \emph{soft face} at
+scale $h$ folds near-zero coordinates into a lower stratum, and the effective
+dimension is capped by the support: $d_i\le |A_i|-1$ where $A_i=\supp(x_i)$.
+
+\field{Conventions} The tests inherit the conventions of the experimental plan and
+restate only what is specific here.
+\begin{itemize}[leftmargin=1.4em,nosep]
+\item \emph{RNG.} Every synthetic dataset is generated after an explicit seed;
+seeds and the package commit are stored with each result. Tests are bitwise
+reproducible.
+\item \emph{Ground truth.} For a synthetic generator the true field is the pair
+$(A_i,k_i)$ at each sample: the support pattern $A_i$ (the naive stratum) and the
+designed effective dimension $k_i$. The ``true local dimension'' at scale $h$ is
+$k_i$ when $h$ exceeds the tube thickness $\rho$ and $|A_i|-1$ below it
+(Section~\ref{sec:synthetic}); tests fix $h$ in the regime they intend.
+\item \emph{Metrics.} Dimension misclassification rate $\frac1n\sum_i\mathbf 1\{\widehat
+d_i\neq k_i\}$; boundary blur (defined in T2/T4); and, for the downstream test,
+LPS probability/continuous Truth-RMSE.
+\item \emph{Coordinates.} Unless a test is specifically about the coordinate
+choice (T6), dimension is estimated in the cube/raw-abundance coordinate $\xi$, not
+the log-ratio $u$ (the expository note's coordinate trap).
+\end{itemize}
+
+\begin{plain}
+Equation~\eqref{eq:field} is the whole tool in one line: each anchor proposes a
+dimension from its own data ($c_i$), neighbors are pulled toward agreement
+($\rho$), and because dimension is a small whole number the best compromise can be
+found exactly. The tests below poke each part of that sentence.
+\end{plain}
+
+%==============================================================================
+\section{Part A --- Test specifications (synthetic, deterministic, pass/fail)}
+\label{sec:tests}
+%==============================================================================
+
+Each test follows the experimental-plan template: a falsifiable \textsf{Claim};
+the \textsf{DGP} (a named synthetic generator from Section~\ref{sec:synthetic},
+whose true field $(A_i,k_i)$ is known); the \textsf{Configuration} (every pinned
+argument); the \textsf{Statistic}; a numeric \textsf{Acceptance} criterion; and
+\textsf{Safeguards} against a confounded result. The DGP names (stratum mixture,
+tube, seam, cone) are defined precisely in Section~\ref{sec:synthetic}; here we
+only name the regime each test needs.
+
+\subsection{T1 --- the field solver returns the exact global optimum}
+\field{Claim} For the total-variation penalty, the graph-cut solver of
+\eqref{eq:field} returns the exact global minimum.
+\field{DGP} Not a data generator: random small instances. Graphs with $n\le 10$
+nodes, random edges, random integer costs $c_i(d)$ for $d\in\{1,2,3\}$, random
+$\lambda$, over $R=200$ seeds.
+\field{Configuration} Solve by the graph-cut path; independently minimize by
+exhaustive enumeration of all $3^{n}$ labelings.
+\field{Statistic} Energy gap $\Delta = E_{\text{cut}} - E_{\text{brute}}$.
+\field{Acceptance} $\Delta = 0$ exactly on every instance (the cut is the global
+optimum, not an approximation).
+\field{Safeguards} Include instances with cost ties and with $\lambda$ large
+enough to force a single constant label and small enough to recover the unary
+argmin, so both extremes are exercised.
+
+\subsection{T2 --- $\ell_1$ keeps the boundary sharp; $\ell_2$ blurs it}
+\field{Claim} At a true dimension jump, the TV field transitions over a narrow
+band of anchors while the Laplacian ($\ell_2$) field ramps over a wide one.
+\field{DGP} The \emph{seam} fragment: two strata of dimensions $k_1\neq k_2$
+meeting along a known boundary, with i.i.d.\ per-anchor estimation noise.
+\field{Configuration} Estimate the field with $\rho=|\cdot|$ (TV) and with
+$\rho=(\cdot)^2$ ($\ell_2$), at $\lambda$ values \emph{calibrated to equal
+interior denoising} (matched misclassification far from the seam), so the
+comparison is only about the boundary.
+\field{Statistic} Boundary width $B$: the number of anchors whose fitted dimension
+lies strictly between $k_1$ and $k_2$ (TV labels are integers, so for TV this is
+the count of anchors not yet snapped to either level within a fixed corridor of
+the seam).
+\field{Acceptance} $B_{\ell_1}\le 2$ and $B_{\ell_2}\ge 5\,B_{\ell_1}$.
+\field{Safeguards} Calibrate the two penalties to equal interior denoising first;
+identical noise realization for both arms (paired).
+
+\subsection{T3 --- regularization reduces dimension misclassification}
+\field{Claim} The TV field has lower dimension-misclassification than independent
+per-anchor estimation.
+\field{DGP} The stratum-mixture generator in a near-homogeneous regime (few
+strata, well-separated $k_A$), small neighborhoods (high per-anchor variance).
+\field{Configuration} Independent argmin of $c_i$ vs.\ TV field; $\lambda$ fixed
+(and, separately, $\lambda$ chosen by T9's held-out rule).
+\field{Statistic} Misclassification rate $\frac1n\sum_i\mathbf 1\{\widehat d_i\neq
+k_i\}$, averaged over $R\ge 30$ replicates.
+\field{Acceptance} TV misclassification is below independent by a predeclared
+relative margin (e.g.\ $\ge 30\%$ at the smallest neighborhood size).
+\field{Safeguards} Same data for both arms; report the full misclassification
+distribution, not only the mean.
+
+\subsection{T4 --- the boundary safeguard (regularization must not erase a real jump)}
+\field{Claim} TV regularization denoises without smearing a true dimension jump;
+$\ell_2$ regularization fails this and is the negative control.
+\field{DGP} The seam fragment with a known boundary (as T2).
+\field{Configuration} Independent, TV, and $\ell_2$ fields at matched interior
+denoising.
+\field{Statistic} Boundary-straddling misclassification: the error rate among
+anchors within graph radius $r$ of the seam.
+\field{Acceptance} TV increases boundary-straddling misclassification over the
+independent estimate by $\le 5$ percentage points, \emph{and} $\ell_2$ exceeds
+that bound (demonstrating the discriminator works).
+\field{Safeguards} This test is mandatory and is the one a naive smoother fails;
+if $\ell_2$ does not fail it, the seam is too weak --- strengthen the jump.
+
+\subsection{T5 --- scale-dependence and persistence}
+\field{Claim} The effective dimension equals the designed $k_A$ at scales above
+the tube thickness $\rho$ and $|A|-1$ below it; the bandwidth-tied estimate
+returns $k_A$.
+\field{DGP} The tube fragment with known $\rho$ and $k$.
+\field{Configuration} Compute $c_i(d;h)$ over a geometric band of scales $h$;
+report the dimension-vs-scale profile and the persistence (range of $h$ over which
+the chosen dimension is stable).
+\field{Statistic} Recovered dimension-vs-scale curve compared to the designed step
+at $\rho$; the value at $h=h_{\text{band}}$.
+\field{Acceptance} The recovered step location is within a tolerance of $\rho$,
+the high-scale plateau equals $k_A$, and the bandwidth-tied estimate equals $k_A$.
+\field{Safeguards} $\rho$ and $k$ known; the test is a curve match, not a single
+number.
+
+\subsection{T6 --- estimate dimension in $\xi$, not in $u$ (the coordinate trap)}
+\field{Claim} Local PCA in the cube coordinate $\xi$ recovers the tube dimension
+$k$; local PCA in the log-ratio coordinate $u$ inflates it near a face.
+\field{DGP} A face-approaching tube: a stratum whose mass concentrates toward a
+lower face (some present coordinates near the detection limit), known $k$.
+\field{Configuration} Estimate the effective rank by local PCA in $\xi$ and,
+separately, in $u=\log\xi$.
+\field{Statistic} Estimated effective rank in each coordinate.
+\field{Acceptance} The $\xi$-estimate equals $k$ within tolerance; the
+$u$-estimate is demonstrably larger ($\ge k+1$), confirming the inflation.
+\field{Safeguards} Known $k$; concentration deliberately placed near a face so the
+two coordinates disagree.
+
+\subsection{T7 --- the support cap and the soft face}
+\field{Claim} (a) The estimated dimension never exceeds the support cap; (b) the
+soft-face active set is monotone in scale and reduces to the hard support as
+$h\to 0$.
+\field{DGP} The stratum-mixture generator with structural zeros \emph{and}
+near-zeros (taxa at the detection limit).
+\field{Configuration} Vary the soft-face scale $h$ / threshold $\tau_h$.
+\field{Statistic} $\max_i\big(\widehat d_i-(|A_i|-1)\big)$; and, for each sample,
+the effective active set $A_h(x)$ as a function of $h$.
+\field{Acceptance} The cap is never violated ($\max\le 0$); $A_h$ is nested
+(monotone) in $h$; $A_{h\to 0}=\supp(x)$.
+\field{Safeguards} Include samples sitting exactly on faces (cap tight) and
+samples in tubes near faces (cap loose) so both regimes are tested.
+
+\subsection{T8 --- the frontier (no impossible high-dimensional islands)}
+\field{Claim} The field contains no geometrically impossible isolated
+high-dimensional anchor (one whose neighbors are all lower-dimensional), which a
+proper stratification forbids by lower-semicontinuity.
+\field{DGP} The cone fragment: a stratum whose dimension drops at a known
+singular point/locus (a faithful lower-semicontinuous structure).
+\field{Configuration} The TV field, and the poset-aware (partially-ordered-label)
+field.
+\field{Statistic} Number of spurious islands (a high-dimensional anchor all of
+whose graph neighbors have strictly lower fitted dimension, away from the true
+high-dimensional region).
+\field{Acceptance} The poset-aware field has zero spurious islands; the TV field's
+island count is reported (it may permit a few; document the gap that motivates the
+poset-aware solve).
+\field{Safeguards} The cone has a known frontier; islands are counted only away
+from the genuinely high-dimensional bulk.
+
+\subsection{T9 --- downstream accuracy (the field is a means, not an end)}
+\field{Claim} An LPS using the regularized dimension field attains lower
+Truth-RMSE than LPS using independent per-anchor dimension or a fixed global
+dimension.
+\field{DGP} The stratum-mixture generator carrying a known response surface
+$f$ (continuous and binary variants), so probability/continuous Truth-RMSE is
+defined.
+\field{Configuration} Three LPS arms identical except for the chart-dimension
+policy: (i) independent per-anchor, (ii) fixed global, (iii) the TV field; the
+field's $\lambda$ and scale selected by held-out Truth-RMSE.
+\field{Statistic} Truth-RMSE on held-out points (and, for binary, probability
+Truth-RMSE), over $R\ge 30$ replicates, paired.
+\field{Acceptance} The TV-field arm is below both baselines by a predeclared
+margin; ties or losses on near-manifold (homogeneous-dimension) generators are
+acceptable and expected.
+\field{Safeguards} Match geometry, response realization, folds, support, kernel,
+degree, ridge across arms; vary only the dimension policy. Selecting $\lambda$ by
+held-out predictive error (not by an intrinsic dimension score) is mandatory ---
+the field exists to help prediction.
+
+\begin{plain}
+The tests walk up a ladder: the solver is exact (T1); the right penalty keeps
+edges sharp (T2, T4) while cleaning noise (T3); the estimate respects scale (T5),
+the right coordinate (T6), the support cap and soft face (T7), and the
+geometry's pecking order (T8); and, finally, all of it actually makes the smoother
+more accurate (T9). T9 is the one that matters in the end --- the rest exist to
+make T9 trustworthy.
+\end{plain}
+
+%==============================================================================
+\section{Part B --- Experiment specifications (real VALENCIA, exploratory)}
+\label{sec:experiments}
+%==============================================================================
+
+These run on the France et al.\ VALENCIA 16S collection ($n\approx 13{,}231$
+vaginal samples), restricted to \emph{relative abundances of phylotypes} --- each
+sample closed to sum one, so it is a point of the simplex and nothing else
+(no host covariates, no counts beyond what defines presence). They have no ground
+truth; each produces tables, figures, and a decision rule for what to build or
+prioritize next. Each follows the template \textsf{Objective / Procedure /
+Outputs / Decision}.
+
+\subsection{E1 --- Enumerate the naive strata}\label{sec:E1}
+\field{Objective} Map the face-lattice structure the data actually occupy: which
+support patterns (naive strata) occur, how heavily, and at what face dimensions.
+\field{Procedure}
+\begin{enumerate}[leftmargin=1.5em,nosep]
+\item Close each sample to the simplex. Fix a presence threshold $\tau$ and define
+the support $A_\tau(x)=\{i:x_i>\tau\}$; \emph{sweep} $\tau$ over a grid (e.g.\
+$0$, and relative-abundance / read-depth-aware thresholds) because ``present'' is
+not crisp at the detection limit.
+\item Enumerate the distinct support patterns $\{A\}$; for each record occupancy
+$n_A$, size $|A|$, and nominal face dimension $|A|-1$.
+\item Refine: group strata by their $L^\infty$ cell (dominant/argmax taxon), and
+cross-tabulate against the VALENCIA community-state-type (CST) label.
+\end{enumerate}
+\field{Outputs} An occupancy-ranked table of strata; the face-dimension
+distribution; the count of distinct strata and the occupancy concentration (how
+few strata hold, say, $90\%$ of samples) as a function of $\tau$
+(Figure~\ref{fig:fig_strata_enum.pdf}); the $L^\infty$-cell and CST cross-tabs.
+\begin{decision}
+If a small number of strata hold most of the mass, focus all synthetic modeling
+and tests on those. If the face-dimension distribution is concentrated at low
+dimensions, the non-manifold structure is mild and a global chart dimension may
+suffice (\emph{lowers} the priority of the whole field idea). If it is broad,
+local, varying dimension is warranted. The $\tau$-sensitivity quantifies how
+``soft'' the faces are --- how much the stratum assignment moves as the threshold
+moves --- and therefore how much the soft-face machinery (T7) is needed.
+\end{decision}
+
+\fig{fig_strata_enum.pdf}{\linewidth}{Schematic of the E1 outputs. (a) Each sample
+carries a support pattern --- which phylotypes are present --- equivalently which
+face of the simplex it sits on. (b) Occupancy of the naive strata, expected to be
+heavy-tailed (a few dominant patterns). (c) The distribution of nominal face
+dimension $|A|-1$. (Illustrative values, not computed from the data.)}
+
+\subsection{E2 --- Mass concentration around lower-dimensional faces}\label{sec:E2}
+\field{Objective} For each well-occupied stratum, quantify how far \emph{below} its
+nominal face dimension the data actually live --- the gap that the local-dimension
+field exists to recover.
+\field{Procedure} For each stratum $A$ with $n_A\ge n_{\min}$, restrict to its
+samples and work in the cube coordinate $\xi$ of the present parts (and, for the
+T6 contrast, the log-ratio $u$):
+\begin{enumerate}[leftmargin=1.5em,nosep]
+\item \emph{Effective rank} $k_A$: the eigenvalue spectrum of the within-stratum
+covariance; report the scree and a gap-based $k_A$, alongside the nominal $|A|-1$.
+\item \emph{Per-sample local effective dimension}: local PCA at the bandwidth
+scale, giving a distribution of effective dimension \emph{within} the stratum.
+\item \emph{Near-face mass}: for each lower face $B\subset A$, the fraction of
+stratum-$A$ samples within $\epsilon$ of $B$, i.e.\ with $\min_{i\in A\setminus
+B}\xi_i<\epsilon$; sweep $\epsilon$.
+\item \emph{Min present-abundance law}: the distribution of $\min_{i\in A}x_i$
+(how often a present taxon hugs the detection limit), and the within-stratum
+anisotropy (largest/smallest eigenvalue $=$ a tube-thickness estimate $\rho_A$).
+\end{enumerate}
+\field{Outputs} Per stratum: the (nominal $|A|-1$) vs.\ (effective $k_A$) gap
+(Figure~\ref{fig:fig_eff_dim_vs_nominal.pdf}); near-face mass curves and
+min-abundance histograms (Figure~\ref{fig:fig_mass_conc.pdf}); the tube-thickness
+estimates $\rho_A$.
+\begin{decision}
+The size of the (nominal $-$ effective) gap, per stratum, is the central number.
+Large gaps mean the data genuinely concentrate below their face dimension, so the
+effective-dimension reduction is high-value and the field should be built and
+tested in earnest; the measured $k_A$ and $\rho_A$ become the parameters of the
+synthetic generators (E3, Section~\ref{sec:synthetic}). Gaps near zero mean the
+faces are ``full'' and the support cap (T7) already suffices --- deprioritize the
+within-face reduction and keep only the soft-face and the cap.
+\end{decision}
+
+\fig{fig_eff_dim_vs_nominal.pdf}{0.62\linewidth}{Schematic of the headline E2
+statistic. For each stratum, the support gives a nominal dimension (the cap, on the
+diagonal); the data fill fewer effective directions (below the diagonal). The
+vertical gaps are exactly what local-dimension regularization is meant to recover.
+(Illustrative.)}
+
+\fig{fig_mass_conc.pdf}{\linewidth}{Schematic of the per-stratum E2 diagnostics: a
+naive face whose mass hugs a lower face (a tube); the distribution of the smallest
+present abundance (mass near a sub-face when it piles up at the detection limit);
+and the within-stratum effective-dimension distribution sitting below the nominal
+value. (Illustrative.)}
+
+\subsection{E3 --- Remaining structure for synthetic modeling}\label{sec:E3}
+\field{Objective} Collect the rest of the statistics needed to make the synthetic
+generators realistic.
+\field{Procedure} Estimate, from the data: the stratum distribution $p(A)$ (E1);
+per-stratum location and shape --- mean $\mu_A$ and covariance $\Sigma_A$ in a
+log-ratio chart (a logistic-normal fit), from which the top-$k_A$ loading
+directions $B_A$ and the residual thickness $\rho_A$ follow (E2); dominant-taxon
+($L^\infty$-cell) frequencies and the near-tie frequency (how often the top two
+taxa are close --- the soft-cell regime); pairwise presence co-occurrence (the
+support-layer structure, shared with the chart-aware association design); and the
+same quantities conditional on CST.
+\field{Outputs} A single parameter bundle $\{p(A),\mu_A,B_A,\rho_A,k_A,\text{
+dominant-taxon and near-tie frequencies, co-occurrence}\}$ that fully specifies
+the generators of Section~\ref{sec:synthetic}.
+\begin{decision}
+Before any test built on the generators is trusted, run a posterior-predictive
+fidelity check: simulate from the bundle and compare synthetic vs.\ real marginals
+(per-taxon abundance laws, stratum occupancy, dominant-taxon frequencies,
+co-occurrence). If the synthetic data does not reproduce the real marginals, the
+generators --- and the example set built on them --- are not yet realistic, and the
+bundle must be refined before the test outcomes mean anything about VALENCIA.
+\end{decision}
+
+\begin{plain}
+The experiments are a measuring exercise, not a graded one. We are taking the
+real microbiome data apart to answer: how many distinct ``which-taxa-are-present''
+patterns are there, how crowded is each, and within each, do the present taxa
+really spread out or do they huddle near an edge? Those measurements are the
+recipe we then use to cook realistic fake data --- and a good cook tastes the dish
+(the fidelity check) before serving it.
+\end{plain}
+
+%==============================================================================
+\section{Part C --- The VALENCIA-inspired synthetic example set}\label{sec:synthetic}
+%==============================================================================
+
+These generators expand the non-manifold example set used in previous LPS tests
+(replacing the toy ``edge-glued-to-sheet'' object with simplex-resident,
+VALENCIA-shaped objects). Every one carries a \emph{known} local-dimension field,
+which is what makes the tests of Section~\ref{sec:tests} possible.
+
+\subsection{The stratum-mixture generator (the realistic workhorse)}
+\begin{dgp}[Stratum mixture]\label{dgp:mix}
+Fix the parameter bundle from E3. To draw one sample:
+\begin{enumerate}[leftmargin=1.5em,nosep]
+\item draw a support pattern $A\sim p(A)$ with $|A|=m$ present parts;
+\item in a log-ratio chart of the present parts (ILR, or the $L^\infty$
+max-reference cube coordinate of the companion design), $\R^{m-1}$, draw
+\[
+  y \;=\; \mu_A \;+\; B_A\,z \;+\; \rho_A\,\varepsilon,
+  \qquad z\sim\mathcal N(0,I_{k_A}),\ \ \varepsilon\sim\mathcal N(0,I_{m-1}),
+\]
+with $B_A\in\R^{(m-1)\times k_A}$ of orthonormal columns (the face's $k_A$ active
+tangent directions) and $\rho_A$ small (the tube thickness). The chart covariance
+is $\Sigma_A = B_AB_A^{\!\top}+\rho_A^2 I$, with $k_A$ large eigenvalues and
+$m-1-k_A$ small ($\rho_A^2$) ones;
+\item map $y$ back to the simplex face $F_A$ (inverse chart), set absent parts to
+$0$, and close to sum one.
+\end{enumerate}
+\textbf{Ground truth.} The naive stratum is $A$; the effective local dimension at
+the smoother's bandwidth is $k_A$ (we chose it). At a scale finer than $\rho_A$ the
+dimension reads $m-1$, coarser than $\rho_A$ it reads $k_A$ --- the designed
+scale step that T5 checks. A response surface for T9 is attached on the latent
+factors, e.g.\ continuous $f=g(z)$ or binary $p=\mathrm{expit}(\eta(z))$.
+\end{dgp}
+
+\subsection{Single-phenomenon fragments (clean unit tests)}
+Each fragment isolates one effect with a known field, for the corresponding test.
+
+\begin{dgp}[Tube]\label{dgp:tube} One stratum, $m=3$, $k_A=1$: a curve inside a
+$2$-face, thickness $\rho$ tunable. Feeds T5 (scale) and T6 (coordinate trap; place
+the curve heading toward a $1$-face so $\xi$ and $u$ disagree).\end{dgp}
+
+\begin{dgp}[Seam]\label{dgp:seam} Two strata of dimensions $k_1\neq k_2$ sharing a
+sub-face, glued so that crossing the shared face the true dimension jumps along a
+\emph{known} boundary. Feeds T2 and T4 (the boundary tests); the jump magnitude
+$|k_1-k_2|$ is a knob.\end{dgp}
+
+\begin{dgp}[Cone]\label{dgp:cone} A stratum whose effective dimension decreases
+continuously to a singular point (a $2$-region pinching toward a vertex), a
+faithful lower-semicontinuous structure with a known frontier. Feeds T8 (the
+no-island / poset test).\end{dgp}
+
+\begin{dgp}[Near-tie ridge]\label{dgp:tie} Two dominant taxa held near-equal so the
+$L^\infty$ argmax is unstable, populating the soft-cell regime. Stresses the
+interaction of the dimension field with the soft atlas; an auxiliary generator for
+robustness checks.\end{dgp}
+
+\fig{fig_synth_model.pdf}{\linewidth}{The stratum-mixture generator
+(DGP~\ref{dgp:mix}). A stratum is drawn from the E1 occupancy; a composition is
+sampled on that face with a covariance of controlled effective rank $k_A$ (a known
+tube); the output carries its true stratum $A_j$ and true local dimension $k_j$, so
+the dataset is non-manifold \emph{and} gradeable. (Schematic.)}
+
+\begin{plain}
+We build the fake data the way the real data is built --- pick which microbes are
+present, then spread the sample out on that face --- but with one twist we control:
+we decide, for each face, how many directions the data really spreads in (the
+``effective dimension''), and how thin the leftover directions are (the ``tube'').
+Because we set those numbers, we know the answer key. The fragments are stripped-
+down versions, each built to make exactly one test fair: a single thin curve, a
+single seam where the dimension jumps, a single cone that pinches to a point.
+\end{plain}
+
+%==============================================================================
+\section{Part D --- Sequencing and the decision map}\label{sec:sequencing}
+%==============================================================================
+
+\begin{enumerate}[leftmargin=1.6em]
+\item \textbf{E1 first} (cheap). It alone can lower the priority of the whole
+program: if the real data's face-dimension structure is mild, a global chart
+dimension may be enough and the field is not worth building.
+\item \textbf{E2 next} --- the decisive measurement. The (nominal $-$ effective)
+gap is the quantity that justifies, or deflates, the local-dimension field. Its
+$k_A,\rho_A$ feed the generators.
+\item \textbf{E3 + fidelity check.} Assemble the parameter bundle; verify the
+generators reproduce the real marginals before trusting any downstream test.
+\item \textbf{Build the generators} (DGPs~\ref{dgp:mix}--\ref{dgp:tie}).
+\item \textbf{Run the tests}, T1 first (a pure unit gate on the solver), then
+T2--T8 (the property tests), and T9 last (the payoff: does the field improve LPS
+accuracy on VALENCIA-realistic data?).
+\end{enumerate}
+
+The outcomes map to next steps. If E2 shows large gaps \emph{and} T9 shows the
+field helps on the realistic generator, promote \texttt{local.auto} plus the
+$\ell_1$ field to a routine policy and proceed to a real-data LPS evaluation
+(where the field is judged only by held-out predictive accuracy, never by an
+intrinsic dimension score). If E2 shows small gaps, keep only the support cap and
+soft face and shelve the within-face reduction. If T8 shows the TV field
+producing geometrically impossible islands on the cone, invest in the
+poset-aware solve; otherwise TV suffices. And throughout, the synthetic example
+set built here becomes the permanent regression suite for the dimension field,
+just as the toy stratified object was for the earlier LPS tests --- only now
+shaped like the data we actually care about.
+
+\begin{decision}
+The single go/no-go gate for the whole effort is the conjunction
+\emph{(E2 gap is large)} $\wedge$ \emph{(T9 improves Truth-RMSE on the
+stratum-mixture generator)}. If either fails, the local-dimension field is not
+worth carrying into production for vaginal 16S, and the effort redirects to the
+cheaper soft-face-and-cap refinement of the chart-aware design.
+\end{decision}
+
+%==============================================================================
+\begin{thebibliography}{9}\small
+\bibitem{expo} \emph{Local Dimension Regularization in Local Polynomial
+  Smoothing} (the expository note),
+  \nolinkurl{~/current_projects/geosmooth/dev/notes/foundations/lps_local_dimension_regularization.tex}.
+\bibitem{plan} \emph{LPS Correctness and Validation: A Precise Experimental Plan},
+  \nolinkurl{~/current_projects/geosmooth/dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex}.
+\bibitem{chartaware} \emph{Chart-Aware Local Association Structure on the
+  $L^\infty$ Atlas},
+  \nolinkurl{~/current_projects/geosmooth/dev/methods/lcov/specs/chart_aware_local_association_design_2026-06-09.tex}.
+\bibitem{france2020} M.~France et al., VALENCIA: a nearest-centroid classification
+  method for vaginal microbial communities, \emph{Microbiome} 8:166 (2020).
+\bibitem{ravel2011} J.~Ravel et al., Vaginal microbiome of reproductive-age women,
+  \emph{PNAS} 108 (2011).
+\bibitem{ishikawa} H.~Ishikawa, Exact optimization for Markov random fields with
+  convex priors, \emph{IEEE TPAMI} 25 (2003).
+\bibitem{fusedlasso} R.~Tibshirani, M.~Saunders, S.~Rosset, J.~Zhu, K.~Knight,
+  Sparsity and smoothness via the fused lasso, \emph{JRSS-B} 67 (2005).
+\bibitem{levinabickel} E.~Levina, P.~J.~Bickel, Maximum likelihood estimation of
+  intrinsic dimension, \emph{NeurIPS} (2004).
+\bibitem{ilr} J.~J.~Egozcue et al., Isometric logratio transformations for
+  compositional data analysis, \emph{Math.\ Geol.} 35 (2003);
+  J.~Aitchison, \emph{The Statistical Analysis of Compositional Data} (1986).
+\end{thebibliography}
+
+\end{document}

@@ -7,6 +7,7 @@ __pycache__/
 .auctex-auto/
 dev/html/
 dev/index.html
+dev/**/html/
 split_handoffs/
 audit_artifacts/
 !dev/methods/*/audit_artifacts/
@@ -34,3 +35,6 @@ src/*.dll
 src/ANN/*.o
 src/ANN/*.so
 src/ANN/*.dll
+
+# Local verification scratch
+tmp/
