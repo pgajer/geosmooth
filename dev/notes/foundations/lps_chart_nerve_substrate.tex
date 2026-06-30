@@ -1,0 +1,417 @@
+\documentclass[11pt]{article}
+
+%==============================================================================
+%  The Local-Chart Simplicial Complex as an Organizing Substrate for LPS
+%  A cross-cutting design note: the nerve of the chart cover as the native
+%  combinatorial substrate for conditional-expectation and local-covariance
+%  estimation. Organizational (not topological) view. All figures original.
+%==============================================================================
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{datetime2}
+\DTMsetup{showzone=false}     % timestamp in US Eastern time (build sets TZ); see latexmkrc
+\usepackage[hidelinks]{hyperref}
+\usepackage[section]{placeins}
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+\definecolor{ink}{HTML}{24303D}
+\definecolor{accent}{HTML}{2563EB}
+\definecolor{accent2}{HTML}{B45309}
+\captionsetup{font=small,labelfont=bf}
+\setlist{topsep=3pt,itemsep=2pt,parsep=1pt}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\newtcolorbox{plain}{
+  enhanced, colback=accent!4, colframe=accent!55!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=In plain terms,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent!50!black,
+  attach title to upper={\quad}}
+\newtcolorbox{caution}{
+  enhanced, colback=accent2!5, colframe=accent2!60!black, boxrule=0.4pt, arc=2pt,
+  left=7pt, right=7pt, top=4pt, bottom=4pt, title=A caution worth stating,
+  fonttitle=\bfseries\sffamily\small, coltitle=accent2!55!black,
+  attach title to upper={\quad}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\nerve}{\mathcal{N}}
+\newcommand{\fig}[3]{%
+  \begin{figure}[htbp]\centering
+  \includegraphics[width=#2]{figures_ldr/#1}%
+  \caption{#3}\label{fig:#1}\end{figure}}
+
+\title{\textbf{The Local-Chart Simplicial Complex as an Organizing Substrate
+for LPS}\\[4pt]
+\large From the adaptive kNN graph to the nerve of the chart cover --- an
+organizational (not topological) scaffold for refining conditional-expectation
+and local-covariance estimation}
+\author{\small Internal design note --- LPS / \texttt{geosmooth} program\\[2pt]
+\footnotesize source: \nolinkurl{~/current_projects/geosmooth/dev/notes/foundations/lps_chart_nerve_substrate.tex}}
+\date{\DTMnow\ \textnormal{\footnotesize ET}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+Every estimator in the LPS program currently sits on top of a graph that is built
+\emph{before, and independently of}, the estimation problem: an adaptive-radius
+$k$-nearest-neighbor graph. This note argues that once we commit to \emph{local
+chart} models, the natural combinatorial substrate is not that input graph but the
+\emph{nerve of the chart cover} --- the simplicial complex whose vertices are the
+charts and whose simplices record which charts overlap. The thesis is
+deliberately organizational, not topological: we are not interested in
+reconstructing the data's homotopy type, only in a faithful bookkeeping of
+\emph{which local estimates should agree, and how strongly}, so that conditional
+expectations and local covariances can be refined by gluing. Seen this way, the
+program already uses the shadow of this object --- PS-LPS's overlap coupling and
+the chart-aware association layer's overlap weights are exactly the nerve's
+$1$-skeleton. Making the nerve native buys three things a kNN graph cannot give:
+variable chart sizes (an adaptive cover), higher-order overlaps (constraints where
+three or more charts meet), and a substrate whose quality is judged by held-out
+estimation accuracy rather than fixed by an a-priori rule. We lay out what each
+LPS layer gains, the one criterion that makes a complex ``good'' for our purposes
+(a statistical one), the compositional case where part of the complex is known for
+free, the real costs, and a minimal-first path keyed to the synthetic generators
+of the implementation notes.
+\par\medskip\noindent\footnotesize\textit{On the figures.} All figures are
+original schematics drawn for this note.
+\end{abstract}
+
+{\small\tableofcontents}
+
+%==============================================================================
+\section{The substrate, and a deliberate restriction of ambition}\label{sec:thesis}
+%==============================================================================
+
+The LPS pipeline builds, in order: a neighbor graph on the samples; a local chart
+at each anchor (local PCA, with an estimated local dimension); a local polynomial
+fit on that chart; and, in PS-LPS and the chart-aware association layer, a
+coupling that ties \emph{overlapping} charts together. The first object --- the
+adaptive-radius kNN graph --- is built by a generic proximity rule that knows
+nothing about the regression surface or the covariance structure we are trying to
+estimate. It is scaffolding.
+
+The thesis of this note is that the charts themselves induce a better substrate.
+A collection of charts is a \emph{cover} of the data: each chart's support is a
+subset $U_c$ of samples, and together the $U_c$ blanket the cloud. The
+combinatorial object that records how a cover fits together is its \emph{nerve}.
+
+\begin{definition}[Nerve of the chart cover]\label{def:nerve}
+Let $\{U_c\}_{c}$ be the supports of the local charts. The nerve $\nerve$ is the
+simplicial complex with one vertex per chart $c$, an edge $\{c,c'\}$ whenever
+$U_c\cap U_{c'}\neq\varnothing$, a triangle $\{c,c',c''\}$ whenever
+$U_c\cap U_{c'}\cap U_{c''}\neq\varnothing$, and so on. Each simplex carries the
+size of the corresponding overlap as a weight.
+\end{definition}
+
+\fig{fig_substrate.pdf}{\linewidth}{The shift in substrate. (a) The input
+scaffold: an adaptive-radius kNN graph, pairwise and fixed before estimation.
+(b) The charts form a \emph{cover} whose pieces can vary in size with the local
+geometry. (c) The nerve of that cover: charts are nodes, an edge marks a pairwise
+overlap, and a filled triangle marks a place where three charts overlap at once
+--- structure a pairwise graph cannot record.}
+
+We must be precise about what we want from $\nerve$, because the word ``nerve''
+comes loaded with topology. The classical reason to care about a nerve is the
+Nerve Theorem: for a sufficiently nice (``good'') cover, the nerve is homotopy
+equivalent to the union of the cover, so one can read the space's topology off a
+finite complex. \emph{We are explicitly not relying on that.} The goal here is
+biology, and the use is organizational: $\nerve$ is a faithful ledger of which
+local estimates overlap, and therefore of which ones should be made to agree and
+with what strength. Whether $\nerve$ reproduces the data's homology is beside the
+point; what matters is whether gluing local estimates over $\nerve$ produces
+better conditional expectations and covariances. That reframing --- from a
+topological criterion to a statistical one --- runs through the whole note.
+
+\begin{plain}
+Think of the charts as overlapping photographs that together cover a landscape.
+The ``nerve'' is just the index card that says which photos overlap, and which
+three overlap at a corner. We are not trying to rebuild the landscape's shape from
+the index card; we are using the card to know which photos must be stitched to
+agree where they overlap --- so the stitched panorama (our estimate of the
+surface) is seamless.
+\end{plain}
+
+%==============================================================================
+\section{The program already uses the nerve's shadow}\label{sec:shadow}
+%==============================================================================
+
+This is not an exotic import. Two pieces of the existing program are, up to
+naming, already defined on $\nerve$.
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{PS-LPS} couples two charts when their supports share points and
+penalizes disagreement of their predictions on the shared points. ``Charts that
+share support points'' is precisely an \emph{edge of $\nerve$}; the shared points
+are the overlap that weights it. PS-LPS is a synchronization defined on the nerve's
+$1$-skeleton.
+\item \textbf{The chart-aware association layer} fuses neighboring charts'
+covariance/precision blocks with an overlap weight $\zeta_{cc'}=\sum_j\min(w_{cj},
+w_{c'j})$ --- again an edge weight of $\nerve$, measuring how much two charts
+overlap.
+\end{itemize}
+
+So the program is already doing nerve-based gluing; it just derives the adjacency
+from the kNN graph and stops at pairwise edges. The proposal is to (i) derive
+$\nerve$ \emph{natively} from the charts (so it adapts as the charts adapt), and
+(ii) use more of it than the bare $1$-skeleton.
+
+%==============================================================================
+\section{Why the nerve organizes better than any kNN graph}\label{sec:why}
+%==============================================================================
+
+Three differences matter, and all three are in service of estimation, not topology.
+
+\paragraph{Variable chart size $=$ an adaptive cover.} A kNN graph fixes the arity
+(or radius) of every neighborhood before looking at the problem. Charts need not:
+a chart can be large where the data is sparse or locally one-dimensional and small
+where it is dense or higher-dimensional. The nerve of a variable-size cover encodes
+this adaptivity directly --- two regions are coupled exactly when their
+\emph{charts} (sized to the local geometry) overlap, not when an arbitrary fixed
+$k$ says so.
+
+\paragraph{Higher-order overlaps $=$ constraints a graph cannot express.} Where
+three charts overlap, the right object is a single three-way agreement, not three
+separate pairwise ones. A pairwise graph can only ever say ``$a$ agrees with $b$,
+$b$ with $c$, $a$ with $c$''; it cannot say ``$a$, $b$, $c$ agree on their common
+region.'' The latter is a genuinely different (and at junctions, more appropriate)
+constraint, and it is exactly a $2$-simplex of $\nerve$ (Figure~\ref{fig:fig_glue.pdf},
+right). This is the same reason the clique/Rips complex induced by a kNN graph ---
+which manufactures higher simplices from pairwise edges --- is a poorer record of
+the cover than the nerve, which records the actual multi-way intersections.
+
+\paragraph{The substrate becomes part of the model.} Because $\nerve$ is built
+from the charts, and the charts are chosen to fit the estimation problem, the
+substrate is no longer fixed input: it is selected, and can be judged by how well
+estimates glued over it predict held-out data (Section~\ref{sec:criterion}).
+
+\begin{caution}
+None of this requires the cover to be ``good'' in the topological sense. A kNN
+graph and the nerve will sometimes disagree about whether two regions should be
+coupled, and near a stratum boundary the charts may overlap in ways that would
+\emph{not} make a topologically faithful nerve. For our purposes that is fine:
+an extra or missing edge changes which estimates are tied together and how
+strongly --- a modeling choice to be validated by accuracy, not a topological
+error. We keep the nerve as a statistical ledger and let held-out error referee it.
+\end{caution}
+
+%==============================================================================
+\section{What each LPS layer gains}\label{sec:gains}
+%==============================================================================
+
+\subsection{Conditional expectation (PS-LPS)}
+Moving PS-LPS onto the native nerve changes three things. \emph{Adaptivity:} the
+coupling graph is the nerve of variable-size charts, so two anchors are
+synchronized exactly when their (geometry-sized) charts overlap, with strength set
+by the overlap. \emph{Higher order:} on a $2$-simplex, synchronize the three
+charts' predictions on their common overlap as a single constraint --- the natural
+thing at a junction where three local models meet
+(Figure~\ref{fig:fig_glue.pdf}). \emph{Honest weights:} edge and triangle weights
+come from actual intersection sizes, not from a kNN kernel evaluated at fixed
+arity.
+
+\fig{fig_glue.pdf}{\linewidth}{Gluing on overlaps. Left: where two charts overlap
+(an edge of $\nerve$) their local fits --- both the predicted surface and the local
+covariance --- should agree on the shared region. Right: where three charts overlap
+(a $2$-simplex) there is a three-way agreement that a pairwise graph cannot
+express. These overlaps are exactly where, and how strongly, local estimates are
+tied together.}
+
+\subsection{Local covariance and association}
+The chart-aware layer estimates a covariance/precision per chart and fuses
+neighbors. The overlap of two charts is precisely the set of samples on which
+their two covariance estimates are looking at the same data --- so $\nerve$ tells
+us \emph{where} the covariance estimates should agree and \emph{how strongly}
+(the overlap weight). Variable chart size lets the covariance model widen its
+support where data is scarce. And the higher simplices give three-way covariance
+agreement at junctions, where the support layer (which taxa co-occur) reorganizes.
+
+\subsection{The local-dimension / chart-size field}
+The dimension field of the implementation notes minimizes
+$\sum_i c_i(d_i)+\lambda\sum_{(i,j)}w_{ij}\rho(d_i,d_j)$ over a graph; that graph
+should be the nerve $1$-skeleton, with weights $w_{ij}$ from overlap sizes
+(dimension- and size-aware) rather than kNN adjacency. More: the chart
+\emph{size} is itself a field --- larger charts average more (lower variance, more
+bias) --- and it should be co-regularized with the dimension over $\nerve$, with
+the same edge-preserving ($\ell_1$) penalty so that size, like dimension, stays
+constant within a stratum and jumps at boundaries.
+
+\subsection{One objective over the complex}
+Attach to each chart its local data --- predicted surface, covariance, dimension,
+size. The nerve records which charts overlap. The global estimate minimizes
+\[
+  \sum_{c}\ \underbrace{L_c(\text{local fit})}_{\text{fidelity}}
+  \;+\;\sum_{\sigma\in\nerve}\ \omega_\sigma\,
+  \underbrace{D_\sigma(\text{disagreement on }{\textstyle\bigcap_{c\in\sigma}U_c})}_{\text{gluing}},
+\]
+where $\sigma$ ranges over the simplices (edges, triangles, \dots) of $\nerve$ and
+$\omega_\sigma$ is the overlap weight. PS-LPS prediction synchronization, the
+covariance fusion, and the dimension/size field are all special cases --- each is
+a particular choice of what the local data is and how disagreement on an overlap
+is measured. (Formally this is a cochain energy of a cellular sheaf over $\nerve$;
+we use that only as the name for ``make the local data agree on overlaps,'' not for
+any topological content.)
+
+\begin{plain}
+Every layer of the program is, underneath, the same sentence: each chart fits its
+own little patch of data, and overlapping charts are pulled toward agreeing where
+they overlap. The nerve is just the precise list of overlaps --- including the
+three-way ones --- and how big each is. Writing the program against that list,
+instead of against a generic neighbor graph, makes every layer use the same,
+geometry-aware bookkeeping.
+\end{plain}
+
+%==============================================================================
+\section{What makes a complex ``good'' here: a statistical criterion}\label{sec:criterion}
+%==============================================================================
+
+If we are not chasing topology, what tells us we have the \emph{right} complex?
+The answer is the only one that matters for the program: a complex is good to the
+extent that estimates glued over it predict held-out data better. The overlap
+structure is a modeling choice --- which local estimates to tie together, and how
+strongly --- and modeling choices in this program are settled by held-out
+conditional-expectation accuracy (the same rule the implementation notes use to
+select the dimension field's $\lambda$). This dissolves the would-be
+chicken-and-egg of ``you need the geometry to build the cover, and the cover to
+estimate the geometry'': we do not need the cover to be correct in any absolute
+sense, only useful, and usefulness is measurable.
+
+It also turns the user's original observation --- that the substrate should be
+\emph{derived from} the chart models --- into a concrete loop
+(Figure~\ref{fig:fig_refine_loop.pdf}). Start from charts (each with a size and a
+local dimension); take the nerve of their cover; glue the local estimates over it;
+score the result by held-out prediction error; and let that score re-size and
+re-dimension the charts. A fixed point of this loop is a self-consistent atlas
+whose overlaps were chosen by the estimation problem itself. In practice one would
+run a few rounds rather than seek an exact fixed point; whether the loop converges,
+and to what, is an open question (Section~\ref{sec:open}), but each round is
+well-defined and each is judged by accuracy.
+
+\fig{fig_refine_loop.pdf}{0.74\linewidth}{The estimation problem chooses the
+substrate. Charts (with their sizes and local dimensions) induce a cover; its
+nerve says who overlaps; local estimates are glued over the nerve into
+conditional-expectation and covariance fields; held-out accuracy scores the result
+and feeds back to re-size and re-dimension the charts. The cover is selected, not
+fixed.}
+
+%==============================================================================
+\section{The compositional case: part of the nerve is known for free}\label{sec:compositional}
+%==============================================================================
+
+For 16S relative-abundance data the nerve is not entirely something to estimate ---
+much of its coarse combinatorics is handed to us by the simplex. A sample's
+support (which phylotypes are present) places it on a face; two charts on
+different faces $F_A$ and $F_{A'}$ can overlap only through their shared sub-face,
+and which faces are adjacent is fixed by the face lattice (the support patterns
+enumerated by experiment E1 of the implementation notes). So the cross-face part of
+$\nerve$ --- which strata are even capable of being coupled --- is a known, finite
+poset, not a fitted object.
+
+What remains to estimate is the \emph{within-face} part: among samples sharing a
+support, which charts overlap, at what sizes, and where the effective dimension
+drops (the gaps measured by E2). This is exactly where the variable-size,
+dimension-aware nerve earns its keep, and it scopes the work honestly: the
+expensive, learned part of the substrate lives inside the strata and at their soft
+boundaries (near-ties, near-zeros), while the skeleton across strata is read off
+the zero pattern.
+
+\begin{plain}
+In microbiome data, the big pieces of the ``who can overlap whom'' map are free:
+two samples made of completely different microbes simply do not share a chart.
+What we actually have to learn is the fine structure \emph{within} a group of
+samples that share the same microbes --- how their charts overlap and how many
+directions they really spread in.
+\end{plain}
+
+%==============================================================================
+\section{Costs, and a minimal-first path}\label{sec:plan}
+%==============================================================================
+
+\paragraph{Costs, stated plainly.} Higher simplices are combinatorially heavier:
+the number of triple overlaps can be large, so the complex is truncated at
+dimension two or three and built only among nearby charts --- still a sparse object,
+but a real implementation cost. Variable chart size adds a selection problem (more
+adaptivity means more to choose and more variance), which is why the size field
+must be regularized jointly with the dimension over $\nerve$. And the assembly and
+cross-validation bookkeeping must be re-expressed against the nerve rather than the
+kNN graph; because PS-LPS already assembles its system from chart overlaps, this is
+a generalization of existing code, not a rewrite.
+
+\paragraph{Minimal-first.} The idea should be earned one measurable step at a time,
+on the synthetic generators of the implementation notes (where the true
+local-dimension field, and hence the intended overlaps, are known):
+\begin{enumerate}[leftmargin=1.6em]
+\item Replace PS-LPS's pairwise overlap graph with the nerve $1$-skeleton of
+\emph{variable-size} charts. Test whether this alone improves held-out
+Truth-RMSE on a stratified generator. This is a small change with an immediate
+adaptivity payoff.
+\item Add $2$-simplices and higher-order synchronization on triple overlaps. Test
+whether they measurably help --- the hypothesis is that they matter only near
+junctions of strata.
+\item Co-regularize chart \emph{size} and chart \emph{dimension} as fields over
+$\nerve$ with an $\ell_1$ penalty, so both stay constant within a stratum and jump
+at boundaries.
+\item Only if steps 1--3 pay off, lift prediction, covariance, and dimension into
+the single cochain objective of Section~\ref{sec:gains}.
+\end{enumerate}
+At every step the substrate is judged by held-out estimation accuracy, never by a
+topological or intrinsic-geometry score.
+
+%==============================================================================
+\section{Open questions}\label{sec:open}
+%==============================================================================
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Sizing for a statistically good cover.} How should chart sizes be
+chosen so that the nerve is a useful ledger --- jointly with the local dimension,
+and judged by accuracy? This is the substantive modeling question.
+\item \textbf{The refinement loop.} Does the charts~$\to$~nerve~$\to$~glue~$\to$~refine
+loop converge, and is the fixed point meaningful, or is a fixed number of rounds
+the right thing?
+\item \textbf{Does higher order pay?} The empirical crux: do $2$-simplex (triple)
+constraints measurably improve estimates over the $1$-skeleton, and only at
+junctions, as conjectured?
+\item \textbf{Cheap truncation.} What is the cheapest construction of the
+dimension-$\le 2$ nerve that keeps the overlaps that matter for estimation?
+\item \textbf{Relation to existing machinery.} How does a nerve-based assembly sit
+with the metric-graph and graph-trend-filtering tooling already in
+\texttt{geosmooth} --- can the same solvers be reused on the nerve $1$-skeleton?
+\end{itemize}
+
+These are the right next questions precisely because they are all answerable by
+experiment on synthetic data with known truth, and then by held-out accuracy on the
+VALENCIA-shaped generators --- which keeps the whole idea, ambitious as it is,
+anchored to biology and to measurable estimation gains rather than to topology.
+
+%==============================================================================
+\begin{thebibliography}{9}\small
+\bibitem{impl} \emph{LPS Local Dimension Regularization: Implementation Notes},
+  \nolinkurl{~/current_projects/geosmooth/dev/methods/lps/specs/lps_local_dimension_regularization_implementation_notes.tex}.
+\bibitem{expo} \emph{Local Dimension Regularization in Local Polynomial
+  Smoothing}, \nolinkurl{~/current_projects/geosmooth/dev/notes/foundations/lps_local_dimension_regularization.tex}.
+\bibitem{chartaware} \emph{Chart-Aware Local Association Structure on the
+  $L^\infty$ Atlas},
+  \nolinkurl{~/current_projects/geosmooth/dev/methods/lcov/specs/chart_aware_local_association_design_2026-06-09.tex}.
+\bibitem{plan} \emph{LPS Correctness and Validation: A Precise Experimental Plan},
+  \nolinkurl{~/current_projects/geosmooth/dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex}.
+\bibitem{mapper} G.~Singh, F.~M\'emoli, G.~Carlsson, Topological methods for the
+  analysis of high dimensional data sets and 3D object recognition (the Mapper
+  algorithm), \emph{Eurographics SPBG} (2007).
+\bibitem{sheaf} J.~Hansen, R.~Ghrist, Toward a spectral theory of cellular
+  sheaves, \emph{J.\ Appl.\ Comput.\ Topology} 3 (2019).
+\bibitem{nerve} K.~Borsuk, On the imbedding of systems of compacta in simplicial
+  complexes (the Nerve Lemma), \emph{Fund.\ Math.} 35 (1948); J.~Leray (1945).
+\end{thebibliography}
+
+\end{document}

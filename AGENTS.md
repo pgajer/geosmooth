@@ -48,3 +48,18 @@ from `gflow`.
 - GE1-GE4 should move methods in small coherent groups and fix only
   split-induced namespace, registration, or helper issues.
 - Do not silently change smoother semantics during migration.
+
+## Documentation And Artifact Reorganizations
+
+- Before moving, deleting, ignoring, or declaring complete any reorganization of
+  development artifacts, run the unmerged-branch artifact reconciliation gate:
+  `/Users/pgajer/.codex/notes/workflows/unmerged_branch_artifact_reconciliation.md`.
+- Inspect unmerged `codex/*` and other agent branches for durable artifacts
+  before relying on the current branch's file tree. This is required for
+  restructures involving `dev/`, `project_briefs/`, `split_handoffs/`,
+  `audits/`, `audit_contracts/`, `reports/`, `validation/`, dashboards, or
+  program roadmaps.
+- Record a disposition for every durable side-branch artifact: promoted,
+  already present, archived, externalized, or discarded with a concrete reason.
+  Do not call a migration complete while active documents still cite old paths
+  or while cited sources exist only on an unmerged branch.
