@@ -62,6 +62,12 @@ test_that("OD2 LPS count and binary no-repeat workflows agree after normalizatio
                      "normalized_count_mass")
     expect_identical(binary$diagnostics$response.summary$type,
                      "binary_visit_indicator")
+    expect_identical(
+        binary$diagnostics$binary.workflow$probability.link,
+        "identity_lps_least_squares_clipped"
+    )
+    expect_match(binary$diagnostics$binary.workflow$note,
+                 "not the.*local-logistic IRLS path")
 })
 
 test_that("OD2 LPS occupation workflow reports density accounting in dimension > 1", {
