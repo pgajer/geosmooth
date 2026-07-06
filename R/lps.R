@@ -431,8 +431,27 @@ fit.lps <- function(
         auto.chart.dim = .klp.is.auto.chart.dim(chart.dim),
         auto.chart.dim.local = .klp.is.local.auto.chart.dim(chart.dim),
         chart.dim.mode = .klp.chart.dim.mode(chart.dim, coordinate.method),
-        chart.dim.by.eval = selected.pred.dim$chart.dim.by.eval,
-        auto.chart.dim.diagnostics = selected.dim$diagnostics,
+        diagnostics = list(
+            chart.dim = .local.chart.dimension.telemetry(
+                chart.dim.info = list(
+                    chart.dim = selected.dim$chart.dim,
+                    requested.chart.dim = chart.dim,
+                    chart.dim.mode = .klp.chart.dim.mode(
+                        chart.dim,
+                        coordinate.method
+                    ),
+                    auto.chart.dim = .klp.is.auto.chart.dim(chart.dim),
+                    auto.chart.dim.local =
+                        .klp.is.local.auto.chart.dim(chart.dim),
+                    auto.chart.dim.diagnostics = selected.dim$diagnostics,
+                    auto.chart.support.metric = auto.chart.support.metric,
+                    auto.chart.selection.metric = auto.chart.selection.metric
+                ),
+                chart.dim.by.anchor = selected.pred.dim$chart.dim.by.eval,
+                n.anchor = nrow(X.eval),
+                source.path = "fit.lps.prediction.chart_dim_resolution"
+            )
+        ),
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
         backend = backend,
@@ -675,7 +694,8 @@ lps.backend.diagnostics <- function(object) {
     } else {
         paste0("explicit_", backend.requested)
     }
-    auto.summary <- object$auto.chart.dim.diagnostics$summary
+    chart.dim.telemetry <- object$diagnostics$chart.dim
+    auto.summary <- chart.dim.telemetry$auto.diagnostics$summary
     data.frame(
         method.id = object$method.id %||% "lps",
         outcome.family = object$outcome.family %||% "gaussian",
@@ -690,20 +710,20 @@ lps.backend.diagnostics <- function(object) {
         chart.dim.auto = auto.dim,
         chart.dim.local.auto = local.auto.dim,
         chart.dim.mode = object$chart.dim.mode %||% NA_character_,
-        chart.dim.by.eval.n = if (is.null(object$chart.dim.by.eval)) {
+        chart.dim.by.anchor.n = if (is.null(chart.dim.telemetry$by.anchor)) {
             NA_integer_
         } else {
-            as.integer(length(object$chart.dim.by.eval))
+            as.integer(length(chart.dim.telemetry$by.anchor))
         },
-        chart.dim.by.eval.min = if (is.null(object$chart.dim.by.eval)) {
+        chart.dim.by.anchor.min = if (is.null(chart.dim.telemetry$by.anchor)) {
             NA_integer_
         } else {
-            as.integer(min(object$chart.dim.by.eval, na.rm = TRUE))
+            as.integer(min(chart.dim.telemetry$by.anchor, na.rm = TRUE))
         },
-        chart.dim.by.eval.max = if (is.null(object$chart.dim.by.eval)) {
+        chart.dim.by.anchor.max = if (is.null(chart.dim.telemetry$by.anchor)) {
             NA_integer_
         } else {
-            as.integer(max(object$chart.dim.by.eval, na.rm = TRUE))
+            as.integer(max(chart.dim.telemetry$by.anchor, na.rm = TRUE))
         },
         auto.chart.support.metric = support.metric,
         auto.chart.selection.metric = selection.metric,

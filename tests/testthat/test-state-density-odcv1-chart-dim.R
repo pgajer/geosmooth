@@ -43,9 +43,9 @@ test_that("OD-CV1 chart-kernel supports global auto local-PCA dimension", {
     expect_identical(fit$selected$chart.dim.mode, "global.auto")
     expect_true(is.finite(fit$selected$chart.dim))
     expect_true(fit$selected$chart.dim >= 1L)
-    expect_true(is.list(fit$selected$auto.chart.dim.diagnostics))
+    expect_true(is.list(fit$diagnostics$chart.dim$auto.diagnostics))
     expect_true(is.data.frame(fit$diagnostics$per.eval))
-    expect_true(all(fit$diagnostics$per.eval$chart.dim ==
+    expect_true(all(fit$diagnostics$chart.dim$by.anchor ==
                     fit$selected$chart.dim))
 })
 
@@ -76,8 +76,8 @@ test_that("OD-CV1 local likelihood supports local.auto local-PCA dimension", {
     expect_true(isTRUE(fit$selected$auto.chart.dim.local))
     expect_identical(fit$selected$chart.dim.mode, "local.auto")
     expect_true(is.data.frame(fit$diagnostics$per.eval))
-    expect_true(all(is.finite(fit$diagnostics$per.eval$chart.dim)))
-    expect_true(all(fit$diagnostics$per.eval$chart.dim >= 1L))
+    expect_true(all(is.finite(fit$diagnostics$chart.dim$by.anchor)))
+    expect_true(all(fit$diagnostics$chart.dim$by.anchor >= 1L))
 })
 
 test_that("OD-CV1 chart-kernel visit CV preserves auto chart-dimension policy", {

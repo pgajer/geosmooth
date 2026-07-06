@@ -412,10 +412,14 @@ fit.ps.lps <- function(
                 stats::median(chart.dim.by.anchor)
             },
             chart.dim.mode = chart.dim.info$chart.dim.mode,
-            chart.dim.by.anchor = chart.dim.by.anchor,
             auto.chart.dim = chart.dim.info$auto.chart.dim,
-            auto.chart.dim.diagnostics =
-                chart.dim.info$auto.chart.dim.diagnostics,
+            diagnostics = list(
+                chart.dim = .local.chart.dimension.telemetry(
+                    chart.dim.info = chart.dim.info,
+                    chart.dim.by.anchor = chart.dim.by.anchor,
+                    source.path = "fit.ps.lps.frame.chart_dim_resolution"
+                )
+            ),
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,

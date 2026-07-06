@@ -1568,92 +1568,17 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 }
 
 .state.density.chart.dim.telemetry <- function(source.fit, n = NULL) {
-    if (is.null(source.fit)) {
+    if (is.null(source.fit) || is.null(source.fit$diagnostics$chart.dim)) {
         return(NULL)
     }
-    dim.source <- NULL
-    dims <- NULL
-    if (!is.null(source.fit$diagnostics$per.eval$chart.dim)) {
-        dims <- source.fit$diagnostics$per.eval$chart.dim
-        dim.source <- "diagnostics.per.eval.chart.dim"
-    } else if (!is.null(source.fit$chart.dim.by.anchor)) {
-        dims <- source.fit$chart.dim.by.anchor
-        dim.source <- "chart.dim.by.anchor"
-    } else if (!is.null(source.fit$chart.dim.by.eval)) {
-        dims <- source.fit$chart.dim.by.eval
-        dim.source <- "chart.dim.by.eval"
-    } else if (!is.null(
-        source.fit$auto.chart.dim.diagnostics$diagnostics$selected.local.dim
-    )) {
-        dims <-
-            source.fit$auto.chart.dim.diagnostics$diagnostics$selected.local.dim
-        dim.source <-
-            "auto.chart.dim.diagnostics.diagnostics.selected.local.dim"
-    } else if (!is.null(source.fit$chart.dim) &&
-               is.numeric(source.fit$chart.dim) &&
-               length(source.fit$chart.dim) == 1L &&
-               is.finite(source.fit$chart.dim)) {
-        n <- .state.density.chart.dim.telemetry.n(source.fit, n)
-        if (!is.null(n)) {
-            dims <- rep(as.integer(source.fit$chart.dim), n)
-            dim.source <- "chart.dim.scalar"
-        }
-    } else if (!is.null(source.fit$selected$chart.dim) &&
-               is.numeric(source.fit$selected$chart.dim) &&
-               length(source.fit$selected$chart.dim) == 1L &&
-               is.finite(source.fit$selected$chart.dim)) {
-        n <- .state.density.chart.dim.telemetry.n(source.fit, n)
-        if (!is.null(n)) {
-            dims <- rep(as.integer(source.fit$selected$chart.dim), n)
-            dim.source <- "selected.chart.dim.scalar"
-        }
-    }
-    if (is.null(dims)) {
+    telemetry <- source.fit$diagnostics$chart.dim
+    dims <- as.integer(telemetry$by.anchor)
+    if (!length(dims) || anyNA(dims) || any(dims < 1L) ||
+        (!is.null(n) && length(dims) != n)) {
         return(NULL)
     }
-    dims <- as.integer(dims)
-    if (!length(dims) || anyNA(dims) || any(dims < 1L)) {
-        return(NULL)
-    }
-    requested <- .state.density.null.coalesce(
-        source.fit$requested.chart.dim,
-        source.fit$selected$requested.chart.dim
-    )
-    mode <- .state.density.null.coalesce(
-        source.fit$chart.dim.mode,
-        source.fit$selected$chart.dim.mode
-    )
-    chart.dim <- if (length(unique(dims)) == 1L) {
-        unique(dims)
-    } else {
-        stats::median(dims)
-    }
-    list(
-        chart.dim.by.anchor = dims,
-        chart.dim = chart.dim,
-        chart.dim.mode = mode,
-        requested.chart.dim = requested,
-        source.path = dim.source,
-        n.anchor = length(dims),
-        min.chart.dim = min(dims),
-        max.chart.dim = max(dims)
-    )
-}
-
-.state.density.chart.dim.telemetry.n <- function(source.fit, n = NULL) {
-    if (!is.null(n)) {
-        return(as.integer(n))
-    }
-    if (!is.null(source.fit$fitted.values)) {
-        return(length(source.fit$fitted.values))
-    }
-    if (!is.null(source.fit$X.eval)) {
-        return(nrow(source.fit$X.eval))
-    }
-    if (!is.null(source.fit$X)) {
-        return(nrow(source.fit$X))
-    }
-    NULL
+    telemetry$by.anchor <- dims
+    telemetry
 }
 
 .state.density.attach.subject <- function(out, subject.index, weights) {
@@ -1894,8 +1819,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         n = length(values)
     )
     if (!is.null(chart.telemetry)) {
-        diagnostics$chart.dim.by.anchor <- chart.telemetry$chart.dim.by.anchor
-        diagnostics$chart.dim.telemetry <- chart.telemetry
+        diagnostics$chart.dim <- chart.telemetry
     }
     empirical.rho <- .state.density.adapter.empirical.rho(
         empirical.rho = empirical.rho,

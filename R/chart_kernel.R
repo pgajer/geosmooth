@@ -232,16 +232,11 @@ fit.chart.kernel <- function(
         min.bandwidth = min(bandwidth),
         median.bandwidth = stats::median(bandwidth),
         effective.support.summary = summary(effective.support),
-        chart.dim.summary = summary(resolved.chart.dim),
-        requested.chart.dim =
-            .local.chart.requested.chart.dim.label(requested.chart.dim),
-        chart.dim.mode = chart.dim.info$chart.dim.mode,
-        auto.chart.dim = chart.dim.info$auto.chart.dim,
-        auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
-        auto.chart.dim.diagnostics =
-            chart.dim.info$auto.chart.dim.diagnostics,
-        auto.chart.support.metric = auto.chart.support.metric,
-        auto.chart.selection.metric = auto.chart.selection.metric
+        chart.dim = .local.chart.dimension.telemetry(
+            chart.dim.info = chart.dim.info,
+            chart.dim.by.anchor = resolved.chart.dim,
+            source.path = "fit.chart.kernel.local.chart_resolution"
+        )
     )
     if (isTRUE(return.details)) {
         diagnostics$per.eval <- data.frame(
@@ -251,8 +246,7 @@ fit.chart.kernel <- function(
             denominator = denominator,
             bandwidth = bandwidth,
             used.denominator.floor = used.floor,
-            effective.support = effective.support,
-            chart.dim = resolved.chart.dim
+            effective.support = effective.support
         )
     }
 
@@ -272,8 +266,6 @@ fit.chart.kernel <- function(
             auto.chart.dim = chart.dim.info$auto.chart.dim,
             auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
             chart.dim.mode = chart.dim.info$chart.dim.mode,
-            auto.chart.dim.diagnostics =
-                chart.dim.info$auto.chart.dim.diagnostics,
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric,
             denominator.floor = denominator.floor,

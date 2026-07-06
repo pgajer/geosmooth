@@ -45,7 +45,8 @@
              "\"auto\", \"local.auto\", or the NULL default). This fit's ",
              "chart-dimension mode is \"", mode, "\".", call. = FALSE)
     }
-    if (!is.null(object$chart.dim.by.eval)) {
+    if (!is.null(object$diagnostics$chart.dim$by.anchor) &&
+        length(unique(object$diagnostics$chart.dim$by.anchor)) > 1L) {
         stop("'", caller, "' does not support per-anchor chart dimensions.",
              call. = FALSE)
     }
