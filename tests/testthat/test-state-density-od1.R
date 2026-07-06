@@ -47,16 +47,7 @@ test_that("OD1 graph random walk preserves mass and handles zero and one step", 
     )
 })
 
-test_that("OD1 graph random walk matches the community-typing prototype helper", {
-    ref.file <- file.path(
-        "/Users/pgajer/current_projects/vaginal_community_trajectory_types",
-        "R", "occupation_measures.R"
-    )
-    skip_if_not(file.exists(ref.file))
-
-    ref.env <- new.env(parent = globalenv())
-    sys.source(ref.file, envir = ref.env)
-
+test_that("OD1 graph random walk matches a frozen community-typing prototype fixture", {
     X <- cbind(seq(0, 1, length.out = 5), 0)
     graph <- make.state.density.path.graph(c(1, 2, 1, 3))
     graph.ref <- list(
@@ -65,18 +56,17 @@ test_that("OD1 graph random walk matches the community-typing prototype helper",
         n_vertices = nrow(X)
     )
     weights <- c(2, 0, 1, 0, 1)
-
-    transition.ref <- ref.env$build_graph_transition_matrix(
-        graph.ref,
-        affinity_method = "exp_neg_length_over_median"
+    transition.ref <- structure(
+        c(0, 0.660756368765817, 0, 0, 0,
+          1, 0, 0.339243631234183, 0, 0,
+          0, 0.339243631234183, 0, 0.791391472673955, 0,
+          0, 0, 0.660756368765817, 0, 1,
+          0, 0, 0, 0.208608527326045, 0),
+        dim = c(5L, 5L)
     )
-    empirical.ref <- Matrix::Matrix(weights / sum(weights),
-                                    nrow = 1L,
-                                    sparse = TRUE)
-    occupation.ref <- ref.env$propagate_occupation_measures(
-        empirical.ref,
-        transition.ref$transition,
-        walk_steps = c(0L, 2L)
+    rho2.ref <- c(
+        0.386417531858216, 0, 0.526970483057887, 0,
+        0.0866119850838968
     )
 
     fit <- fit.density.graph.random.walk(
@@ -90,11 +80,11 @@ test_that("OD1 graph random walk matches the community-typing prototype helper",
     )
 
     expect_identical(fit$status, "ok")
-    expect_equal(fit$rho, as.numeric(as.matrix(occupation.ref[["r02"]])),
-                 tolerance = 1e-12)
+    expect_equal(fit$rho, rho2.ref, tolerance = 1e-12)
     expect_equal(fit$diagnostics$transition,
-                 transition.ref$transition,
+                 Matrix::Matrix(transition.ref, sparse = TRUE),
                  tolerance = 1e-12)
+    expect_equal(fit$smoothness$n.local.maxima, 3L)
 })
 
 test_that("OD1 metric graph low-pass becomes a density through normalize.density", {
@@ -122,6 +112,38 @@ test_that("OD1 metric graph low-pass becomes a density through normalize.density
     expect_identical(density$method.id, "normalized_metric_graph_lowpass")
     expect_identical(density$diagnostics$source.class,
                      "metric.graph.lowpass.fit")
+})
+
+test_that("OD1 heat-kernel low-pass tau-zero limit normalizes raw drift", {
+    X <- cbind(seq(0, 1, length.out = 5), 0)
+    graph <- make.state.density.path.graph(c(1, 1, 1, 1))
+    weights <- c(1, 0, 2, 0, 1)
+
+    lowpass <- fit.metric.graph.lowpass(
+        adj.list = graph$adj.list,
+        weight.list = graph$weight.list,
+        y = weights,
+        conductance.rule = "inverse.length.power",
+        n.eigenpairs = 5L,
+        eigen.solver = "dense",
+        filter.type = "heat_kernel",
+        eta.grid = 0
+    )
+    density <- normalize.density(
+        lowpass,
+        X = X,
+        adj.list = graph$adj.list,
+        keep.source.fit = FALSE
+    )
+
+    expect_equal(lowpass$fitted.values, weights, tolerance = 1e-10)
+    expect_identical(density$status, "ok")
+    expect_equal(density$rho, weights / sum(weights), tolerance = 1e-10)
+    expect_equal(density$accounting$raw.mass, sum(weights), tolerance = 1e-10)
+    expect_equal(density$accounting$normalization.constant, sum(weights),
+                 tolerance = 1e-10)
+    expect_equal(density$accounting$clip.mass, 0, tolerance = 1e-12)
+    expect_equal(density$smoothness$n.local.maxima, 3L)
 })
 
 test_that("OD1 graph methods validate graph inputs", {

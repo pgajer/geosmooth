@@ -122,6 +122,7 @@ fit.density.graph.random.walk <- function(
         empirical.rho = empirical,
         theta = rw$theta,
         density.control = ctrl,
+        adj.list = graph$adj.list,
         diagnostics = list(
             transition = if (isTRUE(return.details)) rw$transition else NULL,
             occupation.by.step = if (isTRUE(return.details)) rw$occupation.by.step else NULL,
@@ -149,6 +150,8 @@ fit.density.graph.random.walk <- function(
 #' @param method.id Character method identifier recorded in the returned object.
 #' @param keep.source.fit Logical; if \code{TRUE}, retain the source fit in
 #'   diagnostics for object methods.
+#' @param adj.list Optional adjacency list used to compute graph-local
+#'   smoothness diagnostics for the normalized density.
 #' @param return.details Logical; if \code{TRUE}, keep diagnostic details in
 #'   the result.
 #' @param ... Additional arguments passed to methods.
@@ -165,6 +168,8 @@ normalize.density.numeric <- function(x,
                                       density.control = list(),
                                       method.id = "normalized_numeric",
                                       keep.source.fit = FALSE,
+                                      adj.list = NULL,
+                                      empirical.rho = NULL,
                                       return.details = TRUE,
                                       ...) {
     .normalize.density.vector(
@@ -175,6 +180,8 @@ normalize.density.numeric <- function(x,
         source.class = "numeric",
         density.control = density.control,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -185,6 +192,8 @@ normalize.density.default <- function(x,
                                       density.control = list(),
                                       method.id = NULL,
                                       keep.source.fit = TRUE,
+                                      adj.list = NULL,
+                                      empirical.rho = NULL,
                                       return.details = TRUE,
                                       ...) {
     if (is.null(x$fitted.values)) {
@@ -197,6 +206,8 @@ normalize.density.default <- function(x,
         density.control = density.control,
         method.id = method.id,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -207,6 +218,8 @@ normalize.density.lps <- function(x,
                                   density.control = list(),
                                   method.id = NULL,
                                   keep.source.fit = TRUE,
+                                  adj.list = NULL,
+                                  empirical.rho = NULL,
                                   return.details = TRUE,
                                   ...) {
     .normalize.density.fit(
@@ -215,6 +228,8 @@ normalize.density.lps <- function(x,
         density.control = density.control,
         method.id = method.id,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -225,6 +240,8 @@ normalize.density.ps_lps <- function(x,
                                      density.control = list(),
                                      method.id = NULL,
                                      keep.source.fit = TRUE,
+                                     adj.list = NULL,
+                                     empirical.rho = NULL,
                                      return.details = TRUE,
                                      ...) {
     .normalize.density.fit(
@@ -233,6 +250,8 @@ normalize.density.ps_lps <- function(x,
         density.control = density.control,
         method.id = method.id,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -244,6 +263,8 @@ normalize.density.metric.graph.lowpass.fit <- function(
     density.control = list(),
     method.id = NULL,
     keep.source.fit = TRUE,
+    adj.list = NULL,
+    empirical.rho = NULL,
     return.details = TRUE,
     ...) {
     .normalize.density.fit(
@@ -252,6 +273,8 @@ normalize.density.metric.graph.lowpass.fit <- function(
         density.control = density.control,
         method.id = method.id,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -263,6 +286,8 @@ normalize.density.metric.graph.lowpass.refit <- function(
     density.control = list(),
     method.id = NULL,
     keep.source.fit = TRUE,
+    adj.list = NULL,
+    empirical.rho = NULL,
     return.details = TRUE,
     ...) {
     .normalize.density.fit(
@@ -271,6 +296,8 @@ normalize.density.metric.graph.lowpass.refit <- function(
         density.control = density.control,
         method.id = method.id,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -278,7 +305,10 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' Fit Subject-Occupation Density
 #'
 #' Convenience wrapper that converts subject visit indices into a density
-#' input and dispatches to \code{\link{fit.density}}.
+#' input. Density-native methods dispatch to \code{\link{fit.density}}.
+#' LPS/PS-LPS methods fit ordinary smoother objects first and then call
+#' \code{\link{normalize.density}}; they are subject-occupation workflows, not
+#' standalone density-native methods.
 #'
 #' @inheritParams fit.density
 #' @param subject.index Integer row indices of subject visits in \code{X}.
@@ -289,7 +319,8 @@ normalize.density.metric.graph.lowpass.refit <- function(
 fit.subject.od <- function(
     X,
     subject.index,
-    method = c("empirical", "graph_random_walk"),
+    method = c("empirical", "graph_random_walk", "lps_count",
+               "ps_lps_count", "lps_logistic_binary"),
     graph = NULL,
     graph.control = list(),
     od.control = list(),
@@ -301,27 +332,30 @@ fit.subject.od <- function(
     weights <- .state.density.subject.weights(subject.index, nrow(X))
     method <- match.arg(method)
 
-    out <- fit.density(
-        X = X,
-        weights = weights,
-        method = method,
-        graph = graph,
-        graph.control = graph.control,
-        density.control = od.control,
-        return.details = return.details,
-        ...
-    )
-    out$subject <- list(
-        n.visits = length(subject.index),
-        n.unique.visited = sum(weights > 0),
-        max.multiplicity = max(weights),
-        repeat.fraction = if (sum(weights > 0) == 0) {
-            NA_real_
-        } else {
-            sum(weights > 1) / sum(weights > 0)
-        }
-    )
-    out
+    density.methods <- c("empirical", "graph_random_walk")
+    out <- if (method %in% density.methods) {
+        fit.density(
+            X = X,
+            weights = weights,
+            method = method,
+            graph = graph,
+            graph.control = graph.control,
+            density.control = od.control,
+            return.details = return.details,
+            ...
+        )
+    } else {
+        .state.density.fit.subject.smoother.od(
+            X = X,
+            weights = weights,
+            method = method,
+            graph = graph,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        )
+    }
+    .state.density.attach.subject(out, subject.index, weights)
 }
 
 #' Precheck Density Dependencies
@@ -394,6 +428,234 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         }
     }
     out
+}
+
+.state.density.fit.subject.smoother.od <- function(X,
+                                                   weights,
+                                                   method,
+                                                   graph = NULL,
+                                                   od.control = list(),
+                                                   return.details = TRUE,
+                                                   ...) {
+    empirical <- .state.density.normalize.weights(weights)
+    binary <- as.numeric(weights > 0)
+    smoothness.adj.list <- .state.density.optional.graph.adj.list(
+        graph = graph,
+        n = nrow(X)
+    )
+    switch(
+        method,
+        lps_count = .state.density.fit.lps.od(
+            X = X,
+            response = empirical,
+            empirical = empirical,
+            method.id = "lps_count",
+            response.type = "normalized_count_mass",
+            outcome.family = "gaussian",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        ),
+        lps_logistic_binary = .state.density.fit.lps.od(
+            X = X,
+            response = binary,
+            empirical = empirical,
+            method.id = "lps_logistic_binary",
+            response.type = "binary_visit_indicator",
+            outcome.family = "bernoulli",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        ),
+        ps_lps_count = .state.density.fit.ps.lps.od(
+            X = X,
+            response = empirical,
+            empirical = empirical,
+            method.id = "ps_lps_count",
+            response.type = "normalized_count_mass",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        )
+    )
+}
+
+.state.density.fit.lps.od <- function(X,
+                                      response,
+                                      empirical,
+                                      method.id,
+                                      response.type,
+                                      outcome.family,
+                                      adj.list = NULL,
+                                      od.control = list(),
+                                      return.details = TRUE,
+                                      ...) {
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.reserved.dots(
+        dots,
+        reserved = c("X", "y", "outcome.family"),
+        context = paste0("fit.subject.od(method = \"", method.id, "\")")
+    )
+    fit <- do.call(
+        fit.lps,
+        c(list(X = X, y = response, outcome.family = outcome.family), dots)
+    )
+    out <- normalize.density(
+        fit,
+        X = X,
+        density.control = od.control,
+        method.id = method.id,
+        keep.source.fit = return.details,
+        adj.list = adj.list,
+        empirical.rho = empirical,
+        return.details = return.details
+    )
+    .state.density.decorate.smoother.od(
+        out = out,
+        empirical = empirical,
+        method.id = method.id,
+        source.method = "fit.lps",
+        response = response,
+        response.type = response.type,
+        source.fit = fit,
+        return.details = return.details
+    )
+}
+
+.state.density.fit.ps.lps.od <- function(X,
+                                         response,
+                                         empirical,
+                                         method.id,
+                                         response.type,
+                                         adj.list = NULL,
+                                         od.control = list(),
+                                         return.details = TRUE,
+                                         ...) {
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.reserved.dots(
+        dots,
+        reserved = c("X", "y"),
+        context = paste0("fit.subject.od(method = \"", method.id, "\")")
+    )
+    fit <- do.call(fit.ps.lps, c(list(X = X, y = response), dots))
+    out <- normalize.density(
+        fit,
+        X = X,
+        density.control = od.control,
+        method.id = method.id,
+        keep.source.fit = return.details,
+        adj.list = adj.list,
+        empirical.rho = empirical,
+        return.details = return.details
+    )
+    .state.density.decorate.smoother.od(
+        out = out,
+        empirical = empirical,
+        method.id = method.id,
+        source.method = "fit.ps.lps",
+        response = response,
+        response.type = response.type,
+        source.fit = fit,
+        return.details = return.details
+    )
+}
+
+.state.density.decorate.smoother.od <- function(out,
+                                                empirical,
+                                                method.id,
+                                                source.method,
+                                                response,
+                                                response.type,
+                                                source.fit,
+                                                return.details = TRUE) {
+    out$empirical.rho <- empirical
+    out$theta$od.workflow <- method.id
+    out$theta$source.method <- source.method
+    out$theta$response.type <- response.type
+    out$diagnostics$od.workflow <- method.id
+    out$diagnostics$source.method <- source.method
+    out$diagnostics$response.summary <- list(
+        type = response.type,
+        sum = sum(response),
+        min = min(response),
+        max = max(response),
+        nonzero = sum(response != 0)
+    )
+    if (inherits(source.fit, "lps")) {
+        out$diagnostics$selection <- source.fit$selected
+        out$diagnostics$outcome.family <- source.fit$outcome.family
+        out$diagnostics$probability.diagnostics <-
+            source.fit$probability.diagnostics
+        out$diagnostics$logistic.diagnostics <-
+            source.fit$logistic.diagnostics
+    } else if (inherits(source.fit, "ps_lps")) {
+        out$diagnostics$selection <- source.fit$selected
+        out$diagnostics$sync.energy <- source.fit$sync.energy
+        out$diagnostics$mean.sync.squared.disagreement <-
+            source.fit$mean.sync.squared.disagreement
+        out$diagnostics$lambda.sync.search.telemetry <-
+            source.fit$lambda.sync.search.telemetry
+        out$diagnostics$lambda.search.summary <-
+            source.fit$lambda.search.summary
+    }
+    if (!isTRUE(return.details)) {
+        out$diagnostics <- list()
+    }
+    out
+}
+
+.state.density.named.dots <- function(...) {
+    dots <- list(...)
+    if (!length(dots)) {
+        return(dots)
+    }
+    dot.names <- names(dots)
+    if (is.null(dot.names) || any(!nzchar(dot.names))) {
+        stop("OD smoother workflow arguments passed through ... must be named.",
+             call. = FALSE)
+    }
+    dots
+}
+
+.state.density.reject.reserved.dots <- function(dots, reserved, context) {
+    duplicated <- intersect(names(dots), reserved)
+    if (length(duplicated)) {
+        stop(
+            context, " controls reserved argument(s): ",
+            paste(duplicated, collapse = ", "),
+            ". Supply only method-specific tuning controls through ....",
+            call. = FALSE
+        )
+    }
+    invisible(NULL)
+}
+
+.state.density.attach.subject <- function(out, subject.index, weights) {
+    out$subject <- list(
+        n.visits = length(subject.index),
+        n.unique.visited = sum(weights > 0),
+        max.multiplicity = max(weights),
+        repeat.fraction = if (sum(weights > 0) == 0) {
+            NA_real_
+        } else {
+            sum(weights > 1) / sum(weights > 0)
+        }
+    )
+    out
+}
+
+.state.density.optional.graph.adj.list <- function(graph, n) {
+    if (is.null(graph)) {
+        return(NULL)
+    }
+    .state.density.prepare.graph(
+        graph = graph,
+        n = n,
+        allow.zero.length = TRUE
+    )$adj.list
 }
 
 .state.density.control <- function(density.control = list()) {
@@ -546,6 +808,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                    density.control = list(),
                                    method.id = NULL,
                                    keep.source.fit = TRUE,
+                                   adj.list = NULL,
+                                   empirical.rho = NULL,
                                    return.details = TRUE) {
     values <- x$fitted.values
     if (is.null(values)) {
@@ -566,6 +830,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         source.class = class(x)[[1L]],
         density.control = density.control,
         keep.source.fit = keep.source.fit,
+        adj.list = adj.list,
+        empirical.rho = empirical.rho,
         return.details = return.details
     )
 }
@@ -577,6 +843,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                       source.class = "numeric",
                                       density.control = list(),
                                       keep.source.fit = TRUE,
+                                      adj.list = NULL,
+                                      empirical.rho = NULL,
                                       return.details = TRUE) {
     if (!is.numeric(values)) {
         stop("density normalization requires numeric fitted values.",
@@ -595,16 +863,33 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     if (isTRUE(keep.source.fit) && !is.null(source.fit)) {
         diagnostics$source.fit <- source.fit
     }
+    empirical.rho <- .state.density.adapter.empirical.rho(
+        empirical.rho = empirical.rho,
+        n = length(values)
+    )
     .state.density.finalize(
         method.id = method.id,
         X = X,
         fitted.raw = values,
-        empirical.rho = NULL,
+        empirical.rho = empirical.rho,
         theta = list(source.class = source.class),
         density.control = density.control,
+        adj.list = adj.list,
         diagnostics = diagnostics,
         return.details = return.details
     )
+}
+
+.state.density.adapter.empirical.rho <- function(empirical.rho, n) {
+    if (is.null(empirical.rho)) {
+        return(rep(NA_real_, n))
+    }
+    empirical.rho <- as.numeric(empirical.rho)
+    if (length(empirical.rho) != n || any(!is.finite(empirical.rho))) {
+        stop("empirical.rho must be NULL or a finite numeric vector matching the fitted values.",
+             call. = FALSE)
+    }
+    empirical.rho
 }
 
 .state.density.null.coalesce <- function(x, y) {
@@ -752,8 +1037,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         i = rows,
         j = cols,
         x = affinities / row.strength[rows],
-        dims = c(n, n),
-        giveCsparse = TRUE
+        dims = c(n, n)
     )
     row.sum <- Matrix::rowSums(transition)
     transition <- Matrix::Diagonal(x = 1 / as.numeric(row.sum)) %*% transition
@@ -879,6 +1163,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                     empirical.rho = NULL,
                                     theta = list(),
                                     density.control = list(),
+                                    adj.list = NULL,
+                                    basin.assignment = NULL,
                                     diagnostics = list(),
                                     warnings = character(),
                                     return.details = TRUE) {
@@ -899,7 +1185,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         fitted.raw = fitted.raw,
         theta = theta,
         accounting = accounting,
-        smoothness = .state.density.smoothness.placeholder(corrected$rho),
+        smoothness = .state.density.smoothness(
+            rho = corrected$rho,
+            X = X,
+            density.control = ctrl,
+            adj.list = adj.list,
+            basin.assignment = basin.assignment
+        ),
         diagnostics = diagnostics,
         warnings = warnings,
         return.details = return.details
@@ -1001,6 +1293,101 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     .state.density.smoothness.placeholder(numeric())
 }
 
+.state.density.smoothness <- function(rho,
+                                      X = NULL,
+                                      density.control = list(),
+                                      adj.list = NULL,
+                                      basin.assignment = NULL) {
+    adj.list <- .state.density.resolve.smoothness.adj.list(
+        X = X,
+        density.control = density.control,
+        adj.list = adj.list
+    )
+    summary <- .state.density.raw.basin.summary(
+        basin.assignment = basin.assignment,
+        rho = rho
+    )
+    list(
+        n.local.maxima = .state.density.local.maxima.count(
+            values = rho,
+            adj.list = adj.list
+        ),
+        raw.basin.size.summary = summary$raw.basin.size.summary,
+        raw.basin.mass.summary = summary$raw.basin.mass.summary
+    )
+}
+
+.state.density.resolve.smoothness.adj.list <- function(X,
+                                                       density.control = list(),
+                                                       adj.list = NULL) {
+    if (!is.null(adj.list)) {
+        return(.state.density.validate.adj.list(adj.list, length.out = nrow(X)))
+    }
+    if (!is.null(density.control$smoothness.adj.list)) {
+        return(.state.density.validate.adj.list(
+            density.control$smoothness.adj.list,
+            length.out = nrow(X)
+        ))
+    }
+    auto.1d <- if (is.null(density.control$smoothness.auto.1d)) {
+        TRUE
+    } else {
+        isTRUE(density.control$smoothness.auto.1d)
+    }
+    if (isTRUE(auto.1d) && !is.null(X) && ncol(X) == 1L && nrow(X) > 1L) {
+        return(.state.density.ordered.path.adj.list(X[, 1L]))
+    }
+    NULL
+}
+
+.state.density.validate.adj.list <- function(adj.list, length.out) {
+    if (is.null(adj.list)) {
+        return(NULL)
+    }
+    if (!is.list(adj.list) || length(adj.list) != length.out) {
+        stop("smoothness adjacency list must be a list with length nrow(X).",
+             call. = FALSE)
+    }
+    lapply(seq_along(adj.list), function(i) {
+        nb <- adj.list[[i]]
+        if (!is.numeric(nb) && !is.integer(nb)) {
+            stop("smoothness adjacency entries must be numeric/integer vectors.",
+                 call. = FALSE)
+        }
+        nb <- as.integer(nb)
+        if (anyNA(nb) || any(nb < 1L | nb > length.out)) {
+            stop("smoothness adjacency contains invalid vertex indices.",
+                 call. = FALSE)
+        }
+        if (any(nb == i)) {
+            stop("smoothness adjacency must not contain self-loops.",
+                 call. = FALSE)
+        }
+        unique(nb)
+    })
+}
+
+.state.density.ordered.path.adj.list <- function(x) {
+    n <- length(x)
+    ord <- order(x, seq_along(x))
+    adj <- vector("list", n)
+    if (n <= 1L) {
+        return(adj)
+    }
+    for (pos in seq_along(ord)) {
+        i <- ord[[pos]]
+        nb <- integer()
+        if (pos > 1L) {
+            nb <- c(nb, ord[[pos - 1L]])
+        }
+        if (pos < n) {
+            nb <- c(nb, ord[[pos + 1L]])
+        }
+        adj[[i]] <- as.integer(nb)
+    }
+    adj
+}
+
 .state.density.local.maxima.count <- function(values, adj.list = NULL) {
     if (is.null(adj.list)) {
         return(NA_integer_)
@@ -1012,7 +1399,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     for (i in seq_along(values)) {
         nb <- adj.list[[i]]
         if (length(nb) == 0L ||
-            all(values[[i]] >= values[as.integer(nb)], na.rm = FALSE)) {
+            all(values[[i]] > values[as.integer(nb)], na.rm = FALSE)) {
             n.max <- n.max + 1L
         }
     }
