@@ -229,16 +229,99 @@ test_that("OD3 local-likelihood surfaces sparse-mass fallbacks", {
     expect_gt(fit$diagnostics$fallback.count, 0)
 })
 
-test_that("OD3 local-likelihood reserves Bernoulli branch explicitly", {
+test_that("OD3 local-likelihood Bernoulli returns fitted probabilities", {
+    X <- matrix(seq(0, 1, length.out = 31), ncol = 1L)
+    eta <- -2 + 5 * X[, 1]
+    p <- 1 / (1 + exp(-eta))
+    y <- as.numeric(p > 0.5)
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = y,
+        likelihood.family = "bernoulli",
+        support.size = 11L,
+        degree = 1L,
+        kernel = "gaussian",
+        coordinate.method = "coordinates",
+        optimizer = "optim"
+    )
+
+    expect_s3_class(fit, "local_likelihood")
+    expect_identical(fit$likelihood.family, "bernoulli")
+    expect_length(fit$fitted.values, nrow(X))
+    expect_true(all(is.finite(fit$fitted.values)))
+    expect_true(all(fit$fitted.values >= 0))
+    expect_true(all(fit$fitted.values <= 1))
+    expect_true(is.data.frame(fit$diagnostics$per.eval))
+})
+
+test_that("OD3 local-likelihood density and Bernoulli OD wrappers share fixture", {
+    n <- 29L
+    X <- cbind(seq(0, 1, length.out = n),
+               cos(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(4L, 6L, 9L, 9L, 14L, 18L, 24L, 27L)
+    empirical <- tabulate(subject.index, nbins = n) / length(subject.index)
+    graph <- make.od3.path.graph(n)
+
+    density.fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "local_likelihood_density",
+        graph = graph,
+        support.size = 9L,
+        degree = 0L,
+        kernel = "gaussian",
+        coordinate.method = "local.pca",
+        chart.dim = 1L
+    )
+    bernoulli.fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "local_likelihood_bernoulli",
+        graph = graph,
+        support.size = 9L,
+        degree = 0L,
+        kernel = "gaussian",
+        coordinate.method = "local.pca",
+        chart.dim = 1L
+    )
+
+    expect_s3_class(density.fit, "density_fit")
+    expect_s3_class(bernoulli.fit, "density_fit")
+    expect_identical(density.fit$method.id, "local_likelihood_density")
+    expect_identical(bernoulli.fit$method.id, "local_likelihood_bernoulli")
+    expect_equal(sum(density.fit$rho), 1, tolerance = 1e-12)
+    expect_equal(sum(bernoulli.fit$rho), 1, tolerance = 1e-12)
+    expect_equal(density.fit$empirical.rho, empirical, tolerance = 1e-12)
+    expect_equal(bernoulli.fit$empirical.rho, empirical, tolerance = 1e-12)
+    expect_identical(density.fit$diagnostics$source.method,
+                     "fit.local.likelihood")
+    expect_identical(bernoulli.fit$diagnostics$source.method,
+                     "fit.local.likelihood")
+    expect_identical(density.fit$diagnostics$likelihood.family, "density")
+    expect_identical(bernoulli.fit$diagnostics$likelihood.family, "bernoulli")
+    expect_true(is.finite(density.fit$smoothness$n.local.maxima))
+    expect_true(is.finite(bernoulli.fit$smoothness$n.local.maxima))
+})
+
+test_that("OD3 local-likelihood validates Bernoulli responses", {
     X <- matrix(seq(0, 1, length.out = 10), ncol = 1L)
-    y <- rep(c(0, 1), length.out = nrow(X))
 
     expect_error(
         fit.local.likelihood(
             X = X,
-            y = y,
+            y = rep(2, nrow(X)),
             likelihood.family = "bernoulli"
         ),
-        "reserved but not implemented"
+        "values in \\[0, 1\\]"
+    )
+    expect_error(
+        fit.subject.od(
+            X = X,
+            subject.index = c(1L, 3L),
+            method = "local_likelihood_bernoulli",
+            likelihood.family = "density"
+        ),
+        "reserved argument"
     )
 })
