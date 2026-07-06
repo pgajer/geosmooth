@@ -22,9 +22,18 @@ from `gflow`.
 - Validate focused changes first:
   - `make test`
 - Run package QA via Makefile targets:
+  - Fast development gate: `make test`
+  - Full local test suite: `make test-all`
+  - Focused lanes: `make test-lps`, `make test-ps-lps`, `make test-od`,
+    `make test-graph`, `make test-ssrhe`, `make test-validation`,
+    `make test-migration`
   - Fast QA: `make check-fast`
   - Full CRAN-style QA: `make check`
 - Keep local build products, check directories, and logs out of commits.
+- Keep `make test` as a fast package-development gate. Scientific validation
+  sweeps, migration/parity tests, and acceptance-style mini-experiments should
+  live in opt-in grouped targets such as `make test-validation` or
+  `make test-all`, not in the default edit-test loop.
 
 ## Benchmark Design
 

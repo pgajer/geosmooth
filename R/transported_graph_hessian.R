@@ -64,7 +64,8 @@
 #'   \code{"coordinates"} uses supplied coordinates directly.
 #'   \code{"grip.edge.kk"} builds a local graph disk and prefers weighted GRIP
 #'   followed by true edge-KK optimization when the installed \pkg{grip} exposes
-#'   \code{grip.optimize.edge.kk.layout()} or its edge-isometric alias.
+#'   \code{weighted.grip()} and \code{edge.kk()}. Older compatibility names are
+#'   used only as fallbacks.
 #'   \code{"mds.edge.kk"} uses classical MDS followed by the same edge-KK
 #'   optimizer when available. \code{"cmdscale"} uses
 #'   classical MDS only.
@@ -3086,16 +3087,23 @@ transported.graph.hessian.operator <- function(adj.list,
     }
 
     edge.dim <- max(2L, as.integer(dim))
-    ns <- getNamespace("grip")
-    layout.weighted <- get("grip.layout.weighted", envir = ns, inherits = FALSE)
-    init <- try(layout.weighted(adj_list = subgraph$adj.list,
-                                weight_list = subgraph$weight.list,
-                                dim = edge.dim,
-                                rounds = 20L,
-                                final_rounds = 20L,
-                                num_init = 4L,
-                                seed = 1L,
-                                disconnected = "error"),
+    weighted.layout <- .transported.graph.hessian.weighted.layout.function()
+    if (is.null(weighted.layout)) {
+        return(.transported.graph.hessian.mds.edge.kk.embedding(
+            subgraph = subgraph,
+            distances = distances,
+            dim = dim,
+            fallback.reason = "weighted GRIP initializer unavailable"
+        ))
+    }
+    init <- try(weighted.layout$fun(adj_list = subgraph$adj.list,
+                                    weight_list = subgraph$weight.list,
+                                    dim = edge.dim,
+                                    rounds = 20L,
+                                    final_rounds = 20L,
+                                    num_init = 4L,
+                                    seed = 1L,
+                                    disconnected = "error"),
                 silent = TRUE)
     if (!inherits(init, "try-error")) {
         opt <- .transported.graph.hessian.run.edge.kk(
@@ -3107,7 +3115,7 @@ transported.graph.hessian.operator <- function(adj.list,
         if (!inherits(opt, "try-error") && is.list(opt) && !is.null(opt$coords)) {
             return(.transported.graph.hessian.embedding.result(
                 coordinates = .transported.graph.hessian.pad.embedding(opt$coords, dim),
-                backend.used = paste0("grip.layout.weighted+", opt$backend),
+                backend.used = paste0(weighted.layout$name, "+", opt$backend),
                 fallback.reason = NA_character_,
                 subgraph = subgraph,
                 distances = distances
@@ -3119,7 +3127,7 @@ transported.graph.hessian.operator <- function(adj.list,
         subgraph = subgraph,
         distances = distances,
         dim = dim,
-        fallback.reason = "grip.layout.weighted or edge-KK failed"
+        fallback.reason = "weighted GRIP initializer or edge-KK failed"
     )
 }
 
@@ -3169,8 +3177,23 @@ transported.graph.hessian.operator <- function(adj.list,
 .transported.graph.hessian.edge.kk.function <- function() {
     if (!requireNamespace("grip", quietly = TRUE)) return(NULL)
     ns <- getNamespace("grip")
-    for (nm in c("grip.optimize.edge.kk.layout",
+    for (nm in c("edge.kk",
+                 "grip.optimize.edge.kk.layout",
                  "grip.optimize.edge.isometric.layout")) {
+        if (exists(nm, envir = ns, inherits = FALSE)) {
+            return(list(
+                name = nm,
+                fun = get(nm, envir = ns, inherits = FALSE)
+            ))
+        }
+    }
+    NULL
+}
+
+.transported.graph.hessian.weighted.layout.function <- function() {
+    if (!requireNamespace("grip", quietly = TRUE)) return(NULL)
+    ns <- getNamespace("grip")
+    for (nm in c("weighted.grip", "grip.layout.weighted")) {
         if (exists(nm, envir = ns, inherits = FALSE)) {
             return(list(
                 name = nm,

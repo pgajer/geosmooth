@@ -1176,9 +1176,14 @@ test_that("soft transported Hessian auto backend records graph-derived embedding
   expect_true(all(is.finite(op$transport$embedding.table$edge.stress) |
                     is.na(op$transport$embedding.table$edge.stress)))
   expect_true(any(op$transport$embedding.table$backend.used %in%
-                    c("grip.optimize.edge.kk.layout",
+                    c("edge.kk",
+                      "weighted.grip+edge.kk",
+                      "cmdscale+edge.kk",
+                      "grip.optimize.edge.kk.layout",
+                      "weighted.grip+grip.optimize.edge.kk.layout",
                       "grip.layout.weighted+grip.optimize.edge.kk.layout",
                       "cmdscale+grip.optimize.edge.kk.layout",
+                      "weighted.grip+grip.optimize.edge.isometric.layout",
                       "grip.layout.weighted+grip.optimize.edge.isometric.layout",
                       "cmdscale+grip.optimize.edge.isometric.layout",
                       "cmdscale")))
