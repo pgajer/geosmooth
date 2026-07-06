@@ -26,12 +26,37 @@
 #'   \code{"tricube"}, \code{"epanechnikov"}, and \code{"triangular"}.
 #' @param bandwidth.multiplier Positive multiplier applied to the local support
 #'   radius.
+#' @param support.grid Optional integer candidate neighborhood sizes for
+#'   cross-validation.  CV selection is currently implemented for
+#'   \code{likelihood.family = "bernoulli"}.
+#' @param degree.grid Optional local polynomial degree candidates for
+#'   Bernoulli cross-validation.
+#' @param kernel.grid Optional kernel candidates for Bernoulli
+#'   cross-validation.
+#' @param bandwidth.multiplier.grid Optional bandwidth-multiplier candidates
+#'   for Bernoulli cross-validation.
+#' @param lambda.ridge.grid Optional ridge-penalty candidates for Bernoulli
+#'   cross-validation.
+#' @param foldid Optional positive integer vector assigning source rows to
+#'   cross-validation folds.
+#' @param cv.folds Number of folds used when \code{foldid} is not supplied.
+#' @param cv.seed Random seed used to generate folds when \code{foldid} is not
+#'   supplied.
 #' @param coordinate.method Local coordinate method. \code{"coordinates"} uses
 #'   centered ambient coordinates. \code{"local.pca"} projects centered support
 #'   points onto a local PCA basis.
 #' @param chart.dim Local PCA dimension when \code{coordinate.method =
 #'   "local.pca"}. If \code{NULL}, the dimension is
-#'   \code{min(ncol(X), support.size - 1)}.
+#'   \code{min(ncol(X), support.size - 1)}.  The deployable input-only
+#'   policies \code{"auto"} and \code{"local.auto"} use the same local-PCA
+#'   dimension diagnostics as \code{\link{fit.lps}}; \code{"auto"} resolves
+#'   one global chart dimension, while \code{"local.auto"} resolves one
+#'   dimension per evaluation anchor.
+#' @param auto.chart.support.metric Support system used by \code{chart.dim =
+#'   "auto"} or \code{"local.auto"}.  Local-likelihood smoothers currently use
+#'   coordinate supports for both coordinate and operator diagnostics.
+#' @param auto.chart.selection.metric Which auto chart-dimension diagnostic to
+#'   use when both coordinate and operator summaries are requested.
 #' @param quadrature.weights Optional positive reference-measure weights.
 #'   Defaults to unit weights.
 #' @param lambda.ridge Nonnegative ridge penalty on identifiable coefficients.
@@ -61,8 +86,18 @@ fit.local.likelihood <- function(
     degree = 1L,
     kernel = c("gaussian", "tricube", "epanechnikov", "triangular"),
     bandwidth.multiplier = 1,
+    support.grid = NULL,
+    degree.grid = NULL,
+    kernel.grid = NULL,
+    bandwidth.multiplier.grid = NULL,
+    lambda.ridge.grid = NULL,
+    foldid = NULL,
+    cv.folds = 5L,
+    cv.seed = 1L,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    auto.chart.support.metric = c("coordinates", "operator", "both"),
+    auto.chart.selection.metric = c("coordinates", "operator"),
     quadrature.weights = NULL,
     lambda.ridge = 1e-8,
     min.local.mass = sqrt(.Machine$double.eps),
@@ -95,22 +130,67 @@ fit.local.likelihood <- function(
     support.size <- .local.chart.validate.support.size(support.size, n)
     degree <- .local.likelihood.validate.degree(degree)
     kernel <- match.arg(kernel)
+    cv.requested <- .local.chart.cv.requested(
+        foldid = foldid,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        lambda.ridge.grid = lambda.ridge.grid
+    )
+    if (isTRUE(cv.requested) && !identical(likelihood.family, "bernoulli")) {
+        stop("CV selection in fit.local.likelihood() is currently ",
+             "implemented for likelihood.family = \"bernoulli\" only.",
+             call. = FALSE)
+    }
+    support.grid <- if (is.null(support.grid)) {
+        support.size
+    } else {
+        .klp.clean.support.grid(support.grid, n)
+    }
+    degree.grid <- if (is.null(degree.grid)) {
+        degree
+    } else {
+        .klp.clean.degree.grid(degree.grid)
+    }
+    kernel.grid <- if (is.null(kernel.grid)) {
+        kernel
+    } else {
+        .klp.clean.kernel.grid(kernel.grid)
+    }
     bandwidth.multiplier <- .local.chart.validate.positive.scalar(
         bandwidth.multiplier, "bandwidth.multiplier"
     )
+    bandwidth.multiplier.grid <- if (is.null(bandwidth.multiplier.grid)) {
+        bandwidth.multiplier
+    } else {
+        .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid)
+    }
     coordinate.method <- match.arg(coordinate.method)
-    chart.dim <- .local.chart.validate.chart.dim(
-        chart.dim = chart.dim,
+    auto.chart.support.metric <- match.arg(auto.chart.support.metric)
+    auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
+    requested.chart.dim <- chart.dim
+    chart.dim.info <- .local.chart.resolve.chart.dim(
+        X = X,
+        support.size = support.size,
+        degree = degree,
         coordinate.method = coordinate.method,
-        p = p,
-        support.size = support.size
+        chart.dim = chart.dim,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
     )
+    chart.dim <- chart.dim.info$chart.dim
     quadrature.weights <- .local.chart.validate.quadrature(
         quadrature.weights, n
     )
     lambda.ridge <- .local.chart.validate.nonnegative.scalar(
         lambda.ridge, "lambda.ridge"
     )
+    lambda.ridge.grid <- if (is.null(lambda.ridge.grid)) {
+        lambda.ridge
+    } else {
+        .local.likelihood.clean.lambda.ridge.grid(lambda.ridge.grid)
+    }
     min.local.mass <- .local.chart.validate.nonnegative.scalar(
         min.local.mass, "min.local.mass"
     )
@@ -121,6 +201,60 @@ fit.local.likelihood <- function(
     optimizer <- match.arg(optimizer)
     max.iter <- .local.chart.validate.positive.integer(max.iter, "max.iter")
     tol <- .local.chart.validate.positive.scalar(tol, "tol")
+
+    cv.table <- NULL
+    cv.predictions <- NULL
+    if (isTRUE(cv.requested)) {
+        foldid <- .klp.prepare.foldid(n, foldid, cv.folds, cv.seed)
+        cand <- expand.grid(
+            support.size = support.grid,
+            degree = degree.grid,
+            kernel = kernel.grid,
+            bandwidth.multiplier = bandwidth.multiplier.grid,
+            lambda.ridge = lambda.ridge.grid,
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
+        cv.result <- .local.likelihood.bernoulli.cv.table(
+            X = X,
+            y = y,
+            foldid = foldid,
+            cand = cand,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            quadrature.weights = quadrature.weights,
+            min.local.mass = min.local.mass,
+            min.nonzero.mass = min.nonzero.mass,
+            fallback = fallback,
+            optimizer = optimizer,
+            max.iter = max.iter,
+            tol = tol
+        )
+        cv.table <- cv.result$cv.table
+        cv.predictions <- cv.result$predictions
+        best.idx <- .local.chart.select.best.idx(
+            cv.table,
+            score.column = "cv.brier.observed"
+        )
+        selected.row <- cv.table[best.idx, , drop = FALSE]
+        support.size <- selected.row$support.size[[1L]]
+        degree <- selected.row$degree[[1L]]
+        kernel <- selected.row$kernel[[1L]]
+        bandwidth.multiplier <- selected.row$bandwidth.multiplier[[1L]]
+        lambda.ridge <- selected.row$lambda.ridge[[1L]]
+        chart.dim.info <- .local.chart.resolve.chart.dim(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+        chart.dim <- chart.dim.info$chart.dim
+    }
 
     ne <- nrow(X.eval)
     fitted <- numeric(ne)
@@ -143,6 +277,15 @@ fit.local.likelihood <- function(
         } else {
             .local.likelihood.bernoulli.fit
         }
+        local.chart.dim <- .local.chart.resolve.eval.chart.dim(
+            X = X,
+            x0 = X.eval[ii, ],
+            support.size = support.size,
+            degree = degree,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            summary.dim = chart.dim
+        )
         local <- fit.fun(
             X = X,
             y = y,
@@ -152,7 +295,7 @@ fit.local.likelihood <- function(
             kernel = kernel,
             bandwidth.multiplier = bandwidth.multiplier,
             coordinate.method = coordinate.method,
-            chart.dim = chart.dim,
+            chart.dim = local.chart.dim,
             quadrature.weights = quadrature.weights,
             lambda.ridge = lambda.ridge,
             min.local.mass = min.local.mass,
@@ -193,7 +336,16 @@ fit.local.likelihood <- function(
         median.normalization.constant =
             .local.likelihood.finite.median(normalization.constant),
         degree.used.summary = summary(degree.used),
-        chart.dim.summary = summary(resolved.chart.dim)
+        chart.dim.summary = summary(resolved.chart.dim),
+        requested.chart.dim =
+            .local.chart.requested.chart.dim.label(requested.chart.dim),
+        chart.dim.mode = chart.dim.info$chart.dim.mode,
+        auto.chart.dim = chart.dim.info$auto.chart.dim,
+        auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
+        auto.chart.dim.diagnostics =
+            chart.dim.info$auto.chart.dim.diagnostics,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
     )
     if (isTRUE(return.details)) {
         diagnostics$per.eval <- data.frame(
@@ -231,21 +383,117 @@ fit.local.likelihood <- function(
             kernel = kernel,
             bandwidth.multiplier = bandwidth.multiplier,
             coordinate.method = coordinate.method,
+            requested.chart.dim = requested.chart.dim,
             chart.dim = chart.dim,
+            auto.chart.dim = chart.dim.info$auto.chart.dim,
+            auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
+            chart.dim.mode = chart.dim.info$chart.dim.mode,
+            auto.chart.dim.diagnostics =
+                chart.dim.info$auto.chart.dim.diagnostics,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.ridge = lambda.ridge,
             min.local.mass = min.local.mass,
             min.nonzero.mass = min.nonzero.mass,
             fallback = fallback,
             optimizer = optimizer,
             max.iter = max.iter,
-            tol = tol
+            tol = tol,
+            cv.brier.observed = if (!is.null(cv.table)) {
+                min(cv.table$cv.brier.observed, na.rm = TRUE)
+            } else {
+                NA_real_
+            },
+            cv.logloss.observed = if (!is.null(cv.table)) {
+                min(cv.table$cv.logloss.observed, na.rm = TRUE)
+            } else {
+                NA_real_
+            }
         ),
+        cv.table = cv.table,
+        foldid = if (isTRUE(cv.requested)) foldid else NULL,
+        cv.predictions = if (isTRUE(return.details)) cv.predictions else NULL,
         quadrature.weights = quadrature.weights,
         diagnostics = diagnostics,
         call = match.call()
     )
     class(out) <- c("local_likelihood", "list")
     out
+}
+
+.local.likelihood.bernoulli.cv.table <- function(X,
+                                                 y,
+                                                 foldid,
+                                                 cand,
+                                                 coordinate.method,
+                                                 chart.dim,
+                                                 auto.chart.support.metric,
+                                                 auto.chart.selection.metric,
+                                                 quadrature.weights,
+                                                 min.local.mass,
+                                                 min.nonzero.mass,
+                                                 fallback,
+                                                 optimizer,
+                                                 max.iter,
+                                                 tol) {
+    pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
+    folds <- sort(unique(foldid))
+    for (fold in folds) {
+        test <- which(foldid == fold)
+        train <- which(foldid != fold)
+        X.train <- X[train, , drop = FALSE]
+        y.train <- y[train]
+        q.train <- quadrature.weights[train]
+        chart.dim.fold <- if (identical(coordinate.method, "coordinates")) {
+            NULL
+        } else {
+            chart.dim
+        }
+        for (rr in seq_len(nrow(cand))) {
+            fit <- fit.local.likelihood(
+                X = X.train,
+                y = y.train,
+                X.eval = X[test, , drop = FALSE],
+                likelihood.family = "bernoulli",
+                support.size = cand$support.size[[rr]],
+                degree = cand$degree[[rr]],
+                kernel = cand$kernel[[rr]],
+                bandwidth.multiplier = cand$bandwidth.multiplier[[rr]],
+                coordinate.method = coordinate.method,
+                chart.dim = chart.dim.fold,
+                auto.chart.support.metric = auto.chart.support.metric,
+                auto.chart.selection.metric = auto.chart.selection.metric,
+                quadrature.weights = q.train,
+                lambda.ridge = cand$lambda.ridge[[rr]],
+                min.local.mass = min.local.mass,
+                min.nonzero.mass = min.nonzero.mass,
+                fallback = fallback,
+                optimizer = optimizer,
+                max.iter = max.iter,
+                tol = tol,
+                return.details = FALSE
+            )
+            pred[test, rr] <- fit$fitted.values
+        }
+    }
+    cv.table <- cand
+    cv.table$cv.rmse.observed <- vapply(
+        seq_len(ncol(pred)),
+        function(j) .klp.rmse(pred[, j], y),
+        numeric(1L)
+    )
+    cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
+    cv.table$cv.logloss.observed <- vapply(
+        seq_len(ncol(pred)),
+        function(j) {
+            if (!all(is.finite(pred[, j]))) {
+                return(Inf)
+            }
+            .klp.logloss(y, pmin(pmax(pred[, j], 1e-15), 1 - 1e-15))
+        },
+        numeric(1L)
+    )
+    list(cv.table = cv.table, predictions = pred)
 }
 
 .local.likelihood.bernoulli.fit <- function(X,

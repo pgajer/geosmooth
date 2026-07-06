@@ -26,12 +26,32 @@
 #'   \code{"tricube"}, \code{"epanechnikov"}, and \code{"triangular"}.
 #' @param bandwidth.multiplier Positive multiplier applied to the local
 #'   support radius.
+#' @param support.grid Optional integer candidate neighborhood sizes.  If
+#'   supplied, or if \code{foldid} is supplied, the function performs row-wise
+#'   cross-validation and refits the selected candidate on all rows.
+#' @param kernel.grid Optional kernel candidates for cross-validation.
+#' @param bandwidth.multiplier.grid Optional bandwidth-multiplier candidates
+#'   for cross-validation.
+#' @param foldid Optional positive integer vector assigning source rows to
+#'   cross-validation folds.
+#' @param cv.folds Number of folds used when \code{foldid} is not supplied.
+#' @param cv.seed Random seed used to generate folds when \code{foldid} is not
+#'   supplied.
 #' @param coordinate.method Local coordinate method. \code{"coordinates"} uses
 #'   centered ambient coordinates. \code{"local.pca"} projects centered support
 #'   points onto a local PCA basis.
 #' @param chart.dim Local PCA dimension when \code{coordinate.method =
 #'   "local.pca"}. If \code{NULL}, the dimension is
-#'   \code{min(ncol(X), support.size - 1)}.
+#'   \code{min(ncol(X), support.size - 1)}.  The deployable input-only
+#'   policies \code{"auto"} and \code{"local.auto"} use the same local-PCA
+#'   dimension diagnostics as \code{\link{fit.lps}}; \code{"auto"} resolves
+#'   one global chart dimension, while \code{"local.auto"} resolves one
+#'   dimension per evaluation anchor.
+#' @param auto.chart.support.metric Support system used by \code{chart.dim =
+#'   "auto"} or \code{"local.auto"}.  Chart-kernel smoothers currently use
+#'   coordinate supports for both coordinate and operator diagnostics.
+#' @param auto.chart.selection.metric Which auto chart-dimension diagnostic to
+#'   use when both coordinate and operator summaries are requested.
 #' @param quadrature.weights Optional positive reference-measure weights
 #'   \code{q_i}. Defaults to unit weights.
 #' @param denominator.floor Positive floor used when the local denominator is
@@ -50,8 +70,16 @@ fit.chart.kernel <- function(
     support.size = min(15L, nrow(X)),
     kernel = c("gaussian", "tricube", "epanechnikov", "triangular"),
     bandwidth.multiplier = 1,
+    support.grid = NULL,
+    kernel.grid = NULL,
+    bandwidth.multiplier.grid = NULL,
+    foldid = NULL,
+    cv.folds = 5L,
+    cv.seed = 1L,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    auto.chart.support.metric = c("coordinates", "operator", "both"),
+    auto.chart.selection.metric = c("coordinates", "operator"),
     quadrature.weights = NULL,
     denominator.floor = sqrt(.Machine$double.eps),
     return.details = TRUE) {
@@ -67,19 +95,91 @@ fit.chart.kernel <- function(
     )
     support.size <- .local.chart.validate.support.size(support.size, n)
     kernel <- match.arg(kernel)
+    cv.requested <- .local.chart.cv.requested(
+        foldid = foldid,
+        support.grid = support.grid,
+        degree.grid = NULL,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        lambda.ridge.grid = NULL
+    )
+    support.grid <- if (is.null(support.grid)) {
+        support.size
+    } else {
+        .klp.clean.support.grid(support.grid, n)
+    }
+    kernel.grid <- if (is.null(kernel.grid)) {
+        kernel
+    } else {
+        .klp.clean.kernel.grid(kernel.grid)
+    }
     coordinate.method <- match.arg(coordinate.method)
+    auto.chart.support.metric <- match.arg(auto.chart.support.metric)
+    auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     bandwidth.multiplier <- .local.chart.validate.positive.scalar(
         bandwidth.multiplier, "bandwidth.multiplier"
     )
+    bandwidth.multiplier.grid <- if (is.null(bandwidth.multiplier.grid)) {
+        bandwidth.multiplier
+    } else {
+        .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid)
+    }
     denominator.floor <- .local.chart.validate.positive.scalar(
         denominator.floor, "denominator.floor"
     )
-    chart.dim <- .local.chart.validate.chart.dim(
+    requested.chart.dim <- chart.dim
+    chart.dim.info <- .local.chart.resolve.chart.dim(
+        X = X,
+        support.size = support.size,
+        degree = 1L,
         chart.dim = chart.dim,
         coordinate.method = coordinate.method,
-        p = p,
-        support.size = support.size
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
     )
+    chart.dim <- chart.dim.info$chart.dim
+
+    cv.table <- NULL
+    cv.predictions <- NULL
+    if (isTRUE(cv.requested)) {
+        foldid <- .klp.prepare.foldid(n, foldid, cv.folds, cv.seed)
+        cand <- expand.grid(
+            support.size = support.grid,
+            kernel = kernel.grid,
+            bandwidth.multiplier = bandwidth.multiplier.grid,
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
+        cv.result <- .chart.kernel.cv.table(
+            X = X,
+            y = y,
+            foldid = foldid,
+            cand = cand,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            quadrature.weights = quadrature.weights,
+            denominator.floor = denominator.floor
+        )
+        cv.table <- cv.result$cv.table
+        cv.predictions <- cv.result$predictions
+        best.idx <- .local.chart.select.best.idx(cv.table)
+        selected.row <- cv.table[best.idx, , drop = FALSE]
+        support.size <- selected.row$support.size[[1L]]
+        kernel <- selected.row$kernel[[1L]]
+        bandwidth.multiplier <- selected.row$bandwidth.multiplier[[1L]]
+        chart.dim.info <- .local.chart.resolve.chart.dim(
+            X = X,
+            support.size = support.size,
+            degree = 1L,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+        chart.dim <- chart.dim.info$chart.dim
+    }
 
     ne <- nrow(X.eval)
     fitted <- numeric(ne)
@@ -92,6 +192,15 @@ fit.chart.kernel <- function(
     resolved.chart.dim <- integer(ne)
 
     for (ii in seq_len(ne)) {
+        local.chart.dim <- .local.chart.resolve.eval.chart.dim(
+            X = X,
+            x0 = X.eval[ii, ],
+            support.size = support.size,
+            degree = 1L,
+            coordinate.method = coordinate.method,
+            chart.dim = requested.chart.dim,
+            summary.dim = chart.dim
+        )
         local <- .chart.kernel.local.fit(
             X = X,
             y = y,
@@ -100,7 +209,7 @@ fit.chart.kernel <- function(
             kernel = kernel,
             bandwidth.multiplier = bandwidth.multiplier,
             coordinate.method = coordinate.method,
-            chart.dim = chart.dim,
+            chart.dim = local.chart.dim,
             quadrature.weights = quadrature.weights,
             denominator.floor = denominator.floor
         )
@@ -123,7 +232,16 @@ fit.chart.kernel <- function(
         min.bandwidth = min(bandwidth),
         median.bandwidth = stats::median(bandwidth),
         effective.support.summary = summary(effective.support),
-        chart.dim.summary = summary(resolved.chart.dim)
+        chart.dim.summary = summary(resolved.chart.dim),
+        requested.chart.dim =
+            .local.chart.requested.chart.dim.label(requested.chart.dim),
+        chart.dim.mode = chart.dim.info$chart.dim.mode,
+        auto.chart.dim = chart.dim.info$auto.chart.dim,
+        auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
+        auto.chart.dim.diagnostics =
+            chart.dim.info$auto.chart.dim.diagnostics,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
     )
     if (isTRUE(return.details)) {
         diagnostics$per.eval <- data.frame(
@@ -149,15 +267,82 @@ fit.chart.kernel <- function(
             kernel = kernel,
             bandwidth.multiplier = bandwidth.multiplier,
             coordinate.method = coordinate.method,
+            requested.chart.dim = requested.chart.dim,
             chart.dim = chart.dim,
-            denominator.floor = denominator.floor
+            auto.chart.dim = chart.dim.info$auto.chart.dim,
+            auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
+            chart.dim.mode = chart.dim.info$chart.dim.mode,
+            auto.chart.dim.diagnostics =
+                chart.dim.info$auto.chart.dim.diagnostics,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            denominator.floor = denominator.floor,
+            cv.rmse.observed = if (!is.null(cv.table)) {
+                min(cv.table$cv.rmse.observed, na.rm = TRUE)
+            } else {
+                NA_real_
+            }
         ),
+        cv.table = cv.table,
+        foldid = if (isTRUE(cv.requested)) foldid else NULL,
+        cv.predictions = if (isTRUE(return.details)) cv.predictions else NULL,
         quadrature.weights = quadrature.weights,
         diagnostics = diagnostics,
         call = match.call()
     )
     class(out) <- c("chart_kernel", "list")
     out
+}
+
+.chart.kernel.cv.table <- function(X,
+                                   y,
+                                   foldid,
+                                   cand,
+                                   coordinate.method,
+                                   chart.dim,
+                                   auto.chart.support.metric,
+                                   auto.chart.selection.metric,
+                                   quadrature.weights,
+                                   denominator.floor) {
+    pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
+    folds <- sort(unique(foldid))
+    for (fold in folds) {
+        test <- which(foldid == fold)
+        train <- which(foldid != fold)
+        X.train <- X[train, , drop = FALSE]
+        y.train <- y[train]
+        q.train <- quadrature.weights[train]
+        chart.dim.fold <- if (identical(coordinate.method, "coordinates")) {
+            NULL
+        } else {
+            chart.dim
+        }
+        for (rr in seq_len(nrow(cand))) {
+            fit <- fit.chart.kernel(
+                X = X.train,
+                y = y.train,
+                X.eval = X[test, , drop = FALSE],
+                support.size = cand$support.size[[rr]],
+                kernel = cand$kernel[[rr]],
+                bandwidth.multiplier = cand$bandwidth.multiplier[[rr]],
+                coordinate.method = coordinate.method,
+                chart.dim = chart.dim.fold,
+                auto.chart.support.metric = auto.chart.support.metric,
+                auto.chart.selection.metric = auto.chart.selection.metric,
+                quadrature.weights = q.train,
+                denominator.floor = denominator.floor,
+                return.details = FALSE
+            )
+            pred[test, rr] <- fit$fitted.values
+        }
+    }
+    cv.table <- cand
+    cv.table$cv.rmse.observed <- vapply(
+        seq_len(ncol(pred)),
+        function(j) .klp.rmse(pred[, j], y),
+        numeric(1L)
+    )
+    list(cv.table = cv.table, predictions = pred)
 }
 
 .chart.kernel.local.fit <- function(X,
