@@ -1,4 +1,4 @@
-.PHONY: clean build check check-fast install document attrs test test-migration
+.PHONY: clean build check check-fast install document attrs test test-all test-lps test-ps-lps test-od test-graph test-ssrhe test-validation test-migration
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
@@ -22,7 +22,28 @@ document: attrs
 	PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R -q -e "roxygen2::roxygenise(load = 'source')"
 
 test:
-	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/testthat")'
+	Rscript scripts/run_test_group.R smoke
+
+test-all:
+	Rscript scripts/run_test_group.R all
+
+test-lps:
+	Rscript scripts/run_test_group.R lps
+
+test-ps-lps:
+	Rscript scripts/run_test_group.R ps-lps
+
+test-od:
+	Rscript scripts/run_test_group.R od
+
+test-graph:
+	Rscript scripts/run_test_group.R graph
+
+test-ssrhe:
+	Rscript scripts/run_test_group.R ssrhe
+
+test-validation:
+	Rscript scripts/run_test_group.R validation
 
 test-migration:
 	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/migration")'
