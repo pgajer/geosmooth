@@ -115,6 +115,7 @@
         column.or.default("chart.dim", rep("", length(eligible))),
         column.or.default("kernel", rep("", length(eligible))),
         column.or.default("bandwidth.multiplier", rep(1, length(eligible))),
+        column.or.default("lambda.sync", rep(0, length(eligible))),
         column.or.default("lambda.ridge", rep(0, length(eligible))),
         score[eligible]
     )[[1L]]]

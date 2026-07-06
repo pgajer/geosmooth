@@ -129,9 +129,9 @@ The OD-CV2 implementation is considered in place when:
 
 ## Remaining Scope
 
-OD-CV2 does not add OD visit CV for LPS or PS-LPS methods.  Those methods have
-their own smoother-level selection machinery and should enter OD-level outer
-selection only in a later phase with an explicit nested-selection contract.
+OD-CV2 does not add OD visit CV for LPS or PS-LPS methods.  OD-CV3 later adds
+outer OD visit CV for those methods using scalar source-smoother candidates;
+see `dev/shared/specs/od_cv3_lps_outer_visit_cv_contract_2026-07-06.md`.
 
 OD-CV2 also does not make chart-dimension grids part of direct row-level CV
 inside `fit.chart.kernel()` or `fit.local.likelihood()`.  The new grid axis is

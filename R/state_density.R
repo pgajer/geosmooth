@@ -316,12 +316,16 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' converts that field to a density with \code{\link{normalize.density}}.  It is
 #' not the \code{outcome.family = "binomial"} local-logistic IRLS path.
 #'
-#' When \code{od.cv = "visit"}, chart-based methods may pass
+#' When \code{od.cv = "visit"}, chart-based and LPS-family methods may pass
 #' \code{chart.dim.grid} through \code{...}.  For \code{"chart_kernel"},
-#' \code{"local_likelihood_density"}, and \code{"local_likelihood_bernoulli"},
-#' this grid compares fixed integer chart dimensions with optional
-#' \code{"auto"} and \code{"local.auto"} chart-dimension policies under the same
-#' held-out-visit negative-log-occupation score.
+#' \code{"local_likelihood_density"}, \code{"local_likelihood_bernoulli"},
+#' \code{"lps_count"}, \code{"lps_logistic_binary"}, and
+#' \code{"ps_lps_count"}, this grid compares fixed integer chart dimensions
+#' with optional \code{"auto"} and \code{"local.auto"} chart-dimension policies
+#' under the same held-out-visit negative-log-occupation score.  For LPS-family
+#' OD visit CV, each outer candidate is passed to the source smoother as a
+#' scalar local model configuration; this avoids nested row-level
+#' multi-candidate selection inside each held-out-visit fold.
 #'
 #' @inheritParams fit.density
 #' @param subject.index Integer row indices of subject visits in \code{X}.
@@ -494,6 +498,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                                    visit.cv.epsilon = 1e-15,
                                                    dots = list()) {
     supported <- c("chart_kernel", "local_likelihood_density",
+                   "lps_count", "lps_logistic_binary", "ps_lps_count",
                    "local_likelihood_bernoulli")
     if (!method %in% supported) {
         stop(
@@ -609,6 +614,18 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             dots = dots,
             n = n
         ),
+        lps_count = .state.density.visit.cv.lps.candidates(
+            dots = dots,
+            n = n
+        ),
+        lps_logistic_binary = .state.density.visit.cv.lps.candidates(
+            dots = dots,
+            n = n
+        ),
+        ps_lps_count = .state.density.visit.cv.ps.lps.candidates(
+            dots = dots,
+            n = n
+        ),
         local_likelihood_density =
             .state.density.visit.cv.local.likelihood.candidates(
                 dots = dots,
@@ -620,6 +637,102 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                 n = n
             ),
         stop("Unsupported OD-level visit CV method.", call. = FALSE)
+    )
+}
+
+.state.density.visit.cv.lps.candidates <- function(dots, n) {
+    support.grid <- .state.density.null.coalesce(
+        dots$support.grid, c(10L, 15L, 20L)
+    )
+    degree.grid <- .state.density.null.coalesce(dots$degree.grid, 0:2)
+    kernel.grid <- .state.density.null.coalesce(
+        dots$kernel.grid, c("gaussian", "tricube")
+    )
+    bandwidth.multiplier.grid <- .state.density.null.coalesce(
+        dots$bandwidth.multiplier.grid, 1
+    )
+    chart.dim.grid <- .local.chart.clean.chart.dim.grid(
+        dots$chart.dim.grid,
+        chart.dim = dots$chart.dim
+    )
+    candidates <- expand.grid(
+        support.size = .klp.clean.support.grid(support.grid, n),
+        degree = .klp.clean.degree.grid(degree.grid),
+        kernel = .klp.clean.kernel.grid(kernel.grid),
+        bandwidth.multiplier =
+            .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
+        chart.dim = chart.dim.grid$chart.dim,
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+    )
+    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+        match(candidates$chart.dim, chart.dim.grid$chart.dim)
+    ]
+    candidates$candidate.id <- seq_len(nrow(candidates))
+    list(
+        candidates = candidates[, c("candidate.id", "support.size", "degree",
+                                    "kernel", "bandwidth.multiplier",
+                                    "chart.dim", "chart.dim.rank")],
+        base.dots = .state.density.drop.dots(
+            dots,
+            c("support.grid", "degree.grid", "kernel.grid",
+              "bandwidth.multiplier.grid", "chart.dim", "chart.dim.grid",
+              "cv.folds", "cv.seed")
+        )
+    )
+}
+
+.state.density.visit.cv.ps.lps.candidates <- function(dots, n) {
+    if (is.null(dots$chart.dim) && is.null(dots$chart.dim.grid)) {
+        stop("OD-level visit CV for 'ps_lps_count' requires 'chart.dim' ",
+             "or 'chart.dim.grid'.", call. = FALSE)
+    }
+    support.size <- .state.density.null.coalesce(dots$support.size, NULL)
+    support.grid <- .state.density.null.coalesce(
+        dots$support.grid,
+        .state.density.null.coalesce(support.size, c(10L, 15L, 20L))
+    )
+    degree <- .state.density.null.coalesce(dots$degree, 2L)
+    degree.grid <- .state.density.null.coalesce(dots$degree.grid, degree)
+    kernel <- .state.density.null.coalesce(dots$kernel, "gaussian")
+    kernel.grid <- .state.density.null.coalesce(dots$kernel.grid, kernel)
+    lambda.sync.grid <- .state.density.null.coalesce(
+        dots$lambda.sync.grid, c(0, 1e-3, 1e-2, 1e-1, 1, 10)
+    )
+    lambda.sync.grid <- sort(unique(as.numeric(lambda.sync.grid)))
+    if (!length(lambda.sync.grid) || any(!is.finite(lambda.sync.grid)) ||
+        any(lambda.sync.grid < 0)) {
+        stop("'lambda.sync.grid' must contain finite nonnegative values.",
+             call. = FALSE)
+    }
+    chart.dim.grid <- .local.chart.clean.chart.dim.grid(
+        dots$chart.dim.grid,
+        chart.dim = dots$chart.dim
+    )
+    candidates <- expand.grid(
+        support.size = .klp.clean.support.grid(support.grid, n),
+        degree = .klp.clean.degree.grid(degree.grid),
+        kernel = .klp.clean.kernel.grid(kernel.grid),
+        lambda.sync = lambda.sync.grid,
+        chart.dim = chart.dim.grid$chart.dim,
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+    )
+    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+        match(candidates$chart.dim, chart.dim.grid$chart.dim)
+    ]
+    candidates$candidate.id <- seq_len(nrow(candidates))
+    list(
+        candidates = candidates[, c("candidate.id", "support.size", "degree",
+                                    "kernel", "lambda.sync", "chart.dim",
+                                    "chart.dim.rank")],
+        base.dots = .state.density.drop.dots(
+            dots,
+            c("support.size", "support.grid", "degree", "degree.grid",
+              "kernel", "kernel.grid", "lambda.sync.grid",
+              "lambda.sync.search", "local.candidate.search",
+              "chart.dim", "chart.dim.grid", "cv.folds", "cv.seed")
+        )
     )
 }
 
@@ -813,6 +926,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         method,
         chart_kernel = c("support.size", "kernel", "bandwidth.multiplier",
                          "chart.dim"),
+        lps_count = c("support.size", "degree", "kernel",
+                      "bandwidth.multiplier", "chart.dim"),
+        lps_logistic_binary = c("support.size", "degree", "kernel",
+                                "bandwidth.multiplier", "chart.dim"),
+        ps_lps_count = c("support.size", "degree", "kernel",
+                         "lambda.sync", "chart.dim"),
         local_likelihood_density = c(
             "support.size", "degree", "kernel", "bandwidth.multiplier",
             "lambda.ridge", "chart.dim"
@@ -838,6 +957,31 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         } else {
             out$chart.dim <- decoded
         }
+    }
+    if (method %in% c("lps_count", "lps_logistic_binary")) {
+        if ("support.size" %in% names(out)) {
+            out$support.grid <- out$support.size
+            out$support.size <- NULL
+        }
+        if ("degree" %in% names(out)) {
+            out$degree.grid <- out$degree
+            out$degree <- NULL
+        }
+        if ("kernel" %in% names(out)) {
+            out$kernel.grid <- out$kernel
+            out$kernel <- NULL
+        }
+        if ("bandwidth.multiplier" %in% names(out)) {
+            out$bandwidth.multiplier.grid <- out$bandwidth.multiplier
+            out$bandwidth.multiplier <- NULL
+        }
+    } else if (identical(method, "ps_lps_count")) {
+        if ("lambda.sync" %in% names(out)) {
+            out$lambda.sync.grid <- out$lambda.sync
+            out$lambda.sync <- NULL
+        }
+        out$lambda.sync.search <- "grid"
+        out$local.candidate.search <- "full"
     }
     out
 }
