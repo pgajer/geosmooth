@@ -206,13 +206,13 @@ test_that("PS-LPS zero synchronization and zero ridge reproduces LPS local.auto 
         support.size = lps$selected$support.size[[1L]],
         degree = lps$selected$degree[[1L]],
         kernel = lps$selected$kernel[[1L]],
-        chart.dim = lps$chart.dim.by.eval,
+        chart.dim = lps$diagnostics$chart.dim$by.anchor,
         lambda.sync.grid = 0,
         lambda.ridge = 0,
         sync.neighbor.size = 3L
     )
-    expect_equal(length(lps$chart.dim.by.eval), nrow(X))
-    expect_gt(length(unique(lps$chart.dim.by.eval)), 1L)
+    expect_equal(length(lps$diagnostics$chart.dim$by.anchor), nrow(X))
+    expect_gt(length(unique(lps$diagnostics$chart.dim$by.anchor)), 1L)
     expect_equal(max(abs(lps$fitted.values - ps$fitted.values)), 0,
                  tolerance = 1e-10)
 })
@@ -242,14 +242,15 @@ test_that("PS-LPS chart.dim auto matches explicit resolved scalar dimension", {
         support.size = 18L,
         degree = 2L,
         kernel = "gaussian",
-        chart.dim = fit.auto$auto.chart.dim,
+        chart.dim = fit.auto$chart.dim,
         lambda.sync.grid = c(0, 0.1),
         lambda.ridge = 0,
         sync.neighbor.size = 3L
     )
     expect_identical(fit.auto$requested.chart.dim, "auto")
     expect_identical(fit.auto$chart.dim.mode, "global.auto")
-    expect_true(all(fit.auto$chart.dim.by.anchor == fit.auto$auto.chart.dim))
+    expect_true(all(fit.auto$diagnostics$chart.dim$by.anchor ==
+                    fit.auto$chart.dim))
     expect_equal(fit.auto$fitted.values, fit.explicit$fitted.values,
                  tolerance = 1e-10)
     expect_equal(fit.auto$selected$lambda.sync,
@@ -281,15 +282,15 @@ test_that("PS-LPS chart.dim local.auto matches explicit resolved vector dimensio
         support.size = 20L,
         degree = 2L,
         kernel = "tricube",
-        chart.dim = fit.local$chart.dim.by.anchor,
+        chart.dim = fit.local$diagnostics$chart.dim$by.anchor,
         lambda.sync.grid = c(0, 0.1),
         lambda.ridge = 0,
         sync.neighbor.size = 3L
     )
     expect_identical(fit.local$requested.chart.dim, "local.auto")
     expect_identical(fit.local$chart.dim.mode, "local.auto")
-    expect_equal(length(fit.local$chart.dim.by.anchor), nrow(X))
-    expect_gt(length(unique(fit.local$chart.dim.by.anchor)), 1L)
+    expect_equal(length(fit.local$diagnostics$chart.dim$by.anchor), nrow(X))
+    expect_gt(length(unique(fit.local$diagnostics$chart.dim$by.anchor)), 1L)
     expect_equal(fit.local$fitted.values, fit.explicit$fitted.values,
                  tolerance = 1e-10)
     expect_equal(fit.local$selected$lambda.sync,

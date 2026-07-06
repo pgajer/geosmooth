@@ -125,6 +125,47 @@
     as.character(as.integer(round(chart.dim[[1L]])))
 }
 
+.local.chart.dimension.telemetry <- function(chart.dim.info,
+                                             chart.dim.by.anchor = NULL,
+                                             n.anchor = NULL,
+                                             source.path = NULL) {
+    if (is.null(chart.dim.by.anchor)) {
+        if (is.null(n.anchor)) {
+            n.anchor <- 1L
+        }
+        chart.dim.by.anchor <- rep(as.integer(chart.dim.info$chart.dim),
+                                   as.integer(n.anchor))
+    }
+    chart.dim.by.anchor <- as.integer(chart.dim.by.anchor)
+    if (!length(chart.dim.by.anchor) ||
+        anyNA(chart.dim.by.anchor) ||
+        any(chart.dim.by.anchor < 1L)) {
+        stop("chart.dim.by.anchor must contain positive integer dimensions.",
+             call. = FALSE)
+    }
+    list(
+        requested = .local.chart.requested.chart.dim.label(
+            chart.dim.info$requested.chart.dim
+        ),
+        mode = chart.dim.info$chart.dim.mode,
+        resolved = chart.dim.info$chart.dim,
+        by.anchor = chart.dim.by.anchor,
+        summary = list(
+            n.anchor = length(chart.dim.by.anchor),
+            min = min(chart.dim.by.anchor),
+            max = max(chart.dim.by.anchor),
+            median = stats::median(chart.dim.by.anchor),
+            n.unique = length(unique(chart.dim.by.anchor))
+        ),
+        auto = isTRUE(chart.dim.info$auto.chart.dim),
+        local.auto = isTRUE(chart.dim.info$auto.chart.dim.local),
+        auto.diagnostics = chart.dim.info$auto.chart.dim.diagnostics,
+        support.metric = chart.dim.info$auto.chart.support.metric,
+        selection.metric = chart.dim.info$auto.chart.selection.metric,
+        source.path = source.path
+    )
+}
+
 .local.chart.dim.mode <- function(chart.dim, coordinate.method) {
     .klp.chart.dim.mode(
         chart.dim = chart.dim,

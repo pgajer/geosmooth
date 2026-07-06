@@ -152,27 +152,41 @@ test_that("OD0 normalize.density clips and normalizes numeric and fit objects", 
 
 test_that("OD0 normalize.density exposes chart dimensions in a uniform diagnostic", {
     X <- matrix(seq(0, 1, length.out = 4), ncol = 1L)
-    make.source <- function(cls, dims, field) {
+    make.source <- function(cls, dims) {
         source <- list(
             X.eval = X,
             fitted.values = c(1, 2, 3, 4),
-            selected = list(requested.chart.dim = "local.auto")
+            selected = list(requested.chart.dim = "local.auto"),
+            diagnostics = list(
+                chart.dim = list(
+                    requested = "local.auto",
+                    mode = "local.auto",
+                    resolved = stats::median(dims),
+                    by.anchor = as.integer(dims),
+                    summary = list(
+                        n.anchor = length(dims),
+                        min = min(dims),
+                        max = max(dims),
+                        median = stats::median(dims),
+                        n.unique = length(unique(dims))
+                    ),
+                    auto = TRUE,
+                    local.auto = TRUE,
+                    auto.diagnostics = NULL,
+                    support.metric = "both",
+                    selection.metric = "operator",
+                    source.path = "test"
+                )
+            )
         )
-        if (identical(field, "per.eval")) {
-            source$diagnostics <- list(per.eval = data.frame(chart.dim = dims))
-        } else if (identical(field, "by.anchor")) {
-            source$chart.dim.by.anchor <- dims
-        } else if (identical(field, "by.eval")) {
-            source$chart.dim.by.eval <- dims
-        }
         class(source) <- c(cls, "list")
         source
     }
     sources <- list(
-        make.source("chart_kernel", c(1L, 1L, 2L, 2L), "per.eval"),
-        make.source("local_likelihood", c(2L, 2L, 1L, 1L), "per.eval"),
-        make.source("ps_lps", c(1L, 2L, 1L, 2L), "by.anchor"),
-        make.source("lps", c(2L, 1L, 2L, 1L), "by.eval")
+        make.source("chart_kernel", c(1L, 1L, 2L, 2L)),
+        make.source("local_likelihood", c(2L, 2L, 1L, 1L)),
+        make.source("ps_lps", c(1L, 2L, 1L, 2L)),
+        make.source("lps", c(2L, 1L, 2L, 1L))
     )
 
     for (source in sources) {
@@ -182,13 +196,13 @@ test_that("OD0 normalize.density exposes chart dimensions in a uniform diagnosti
             keep.source.fit = FALSE
         )
         expect_s3_class(fit, "density_fit")
-        expect_true(is.integer(fit$diagnostics$chart.dim.by.anchor))
+        expect_true(is.integer(fit$diagnostics$chart.dim$by.anchor))
         expect_equal(
-            fit$diagnostics$chart.dim.by.anchor,
-            fit$diagnostics$chart.dim.telemetry$chart.dim.by.anchor
+            fit$diagnostics$chart.dim$by.anchor,
+            source$diagnostics$chart.dim$by.anchor
         )
-        expect_equal(length(fit$diagnostics$chart.dim.by.anchor), nrow(X))
-        expect_true(is.character(fit$diagnostics$chart.dim.telemetry$source.path))
+        expect_equal(length(fit$diagnostics$chart.dim$by.anchor), nrow(X))
+        expect_true(is.character(fit$diagnostics$chart.dim$source.path))
     }
 })
 

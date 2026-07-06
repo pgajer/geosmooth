@@ -315,7 +315,7 @@ test_that("OD3 local-likelihood supports local PCA charts in dimension greater t
     expect_s3_class(fit, "local_likelihood")
     expect_true(all(is.finite(fit$fitted.values)))
     expect_true(all(fit$fitted.values >= 0))
-    expect_true(all(fit$diagnostics$per.eval$chart.dim == 2L))
+    expect_true(all(fit$diagnostics$chart.dim$by.anchor == 2L))
 })
 
 test_that("OD3 local-likelihood surfaces sparse-mass fallbacks", {

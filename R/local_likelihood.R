@@ -336,16 +336,11 @@ fit.local.likelihood <- function(
         median.normalization.constant =
             .local.likelihood.finite.median(normalization.constant),
         degree.used.summary = summary(degree.used),
-        chart.dim.summary = summary(resolved.chart.dim),
-        requested.chart.dim =
-            .local.chart.requested.chart.dim.label(requested.chart.dim),
-        chart.dim.mode = chart.dim.info$chart.dim.mode,
-        auto.chart.dim = chart.dim.info$auto.chart.dim,
-        auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
-        auto.chart.dim.diagnostics =
-            chart.dim.info$auto.chart.dim.diagnostics,
-        auto.chart.support.metric = auto.chart.support.metric,
-        auto.chart.selection.metric = auto.chart.selection.metric
+        chart.dim = .local.chart.dimension.telemetry(
+            chart.dim.info = chart.dim.info,
+            chart.dim.by.anchor = resolved.chart.dim,
+            source.path = "fit.local.likelihood.local.chart_resolution"
+        )
     )
     if (isTRUE(return.details)) {
         diagnostics$per.eval <- data.frame(
@@ -355,7 +350,6 @@ fit.local.likelihood <- function(
             n.nonzero.local = n.nonzero.local,
             support.size = support.size,
             effective.support = effective.support,
-            chart.dim = resolved.chart.dim,
             degree.requested = degree,
             degree.used = degree.used,
             lambda.ridge = lambda.ridge,
@@ -388,8 +382,6 @@ fit.local.likelihood <- function(
             auto.chart.dim = chart.dim.info$auto.chart.dim,
             auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
             chart.dim.mode = chart.dim.info$chart.dim.mode,
-            auto.chart.dim.diagnostics =
-                chart.dim.info$auto.chart.dim.diagnostics,
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.ridge = lambda.ridge,
