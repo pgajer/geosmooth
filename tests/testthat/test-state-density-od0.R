@@ -87,6 +87,7 @@ test_that("OD0 normalize.density clips and normalizes numeric and fit objects", 
     expect_equal(numeric.fit$rho, c(0.5, 0, 0.6, 0) / 1.1,
                  tolerance = 1e-12)
     expect_equal(numeric.fit$accounting$clip.mass, 0.1, tolerance = 1e-12)
+    expect_equal(numeric.fit$empirical.rho, rep(NA_real_, 4L))
 
     lps.like <- list(
         method.id = "lps",
@@ -98,6 +99,7 @@ test_that("OD0 normalize.density clips and normalizes numeric and fit objects", 
     expect_s3_class(lps.density, "density_fit")
     expect_identical(lps.density$method.id, "normalized_lps")
     expect_equal(lps.density$rho, c(1, 2, 0, 1) / 4, tolerance = 1e-12)
+    expect_equal(lps.density$empirical.rho, rep(NA_real_, 4L))
     expect_identical(lps.density$diagnostics$source.class, "lps")
 })
 
@@ -122,6 +124,13 @@ test_that("OD0 private smoothness helpers have deterministic placeholder behavio
         ),
         1L
     )
+    expect_equal(
+        geosmooth:::.state.density.local.maxima.count(
+            values = c(0, 0, 1, 1, 0),
+            adj.list = list(2L, c(1L, 3L), c(2L, 4L), c(3L, 5L), 4L)
+        ),
+        0L
+    )
 
     summary <- geosmooth:::.state.density.raw.basin.summary(
         basin.assignment = c("a", "a", "b"),
@@ -130,4 +139,23 @@ test_that("OD0 private smoothness helpers have deterministic placeholder behavio
     expect_equal(summary$raw.basin.size.summary$size, c(2L, 1L))
     expect_equal(summary$raw.basin.mass.summary$mass, c(0.5, 0.5),
                  tolerance = 1e-12)
+})
+
+test_that("OD0 finalize wires strict local-maxima smoothness diagnostics", {
+    X <- matrix(seq(0, 1, length.out = 5), ncol = 1L)
+    fit <- geosmooth:::.state.density.finalize(
+        method.id = "test",
+        X = X,
+        fitted.raw = c(0, 0.2, 0.1, 0.5, 0.1),
+        empirical.rho = rep(NA_real_, 5L)
+    )
+    expect_equal(fit$smoothness$n.local.maxima, 2L)
+
+    plateau <- geosmooth:::.state.density.finalize(
+        method.id = "test",
+        X = X,
+        fitted.raw = c(0, 0, 0, 0, 0),
+        empirical.rho = rep(NA_real_, 5L)
+    )
+    expect_equal(plateau$smoothness$n.local.maxima, 0L)
 })

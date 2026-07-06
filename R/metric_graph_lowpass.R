@@ -113,8 +113,10 @@ metric.graph.lowpass.operator <- function(
 #' @param y Numeric response vector of length \code{length(adj.list)}.
 #' @param n.eigenpairs Positive integer number of eigenpairs to compute.
 #' @param filter.type Spectral low-pass filter family.
-#' @param eta.grid Optional positive numeric eta grid. If \code{NULL}, the
-#'   existing package helper \code{generate.eta.grid()} is used.
+#' @param eta.grid Optional numeric eta grid. Values must be positive except
+#'   for \code{filter.type = "heat_kernel"}, where \code{eta = 0} is allowed
+#'   and gives the identity/no-smoothing limit. If \code{NULL}, the existing
+#'   package helper \code{generate.eta.grid()} is used.
 #' @param n.candidates Number of eta candidates when \code{eta.grid = NULL}.
 #' @param eigen.solver \code{"auto"}, \code{"sparse"}, or \code{"dense"}.
 #'   \code{"auto"} uses dense decomposition only for
@@ -592,8 +594,14 @@ refit.metric.graph.lowpass <- function(fitted.model,
     if (is.null(eta.grid)) {
         eta.grid <- generate.eta.grid(eigenvalues, filter.type, n.candidates)
     } else {
-        if (!is.numeric(eta.grid) || length(eta.grid) < 1L ||
-            any(!is.finite(eta.grid)) || any(eta.grid <= 0)) {
+        allow.zero <- identical(filter.type, "heat_kernel")
+        bad <- !is.numeric(eta.grid) || length(eta.grid) < 1L ||
+            any(!is.finite(eta.grid)) ||
+            if (allow.zero) any(eta.grid < 0) else any(eta.grid <= 0)
+        if (bad) {
+            if (allow.zero) {
+                stop("eta.grid must be NULL or a finite nonnegative numeric vector for heat_kernel.")
+            }
             stop("eta.grid must be NULL or a positive finite numeric vector.")
         }
         eta.grid <- as.double(eta.grid)
