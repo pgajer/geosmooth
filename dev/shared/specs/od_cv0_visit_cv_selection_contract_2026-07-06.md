@@ -221,5 +221,6 @@ see
 Graph-construction scale remains outside OD-CV4 because OD-CV4 assumes a fixed
 supplied graph.
 
-OD-CV5 should run a small all-method smoke benchmark with a uniform OD-level
-selection report.
+OD-CV5 runs a small all-method smoke benchmark with a uniform OD-level
+selection report; see
+`dev/shared/specs/od_cv5_all_method_smoke_benchmark_contract_2026-07-06.md`.

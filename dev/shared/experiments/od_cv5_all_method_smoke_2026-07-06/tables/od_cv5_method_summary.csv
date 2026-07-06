@@ -1,0 +1,8 @@
+"method","label","status","elapsed.sec","n.candidates","n.failed.candidates","selected.candidate.id","visit.cv.neg.log.rho","visit.cv.mean.heldout.rho","mass","max.rho","n.local.maxima","selected.summary","error.message"
+"chart_kernel","Chart kernel","ok",0.296,8,0,4,3.32443530334685,0.0371206905480956,1,0.0460307241357729,5,"support.size=11; kernel=gaussian; bandwidth.multiplier=1.2; chart.dim=1",NA
+"lps_logistic_binary","LPS Bernoulli","ok",1.187,8,0,2,3.33321483682966,0.0365272451632446,1,0.0428940430345335,5,"support.size=11; degree=0; kernel=gaussian; bandwidth.multiplier=1; chart.dim=1",NA
+"local_likelihood_bernoulli","Local likelihood Bernoulli","ok",0.268,8,0,2,3.3338064647583,0.036516728702692,1,0.0428839279658405,5,"support.size=11; degree=0; kernel=gaussian; bandwidth.multiplier=1; lambda.ridge=1e-08; chart.dim=1",NA
+"lps_count","LPS count","ok",1.407,8,0,2,3.3361233588511,0.0366692204555024,1,0.0465416456969158,5,"support.size=11; degree=0; kernel=gaussian; bandwidth.multiplier=1; chart.dim=1",NA
+"local_likelihood_density","Local likelihood density","ok",0.295,8,0,2,3.33674755499018,0.0366588054503418,1,0.0465044425058209,5,"support.size=11; degree=0; kernel=gaussian; bandwidth.multiplier=1; lambda.ridge=1e-08; chart.dim=1",NA
+"ps_lps_count","PS-LPS count","ok",0.802,8,0,2,3.36998956932923,0.0360925044480884,1,0.0503947653157414,6,"support.size=11; degree=1; kernel=gaussian; lambda.sync=0; chart.dim=1",NA
+"graph_random_walk","Graph random walk","ok",0.103,9,0,3,13.6802167677932,0.0269283334558121,1,0.0922008382080952,12,"walk.step=2; affinity.method=exp_neg_length_over_median; affinity.scale=NA",NA

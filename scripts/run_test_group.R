@@ -15,7 +15,8 @@ validation.files <- c(
     "test-lps-ridge-alignment.R",
     "test-lps-tier0-correctness.R",
     "test-lps-tier0-correctness-extended.R",
-    "test-lps-tier4-uncertainty.R"
+    "test-lps-tier4-uncertainty.R",
+    "test-odcv5-all-method-smoke-report.R"
 )
 
 group.files <- list(
