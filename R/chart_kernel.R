@@ -56,32 +56,25 @@ fit.chart.kernel <- function(
     denominator.floor = sqrt(.Machine$double.eps),
     return.details = TRUE) {
 
-    X <- .state.density.validate.X(X)
+    prepared <- .local.chart.prepare.X.eval(X, X.eval)
+    X <- prepared$X
+    X.eval <- prepared$X.eval
     n <- nrow(X)
     p <- ncol(X)
-    if (is.null(X.eval)) {
-        X.eval <- X
-    } else {
-        X.eval <- .state.density.validate.X(X.eval)
-        if (ncol(X.eval) != p) {
-            stop("X.eval must have the same number of columns as X.",
-                 call. = FALSE)
-        }
-    }
-    y <- .chart.kernel.validate.response(y, n)
-    quadrature.weights <- .chart.kernel.validate.quadrature(
+    y <- .local.chart.validate.response(y, n)
+    quadrature.weights <- .local.chart.validate.quadrature(
         quadrature.weights, n
     )
-    support.size <- .chart.kernel.validate.support.size(support.size, n)
+    support.size <- .local.chart.validate.support.size(support.size, n)
     kernel <- match.arg(kernel)
     coordinate.method <- match.arg(coordinate.method)
-    bandwidth.multiplier <- .chart.kernel.validate.positive.scalar(
+    bandwidth.multiplier <- .local.chart.validate.positive.scalar(
         bandwidth.multiplier, "bandwidth.multiplier"
     )
-    denominator.floor <- .chart.kernel.validate.positive.scalar(
+    denominator.floor <- .local.chart.validate.positive.scalar(
         denominator.floor, "denominator.floor"
     )
-    chart.dim <- .chart.kernel.validate.chart.dim(
+    chart.dim <- .local.chart.validate.chart.dim(
         chart.dim = chart.dim,
         coordinate.method = coordinate.method,
         p = p,
@@ -177,22 +170,20 @@ fit.chart.kernel <- function(
                                     chart.dim,
                                     quadrature.weights,
                                     denominator.floor) {
-    d2 <- rowSums((X - matrix(x0, nrow = nrow(X), ncol = ncol(X),
-                              byrow = TRUE))^2)
-    ord <- order(d2, seq_along(d2))
-    idx <- ord[seq_len(support.size)]
-    centered <- sweep(X[idx, , drop = FALSE], 2L, x0, "-")
-    coords <- .chart.kernel.local.coordinates(
-        centered = centered,
+    support <- .local.chart.support(X, x0, support.size)
+    idx <- support$idx
+    coords <- .local.chart.coordinates(
+        centered = support$centered,
         coordinate.method = coordinate.method,
         chart.dim = chart.dim
     )
     distances <- sqrt(rowSums(coords^2))
-    weights <- .klp.kernel.weights(
+    kernel.info <- .local.chart.kernel(
         distances = distances,
         kernel = kernel,
         bandwidth.multiplier = bandwidth.multiplier
     )
+    weights <- kernel.info$weights
     numerator <- sum(weights * y[idx])
     raw.denominator <- sum(weights * quadrature.weights[idx])
     used.floor <- !is.finite(raw.denominator) ||
@@ -202,100 +193,14 @@ fit.chart.kernel <- function(
     } else {
         raw.denominator
     }
-    h <- max(distances[is.finite(distances)], 0)
-    if (!is.finite(h) || h <= 0) {
-        h <- 1
-    }
     list(
         value = numerator / denominator,
         numerator = numerator,
         raw.denominator = raw.denominator,
         denominator = denominator,
-        bandwidth = bandwidth.multiplier * h,
+        bandwidth = kernel.info$bandwidth,
         used.floor = used.floor,
-        effective.support = sum(weights > 0),
+        effective.support = kernel.info$effective.support,
         chart.dim = ncol(coords)
     )
-}
-
-.chart.kernel.local.coordinates <- function(centered,
-                                            coordinate.method,
-                                            chart.dim) {
-    if (identical(coordinate.method, "coordinates")) {
-        return(centered)
-    }
-    d <- min(chart.dim, ncol(centered), nrow(centered))
-    if (d < 1L) {
-        return(matrix(0, nrow = nrow(centered), ncol = 1L))
-    }
-    sv <- svd(centered, nu = 0L, nv = d)
-    centered %*% sv$v[, seq_len(d), drop = FALSE]
-}
-
-.chart.kernel.validate.response <- function(y, n) {
-    if (!is.numeric(y) || length(y) != n || any(!is.finite(y))) {
-        stop("y must be a finite numeric vector with length nrow(X).",
-             call. = FALSE)
-    }
-    as.numeric(y)
-}
-
-.chart.kernel.validate.quadrature <- function(quadrature.weights, n) {
-    if (is.null(quadrature.weights)) {
-        return(rep(1, n))
-    }
-    if (!is.numeric(quadrature.weights) ||
-        length(quadrature.weights) != n ||
-        any(!is.finite(quadrature.weights)) ||
-        any(quadrature.weights <= 0)) {
-        stop("quadrature.weights must be NULL or a positive finite numeric vector with length nrow(X).",
-             call. = FALSE)
-    }
-    as.numeric(quadrature.weights)
-}
-
-.chart.kernel.validate.support.size <- function(support.size, n) {
-    if (!is.numeric(support.size) || length(support.size) != 1L ||
-        !is.finite(support.size)) {
-        stop("support.size must be one finite integer.", call. = FALSE)
-    }
-    support.size <- as.integer(round(support.size))
-    if (support.size < 1L) {
-        stop("support.size must be at least 1.", call. = FALSE)
-    }
-    min(support.size, n)
-}
-
-.chart.kernel.validate.positive.scalar <- function(x, name) {
-    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
-        stop(name, " must be one positive finite numeric value.",
-             call. = FALSE)
-    }
-    as.numeric(x)
-}
-
-.chart.kernel.validate.chart.dim <- function(chart.dim,
-                                             coordinate.method,
-                                             p,
-                                             support.size) {
-    if (identical(coordinate.method, "coordinates")) {
-        if (!is.null(chart.dim)) {
-            warning("chart.dim is ignored when coordinate.method = \"coordinates\".",
-                    call. = FALSE)
-        }
-        return(p)
-    }
-    if (is.null(chart.dim)) {
-        return(max(1L, min(p, support.size - 1L)))
-    }
-    if (!is.numeric(chart.dim) || length(chart.dim) != 1L ||
-        !is.finite(chart.dim)) {
-        stop("chart.dim must be NULL or one finite integer for local.pca.",
-             call. = FALSE)
-    }
-    chart.dim <- as.integer(round(chart.dim))
-    if (chart.dim < 1L) {
-        stop("chart.dim must be at least 1.", call. = FALSE)
-    }
-    min(chart.dim, p, support.size)
 }

@@ -11,11 +11,20 @@ should now be implemented only after preserving the same package design rule:
 the model-layer function is `fit.local.likelihood()`, and density conversion is
 performed explicitly by `normalize.density()`.
 
-The first implementation should be narrow.  It should estimate a nonnegative
-local density or intensity field from a sparse subject-occupation mass vector.
-It should not attempt to implement a full family of Gaussian, Bernoulli, and
-binomial local-likelihood regressions in the first pass.  Those extensions can
-be considered after the density/intensity branch passes the OD gates.
+The full local-likelihood direction should eventually include both of the
+branches needed for OD work:
+
+- a density/intensity branch for direct smoothing of sparse subject-occupation
+  mass vectors;
+- a Bernoulli branch for visit/no-visit responses, parallel in spirit to the
+  existing binary LPS modes.
+
+The implementation order should still be narrow.  First factor shared
+local-chart, support, kernel, and feature-map infrastructure.  Then implement
+and audit the density/intensity branch.  The Bernoulli branch should be an
+explicit next phase, not hidden inside the first density implementation.  This
+keeps the sparse-mass accounting visible while leaving the public API ready for
+the binary extension.
 
 ## Statistical Target
 
@@ -126,6 +135,7 @@ fit.local.likelihood(
   X,
   y,
   X.eval = NULL,
+  likelihood.family = c("density", "bernoulli"),
   support.size = min(15L, nrow(X)),
   degree = 1L,
   kernel = c("gaussian", "tricube", "epanechnikov", "triangular"),
@@ -144,12 +154,18 @@ fit.local.likelihood(
 )
 ```
 
+In this phase `likelihood.family = "density"` is implemented.  The
+`"bernoulli"` value may be accepted by the argument contract but should stop
+with a clear "reserved but not implemented" message until the Bernoulli phase is
+implemented and audited.
+
 The returned object should have class `c("local_likelihood", "list")` and at
 least these fields:
 
 ```r
 list(
   method.id = "local_likelihood",
+  likelihood.family = "density",
   X = X,
   X.eval = X.eval,
   y = y,
@@ -180,11 +196,11 @@ as a convenience workflow that constructs the subject mass vector, calls
 
 ## Implementation Phases
 
-### OD3-LL0: Contract and Helper Skeleton
+### OD3-LL0: Shared Local Chart/Support/Kernel Infrastructure
 
-Create `R/local_likelihood.R` with validators and private helpers.  Reuse or
-factor the chart-kernel helper logic when practical, but do not change
-`fit.chart.kernel()` semantics.
+Create shared private helpers for local chart smoothers.  These helpers should
+be used by both `fit.chart.kernel()` and `fit.local.likelihood()` without
+changing `fit.chart.kernel()` semantics.
 
 Required helpers:
 
@@ -195,19 +211,41 @@ Required helpers:
 - kernel-weight construction using the same kernel definitions as LPS and
   chart-kernel;
 - degree-0, degree-1, and degree-2 feature construction without intercept;
+- a shared support telemetry contract: local bandwidth, effective support,
+  resolved chart dimension, and local support size.
+
+Acceptance tests:
+
+- the existing chart-kernel OD3 tests pass unchanged after the helper
+  refactor;
+- invalid `y`, invalid quadrature weights, invalid support size, and invalid
+  `chart.dim` fail with clear messages;
+- helper outputs are finite on small 1D and dimension-greater-than-one
+  fixtures.
+
+### OD3-LL1: Density/Intensity Likelihood Core
+
+Create `R/local_likelihood.R` with the density/intensity family and private
+helpers.  The first branch must implement:
+
 - stable `logsumexp` evaluation for `Z_u(beta)`;
 - local likelihood objective, gradient, and Hessian for the density/intensity
   branch.
 
 Acceptance tests:
 
-- invalid `y`, invalid quadrature weights, invalid support size, and invalid
-  `chart.dim` fail with clear messages;
 - degree-0 local likelihood has a closed-form output and does not call an
   optimizer;
-- all helper outputs are finite on a small 1D fixture.
+- direct 1D density fits return finite nonnegative `fitted.values`;
+- direct dimension-greater-than-one density fits work with `coordinate.method =
+  "local.pca"`;
+- `normalize.density(fit)` returns a `density_fit` with `status = "ok"`,
+  mass one, no negative density, and preserved `empirical.rho` if the fit
+  carries one;
+- `likelihood.family = "bernoulli"` stops with a clear reserved/not-implemented
+  message.
 
-### OD3-LL1: Local Optimizer and Sparse-Subject Safeguards
+### OD3-LL2: Local Optimizer and Sparse-Subject Safeguards
 
 Implement the per-evaluation local solve.  The recommended first backend is
 Newton with ridge-stabilized Hessian and step-halving.  If this is too much for
@@ -262,7 +300,7 @@ Acceptance tests:
 - optimizer failures are surfaced in diagnostics and never produce hidden
   `NA` values in `fitted.values`.
 
-### OD3-LL2: Public `fit.local.likelihood()`
+### OD3-LL3: Public Density-Fit Surface
 
 Expose the public function after LL0 and LL1 helpers pass.  The function should
 loop over evaluation points, fit local likelihoods, and return a fitted object
@@ -282,10 +320,26 @@ Acceptance tests:
 - `return.details = FALSE` suppresses large per-evaluation diagnostics but
   still returns enough summary telemetry to audit fallback counts.
 
-### OD3-LL3: OD Wrapper Integration
+### OD3-LL4: Bernoulli Local Likelihood Branch
 
-Only after LL2 passes, add `method = "local_likelihood"` to `fit.subject.od()`.
-The wrapper should:
+After the density/intensity branch has a clean audit, implement
+`likelihood.family = "bernoulli"`.  This branch should fit local Bernoulli
+likelihoods for visit/no-visit responses and should return probabilities at
+evaluation anchors.  It should use the same shared support, chart, kernel, and
+feature helpers as the density branch, and it should report the same local
+conditioning and fallback telemetry whenever a local Bernoulli fit is
+underidentified or separated.
+
+The Bernoulli branch is scientifically important, but it should not be mixed
+into the first density/intensity correctness pass.  Its tests should compare it
+against the existing binary LPS modes on small fixtures before it is used for
+OD benchmarking.
+
+### OD3-LL5: OD Wrapper Integration
+
+Only after the direct density branch passes, add a density/intensity wrapper to
+`fit.subject.od()`.  After the Bernoulli branch passes, add a separate wrapper
+mode or family control for the Bernoulli workflow.  The density wrapper should:
 
 1. construct the empirical subject mass;
 2. call `fit.local.likelihood(X = X, y = empirical, ...)`;
@@ -303,7 +357,7 @@ Acceptance tests:
 - the wrapper records fallback counts and does not silently mark a heavily
   fallback-dominated fit as ordinary.
 
-### OD3-LL4: Comparison Smoke Tests
+### OD3-LL6: Comparison Smoke Tests
 
 Run a small smoke comparison against:
 
@@ -326,7 +380,7 @@ Required smoke outputs:
   claim;
 - visual or tabular comparison of raw fitted fields in one 1D example.
 
-### OD3-LL5: Audit Handoff
+### OD3-LL7: Audit Handoff
 
 After implementation and tests, generate an auditor handoff under
 `split_handoffs/` following
@@ -337,7 +391,8 @@ The handoff must explicitly state:
 - whether local likelihood is admitted into broad OD benchmarking;
 - fallback rates in the smoke tests;
 - whether any local likelihood output depended on chart-kernel fallback;
-- whether only the density/intensity branch was implemented;
+- whether only the density/intensity branch was implemented, or whether the
+  Bernoulli branch has also passed its own tests;
 - which extensions remain unimplemented.
 
 ## Admission Gates For Broad Benchmarking
@@ -349,7 +404,7 @@ following are true:
    one.
 2. `normalize.density(fit.local.likelihood(...))` passes mass, nonnegativity,
    finite-output, and empirical-reference accounting tests.
-3. `fit.subject.od(method = "local_likelihood")` passes 1D and dimension
+3. The OD wrapper for the relevant likelihood family passes 1D and dimension
    greater-than-one smoke tests.
 4. Fallback statuses are explicit and summarized.
 5. Fallback-dominated fits are surfaced with a warning or diagnostic flag.
@@ -359,19 +414,21 @@ following are true:
 
 ## Deferred Extensions
 
-The following should remain out of the first OD3 local-likelihood phase:
+The following should remain out of the first OD3 density/intensity phase:
 
 - Gaussian local-likelihood regression;
-- Bernoulli or binomial local-likelihood regression;
+- binomial grouped-count local-likelihood regression;
 - support-grid or bandwidth-grid selection;
 - C++ backend;
 - integration into large OD4 benchmarks;
 - using local likelihood as a default OD estimator;
 - local-likelihood variants over landmarks rather than all data points.
 
-These are reasonable later directions, but implementing them before the
-density/intensity branch is audited would make the sparse-subject failure modes
-too hard to interpret.
+Bernoulli local likelihood is not a vague deferred extension: it is the next
+planned local-likelihood family after the density/intensity branch is correct
+and audited.  The remaining items above are reasonable later directions, but
+implementing them before the density/intensity branch is audited would make the
+sparse-subject failure modes too hard to interpret.
 
 ## Recommended First Implementation Decision
 
@@ -384,6 +441,7 @@ coordinate.method: coordinates and local.pca
 fallback default: zero for zero local mass; degree0 for underidentified fits
 optimizer: Newton with ridge and step-halving, or BFGS if Newton is deferred
 wrapper: add fit.subject.od(method = "local_likelihood") only after direct tests pass
+next family: Bernoulli local likelihood after density branch audit
 benchmark status: excluded from broad benchmarks until audited
 ```
 

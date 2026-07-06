@@ -392,7 +392,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 
     geosmooth.symbols <- c(
         "fit.lps", "fit.ps.lps", "fit.metric.graph.lowpass",
-        "fit.chart.kernel", "lps.grouped.foldid", "lps.nested.cv",
+        "fit.chart.kernel", "fit.local.likelihood",
+        "lps.grouped.foldid", "lps.nested.cv",
         "dgp.materialize", "dgp.content.sha256"
     )
     for (sym in geosmooth.symbols) {
