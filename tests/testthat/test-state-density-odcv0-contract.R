@@ -132,6 +132,40 @@ test_that("OD-CV0 compact visit CV keeps selected OD metadata without heavy tabl
     expect_null(fit$visit.foldid)
 })
 
+test_that("OD-CV0 failed candidates do not report finite mean held-out mass", {
+    n <- 18L
+    X <- matrix(seq(0, 1, length.out = n), ncol = 1L)
+    subject.index <- c(2L, 4L, 7L, 11L, 14L, 17L)
+    candidates <- data.frame(
+        candidate.id = 1:2,
+        support.size = c(5L, 5L),
+        kernel = c("gaussian", "not_a_kernel"),
+        bandwidth.multiplier = c(1, 1),
+        stringsAsFactors = FALSE
+    )
+
+    cv <- .state.density.visit.cv.table(
+        X = X,
+        subject.index = subject.index,
+        method = "chart_kernel",
+        graph = NULL,
+        graph.control = list(),
+        od.control = list(),
+        foldid = rep(1:3, length.out = length(subject.index)),
+        candidates = candidates,
+        base.dots = list(coordinate.method = "coordinates"),
+        epsilon = 1e-15
+    )
+
+    expect_identical(cv$cv.table$visit.cv.status,
+                     c("ok", "failed"))
+    expect_true(is.finite(cv$cv.table$visit.cv.mean.heldout.rho[[1L]]))
+    expect_true(is.na(cv$cv.table$visit.cv.mean.heldout.rho[[2L]]))
+    expect_identical(cv$cv.table$visit.cv.nonfinite.count[[2L]],
+                     length(subject.index))
+    expect_identical(cv$cv.table$visit.cv.neg.log.rho[[2L]], Inf)
+})
+
 test_that("OD-CV0 rejects ambiguous or unsupported visit-CV requests", {
     X <- matrix(seq(0, 1, length.out = 10), ncol = 1L)
     subject.index <- c(2L, 4L, 6L, 8L)
