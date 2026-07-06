@@ -19,12 +19,12 @@ branches needed for OD work:
 - a Bernoulli branch for visit/no-visit responses, parallel in spirit to the
   existing binary LPS modes.
 
-The implementation order should still be narrow.  First factor shared
-local-chart, support, kernel, and feature-map infrastructure.  Then implement
-and audit the density/intensity branch.  The Bernoulli branch should be an
-explicit next phase, not hidden inside the first density implementation.  This
-keeps the sparse-mass accounting visible while leaving the public API ready for
-the binary extension.
+The implementation order is staged.  First factor shared local-chart, support,
+kernel, and feature-map infrastructure.  Then implement and audit the
+density/intensity branch.  Then implement the Bernoulli branch using the same
+support/chart/kernel skeleton but a true local logistic likelihood.  Keep the
+OD-facing methods separate so reports can distinguish direct density smoothing
+from binary visit-response smoothing.
 
 ## Statistical Target
 
@@ -154,10 +154,10 @@ fit.local.likelihood(
 )
 ```
 
-In this phase `likelihood.family = "density"` is implemented.  The
-`"bernoulli"` value may be accepted by the argument contract but should stop
-with a clear "reserved but not implemented" message until the Bernoulli phase is
-implemented and audited.
+Both `likelihood.family = "density"` and `likelihood.family = "bernoulli"` are
+implemented.  The density branch fits an exponential-tilt local density model.
+The Bernoulli branch fits a weighted local logistic model and returns fitted
+visit probabilities at evaluation anchors.
 
 The returned object should have class `c("local_likelihood", "list")` and at
 least these fields:
@@ -242,8 +242,8 @@ Acceptance tests:
 - `normalize.density(fit)` returns a `density_fit` with `status = "ok"`,
   mass one, no negative density, and preserved `empirical.rho` if the fit
   carries one;
-- `likelihood.family = "bernoulli"` stops with a clear reserved/not-implemented
-  message.
+- `likelihood.family = "bernoulli"` returns finite probabilities in `[0, 1]`
+  on the same small OD fixtures used by the density branch.
 
 ### OD3-LL2: Local Optimizer and Sparse-Subject Safeguards
 
@@ -322,31 +322,43 @@ Acceptance tests:
 
 ### OD3-LL4: Bernoulli Local Likelihood Branch
 
-After the density/intensity branch has a clean audit, implement
-`likelihood.family = "bernoulli"`.  This branch should fit local Bernoulli
-likelihoods for visit/no-visit responses and should return probabilities at
-evaluation anchors.  It should use the same shared support, chart, kernel, and
-feature helpers as the density branch, and it should report the same local
-conditioning and fallback telemetry whenever a local Bernoulli fit is
-underidentified or separated.
+Implement `likelihood.family = "bernoulli"` as local logistic likelihoods for
+visit/no-visit responses.  The branch should return probabilities at evaluation
+anchors, use the same shared support, chart, kernel, and feature helpers as the
+density branch, and report the same local conditioning and fallback telemetry
+whenever a local Bernoulli fit is underidentified or separated.
 
-The Bernoulli branch is scientifically important, but it should not be mixed
-into the first density/intensity correctness pass.  Its tests should compare it
-against the existing binary LPS modes on small fixtures before it is used for
-OD benchmarking.
+The Bernoulli branch must be tested on the same OD smoke fixtures as the
+density branch.  It should remain separately labeled in OD reports rather than
+being collapsed into the density branch.
 
 ### OD3-LL5: OD Wrapper Integration
 
-Only after the direct density branch passes, add a density/intensity wrapper to
-`fit.subject.od()`.  After the Bernoulli branch passes, add a separate wrapper
-mode or family control for the Bernoulli workflow.  The density wrapper should:
+Add separate wrapper methods to `fit.subject.od()`:
+
+```r
+method = "local_likelihood_density"
+method = "local_likelihood_bernoulli"
+```
+
+The density wrapper should:
 
 1. construct the empirical subject mass;
-2. call `fit.local.likelihood(X = X, y = empirical, ...)`;
+2. call `fit.local.likelihood(X = X, y = empirical,
+   likelihood.family = "density", ...)`;
 3. attach `empirical.rho` to the fit;
-4. call `normalize.density(..., method.id = "local_likelihood")`;
+4. call `normalize.density(..., method.id = "local_likelihood_density")`;
 5. decorate the OD object with source method, response summary, selected
    controls, local-likelihood telemetry, and subject metadata.
+
+The Bernoulli wrapper should:
+
+1. construct the binary visit indicator `as.numeric(subject.visit.count > 0)`;
+2. call `fit.local.likelihood(X = X, y = binary,
+   likelihood.family = "bernoulli", ...)`;
+3. attach the empirical subject mass `empirical.rho` to the fit;
+4. call `normalize.density(..., method.id = "local_likelihood_bernoulli")`;
+5. decorate the OD object with the same telemetry fields as the density wrapper.
 
 Acceptance tests:
 
@@ -391,8 +403,7 @@ The handoff must explicitly state:
 - whether local likelihood is admitted into broad OD benchmarking;
 - fallback rates in the smoke tests;
 - whether any local likelihood output depended on chart-kernel fallback;
-- whether only the density/intensity branch was implemented, or whether the
-  Bernoulli branch has also passed its own tests;
+- whether both density/intensity and Bernoulli branches passed their own tests;
 - which extensions remain unimplemented.
 
 ## Admission Gates For Broad Benchmarking
@@ -404,8 +415,9 @@ following are true:
    one.
 2. `normalize.density(fit.local.likelihood(...))` passes mass, nonnegativity,
    finite-output, and empirical-reference accounting tests.
-3. The OD wrapper for the relevant likelihood family passes 1D and dimension
-   greater-than-one smoke tests.
+3. `fit.subject.od(method = "local_likelihood_density")` and
+   `fit.subject.od(method = "local_likelihood_bernoulli")` pass the same OD
+   smoke fixtures.
 4. Fallback statuses are explicit and summarized.
 5. Fallback-dominated fits are surfaced with a warning or diagnostic flag.
 6. The method does not silently produce `NA`, `NaN`, `Inf`, or negative raw
@@ -424,24 +436,21 @@ The following should remain out of the first OD3 density/intensity phase:
 - using local likelihood as a default OD estimator;
 - local-likelihood variants over landmarks rather than all data points.
 
-Bernoulli local likelihood is not a vague deferred extension: it is the next
-planned local-likelihood family after the density/intensity branch is correct
-and audited.  The remaining items above are reasonable later directions, but
-implementing them before the density/intensity branch is audited would make the
-sparse-subject failure modes too hard to interpret.
+The remaining items above are reasonable later directions.  They should not be
+mixed into the density/Bernoulli OD3 local-likelihood smoke layer because that
+would make sparse-subject failure modes too hard to interpret.
 
 ## Recommended First Implementation Decision
 
 The recommended first implementation is:
 
 ```text
-family: density/intensity only
+family: density/intensity and Bernoulli
 degree: 0 and 1 first; degree 2 only after degree 1 passes
 coordinate.method: coordinates and local.pca
 fallback default: zero for zero local mass; degree0 for underidentified fits
 optimizer: Newton with ridge and step-halving, or BFGS if Newton is deferred
-wrapper: add fit.subject.od(method = "local_likelihood") only after direct tests pass
-next family: Bernoulli local likelihood after density branch audit
+wrapper: separate local_likelihood_density and local_likelihood_bernoulli methods
 benchmark status: excluded from broad benchmarks until audited
 ```
 

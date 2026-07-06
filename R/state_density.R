@@ -326,7 +326,8 @@ fit.subject.od <- function(
     X,
     subject.index,
     method = c("empirical", "graph_random_walk", "lps_count",
-               "ps_lps_count", "lps_logistic_binary", "chart_kernel"),
+               "ps_lps_count", "lps_logistic_binary", "chart_kernel",
+               "local_likelihood_density", "local_likelihood_bernoulli"),
     graph = NULL,
     graph.control = list(),
     od.control = list(),
@@ -450,6 +451,15 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         graph = graph,
         n = nrow(X)
     )
+    if (method %in% c("local_likelihood_density",
+                      "local_likelihood_bernoulli")) {
+        dots <- .state.density.named.dots(...)
+        .state.density.reject.reserved.dots(
+            dots,
+            reserved = c("likelihood.family"),
+            context = paste0("fit.subject.od(method = \"", method, "\")")
+        )
+    }
     switch(
         method,
         lps_count = .state.density.fit.lps.od(
@@ -493,6 +503,30 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             empirical = empirical,
             method.id = "chart_kernel",
             response.type = "normalized_count_mass",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        ),
+        local_likelihood_density = .state.density.fit.local.likelihood.od(
+            X = X,
+            response = empirical,
+            empirical = empirical,
+            method.id = "local_likelihood_density",
+            response.type = "normalized_count_mass",
+            likelihood.family = "density",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
+        ),
+        local_likelihood_bernoulli = .state.density.fit.local.likelihood.od(
+            X = X,
+            response = binary,
+            empirical = empirical,
+            method.id = "local_likelihood_bernoulli",
+            response.type = "binary_visit_indicator",
+            likelihood.family = "bernoulli",
             adj.list = smoothness.adj.list,
             od.control = od.control,
             return.details = return.details,
@@ -620,6 +654,56 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
 }
 
+.state.density.fit.local.likelihood.od <- function(X,
+                                                   response,
+                                                   empirical,
+                                                   method.id,
+                                                   response.type,
+                                                   likelihood.family,
+                                                   adj.list = NULL,
+                                                   od.control = list(),
+                                                   return.details = TRUE,
+                                                   ...) {
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.reserved.dots(
+        dots,
+        reserved = c("X", "y", "likelihood.family"),
+        context = paste0("fit.subject.od(method = \"", method.id, "\")")
+    )
+    fit <- do.call(
+        fit.local.likelihood,
+        c(
+            list(
+                X = X,
+                y = response,
+                likelihood.family = likelihood.family
+            ),
+            dots
+        )
+    )
+    fit$empirical.rho <- empirical
+    out <- normalize.density(
+        fit,
+        X = X,
+        density.control = od.control,
+        method.id = method.id,
+        keep.source.fit = return.details,
+        adj.list = adj.list,
+        empirical.rho = empirical,
+        return.details = return.details
+    )
+    .state.density.decorate.smoother.od(
+        out = out,
+        empirical = empirical,
+        method.id = method.id,
+        source.method = "fit.local.likelihood",
+        response = response,
+        response.type = response.type,
+        source.fit = fit,
+        return.details = return.details
+    )
+}
+
 .state.density.decorate.smoother.od <- function(out,
                                                 empirical,
                                                 method.id,
@@ -674,6 +758,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     } else if (inherits(source.fit, "chart_kernel")) {
         out$diagnostics$selection <- source.fit$selected
         out$diagnostics$chart.kernel <- source.fit$diagnostics
+    } else if (inherits(source.fit, "local_likelihood")) {
+        out$diagnostics$selection <- source.fit$selected
+        out$diagnostics$likelihood.family <- source.fit$likelihood.family
+        out$diagnostics$local.likelihood <- source.fit$diagnostics
     }
     if (!isTRUE(return.details)) {
         out$diagnostics <- list()

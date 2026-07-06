@@ -1,24 +1,27 @@
-#' Fit a Local-Likelihood Density/Intensity Smoother
+#' Fit a Local-Likelihood Density or Bernoulli Smoother
 #'
 #' Fits a local likelihood model at each evaluation point and reads off one raw
-#' fitted value at that evaluation anchor.  Density workflows should convert
-#' the returned fitted field with \code{\link{normalize.density}}.
+#' fitted value at that evaluation anchor.  Density and Bernoulli workflows
+#' should convert the returned fitted field with \code{\link{normalize.density}}
+#' when the target is a subject-occupation density.
 #'
-#' The first implemented branch is \code{likelihood.family = "density"}.  It
-#' uses a local exponential tilt of the chart reference measure.  The
-#' \code{"bernoulli"} branch is reserved in the API but is not implemented yet.
+#' The \code{likelihood.family = "density"} branch uses a local exponential
+#' tilt of the chart reference measure.  The \code{"bernoulli"} branch uses a
+#' weighted local logistic likelihood and returns fitted probabilities at the
+#' evaluation anchors.
 #'
 #' @param X Numeric matrix with one row per source/support point.
 #' @param y Numeric response vector.  For \code{likelihood.family = "density"},
 #'   this must be a nonnegative mass/intensity vector with positive total mass.
+#'   For \code{"bernoulli"}, values must lie in \code{[0, 1]}.
 #' @param X.eval Optional numeric matrix of evaluation points. Defaults to
 #'   \code{X}.
-#' @param likelihood.family Local likelihood family.  Only \code{"density"} is
-#'   implemented in this phase.
+#' @param likelihood.family Local likelihood family.
 #' @param support.size Number of source points in each local support.
 #' @param degree Local chart feature degree.  Supported values are 0, 1, and 2.
-#'   The feature map omits an intercept because the intercept is not
-#'   identifiable in the normalized local density likelihood.
+#'   The density branch omits an intercept because the intercept is not
+#'   identifiable in the normalized local density likelihood.  The Bernoulli
+#'   branch includes an intercept in its internal logistic feature map.
 #' @param kernel Kernel name. Supported values are \code{"gaussian"},
 #'   \code{"tricube"}, \code{"epanechnikov"}, and \code{"triangular"}.
 #' @param bandwidth.multiplier Positive multiplier applied to the local support
@@ -33,7 +36,8 @@
 #'   Defaults to unit weights.
 #' @param lambda.ridge Nonnegative ridge penalty on identifiable coefficients.
 #' @param min.local.mass Minimum local kernel-weighted mass needed before
-#'   attempting a higher-degree local fit.
+#'   attempting a higher-degree density fit.  For Bernoulli fits this is used
+#'   only as diagnostic telemetry.
 #' @param min.nonzero.mass Minimum number of locally weighted positive-mass
 #'   source points needed before attempting a higher-degree local fit.
 #' @param fallback Fallback policy for underidentified or failed higher-degree
@@ -75,14 +79,18 @@ fit.local.likelihood <- function(
     n <- nrow(X)
     p <- ncol(X)
     likelihood.family <- match.arg(likelihood.family)
-    if (identical(likelihood.family, "bernoulli")) {
-        stop("fit.local.likelihood(likelihood.family = \"bernoulli\") is reserved but not implemented yet.",
-             call. = FALSE)
-    }
-    y <- .local.chart.validate.response(y, n, nonnegative = TRUE)
-    if (sum(y) <= 0) {
-        stop("y must have positive total mass for likelihood.family = \"density\".",
-             call. = FALSE)
+    if (identical(likelihood.family, "density")) {
+        y <- .local.chart.validate.response(y, n, nonnegative = TRUE)
+        if (sum(y) <= 0) {
+            stop("y must have positive total mass for likelihood.family = \"density\".",
+                 call. = FALSE)
+        }
+    } else {
+        y <- .local.chart.validate.response(y, n, nonnegative = FALSE)
+        if (any(y < 0 | y > 1)) {
+            stop("y must have values in [0, 1] for likelihood.family = \"bernoulli\".",
+                 call. = FALSE)
+        }
     }
     support.size <- .local.chart.validate.support.size(support.size, n)
     degree <- .local.likelihood.validate.degree(degree)
@@ -130,7 +138,12 @@ fit.local.likelihood <- function(
     fallback.used <- logical(ne)
 
     for (ii in seq_len(ne)) {
-        local <- .local.likelihood.density.fit(
+        fit.fun <- if (identical(likelihood.family, "density")) {
+            .local.likelihood.density.fit
+        } else {
+            .local.likelihood.bernoulli.fit
+        }
+        local <- fit.fun(
             X = X,
             y = y,
             x0 = X.eval[ii, ],
@@ -169,18 +182,16 @@ fit.local.likelihood <- function(
             status,
             levels = c("ok", "zero_mass_fallback", "degree0_fallback",
                        "chart_kernel_fallback", "optimizer_failed",
-                       "nonfinite_fit")
+                       "nonfinite_fit", "constant_response")
         ))),
         fallback.count = sum(fallback.used),
         fallback.fraction = mean(fallback.used),
         min.local.mass = min(local.mass),
         median.local.mass = stats::median(local.mass),
-        min.normalization.constant = suppressWarnings(
-            min(normalization.constant, na.rm = TRUE)
-        ),
-        median.normalization.constant = suppressWarnings(
-            stats::median(normalization.constant, na.rm = TRUE)
-        ),
+        min.normalization.constant =
+            .local.likelihood.finite.min(normalization.constant),
+        median.normalization.constant =
+            .local.likelihood.finite.median(normalization.constant),
         degree.used.summary = summary(degree.used),
         chart.dim.summary = summary(resolved.chart.dim)
     )
@@ -237,6 +248,121 @@ fit.local.likelihood <- function(
     out
 }
 
+.local.likelihood.bernoulli.fit <- function(X,
+                                            y,
+                                            x0,
+                                            support.size,
+                                            degree,
+                                            kernel,
+                                            bandwidth.multiplier,
+                                            coordinate.method,
+                                            chart.dim,
+                                            quadrature.weights,
+                                            lambda.ridge,
+                                            min.local.mass,
+                                            min.nonzero.mass,
+                                            fallback,
+                                            optimizer,
+                                            max.iter,
+                                            tol) {
+    support <- .local.chart.support(X, x0, support.size)
+    idx <- support$idx
+    coords <- .local.chart.coordinates(
+        centered = support$centered,
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim
+    )
+    distances <- sqrt(rowSums(coords^2))
+    kernel.info <- .local.chart.kernel(
+        distances = distances,
+        kernel = kernel,
+        bandwidth.multiplier = bandwidth.multiplier
+    )
+    r <- kernel.info$weights
+    q <- quadrature.weights[idx]
+    y.local <- y[idx]
+    weights <- q * r
+    local.mass <- sum(r * y.local)
+    n.nonzero <- sum(y.local > 0 & r > 0)
+    effective <- kernel.info$effective.support
+    weight.total <- sum(weights)
+
+    if (!is.finite(weight.total) || weight.total <= 0) {
+        return(.local.likelihood.density.fallback(
+            status = "zero_mass_fallback",
+            value = 0,
+            local.mass = local.mass,
+            n.nonzero.local = n.nonzero,
+            effective.support = effective,
+            degree.used = 0L,
+            chart.dim = ncol(coords),
+            iterations = 0L,
+            objective = NA_real_,
+            gradient.norm = NA_real_,
+            normalization.constant = NA_real_,
+            bandwidth = kernel.info$bandwidth,
+            fallback.used = TRUE
+        ))
+    }
+
+    raw.features <- .local.chart.feature.matrix(coords, degree)
+    features <- cbind(intercept = 1, raw.features)
+    if (degree == 0L || ncol(raw.features) == 0L ||
+        effective <= ncol(features) + 1L) {
+        return(.local.likelihood.bernoulli.degree0.fit(
+            weights = weights,
+            y.local = y.local,
+            local.mass = local.mass,
+            n.nonzero.local = n.nonzero,
+            effective.support = effective,
+            chart.dim = ncol(coords),
+            bandwidth = kernel.info$bandwidth,
+            status = if (degree == 0L) "ok" else "degree0_fallback",
+            fallback.used = degree != 0L
+        ))
+    }
+
+    solved <- .local.likelihood.bernoulli.solve(
+        features = features,
+        weights = weights,
+        y.local = y.local,
+        lambda.ridge = lambda.ridge,
+        optimizer = optimizer,
+        max.iter = max.iter,
+        tol = tol
+    )
+    if (!isTRUE(solved$converged) || !is.finite(solved$value)) {
+        return(.local.likelihood.bernoulli.apply.fallback(
+            fallback = fallback,
+            weights = weights,
+            y.local = y.local,
+            local.mass = local.mass,
+            n.nonzero.local = n.nonzero,
+            effective.support = effective,
+            chart.dim = ncol(coords),
+            bandwidth = kernel.info$bandwidth,
+            iterations = solved$iterations,
+            objective = solved$objective,
+            gradient.norm = solved$gradient.norm
+        ))
+    }
+    list(
+        value = solved$value,
+        status = "ok",
+        local.mass = local.mass,
+        n.nonzero.local = n.nonzero,
+        effective.support = effective,
+        degree.used = degree,
+        chart.dim = ncol(coords),
+        iterations = solved$iterations,
+        objective = solved$objective,
+        gradient.norm = solved$gradient.norm,
+        normalization.constant = NA_real_,
+        bandwidth = kernel.info$bandwidth,
+        fallback.used = FALSE
+    )
+}
+
 .local.likelihood.validate.degree <- function(degree) {
     degree <- .local.chart.validate.nonnegative.integer(degree, "degree")
     if (!degree %in% 0:2) {
@@ -244,6 +370,22 @@ fit.local.likelihood <- function(
              call. = FALSE)
     }
     degree
+}
+
+.local.likelihood.finite.min <- function(x) {
+    x <- x[is.finite(x)]
+    if (!length(x)) {
+        return(NA_real_)
+    }
+    min(x)
+}
+
+.local.likelihood.finite.median <- function(x) {
+    x <- x[is.finite(x)]
+    if (!length(x)) {
+        return(NA_real_)
+    }
+    stats::median(x)
 }
 
 .local.likelihood.density.fit <- function(X,
@@ -496,6 +638,247 @@ fit.local.likelihood <- function(
     )
 }
 
+.local.likelihood.bernoulli.degree0.fit <- function(weights,
+                                                    y.local,
+                                                    local.mass,
+                                                    n.nonzero.local,
+                                                    effective.support,
+                                                    chart.dim,
+                                                    bandwidth,
+                                                    status,
+                                                    fallback.used) {
+    denom <- sum(weights)
+    value <- if (is.finite(denom) && denom > 0) {
+        sum(weights * y.local) / denom
+    } else {
+        NA_real_
+    }
+    .local.likelihood.density.fallback(
+        status = status,
+        value = min(1, max(0, value)),
+        local.mass = local.mass,
+        n.nonzero.local = n.nonzero.local,
+        effective.support = effective.support,
+        degree.used = 0L,
+        chart.dim = chart.dim,
+        iterations = 0L,
+        objective = NA_real_,
+        gradient.norm = 0,
+        normalization.constant = NA_real_,
+        bandwidth = bandwidth,
+        fallback.used = fallback.used
+    )
+}
+
+.local.likelihood.bernoulli.apply.fallback <- function(fallback,
+                                                       weights,
+                                                       y.local,
+                                                       local.mass,
+                                                       n.nonzero.local,
+                                                       effective.support,
+                                                       chart.dim,
+                                                       bandwidth,
+                                                       iterations,
+                                                       objective,
+                                                       gradient.norm) {
+    if (identical(fallback, "zero")) {
+        return(.local.likelihood.density.fallback(
+            status = "optimizer_failed",
+            value = 0,
+            local.mass = local.mass,
+            n.nonzero.local = n.nonzero.local,
+            effective.support = effective.support,
+            degree.used = 0L,
+            chart.dim = chart.dim,
+            iterations = iterations,
+            objective = objective,
+            gradient.norm = gradient.norm,
+            normalization.constant = NA_real_,
+            bandwidth = bandwidth,
+            fallback.used = TRUE
+        ))
+    }
+    if (identical(fallback, "na")) {
+        return(.local.likelihood.density.fallback(
+            status = "nonfinite_fit",
+            value = NA_real_,
+            local.mass = local.mass,
+            n.nonzero.local = n.nonzero.local,
+            effective.support = effective.support,
+            degree.used = 0L,
+            chart.dim = chart.dim,
+            iterations = iterations,
+            objective = objective,
+            gradient.norm = gradient.norm,
+            normalization.constant = NA_real_,
+            bandwidth = bandwidth,
+            fallback.used = TRUE
+        ))
+    }
+    .local.likelihood.bernoulli.degree0.fit(
+        weights = weights,
+        y.local = y.local,
+        local.mass = local.mass,
+        n.nonzero.local = n.nonzero.local,
+        effective.support = effective.support,
+        chart.dim = chart.dim,
+        bandwidth = bandwidth,
+        status = "degree0_fallback",
+        fallback.used = TRUE
+    )
+}
+
+.local.likelihood.bernoulli.solve <- function(features,
+                                              weights,
+                                              y.local,
+                                              lambda.ridge,
+                                              optimizer,
+                                              max.iter,
+                                              tol) {
+    m <- ncol(features)
+    penalty <- c(0, rep(lambda.ridge, max(0L, m - 1L)))
+    if (identical(optimizer, "optim")) {
+        return(.local.likelihood.bernoulli.solve.optim(
+            features = features,
+            weights = weights,
+            y.local = y.local,
+            penalty = penalty,
+            max.iter = max.iter,
+            tol = tol
+        ))
+    }
+    beta <- numeric(m)
+    state <- .local.likelihood.bernoulli.state(
+        beta, features, weights, y.local, penalty
+    )
+    converged <- FALSE
+    iter <- 0L
+    for (iter in seq_len(max.iter)) {
+        if (!is.finite(state$objective) ||
+            !all(is.finite(state$gradient)) ||
+            !all(is.finite(state$hessian))) {
+            break
+        }
+        grad.norm <- sqrt(sum(state$gradient^2))
+        if (grad.norm <= tol) {
+            converged <- TRUE
+            break
+        }
+        step <- tryCatch(
+            solve(state$hessian, state$gradient),
+            error = function(e) rep(NA_real_, length(beta))
+        )
+        if (any(!is.finite(step))) {
+            break
+        }
+        step.scale <- 1
+        accepted <- FALSE
+        for (hh in seq_len(30L)) {
+            candidate <- beta - step.scale * step
+            candidate.state <- .local.likelihood.bernoulli.state(
+                candidate, features, weights, y.local, penalty
+            )
+            if (is.finite(candidate.state$objective) &&
+                candidate.state$objective <= state$objective + 1e-10) {
+                beta <- candidate
+                state <- candidate.state
+                accepted <- TRUE
+                break
+            }
+            step.scale <- step.scale / 2
+        }
+        if (!isTRUE(accepted)) {
+            break
+        }
+        if (sqrt(sum((step.scale * step)^2)) <= tol) {
+            converged <- TRUE
+            break
+        }
+    }
+    list(
+        converged = converged,
+        value = .local.likelihood.logistic(beta[[1L]]),
+        iterations = as.integer(iter),
+        objective = state$objective,
+        gradient.norm = sqrt(sum(state$gradient^2)),
+        normalization.constant = NA_real_
+    )
+}
+
+.local.likelihood.bernoulli.solve.optim <- function(features,
+                                                    weights,
+                                                    y.local,
+                                                    penalty,
+                                                    max.iter,
+                                                    tol) {
+    fn <- function(beta) {
+        .local.likelihood.bernoulli.state(
+            beta, features, weights, y.local, penalty
+        )$objective
+    }
+    gr <- function(beta) {
+        .local.likelihood.bernoulli.state(
+            beta, features, weights, y.local, penalty
+        )$gradient
+    }
+    fit <- tryCatch(
+        stats::optim(
+            par = numeric(ncol(features)),
+            fn = fn,
+            gr = gr,
+            method = "BFGS",
+            control = list(maxit = max.iter, reltol = tol)
+        ),
+        error = function(e) NULL
+    )
+    if (is.null(fit)) {
+        return(list(
+            converged = FALSE,
+            value = NA_real_,
+            iterations = 0L,
+            objective = NA_real_,
+            gradient.norm = NA_real_,
+            normalization.constant = NA_real_
+        ))
+    }
+    state <- .local.likelihood.bernoulli.state(
+        fit$par, features, weights, y.local, penalty
+    )
+    list(
+        converged = fit$convergence == 0L,
+        value = .local.likelihood.logistic(fit$par[[1L]]),
+        iterations = as.integer(fit$counts[["function"]]),
+        objective = state$objective,
+        gradient.norm = sqrt(sum(state$gradient^2)),
+        normalization.constant = NA_real_
+    )
+}
+
+.local.likelihood.bernoulli.state <- function(beta,
+                                              features,
+                                              weights,
+                                              y.local,
+                                              penalty) {
+    eta <- as.numeric(features %*% beta)
+    p <- .local.likelihood.logistic(eta)
+    objective <- sum(weights * (.local.likelihood.log1pexp(eta) -
+                                    y.local * eta)) +
+        0.5 * sum(penalty * beta^2)
+    gradient <- colSums(features * (weights * (p - y.local))) +
+        penalty * beta
+    hess.weights <- weights * p * (1 - p)
+    hessian <- crossprod(
+        features,
+        features * matrix(hess.weights, nrow = nrow(features),
+                          ncol = ncol(features))
+    ) + diag(penalty, nrow = length(beta), ncol = length(beta))
+    list(
+        objective = objective,
+        gradient = as.numeric(gradient),
+        hessian = hessian
+    )
+}
+
 .local.likelihood.density.solve <- function(features,
                                             base,
                                             target,
@@ -688,4 +1071,17 @@ fit.local.likelihood <- function(
     }
     mx <- max(x[finite])
     mx + log(sum(exp(x[finite] - mx)))
+}
+
+.local.likelihood.logistic <- function(x) {
+    out <- numeric(length(x))
+    pos <- x >= 0
+    out[pos] <- 1 / (1 + exp(-x[pos]))
+    ex <- exp(x[!pos])
+    out[!pos] <- ex / (1 + ex)
+    out
+}
+
+.local.likelihood.log1pexp <- function(x) {
+    ifelse(x > 0, x + log1p(exp(-x)), log1p(exp(x)))
 }
