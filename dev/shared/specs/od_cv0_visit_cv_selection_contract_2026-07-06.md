@@ -214,9 +214,12 @@ nesting row-level multi-candidate selection.  Each outer candidate is passed to
 the source smoother as a scalar local model configuration; see
 `dev/shared/specs/od_cv3_lps_outer_visit_cv_contract_2026-07-06.md`.
 
-OD-CV4 should add OD visit CV for graph random-walk occupation densities over
-walk scale, affinity rule, affinity scale, and eventually graph construction
-scale if graph construction is part of the call.
+OD-CV4 adds OD visit CV for graph random-walk occupation densities over walk
+step, affinity rule, affinity scale, affinity epsilon, and normalization policy;
+see
+`dev/shared/specs/od_cv4_graph_random_walk_visit_cv_contract_2026-07-06.md`.
+Graph-construction scale remains outside OD-CV4 because OD-CV4 assumes a fixed
+supplied graph.
 
 OD-CV5 should run a small all-method smoke benchmark with a uniform OD-level
 selection report.

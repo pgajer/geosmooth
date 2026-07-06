@@ -117,6 +117,10 @@
         column.or.default("bandwidth.multiplier", rep(1, length(eligible))),
         column.or.default("lambda.sync", rep(0, length(eligible))),
         column.or.default("lambda.ridge", rep(0, length(eligible))),
+        column.or.default("walk.step", rep(0, length(eligible))),
+        column.or.default("affinity.method", rep("", length(eligible))),
+        column.or.default("affinity.scale", rep(Inf, length(eligible))),
+        column.or.default("affinity.epsilon", rep(1e-12, length(eligible))),
         score[eligible]
     )[[1L]]]
 }
