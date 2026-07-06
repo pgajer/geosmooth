@@ -153,7 +153,7 @@ When `return.details = FALSE`, the full candidate table and prediction matrix
 may be omitted, but the selected final fit must still record that OD visit CV
 was used through `theta$od.cv` and `diagnostics$od.visit.cv`.
 
-## Current Method Coverage
+## OD-CV0 Method Coverage
 
 As of OD-CV0, `od.cv = "visit"` is implemented for:
 
@@ -172,6 +172,10 @@ It is intentionally not yet implemented for:
 
 Unsupported methods must fail clearly when called with `od.cv = "visit"` rather
 than silently reverting to row-level CV or direct fitting.
+
+OD-CV2 later extends this coverage to `method = "local_likelihood_density"`;
+see
+`dev/shared/specs/od_cv2_chart_dim_grid_density_visit_cv_contract_2026-07-06.md`.
 
 ## Candidate Axes Frozen In OD-CV0
 
@@ -193,16 +197,17 @@ bandwidth.multiplier.grid
 lambda.ridge.grid
 ```
 
-The current OD-CV0 contract does not include `chart.dim` as a candidate axis.
-OD-CV1 has added deployable `chart.dim = "auto"` and `"local.auto"` policies
-for chart-kernel and local-likelihood fits, but it still holds the requested
+The OD-CV0 contract does not include `chart.dim` as a candidate axis.  OD-CV1
+adds deployable `chart.dim = "auto"` and `"local.auto"` policies for
+chart-kernel and local-likelihood fits, but still holds the requested
 chart-dimension policy fixed while OD visit CV searches the OD-CV0 axes.
+OD-CV2 then adds `chart.dim.grid` as an OD-level candidate axis.
 
 ## Known Gaps For Later OD-CV Phases
 
-OD-CV2 should extend OD visit CV for chart methods so chart-dimension policies
-and fixed dimensions can be included as candidate axes, and it should add
-selection for `local_likelihood_density`.
+OD-CV2 extends OD visit CV for chart methods so chart-dimension policies and
+fixed dimensions can be included as candidate axes, and it adds selection for
+`local_likelihood_density`.
 
 OD-CV3 should add outer OD visit CV for LPS and PS-LPS workflows without
 silently nesting row-level CV unless explicitly requested.

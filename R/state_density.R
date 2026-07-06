@@ -316,6 +316,13 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' converts that field to a density with \code{\link{normalize.density}}.  It is
 #' not the \code{outcome.family = "binomial"} local-logistic IRLS path.
 #'
+#' When \code{od.cv = "visit"}, chart-based methods may pass
+#' \code{chart.dim.grid} through \code{...}.  For \code{"chart_kernel"},
+#' \code{"local_likelihood_density"}, and \code{"local_likelihood_bernoulli"},
+#' this grid compares fixed integer chart dimensions with optional
+#' \code{"auto"} and \code{"local.auto"} chart-dimension policies under the same
+#' held-out-visit negative-log-occupation score.
+#'
 #' @inheritParams fit.density
 #' @param subject.index Integer row indices of subject visits in \code{X}.
 #'   Repeated indices are allowed.
@@ -486,7 +493,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                                    visit.cv.seed = 1L,
                                                    visit.cv.epsilon = 1e-15,
                                                    dots = list()) {
-    supported <- c("chart_kernel", "local_likelihood_bernoulli")
+    supported <- c("chart_kernel", "local_likelihood_density",
+                   "local_likelihood_bernoulli")
     if (!method %in% supported) {
         stop(
             "OD-level visit CV is currently implemented for methods: ",
@@ -601,6 +609,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             dots = dots,
             n = n
         ),
+        local_likelihood_density =
+            .state.density.visit.cv.local.likelihood.candidates(
+                dots = dots,
+                n = n
+            ),
         local_likelihood_bernoulli =
             .state.density.visit.cv.local.likelihood.candidates(
                 dots = dots,
@@ -625,23 +638,32 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     bandwidth.multiplier.grid <- .state.density.null.coalesce(
         dots$bandwidth.multiplier.grid, bandwidth.multiplier
     )
+    chart.dim.grid <- .local.chart.clean.chart.dim.grid(
+        dots$chart.dim.grid,
+        chart.dim = dots$chart.dim
+    )
     candidates <- expand.grid(
         support.size = .klp.clean.support.grid(support.grid, n),
         kernel = .klp.clean.kernel.grid(kernel.grid),
         bandwidth.multiplier =
             .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
+        chart.dim = chart.dim.grid$chart.dim,
         KEEP.OUT.ATTRS = FALSE,
         stringsAsFactors = FALSE
     )
+    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+        match(candidates$chart.dim, chart.dim.grid$chart.dim)
+    ]
     candidates$candidate.id <- seq_len(nrow(candidates))
     list(
         candidates = candidates[, c("candidate.id", "support.size", "kernel",
-                                    "bandwidth.multiplier")],
+                                    "bandwidth.multiplier", "chart.dim",
+                                    "chart.dim.rank")],
         base.dots = .state.density.drop.dots(
             dots,
             c("support.size", "support.grid", "kernel", "kernel.grid",
               "bandwidth.multiplier", "bandwidth.multiplier.grid",
-              "cv.folds", "cv.seed")
+              "chart.dim", "chart.dim.grid", "cv.folds", "cv.seed")
         )
     )
 }
@@ -667,6 +689,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     lambda.ridge.grid <- .state.density.null.coalesce(
         dots$lambda.ridge.grid, lambda.ridge
     )
+    chart.dim.grid <- .local.chart.clean.chart.dim.grid(
+        dots$chart.dim.grid,
+        chart.dim = dots$chart.dim
+    )
     candidates <- expand.grid(
         support.size = .klp.clean.support.grid(support.grid, n),
         degree = .klp.clean.degree.grid(degree.grid),
@@ -675,20 +701,26 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
         lambda.ridge =
             .local.likelihood.clean.lambda.ridge.grid(lambda.ridge.grid),
+        chart.dim = chart.dim.grid$chart.dim,
         KEEP.OUT.ATTRS = FALSE,
         stringsAsFactors = FALSE
     )
+    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+        match(candidates$chart.dim, chart.dim.grid$chart.dim)
+    ]
     candidates$candidate.id <- seq_len(nrow(candidates))
     list(
         candidates = candidates[, c("candidate.id", "support.size", "degree",
                                     "kernel", "bandwidth.multiplier",
-                                    "lambda.ridge")],
+                                    "lambda.ridge", "chart.dim",
+                                    "chart.dim.rank")],
         base.dots = .state.density.drop.dots(
             dots,
             c("support.size", "support.grid", "degree", "degree.grid",
               "kernel", "kernel.grid", "bandwidth.multiplier",
               "bandwidth.multiplier.grid", "lambda.ridge",
-              "lambda.ridge.grid", "cv.folds", "cv.seed")
+              "lambda.ridge.grid", "chart.dim", "chart.dim.grid",
+              "cv.folds", "cv.seed")
         )
     )
 }
@@ -779,19 +811,33 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.visit.cv.scalar.candidate.dots <- function(method, candidate) {
     names.to.keep <- switch(
         method,
-        chart_kernel = c("support.size", "kernel", "bandwidth.multiplier"),
+        chart_kernel = c("support.size", "kernel", "bandwidth.multiplier",
+                         "chart.dim"),
+        local_likelihood_density = c(
+            "support.size", "degree", "kernel", "bandwidth.multiplier",
+            "lambda.ridge", "chart.dim"
+        ),
         local_likelihood_bernoulli = c(
             "support.size", "degree", "kernel", "bandwidth.multiplier",
-            "lambda.ridge"
+            "lambda.ridge", "chart.dim"
         ),
         character(0)
     )
+    names.to.keep <- intersect(names.to.keep, names(candidate))
     out <- as.list(candidate[1, names.to.keep, drop = FALSE])
     if ("support.size" %in% names(out)) {
         out$support.size <- as.integer(out$support.size)
     }
     if ("degree" %in% names(out)) {
         out$degree <- as.integer(out$degree)
+    }
+    if ("chart.dim" %in% names(out)) {
+        decoded <- .local.chart.decode.chart.dim(out$chart.dim)
+        if (is.null(decoded)) {
+            out$chart.dim <- NULL
+        } else {
+            out$chart.dim <- decoded
+        }
     }
     out
 }

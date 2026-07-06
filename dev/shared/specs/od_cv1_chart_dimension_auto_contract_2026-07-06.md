@@ -99,9 +99,10 @@ The OD-CV1 regression tests must show that:
 
 All tests use observed `X` only for auto-dimension decisions.
 
-## Remaining Gap
+## OD-CV2 Follow-Up
 
-OD-CV1 is a deployability patch, not a full tuning patch.  OD-CV2 should decide
-whether chart-dimension policy itself should become a candidate axis, for
-example comparing fixed integer dimensions, `"auto"`, and `"local.auto"` under
-the same OD visit-CV score.
+OD-CV1 is a deployability patch, not a full tuning patch.  OD-CV2 implements the
+next step: chart-dimension policy itself can be a candidate axis, for example
+comparing fixed integer dimensions, `"auto"`, and `"local.auto"` under the same
+OD visit-CV score.  The OD-CV2 contract lives at
+`dev/shared/specs/od_cv2_chart_dim_grid_density_visit_cv_contract_2026-07-06.md`.

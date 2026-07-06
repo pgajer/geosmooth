@@ -561,7 +561,7 @@ test_that("OD3 local-likelihood validates Bernoulli responses", {
         fit.subject.od(
             X = X,
             subject.index = c(1L, 3L, 5L),
-            method = "local_likelihood_density",
+            method = "graph_random_walk",
             od.cv = "visit"
         ),
         "currently implemented"
