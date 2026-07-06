@@ -209,8 +209,10 @@ OD-CV2 extends OD visit CV for chart methods so chart-dimension policies and
 fixed dimensions can be included as candidate axes, and it adds selection for
 `local_likelihood_density`.
 
-OD-CV3 should add outer OD visit CV for LPS and PS-LPS workflows without
-silently nesting row-level CV unless explicitly requested.
+OD-CV3 adds outer OD visit CV for LPS and PS-LPS workflows without silently
+nesting row-level multi-candidate selection.  Each outer candidate is passed to
+the source smoother as a scalar local model configuration; see
+`dev/shared/specs/od_cv3_lps_outer_visit_cv_contract_2026-07-06.md`.
 
 OD-CV4 should add OD visit CV for graph random-walk occupation densities over
 walk scale, affinity rule, affinity scale, and eventually graph construction
