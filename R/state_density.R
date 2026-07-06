@@ -71,6 +71,8 @@ fit.density.empirical <- function(
     return.details = TRUE,
     ...) {
 
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.chart.dots(dots, "fit.density.empirical()")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -104,6 +106,8 @@ fit.density.graph.random.walk <- function(
     return.details = TRUE,
     ...) {
 
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.chart.dots(dots, "fit.density.graph.random.walk()")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -1550,6 +1554,108 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     invisible(NULL)
 }
 
+.state.density.reject.chart.dots <- function(dots, context) {
+    chart.args <- intersect(names(dots), c("chart.dim", "chart.dim.grid"))
+    if (length(chart.args)) {
+        stop(
+            context, " does not use local charts; unsupported argument(s): ",
+            paste(chart.args, collapse = ", "),
+            ". Use chart-dimension controls only with chart-based OD methods.",
+            call. = FALSE
+        )
+    }
+    invisible(NULL)
+}
+
+.state.density.chart.dim.telemetry <- function(source.fit, n = NULL) {
+    if (is.null(source.fit)) {
+        return(NULL)
+    }
+    dim.source <- NULL
+    dims <- NULL
+    if (!is.null(source.fit$diagnostics$per.eval$chart.dim)) {
+        dims <- source.fit$diagnostics$per.eval$chart.dim
+        dim.source <- "diagnostics.per.eval.chart.dim"
+    } else if (!is.null(source.fit$chart.dim.by.anchor)) {
+        dims <- source.fit$chart.dim.by.anchor
+        dim.source <- "chart.dim.by.anchor"
+    } else if (!is.null(source.fit$chart.dim.by.eval)) {
+        dims <- source.fit$chart.dim.by.eval
+        dim.source <- "chart.dim.by.eval"
+    } else if (!is.null(
+        source.fit$auto.chart.dim.diagnostics$diagnostics$selected.local.dim
+    )) {
+        dims <-
+            source.fit$auto.chart.dim.diagnostics$diagnostics$selected.local.dim
+        dim.source <-
+            "auto.chart.dim.diagnostics.diagnostics.selected.local.dim"
+    } else if (!is.null(source.fit$chart.dim) &&
+               is.numeric(source.fit$chart.dim) &&
+               length(source.fit$chart.dim) == 1L &&
+               is.finite(source.fit$chart.dim)) {
+        n <- .state.density.chart.dim.telemetry.n(source.fit, n)
+        if (!is.null(n)) {
+            dims <- rep(as.integer(source.fit$chart.dim), n)
+            dim.source <- "chart.dim.scalar"
+        }
+    } else if (!is.null(source.fit$selected$chart.dim) &&
+               is.numeric(source.fit$selected$chart.dim) &&
+               length(source.fit$selected$chart.dim) == 1L &&
+               is.finite(source.fit$selected$chart.dim)) {
+        n <- .state.density.chart.dim.telemetry.n(source.fit, n)
+        if (!is.null(n)) {
+            dims <- rep(as.integer(source.fit$selected$chart.dim), n)
+            dim.source <- "selected.chart.dim.scalar"
+        }
+    }
+    if (is.null(dims)) {
+        return(NULL)
+    }
+    dims <- as.integer(dims)
+    if (!length(dims) || anyNA(dims) || any(dims < 1L)) {
+        return(NULL)
+    }
+    requested <- .state.density.null.coalesce(
+        source.fit$requested.chart.dim,
+        source.fit$selected$requested.chart.dim
+    )
+    mode <- .state.density.null.coalesce(
+        source.fit$chart.dim.mode,
+        source.fit$selected$chart.dim.mode
+    )
+    chart.dim <- if (length(unique(dims)) == 1L) {
+        unique(dims)
+    } else {
+        stats::median(dims)
+    }
+    list(
+        chart.dim.by.anchor = dims,
+        chart.dim = chart.dim,
+        chart.dim.mode = mode,
+        requested.chart.dim = requested,
+        source.path = dim.source,
+        n.anchor = length(dims),
+        min.chart.dim = min(dims),
+        max.chart.dim = max(dims)
+    )
+}
+
+.state.density.chart.dim.telemetry.n <- function(source.fit, n = NULL) {
+    if (!is.null(n)) {
+        return(as.integer(n))
+    }
+    if (!is.null(source.fit$fitted.values)) {
+        return(length(source.fit$fitted.values))
+    }
+    if (!is.null(source.fit$X.eval)) {
+        return(nrow(source.fit$X.eval))
+    }
+    if (!is.null(source.fit$X)) {
+        return(nrow(source.fit$X))
+    }
+    NULL
+}
+
 .state.density.attach.subject <- function(out, subject.index, weights) {
     out$subject <- list(
         n.visits = length(subject.index),
@@ -1782,6 +1888,14 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     diagnostics <- list(source.class = source.class)
     if (isTRUE(keep.source.fit) && !is.null(source.fit)) {
         diagnostics$source.fit <- source.fit
+    }
+    chart.telemetry <- .state.density.chart.dim.telemetry(
+        source.fit = source.fit,
+        n = length(values)
+    )
+    if (!is.null(chart.telemetry)) {
+        diagnostics$chart.dim.by.anchor <- chart.telemetry$chart.dim.by.anchor
+        diagnostics$chart.dim.telemetry <- chart.telemetry
     }
     empirical.rho <- .state.density.adapter.empirical.rho(
         empirical.rho = empirical.rho,
