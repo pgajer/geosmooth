@@ -1,4 +1,4 @@
-test_that("OD0 empirical state density normalizes repeated subject visits", {
+test_that("OD0 empirical density normalizes repeated subject visits", {
     X <- matrix(seq(0, 1, length.out = 5), ncol = 1L)
     fit <- fit.subject.od(
         X = X,
@@ -6,7 +6,7 @@ test_that("OD0 empirical state density normalizes repeated subject visits", {
         method = "empirical"
     )
 
-    expect_s3_class(fit, "state_density_fit")
+    expect_s3_class(fit, "density_fit")
     expect_identical(fit$method.id, "empirical")
     expect_identical(fit$status, "ok")
     expect_equal(fit$rho, c(1, 2, 0, 0, 1) / 4, tolerance = 1e-12)
@@ -19,15 +19,15 @@ test_that("OD0 empirical state density normalizes repeated subject visits", {
     expect_equal(fit$subject$repeat.fraction, 1 / 3, tolerance = 1e-12)
 })
 
-test_that("OD0 empirical state density validates inputs and control values", {
+test_that("OD0 empirical density validates inputs and control values", {
     X <- matrix(1:6, ncol = 2L)
 
     expect_error(
-        fit.state.density.empirical(X, weights = c(1, -1, 2)),
+        fit.density.empirical(X, weights = c(1, -1, 2)),
         "nonnegative"
     )
     expect_error(
-        fit.state.density.empirical(X, weights = c(0, 0, 0)),
+        fit.density.empirical(X, weights = c(0, 0, 0)),
         "positive total mass"
     )
     expect_error(
@@ -35,7 +35,7 @@ test_that("OD0 empirical state density validates inputs and control values", {
         "outside 1:nrow"
     )
     expect_error(
-        fit.state.density.empirical(
+        fit.density.empirical(
             X,
             weights = c(1, 1, 1),
             density.control = list(mass.tol = -1)
@@ -61,37 +61,48 @@ test_that("OD0 correction helper clips and renormalizes raw density fields", {
     expect_equal(out$accounting$normalization.constant, 1.1, tolerance = 1e-12)
 })
 
-test_that("OD0 dedicated method stubs return structured deferred results", {
+test_that("OD0 density dispatcher is restricted to density-native methods", {
     X <- matrix(seq(0, 1, length.out = 6), ncol = 1L)
     weights <- c(1, 0, 2, 0, 0, 1)
-    methods <- c(
-        "graph_random_walk", "graph_heat_kernel", "lps_count",
-        "ps_lps_count", "chart_kernel", "local_likelihood"
+
+    fit <- fit.density(X = X, weights = weights, method = "empirical")
+    expect_s3_class(fit, "density_fit")
+    expect_equal(fit$rho, weights / sum(weights), tolerance = 1e-12)
+
+    expect_error(
+        fit.density(X = X, weights = weights, method = "lps_count"),
+        "'arg' should be one of"
     )
+})
 
-    for (method in methods) {
-        fit <- fit.state.density(X = X, weights = weights, method = method)
-        expect_s3_class(fit, "state_density_fit")
-        expect_identical(fit$status, "not_implemented")
-        expect_equal(length(fit$rho), nrow(X))
-        expect_true(all(is.na(fit$rho)))
-        expect_equal(fit$empirical.rho, weights / sum(weights),
-                     tolerance = 1e-12)
-        expect_match(fit$warnings, "not implemented")
-    }
+test_that("OD0 normalize.density clips and normalizes numeric and fit objects", {
+    X <- matrix(1:4, ncol = 1L)
 
-    logistic <- fit.state.density(
+    numeric.fit <- normalize.density(
+        c(0.5, -0.1, 0.6, 0),
         X = X,
-        method = "lps_logistic_binary",
-        binary = c(1, 0, 1, 0, 0, 1)
+        density.control = list(clip.negative = TRUE, renormalize = TRUE)
     )
-    expect_identical(logistic$status, "not_implemented")
-    expect_equal(logistic$empirical.rho, c(1, 0, 1, 0, 0, 1) / 3,
+    expect_s3_class(numeric.fit, "density_fit")
+    expect_equal(numeric.fit$rho, c(0.5, 0, 0.6, 0) / 1.1,
                  tolerance = 1e-12)
+    expect_equal(numeric.fit$accounting$clip.mass, 0.1, tolerance = 1e-12)
+
+    lps.like <- list(
+        method.id = "lps",
+        X.eval = X,
+        fitted.values = c(1, 2, 0, 1)
+    )
+    class(lps.like) <- c("lps", "list")
+    lps.density <- normalize.density(lps.like, keep.source.fit = FALSE)
+    expect_s3_class(lps.density, "density_fit")
+    expect_identical(lps.density$method.id, "normalized_lps")
+    expect_equal(lps.density$rho, c(1, 2, 0, 1) / 4, tolerance = 1e-12)
+    expect_identical(lps.density$diagnostics$source.class, "lps")
 })
 
 test_that("OD0 dependency precheck reports required and optional dependencies", {
-    deps <- state.density.dependency.precheck(check.gflow = TRUE)
+    deps <- density.dependency.precheck(check.gflow = TRUE)
     expect_true(all(c("package", "symbol", "required", "available", "note") %in%
                         names(deps)))
     geosmooth.rows <- deps[deps$package == "geosmooth", , drop = FALSE]
@@ -99,7 +110,7 @@ test_that("OD0 dependency precheck reports required and optional dependencies", 
     expect_true(all(geosmooth.rows$available))
     expect_true(any(deps$package == "gflow"))
 
-    expect_silent(state.density.dependency.precheck(check.gflow = TRUE,
+    expect_silent(density.dependency.precheck(check.gflow = TRUE,
                                                     fail = TRUE))
 })
 

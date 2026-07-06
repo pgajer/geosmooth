@@ -1,19 +1,15 @@
-#' Fit a State-Density Estimator
+#' Fit a Density Estimator
 #'
-#' Dispatches to a dedicated state-density estimator.  Subject-occupation
-#' density estimation is one application: construct a sparse mass vector over a
-#' fixed state set and call this generic state-density layer.
+#' Dispatches to a dedicated density estimator. Subject-occupation density
+#' estimation is one application: construct a sparse mass vector over a fixed
+#' support set and call this generic density layer.
 #'
-#' @param X Numeric matrix with one row per state-space point.
+#' @param X Numeric matrix with one row per support point.
 #' @param weights Optional nonnegative mass/count vector of length
 #'   \code{nrow(X)}. Required by count-based density methods.
-#' @param method State-density method identifier.
-#' @param binary Optional binary response vector of length \code{nrow(X)} used
-#'   by binary/logistic density methods.
+#' @param method Density method identifier.
 #' @param graph Optional precomputed graph object.
-#' @param graph.control,chart.control,smoother.control Lists of method-specific
-#'   controls.  They are accepted at the dispatcher layer and forwarded to the
-#'   dedicated method.
+#' @param graph.control List of graph-method controls.
 #' @param density.control List controlling clipping, normalization, and
 #'   accounting checks.  Recognized entries are \code{mass.tol},
 #'   \code{neg.tol}, \code{clip.negative}, and \code{renormalize}.
@@ -21,23 +17,18 @@
 #'   the result.
 #' @param ... Additional method-specific arguments.
 #'
-#' @return A list of class \code{"state_density_fit"} with fields
+#' @return A list of class \code{"density_fit"} with fields
 #'   \code{method.id}, \code{status}, \code{rho}, \code{empirical.rho},
 #'   \code{fitted.raw}, \code{theta}, \code{accounting},
 #'   \code{smoothness}, \code{timing}, \code{diagnostics}, and
 #'   \code{warnings}.
 #' @export
-fit.state.density <- function(
+fit.density <- function(
     X,
     weights = NULL,
-    method = c("empirical", "graph_random_walk", "graph_heat_kernel",
-               "lps_count", "ps_lps_count", "lps_logistic_binary",
-               "chart_kernel", "local_likelihood"),
-    binary = NULL,
+    method = c("empirical", "graph_random_walk"),
     graph = NULL,
     graph.control = list(),
-    chart.control = list(),
-    smoother.control = list(),
     density.control = list(),
     return.details = TRUE,
     ...) {
@@ -48,71 +39,18 @@ fit.state.density <- function(
 
     switch(
         method,
-        empirical = fit.state.density.empirical(
+        empirical = fit.density.empirical(
             X = X,
             weights = weights,
             density.control = ctrl,
             return.details = return.details,
             ...
         ),
-        graph_random_walk = fit.state.density.graph.random.walk(
-            X = X,
-            weights = weights,
-            graph = graph,
-            graph.control = graph.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        graph_heat_kernel = fit.state.density.graph.heat.kernel(
+        graph_random_walk = fit.density.graph.random.walk(
             X = X,
             weights = weights,
             graph = graph,
             graph.control = graph.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        lps_count = fit.state.density.lps(
-            X = X,
-            weights = weights,
-            chart.control = chart.control,
-            smoother.control = smoother.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        ps_lps_count = fit.state.density.ps.lps(
-            X = X,
-            weights = weights,
-            chart.control = chart.control,
-            smoother.control = smoother.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        lps_logistic_binary = fit.state.density.lps.logistic(
-            X = X,
-            binary = binary,
-            chart.control = chart.control,
-            smoother.control = smoother.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        chart_kernel = fit.state.density.chart.kernel(
-            X = X,
-            weights = weights,
-            chart.control = chart.control,
-            density.control = ctrl,
-            return.details = return.details,
-            ...
-        ),
-        local_likelihood = fit.state.density.local.likelihood(
-            X = X,
-            weights = weights,
-            chart.control = chart.control,
-            smoother.control = smoother.control,
             density.control = ctrl,
             return.details = return.details,
             ...
@@ -120,13 +58,13 @@ fit.state.density <- function(
     )
 }
 
-#' Fit Empirical State Density
+#' Fit Empirical Density
 #'
-#' Normalizes a nonnegative mass/count vector over a fixed state set.
+#' Normalizes a nonnegative mass/count vector over a fixed support set.
 #'
-#' @inheritParams fit.state.density
+#' @inheritParams fit.density
 #' @export
-fit.state.density.empirical <- function(
+fit.density.empirical <- function(
     X,
     weights,
     density.control = list(),
@@ -150,200 +88,199 @@ fit.state.density.empirical <- function(
     )
 }
 
-#' Fit Graph Random-Walk State Density
+#' Fit Graph Random-Walk Density
 #'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  OD1 will fill in the random-walk smoother.
+#' Smooths a nonnegative mass vector by propagating it through a row-stochastic
+#' graph random walk.
 #'
-#' @inheritParams fit.state.density
+#' @inheritParams fit.density
 #' @export
-fit.state.density.graph.random.walk <- function(
+fit.density.graph.random.walk <- function(
     X,
     weights,
     graph = NULL,
     graph.control = list(),
-    density.control = list(),
-    return.details = TRUE,
-    ...) {
-
-    .state.density.not.implemented(
-        method.id = "graph_random_walk",
-        X = X,
-        weights = weights,
-        theta = list(graph.control = graph.control),
-        density.control = density.control,
-        return.details = return.details
-    )
-}
-
-#' Fit Graph Heat-Kernel State Density
-#'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  OD1 will fill in the heat-kernel smoother.
-#'
-#' @inheritParams fit.state.density
-#' @export
-fit.state.density.graph.heat.kernel <- function(
-    X,
-    weights,
-    graph = NULL,
-    graph.control = list(),
-    density.control = list(),
-    return.details = TRUE,
-    ...) {
-
-    .state.density.not.implemented(
-        method.id = "graph_heat_kernel",
-        X = X,
-        weights = weights,
-        theta = list(graph.control = graph.control),
-        density.control = density.control,
-        return.details = return.details
-    )
-}
-
-#' Fit LPS Count-Based State Density
-#'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  OD2 will wrap \code{\link{fit.lps}}.
-#'
-#' @inheritParams fit.state.density
-#' @export
-fit.state.density.lps <- function(
-    X,
-    weights,
-    chart.control = list(),
-    smoother.control = list(),
-    density.control = list(),
-    return.details = TRUE,
-    ...) {
-
-    .state.density.not.implemented(
-        method.id = "lps_count",
-        X = X,
-        weights = weights,
-        theta = list(chart.control = chart.control,
-                     smoother.control = smoother.control),
-        density.control = density.control,
-        return.details = return.details
-    )
-}
-
-#' Fit PS-LPS Count-Based State Density
-#'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  OD2 will wrap \code{\link{fit.ps.lps}}.
-#'
-#' @inheritParams fit.state.density
-#' @export
-fit.state.density.ps.lps <- function(
-    X,
-    weights,
-    chart.control = list(),
-    smoother.control = list(),
-    density.control = list(),
-    return.details = TRUE,
-    ...) {
-
-    .state.density.not.implemented(
-        method.id = "ps_lps_count",
-        X = X,
-        weights = weights,
-        theta = list(chart.control = chart.control,
-                     smoother.control = smoother.control),
-        density.control = density.control,
-        return.details = return.details
-    )
-}
-
-#' Fit Logistic LPS Binary State Density
-#'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  OD2 will wrap
-#' \code{fit.lps(..., outcome.family = "bernoulli")}.
-#'
-#' @inheritParams fit.state.density
-#' @export
-fit.state.density.lps.logistic <- function(
-    X,
-    binary,
-    chart.control = list(),
-    smoother.control = list(),
     density.control = list(),
     return.details = TRUE,
     ...) {
 
     X <- .state.density.validate.X(X)
-    binary <- .state.density.validate.binary(binary, nrow(X), "binary")
-    .state.density.not.implemented(
-        method.id = "lps_logistic_binary",
+    ctrl <- .state.density.control(density.control)
+    weights <- .state.density.validate.weights(weights, nrow(X), "weights")
+    empirical <- .state.density.normalize.weights(weights)
+    graph <- .state.density.prepare.graph(graph, nrow(X), allow.zero.length = TRUE)
+    rw <- .state.density.random.walk(
+        empirical = empirical,
+        graph = graph,
+        graph.control = graph.control
+    )
+
+    .state.density.finalize(
+        method.id = "graph_random_walk",
         X = X,
-        weights = binary,
-        theta = list(chart.control = chart.control,
-                     smoother.control = smoother.control),
-        density.control = density.control,
+        fitted.raw = rw$rho,
+        empirical.rho = empirical,
+        theta = rw$theta,
+        density.control = ctrl,
+        diagnostics = list(
+            transition = if (isTRUE(return.details)) rw$transition else NULL,
+            occupation.by.step = if (isTRUE(return.details)) rw$occupation.by.step else NULL,
+            row.strength = if (isTRUE(return.details)) rw$row.strength else NULL,
+            transition.metadata = rw$metadata
+        ),
         return.details = return.details
     )
 }
 
-#' Fit Chart-Kernel State Density
+#' Normalize Fitted Values Into a Density
 #'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  A later phase will implement the prototype.
+#' Converts a numeric field or fitted smoother/regression object into a
+#' probability mass vector over the evaluation support.  This is the explicit
+#' adapter between ordinary smoothers such as \code{\link{fit.lps}},
+#' \code{\link{fit.ps.lps}}, and \code{\link{fit.metric.graph.lowpass}} and
+#' density or occupation-density workflows.
 #'
-#' @inheritParams fit.state.density
+#' @param x Numeric vector or fitted object with a \code{fitted.values} field.
+#' @param X Optional support/evaluation matrix.  If omitted, methods use the
+#'   fitted object's stored \code{X.eval} or \code{X} field when available; for
+#'   a bare numeric vector, a one-dimensional index support is used.
+#' @param density.control List controlling clipping, normalization, and
+#'   accounting checks.  See \code{\link{fit.density}}.
+#' @param method.id Character method identifier recorded in the returned object.
+#' @param keep.source.fit Logical; if \code{TRUE}, retain the source fit in
+#'   diagnostics for object methods.
+#' @param return.details Logical; if \code{TRUE}, keep diagnostic details in
+#'   the result.
+#' @param ... Additional arguments passed to methods.
+#'
+#' @return A list of class \code{"density_fit"}.
 #' @export
-fit.state.density.chart.kernel <- function(
-    X,
-    weights,
-    chart.control = list(),
-    density.control = list(),
-    return.details = TRUE,
-    ...) {
+normalize.density <- function(x, ...) {
+    UseMethod("normalize.density")
+}
 
-    .state.density.not.implemented(
-        method.id = "chart_kernel",
+#' @export
+normalize.density.numeric <- function(x,
+                                      X = NULL,
+                                      density.control = list(),
+                                      method.id = "normalized_numeric",
+                                      keep.source.fit = FALSE,
+                                      return.details = TRUE,
+                                      ...) {
+    .normalize.density.vector(
+        values = x,
         X = X,
-        weights = weights,
-        theta = list(chart.control = chart.control),
+        method.id = method.id,
+        source.fit = NULL,
+        source.class = "numeric",
         density.control = density.control,
+        keep.source.fit = keep.source.fit,
         return.details = return.details
     )
 }
 
-#' Fit Local-Likelihood State Density
-#'
-#' OD0 exports the method contract and returns a structured
-#' \code{"not_implemented"} result.  A later phase will implement the prototype.
-#'
-#' @inheritParams fit.state.density
 #' @export
-fit.state.density.local.likelihood <- function(
-    X,
-    weights,
-    chart.control = list(),
-    smoother.control = list(),
+normalize.density.default <- function(x,
+                                      X = NULL,
+                                      density.control = list(),
+                                      method.id = NULL,
+                                      keep.source.fit = TRUE,
+                                      return.details = TRUE,
+                                      ...) {
+    if (is.null(x$fitted.values)) {
+        stop("normalize.density() requires a numeric vector or an object with fitted.values.",
+             call. = FALSE)
+    }
+    .normalize.density.fit(
+        x = x,
+        X = X,
+        density.control = density.control,
+        method.id = method.id,
+        keep.source.fit = keep.source.fit,
+        return.details = return.details
+    )
+}
+
+#' @export
+normalize.density.lps <- function(x,
+                                  X = NULL,
+                                  density.control = list(),
+                                  method.id = NULL,
+                                  keep.source.fit = TRUE,
+                                  return.details = TRUE,
+                                  ...) {
+    .normalize.density.fit(
+        x = x,
+        X = X,
+        density.control = density.control,
+        method.id = method.id,
+        keep.source.fit = keep.source.fit,
+        return.details = return.details
+    )
+}
+
+#' @export
+normalize.density.ps_lps <- function(x,
+                                     X = NULL,
+                                     density.control = list(),
+                                     method.id = NULL,
+                                     keep.source.fit = TRUE,
+                                     return.details = TRUE,
+                                     ...) {
+    .normalize.density.fit(
+        x = x,
+        X = X,
+        density.control = density.control,
+        method.id = method.id,
+        keep.source.fit = keep.source.fit,
+        return.details = return.details
+    )
+}
+
+#' @export
+normalize.density.metric.graph.lowpass.fit <- function(
+    x,
+    X = NULL,
     density.control = list(),
+    method.id = NULL,
+    keep.source.fit = TRUE,
     return.details = TRUE,
     ...) {
-
-    .state.density.not.implemented(
-        method.id = "local_likelihood",
+    .normalize.density.fit(
+        x = x,
         X = X,
-        weights = weights,
-        theta = list(chart.control = chart.control,
-                     smoother.control = smoother.control),
         density.control = density.control,
+        method.id = method.id,
+        keep.source.fit = keep.source.fit,
+        return.details = return.details
+    )
+}
+
+#' @export
+normalize.density.metric.graph.lowpass.refit <- function(
+    x,
+    X = NULL,
+    density.control = list(),
+    method.id = NULL,
+    keep.source.fit = TRUE,
+    return.details = TRUE,
+    ...) {
+    .normalize.density.fit(
+        x = x,
+        X = X,
+        density.control = density.control,
+        method.id = method.id,
+        keep.source.fit = keep.source.fit,
         return.details = return.details
     )
 }
 
 #' Fit Subject-Occupation Density
 #'
-#' Convenience wrapper that converts subject visit indices into a state-density
-#' input and dispatches to \code{\link{fit.state.density}}.
+#' Convenience wrapper that converts subject visit indices into a density
+#' input and dispatches to \code{\link{fit.density}}.
 #'
-#' @inheritParams fit.state.density
+#' @inheritParams fit.density
 #' @param subject.index Integer row indices of subject visits in \code{X}.
 #'   Repeated indices are allowed.
 #' @param od.control OD-facing alias for \code{density.control}.
@@ -352,13 +289,9 @@ fit.state.density.local.likelihood <- function(
 fit.subject.od <- function(
     X,
     subject.index,
-    method = c("empirical", "graph_random_walk", "graph_heat_kernel",
-               "lps_count", "ps_lps_count", "lps_logistic_binary",
-               "chart_kernel", "local_likelihood"),
+    method = c("empirical", "graph_random_walk"),
     graph = NULL,
     graph.control = list(),
-    chart.control = list(),
-    smoother.control = list(),
     od.control = list(),
     return.details = TRUE,
     ...) {
@@ -366,18 +299,14 @@ fit.subject.od <- function(
     X <- .state.density.validate.X(X)
     subject.index <- .state.density.validate.subject.index(subject.index, nrow(X))
     weights <- .state.density.subject.weights(subject.index, nrow(X))
-    binary <- as.numeric(weights > 0)
     method <- match.arg(method)
 
-    out <- fit.state.density(
+    out <- fit.density(
         X = X,
         weights = weights,
         method = method,
-        binary = binary,
         graph = graph,
         graph.control = graph.control,
-        chart.control = chart.control,
-        smoother.control = smoother.control,
         density.control = od.control,
         return.details = return.details,
         ...
@@ -395,7 +324,7 @@ fit.subject.od <- function(
     out
 }
 
-#' Precheck State-Density Dependencies
+#' Precheck Density Dependencies
 #'
 #' Checks that the package-level functions needed by the OD0 contract are
 #' available.  Optional benchmark dependencies, such as \pkg{gflow}, are reported
@@ -406,8 +335,8 @@ fit.subject.od <- function(
 #' @param fail Logical; if \code{TRUE}, stop when required functions are missing.
 #'
 #' @return A data frame with dependency check rows.
-#' @export
-state.density.dependency.precheck <- function(check.gflow = TRUE,
+#' @export density.dependency.precheck
+density.dependency.precheck <- function(check.gflow = TRUE,
                                               fail = FALSE) {
     rows <- list()
     add <- function(package, symbol, required, available, note = "") {
@@ -459,7 +388,7 @@ state.density.dependency.precheck <- function(check.gflow = TRUE,
     if (isTRUE(fail)) {
         missing.required <- out$required & !out$available
         if (any(missing.required)) {
-            stop("Missing required state-density dependencies: ",
+            stop("Missing required density dependencies: ",
                  paste(out$symbol[missing.required], collapse = ", "),
                  call. = FALSE)
         }
@@ -584,41 +513,363 @@ state.density.dependency.precheck <- function(check.gflow = TRUE,
     weights / sum(weights)
 }
 
-.state.density.not.implemented <- function(method.id,
-                                           X,
-                                           weights = NULL,
-                                           theta = list(),
-                                           density.control = list(),
-                                           return.details = TRUE) {
-    X <- .state.density.validate.X(X)
-    ctrl <- .state.density.control(density.control)
-    empirical <- NULL
-    if (!is.null(weights)) {
-        weights <- .state.density.validate.weights(weights, nrow(X), "weights")
-        empirical <- .state.density.normalize.weights(weights)
+.normalize.density.support <- function(X, n, source.fit = NULL) {
+    if (!is.null(X)) {
+        return(.state.density.validate.X(X))
     }
-    .state.density.result(
-        method.id = method.id,
-        status = "not_implemented",
-        rho = rep(NA_real_, nrow(X)),
-        empirical.rho = empirical,
-        fitted.raw = rep(NA_real_, nrow(X)),
-        theta = theta,
-        accounting = list(
-            mass = NA_real_,
-            min.rho = NA_real_,
-            max.rho = NA_real_,
-            raw.mass = NA_real_,
-            neg.mass = NA_real_,
-            clip.mass = NA_real_,
-            normalization.constant = NA_real_,
-            mass.tol = ctrl$mass.tol,
-            neg.tol = ctrl$neg.tol
-        ),
-        smoothness = .state.density.empty.smoothness(),
-        diagnostics = list(reason = "method implementation is deferred"),
-        warnings = paste(method.id, "is not implemented in OD0."),
+    if (!is.null(source.fit$X.eval)) {
+        return(.state.density.validate.X(source.fit$X.eval))
+    }
+    if (!is.null(source.fit$X)) {
+        return(.state.density.validate.X(source.fit$X))
+    }
+    matrix(seq_len(n), ncol = 1L)
+}
+
+.normalize.density.method.id <- function(source.fit, method.id) {
+    if (!is.null(method.id)) {
+        return(method.id)
+    }
+    if (inherits(source.fit, c("metric.graph.lowpass.fit",
+                               "metric.graph.lowpass.refit"))) {
+        return("normalized_metric_graph_lowpass")
+    }
+    source.method <- .state.density.null.coalesce(source.fit$method.id,
+                                                  class(source.fit)[[1L]])
+    source.method <- gsub("[^A-Za-z0-9]+", "_", source.method)
+    source.method <- sub("_$", "", source.method)
+    paste0("normalized_", source.method)
+}
+
+.normalize.density.fit <- function(x,
+                                   X = NULL,
+                                   density.control = list(),
+                                   method.id = NULL,
+                                   keep.source.fit = TRUE,
+                                   return.details = TRUE) {
+    values <- x$fitted.values
+    if (is.null(values)) {
+        stop("source fit does not contain fitted.values.", call. = FALSE)
+    }
+    if (is.matrix(values) || is.data.frame(values)) {
+        if (NCOL(values) != 1L) {
+            stop("normalize.density() currently supports one fitted response.",
+                 call. = FALSE)
+        }
+        values <- as.vector(values)
+    }
+    .normalize.density.vector(
+        values = values,
+        X = X,
+        method.id = .normalize.density.method.id(x, method.id),
+        source.fit = x,
+        source.class = class(x)[[1L]],
+        density.control = density.control,
+        keep.source.fit = keep.source.fit,
         return.details = return.details
+    )
+}
+
+.normalize.density.vector <- function(values,
+                                      X = NULL,
+                                      method.id,
+                                      source.fit = NULL,
+                                      source.class = "numeric",
+                                      density.control = list(),
+                                      keep.source.fit = TRUE,
+                                      return.details = TRUE) {
+    if (!is.numeric(values)) {
+        stop("density normalization requires numeric fitted values.",
+             call. = FALSE)
+    }
+    if (length(values) < 1L || any(!is.finite(values))) {
+        stop("density normalization requires finite fitted values.",
+             call. = FALSE)
+    }
+    X <- .normalize.density.support(X, length(values), source.fit)
+    if (nrow(X) != length(values)) {
+        stop("support size must match the number of fitted values.",
+             call. = FALSE)
+    }
+    diagnostics <- list(source.class = source.class)
+    if (isTRUE(keep.source.fit) && !is.null(source.fit)) {
+        diagnostics$source.fit <- source.fit
+    }
+    .state.density.finalize(
+        method.id = method.id,
+        X = X,
+        fitted.raw = values,
+        empirical.rho = NULL,
+        theta = list(source.class = source.class),
+        density.control = density.control,
+        diagnostics = diagnostics,
+        return.details = return.details
+    )
+}
+
+.state.density.null.coalesce <- function(x, y) {
+    if (is.null(x)) y else x
+}
+
+.state.density.prepare.graph <- function(graph, n, allow.zero.length = TRUE) {
+    if (is.null(graph)) {
+        stop("graph must be supplied for graph state-density methods.",
+             call. = FALSE)
+    }
+    adj.list <- .state.density.null.coalesce(graph$adj.list, graph$adj_list)
+    weight.list <- .state.density.null.coalesce(graph$weight.list,
+                                                graph$weight_list)
+    if (is.null(adj.list) || is.null(weight.list)) {
+        stop("graph must contain adj.list/weight.list or adj_list/weight_list.",
+             call. = FALSE)
+    }
+    if (!is.list(adj.list) || !is.list(weight.list)) {
+        stop("graph adjacency and weight fields must be lists.", call. = FALSE)
+    }
+    if (length(adj.list) != n || length(weight.list) != n) {
+        stop("graph size must match nrow(X).", call. = FALSE)
+    }
+    adj.norm <- vector("list", n)
+    weight.norm <- vector("list", n)
+    for (i in seq_len(n)) {
+        nb <- adj.list[[i]]
+        wt <- weight.list[[i]]
+        if (!is.numeric(nb) && !is.integer(nb)) {
+            stop(sprintf("graph adjacency for vertex %d must be numeric/integer.", i),
+                 call. = FALSE)
+        }
+        if (!is.numeric(wt)) {
+            stop(sprintf("graph weights for vertex %d must be numeric.", i),
+                 call. = FALSE)
+        }
+        nb <- as.integer(nb)
+        wt <- as.double(wt)
+        if (length(nb) != length(wt)) {
+            stop(sprintf("graph adjacency and weight lengths differ at vertex %d.", i),
+                 call. = FALSE)
+        }
+        if (length(nb) == 0L) {
+            stop("graph state-density methods require no isolated vertices.",
+                 call. = FALSE)
+        }
+        if (anyNA(nb) || any(nb < 1L | nb > n)) {
+            stop(sprintf("graph adjacency for vertex %d has invalid indices.", i),
+                 call. = FALSE)
+        }
+        if (any(nb == i)) {
+            stop(sprintf("graph adjacency for vertex %d contains self-loops.", i),
+                 call. = FALSE)
+        }
+        if (anyDuplicated(nb)) {
+            stop(sprintf("graph adjacency for vertex %d contains duplicate neighbors.", i),
+                 call. = FALSE)
+        }
+        if (any(!is.finite(wt))) {
+            stop(sprintf("graph weights for vertex %d contain non-finite values.", i),
+                 call. = FALSE)
+        }
+        if (isTRUE(allow.zero.length)) {
+            if (any(wt < 0)) {
+                stop(sprintf("graph weights for vertex %d contain negative values.", i),
+                     call. = FALSE)
+            }
+        } else if (any(wt <= 0)) {
+            stop(sprintf("graph weights for vertex %d contain non-positive values.", i),
+                 call. = FALSE)
+        }
+        adj.norm[[i]] <- nb
+        weight.norm[[i]] <- wt
+    }
+    list(
+        adj.list = adj.norm,
+        weight.list = weight.norm,
+        n.vertices = n
+    )
+}
+
+.state.density.graph.edge.lengths <- function(graph) {
+    as.double(unlist(graph$weight.list, use.names = FALSE))
+}
+
+.state.density.edge.lengths.to.affinity <- function(edge.lengths,
+                                                    method,
+                                                    scale = NULL,
+                                                    epsilon = 1e-12) {
+    method <- match.arg(method, c("exp_neg_length_over_median",
+                                  "inverse_length"))
+    if (any(!is.finite(edge.lengths)) || any(edge.lengths < 0)) {
+        stop("edge lengths must be finite and nonnegative.", call. = FALSE)
+    }
+    if (!is.numeric(epsilon) || length(epsilon) != 1L ||
+        !is.finite(epsilon) || epsilon <= 0) {
+        stop("affinity epsilon must be a finite positive scalar.", call. = FALSE)
+    }
+    if (identical(method, "exp_neg_length_over_median")) {
+        if (is.null(scale)) {
+            positive <- edge.lengths[edge.lengths > 0]
+            if (length(positive) == 0L) {
+                stop("cannot infer exponential affinity scale from all-zero edge lengths.",
+                     call. = FALSE)
+            }
+            scale <- stats::median(positive)
+        }
+        if (!is.numeric(scale) || length(scale) != 1L ||
+            !is.finite(scale) || scale <= 0) {
+            stop("affinity scale must be a finite positive scalar.", call. = FALSE)
+        }
+        return(exp(-edge.lengths / scale))
+    }
+    1 / (edge.lengths + epsilon)
+}
+
+.state.density.transition.matrix <- function(graph,
+                                             affinity.method,
+                                             affinity.scale = NULL,
+                                             affinity.epsilon = 1e-12) {
+    if (!requireNamespace("Matrix", quietly = TRUE)) {
+        stop("Matrix is required for graph random-walk state density.",
+             call. = FALSE)
+    }
+    n <- graph$n.vertices
+    degree <- lengths(graph$adj.list)
+    rows <- rep(seq_len(n), degree)
+    cols <- unlist(graph$adj.list, use.names = FALSE)
+    edge.lengths <- .state.density.graph.edge.lengths(graph)
+    affinities <- .state.density.edge.lengths.to.affinity(
+        edge.lengths = edge.lengths,
+        method = affinity.method,
+        scale = affinity.scale,
+        epsilon = affinity.epsilon
+    )
+    strength.by.row <- rowsum(affinities, rows, reorder = FALSE)
+    row.strength <- numeric(n)
+    row.strength[as.integer(rownames(strength.by.row))] <- strength.by.row[, 1]
+    if (any(!is.finite(row.strength)) || any(row.strength <= 0)) {
+        stop("all graph transition rows must have positive finite affinity strength.",
+             call. = FALSE)
+    }
+    transition <- Matrix::sparseMatrix(
+        i = rows,
+        j = cols,
+        x = affinities / row.strength[rows],
+        dims = c(n, n),
+        giveCsparse = TRUE
+    )
+    row.sum <- Matrix::rowSums(transition)
+    transition <- Matrix::Diagonal(x = 1 / as.numeric(row.sum)) %*% transition
+    transition <- methods::as(transition, "dgCMatrix")
+    list(
+        transition = transition,
+        row.strength = row.strength,
+        metadata = list(
+            n.vertices = n,
+            n.directed.entries = length(rows),
+            affinity.method = affinity.method,
+            affinity.scale = if (is.null(affinity.scale)) {
+                positive <- edge.lengths[edge.lengths > 0]
+                if (length(positive) > 0L) stats::median(positive) else NA_real_
+            } else {
+                affinity.scale
+            },
+            affinity.epsilon = affinity.epsilon,
+            edge.length.min = min(edge.lengths),
+            edge.length.median = stats::median(edge.lengths),
+            edge.length.max = max(edge.lengths),
+            row.strength.min = min(row.strength),
+            row.strength.median = stats::median(row.strength),
+            row.strength.max = max(row.strength),
+            transition.row.sum.max.abs.error =
+                max(abs(Matrix::rowSums(transition) - 1))
+        )
+    )
+}
+
+.state.density.graph.control.value <- function(graph.control, names, default) {
+    for (nm in names) {
+        if (!is.null(graph.control[[nm]])) {
+            return(graph.control[[nm]])
+        }
+    }
+    default
+}
+
+.state.density.walk.steps <- function(graph.control) {
+    walk.steps <- .state.density.graph.control.value(
+        graph.control, c("walk.steps", "walk_steps"), NULL
+    )
+    if (is.null(walk.steps)) {
+        walk.step <- .state.density.graph.control.value(
+            graph.control, c("walk.step", "walk_step"), 1L
+        )
+        walk.steps <- c(0L, walk.step)
+    }
+    if (!is.numeric(walk.steps) || length(walk.steps) < 1L ||
+        any(!is.finite(walk.steps)) || any(walk.steps < 0) ||
+        any(walk.steps != floor(walk.steps))) {
+        stop("walk.steps must be nonnegative integer values.", call. = FALSE)
+    }
+    sort(unique(as.integer(c(0L, walk.steps))))
+}
+
+.state.density.random.walk <- function(empirical, graph, graph.control = list()) {
+    affinity.method <- .state.density.graph.control.value(
+        graph.control, c("affinity.method", "affinity_method"),
+        "exp_neg_length_over_median"
+    )
+    affinity.method <- match.arg(affinity.method,
+                                 c("exp_neg_length_over_median", "inverse_length"))
+    affinity.scale <- .state.density.graph.control.value(
+        graph.control, c("affinity.scale", "affinity_scale"), NULL
+    )
+    affinity.epsilon <- .state.density.graph.control.value(
+        graph.control, c("affinity.epsilon", "affinity_epsilon"), 1e-12
+    )
+    normalize <- isTRUE(.state.density.graph.control.value(
+        graph.control, c("normalize"), TRUE
+    ))
+    walk.steps <- .state.density.walk.steps(graph.control)
+    selected.step <- max(walk.steps)
+    tr <- .state.density.transition.matrix(
+        graph = graph,
+        affinity.method = affinity.method,
+        affinity.scale = affinity.scale,
+        affinity.epsilon = affinity.epsilon
+    )
+    current <- Matrix::Matrix(empirical, nrow = 1L, sparse = TRUE)
+    by.step <- vector("list", length(walk.steps))
+    names(by.step) <- sprintf("r%02d", walk.steps)
+    by.step[[sprintf("r%02d", 0L)]] <- current
+    requested <- names(by.step)
+    max.step <- max(walk.steps)
+    if (max.step > 0L) {
+        for (step in seq_len(max.step)) {
+            current <- current %*% tr$transition
+            if (normalize) {
+                row.sum <- Matrix::rowSums(current)
+                current <- Matrix::Diagonal(x = 1 / as.numeric(row.sum)) %*% current
+            }
+            key <- sprintf("r%02d", step)
+            if (key %in% requested) {
+                by.step[[key]] <- methods::as(Matrix::drop0(current), "dgCMatrix")
+            }
+        }
+    }
+    selected <- by.step[[sprintf("r%02d", selected.step)]]
+    list(
+        rho = as.numeric(as.matrix(selected)),
+        transition = tr$transition,
+        occupation.by.step = by.step,
+        row.strength = tr$row.strength,
+        metadata = tr$metadata,
+        theta = list(
+            graph.method = "random_walk",
+            walk.steps = walk.steps,
+            selected.walk.step = selected.step,
+            affinity.method = affinity.method,
+            affinity.scale = tr$metadata$affinity.scale,
+            affinity.epsilon = affinity.epsilon,
+            normalize = normalize
+        )
     )
 }
 
@@ -734,7 +985,7 @@ state.density.dependency.precheck <- function(check.gflow = TRUE,
         out$diagnostics <- list()
         out$smoothness <- .state.density.empty.smoothness()
     }
-    class(out) <- c("state_density_fit", "list")
+    class(out) <- c("density_fit", "list")
     out
 }
 
