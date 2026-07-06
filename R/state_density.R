@@ -320,7 +320,7 @@ fit.subject.od <- function(
     X,
     subject.index,
     method = c("empirical", "graph_random_walk", "lps_count",
-               "ps_lps_count", "lps_logistic_binary"),
+               "ps_lps_count", "lps_logistic_binary", "chart_kernel"),
     graph = NULL,
     graph.control = list(),
     od.control = list(),
@@ -386,8 +386,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 
     geosmooth.symbols <- c(
         "fit.lps", "fit.ps.lps", "fit.metric.graph.lowpass",
-        "lps.grouped.foldid", "lps.nested.cv", "dgp.materialize",
-        "dgp.content.sha256"
+        "fit.chart.kernel", "lps.grouped.foldid", "lps.nested.cv",
+        "dgp.materialize", "dgp.content.sha256"
     )
     for (sym in geosmooth.symbols) {
         add("geosmooth", sym, TRUE, exists(sym, mode = "function"),
@@ -479,6 +479,17 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             od.control = od.control,
             return.details = return.details,
             ...
+        ),
+        chart_kernel = .state.density.fit.chart.kernel.od(
+            X = X,
+            response = empirical,
+            empirical = empirical,
+            method.id = "chart_kernel",
+            response.type = "normalized_count_mass",
+            adj.list = smoothness.adj.list,
+            od.control = od.control,
+            return.details = return.details,
+            ...
         )
     )
 }
@@ -563,6 +574,45 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
 }
 
+.state.density.fit.chart.kernel.od <- function(X,
+                                               response,
+                                               empirical,
+                                               method.id,
+                                               response.type,
+                                               adj.list = NULL,
+                                               od.control = list(),
+                                               return.details = TRUE,
+                                               ...) {
+    dots <- .state.density.named.dots(...)
+    .state.density.reject.reserved.dots(
+        dots,
+        reserved = c("X", "y"),
+        context = paste0("fit.subject.od(method = \"", method.id, "\")")
+    )
+    fit <- do.call(fit.chart.kernel, c(list(X = X, y = response), dots))
+    fit$empirical.rho <- empirical
+    out <- normalize.density(
+        fit,
+        X = X,
+        density.control = od.control,
+        method.id = method.id,
+        keep.source.fit = return.details,
+        adj.list = adj.list,
+        empirical.rho = empirical,
+        return.details = return.details
+    )
+    .state.density.decorate.smoother.od(
+        out = out,
+        empirical = empirical,
+        method.id = method.id,
+        source.method = "fit.chart.kernel",
+        response = response,
+        response.type = response.type,
+        source.fit = fit,
+        return.details = return.details
+    )
+}
+
 .state.density.decorate.smoother.od <- function(out,
                                                 empirical,
                                                 method.id,
@@ -600,6 +650,9 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             source.fit$lambda.sync.search.telemetry
         out$diagnostics$lambda.search.summary <-
             source.fit$lambda.search.summary
+    } else if (inherits(source.fit, "chart_kernel")) {
+        out$diagnostics$selection <- source.fit$selected
+        out$diagnostics$chart.kernel <- source.fit$diagnostics
     }
     if (!isTRUE(return.details)) {
         out$diagnostics <- list()
@@ -821,6 +874,9 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                  call. = FALSE)
         }
         values <- as.vector(values)
+    }
+    if (is.null(empirical.rho) && !is.null(x$empirical.rho)) {
+        empirical.rho <- x$empirical.rho
     }
     .normalize.density.vector(
         values = values,
