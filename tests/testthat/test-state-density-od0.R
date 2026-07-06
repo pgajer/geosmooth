@@ -150,6 +150,8 @@ test_that("OD0 finalize wires strict local-maxima smoothness diagnostics", {
         empirical.rho = rep(NA_real_, 5L)
     )
     expect_equal(fit$smoothness$n.local.maxima, 2L)
+    expect_identical(fit$smoothness$local.maxima.reason,
+                     "computed_from_auto_1d_path")
 
     plateau <- geosmooth:::.state.density.finalize(
         method.id = "test",
@@ -158,4 +160,17 @@ test_that("OD0 finalize wires strict local-maxima smoothness diagnostics", {
         empirical.rho = rep(NA_real_, 5L)
     )
     expect_equal(plateau$smoothness$n.local.maxima, 0L)
+
+    multivariate <- geosmooth:::.state.density.finalize(
+        method.id = "test",
+        X = cbind(seq(0, 1, length.out = 5), 0),
+        fitted.raw = c(0, 0.2, 0.1, 0.5, 0.1),
+        empirical.rho = rep(NA_real_, 5L)
+    )
+    expect_identical(multivariate$status, "ok")
+    expect_true(is.na(multivariate$smoothness$n.local.maxima))
+    expect_identical(
+        multivariate$smoothness$local.maxima.reason,
+        "not_computed_no_adjacency_for_multivariate_support"
+    )
 })

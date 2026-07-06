@@ -56,6 +56,9 @@ test_that("OD1 graph random walk matches a frozen community-typing prototype fix
         n_vertices = nrow(X)
     )
     weights <- c(2, 0, 1, 0, 1)
+    # Frozen from the original community-typing prototype random-walk fixture:
+    # a five-vertex weighted path, exp_neg_length_over_median affinity,
+    # initial mass c(2,0,1,0,1) normalized internally, and two walk steps.
     transition.ref <- structure(
         c(0, 0.660756368765817, 0, 0, 0,
           1, 0, 0.339243631234183, 0, 0,
@@ -85,6 +88,8 @@ test_that("OD1 graph random walk matches a frozen community-typing prototype fix
                  Matrix::Matrix(transition.ref, sparse = TRUE),
                  tolerance = 1e-12)
     expect_equal(fit$smoothness$n.local.maxima, 3L)
+    expect_identical(fit$smoothness$local.maxima.reason,
+                     "computed_from_supplied_adjacency")
 })
 
 test_that("OD1 metric graph low-pass becomes a density through normalize.density", {

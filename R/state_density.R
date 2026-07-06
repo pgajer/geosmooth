@@ -310,6 +310,12 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' \code{\link{normalize.density}}; they are subject-occupation workflows, not
 #' standalone density-native methods.
 #'
+#' The \code{"lps_logistic_binary"} method name is historical.  In the current
+#' OD workflow it calls \code{fit.lps(..., outcome.family = "bernoulli")}, which
+#' fits a clipped probability field with the LPS least-squares core and then
+#' converts that field to a density with \code{\link{normalize.density}}.  It is
+#' not the \code{outcome.family = "binomial"} local-logistic IRLS path.
+#'
 #' @inheritParams fit.density
 #' @param subject.index Integer row indices of subject visits in \code{X}.
 #'   Repeated indices are allowed.
@@ -641,6 +647,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             source.fit$probability.diagnostics
         out$diagnostics$logistic.diagnostics <-
             source.fit$logistic.diagnostics
+        if (identical(method.id, "lps_logistic_binary") &&
+            identical(source.fit$outcome.family, "bernoulli")) {
+            out$diagnostics$binary.workflow <- list(
+                method.id = method.id,
+                implementation.family = "bernoulli",
+                probability.link = "identity_lps_least_squares_clipped",
+                density.adapter = "normalize.density_clip_and_renormalize",
+                note = paste(
+                    "Historical method id; this OD workflow uses",
+                    "fit.lps(..., outcome.family = \"bernoulli\"), not the",
+                    "outcome.family = \"binomial\" local-logistic IRLS path."
+                )
+            )
+        }
     } else if (inherits(source.fit, "ps_lps")) {
         out$diagnostics$selection <- source.fit$selected
         out$diagnostics$sync.energy <- source.fit$sync.energy
@@ -1340,6 +1360,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.smoothness.placeholder <- function(rho) {
     list(
         n.local.maxima = NA_integer_,
+        local.maxima.reason = "not_computed",
         raw.basin.size.summary = data.frame(),
         raw.basin.mass.summary = data.frame()
     )
@@ -1354,7 +1375,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                       density.control = list(),
                                       adj.list = NULL,
                                       basin.assignment = NULL) {
-    adj.list <- .state.density.resolve.smoothness.adj.list(
+    resolved.adj.list <- .state.density.resolve.smoothness.adj.list(
         X = X,
         density.control = density.control,
         adj.list = adj.list
@@ -1366,11 +1387,48 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     list(
         n.local.maxima = .state.density.local.maxima.count(
             values = rho,
-            adj.list = adj.list
+            adj.list = resolved.adj.list
+        ),
+        local.maxima.reason = .state.density.local.maxima.reason(
+            X = X,
+            supplied.adj.list = adj.list,
+            density.control = density.control,
+            resolved.adj.list = resolved.adj.list
         ),
         raw.basin.size.summary = summary$raw.basin.size.summary,
         raw.basin.mass.summary = summary$raw.basin.mass.summary
     )
+}
+
+.state.density.local.maxima.reason <- function(X,
+                                               supplied.adj.list = NULL,
+                                               density.control = list(),
+                                               resolved.adj.list = NULL) {
+    if (!is.null(resolved.adj.list)) {
+        if (!is.null(supplied.adj.list) ||
+            !is.null(density.control$smoothness.adj.list)) {
+            return("computed_from_supplied_adjacency")
+        }
+        return("computed_from_auto_1d_path")
+    }
+    auto.1d <- if (is.null(density.control$smoothness.auto.1d)) {
+        TRUE
+    } else {
+        isTRUE(density.control$smoothness.auto.1d)
+    }
+    if (!isTRUE(auto.1d)) {
+        return("not_computed_auto_1d_disabled_and_no_adjacency")
+    }
+    if (is.null(X)) {
+        return("not_computed_no_support_or_adjacency")
+    }
+    if (nrow(X) <= 1L) {
+        return("not_computed_singleton_support")
+    }
+    if (ncol(X) > 1L) {
+        return("not_computed_no_adjacency_for_multivariate_support")
+    }
+    "not_computed_no_adjacency"
 }
 
 .state.density.resolve.smoothness.adj.list <- function(X,
@@ -1453,9 +1511,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     }
     n.max <- 0L
     for (i in seq_along(values)) {
+        if (!is.finite(values[[i]])) {
+            next
+        }
         nb <- adj.list[[i]]
         if (length(nb) == 0L ||
-            all(values[[i]] > values[as.integer(nb)], na.rm = FALSE)) {
+            all(values[[i]] > values[as.integer(nb)], na.rm = TRUE)) {
             n.max <- n.max + 1L
         }
     }
