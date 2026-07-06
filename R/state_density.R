@@ -316,6 +316,12 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' converts that field to a density with \code{\link{normalize.density}}.  It is
 #' not the \code{outcome.family = "binomial"} local-logistic IRLS path.
 #'
+#' When \code{od.cv = "visit"}, graph random-walk candidates may pass
+#' OD-level grids inside \code{graph.control}: \code{walk.step.grid},
+#' \code{affinity.method.grid}, \code{affinity.scale.grid},
+#' \code{affinity.epsilon.grid}, and \code{normalize.grid}.  Missing
+#' \code{affinity.scale} values mean the usual data-derived affinity scale.
+#'
 #' When \code{od.cv = "visit"}, chart-based and LPS-family methods may pass
 #' \code{chart.dim.grid} through \code{...}.  For \code{"chart_kernel"},
 #' \code{"local_likelihood_density"}, \code{"local_likelihood_bernoulli"},
@@ -497,7 +503,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                                    visit.cv.seed = 1L,
                                                    visit.cv.epsilon = 1e-15,
                                                    dots = list()) {
-    supported <- c("chart_kernel", "local_likelihood_density",
+    supported <- c("graph_random_walk", "chart_kernel", "local_likelihood_density",
                    "lps_count", "lps_logistic_binary", "ps_lps_count",
                    "local_likelihood_bernoulli")
     if (!method %in% supported) {
@@ -526,6 +532,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     candidate.spec <- .state.density.visit.cv.candidates(
         method = method,
         dots = dots,
+        graph.control = graph.control,
         n = nrow(X)
     )
     cv.result <- .state.density.visit.cv.table(
@@ -545,9 +552,14 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         score.column = "visit.cv.neg.log.rho"
     )
     selected <- cv.result$cv.table[best.idx, , drop = FALSE]
-    final.dots <- c(
-        candidate.spec$base.dots,
-        .state.density.visit.cv.scalar.candidate.dots(method, selected)
+    selected.scalar <- .state.density.visit.cv.scalar.candidate(
+        method,
+        selected
+    )
+    final.dots <- c(candidate.spec$base.dots, selected.scalar$dots)
+    final.graph.control <- utils::modifyList(
+        graph.control,
+        selected.scalar$graph.control
     )
     final <- do.call(
         fit.subject.od,
@@ -557,7 +569,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                 subject.index = subject.index,
                 method = method,
                 graph = graph,
-                graph.control = graph.control,
+                graph.control = final.graph.control,
                 od.control = od.control,
                 return.details = return.details,
                 od.cv = "none"
@@ -607,9 +619,17 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
 }
 
-.state.density.visit.cv.candidates <- function(method, dots, n) {
+.state.density.visit.cv.candidates <- function(method,
+                                               dots,
+                                               graph.control = list(),
+                                               n) {
     switch(
         method,
+        graph_random_walk =
+            .state.density.visit.cv.graph.random.walk.candidates(
+                dots = dots,
+                graph.control = graph.control
+            ),
         chart_kernel = .state.density.visit.cv.chart.kernel.candidates(
             dots = dots,
             n = n
@@ -638,6 +658,149 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             ),
         stop("Unsupported OD-level visit CV method.", call. = FALSE)
     )
+}
+
+.state.density.visit.cv.graph.random.walk.candidates <- function(dots,
+                                                                  graph.control) {
+    if (length(dots)) {
+        stop("OD-level visit CV for 'graph_random_walk' takes candidate ",
+             "grids through 'graph.control', not through ....",
+             call. = FALSE)
+    }
+    if (is.null(graph.control)) {
+        graph.control <- list()
+    }
+    if (!is.list(graph.control)) {
+        stop("'graph.control' must be a list.", call. = FALSE)
+    }
+    walk.step.grid <- .state.density.graph.control.value(
+        graph.control,
+        c("walk.step.grid", "walk_step_grid", "walk.steps.grid",
+          "walk_steps_grid"),
+        NULL
+    )
+    if (is.null(walk.step.grid)) {
+        walk.step.grid <- .state.density.walk.steps(graph.control)
+    }
+    walk.step.grid <- .state.density.clean.walk.step.grid(walk.step.grid)
+    affinity.method <- .state.density.graph.control.value(
+        graph.control, c("affinity.method", "affinity_method"),
+        "exp_neg_length_over_median"
+    )
+    affinity.method.grid <- .state.density.graph.control.value(
+        graph.control, c("affinity.method.grid", "affinity_method_grid"),
+        affinity.method
+    )
+    affinity.method.grid <- .state.density.clean.affinity.method.grid(
+        affinity.method.grid
+    )
+    affinity.scale <- .state.density.graph.control.value(
+        graph.control, c("affinity.scale", "affinity_scale"), NA_real_
+    )
+    affinity.scale.grid <- .state.density.graph.control.value(
+        graph.control, c("affinity.scale.grid", "affinity_scale_grid"),
+        affinity.scale
+    )
+    affinity.scale.grid <- .state.density.clean.affinity.scale.grid(
+        affinity.scale.grid
+    )
+    affinity.epsilon <- .state.density.graph.control.value(
+        graph.control, c("affinity.epsilon", "affinity_epsilon"), 1e-12
+    )
+    affinity.epsilon.grid <- .state.density.graph.control.value(
+        graph.control, c("affinity.epsilon.grid", "affinity_epsilon_grid"),
+        affinity.epsilon
+    )
+    affinity.epsilon.grid <- .state.density.clean.affinity.epsilon.grid(
+        affinity.epsilon.grid
+    )
+    normalize <- .state.density.graph.control.value(
+        graph.control, c("normalize"), TRUE
+    )
+    normalize.grid <- .state.density.graph.control.value(
+        graph.control, c("normalize.grid"), normalize
+    )
+    normalize.grid <- .state.density.clean.logical.grid(
+        normalize.grid,
+        "graph.control$normalize.grid"
+    )
+    candidates <- expand.grid(
+        walk.step = walk.step.grid,
+        affinity.method = affinity.method.grid,
+        affinity.scale = affinity.scale.grid,
+        affinity.epsilon = affinity.epsilon.grid,
+        normalize = normalize.grid,
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+    )
+    inverse <- candidates$affinity.method == "inverse_length"
+    if (any(inverse)) {
+        candidates$affinity.scale[inverse] <- NA_real_
+    }
+    candidates <- unique(candidates)
+    candidates$candidate.id <- seq_len(nrow(candidates))
+    list(
+        candidates = candidates[, c("candidate.id", "walk.step",
+                                    "affinity.method", "affinity.scale",
+                                    "affinity.epsilon", "normalize")],
+        base.dots = list()
+    )
+}
+
+.state.density.clean.walk.step.grid <- function(x) {
+    if (!is.numeric(x) || length(x) < 1L || any(!is.finite(x)) ||
+        any(x < 0) || any(x != floor(x))) {
+        stop("'walk.step.grid' must contain nonnegative integer values.",
+             call. = FALSE)
+    }
+    sort(unique(as.integer(x)))
+}
+
+.state.density.clean.affinity.method.grid <- function(x) {
+    if (!is.character(x) || length(x) < 1L || any(!nzchar(x))) {
+        stop("'affinity.method.grid' must contain affinity method names.",
+             call. = FALSE)
+    }
+    allowed <- c("exp_neg_length_over_median", "inverse_length")
+    bad <- setdiff(x, allowed)
+    if (length(bad)) {
+        stop("'affinity.method.grid' contains unsupported value(s): ",
+             paste(bad, collapse = ", "), ".", call. = FALSE)
+    }
+    unique(x)
+}
+
+.state.density.clean.affinity.scale.grid <- function(x) {
+    if (is.null(x)) {
+        return(NA_real_)
+    }
+    x <- as.numeric(x)
+    if (!length(x) || any(is.nan(x)) ||
+        any(!is.na(x) & (!is.finite(x) | x <= 0))) {
+        stop("'affinity.scale.grid' must contain positive finite values ",
+             "or NA for the data-derived scale.", call. = FALSE)
+    }
+    unique(x)
+}
+
+.state.density.clean.affinity.epsilon.grid <- function(x) {
+    x <- as.numeric(x)
+    if (!length(x) || any(!is.finite(x)) || any(x <= 0)) {
+        stop("'affinity.epsilon.grid' must contain positive finite values.",
+             call. = FALSE)
+    }
+    sort(unique(x))
+}
+
+.state.density.clean.logical.grid <- function(x, name) {
+    if (!is.logical(x) && !is.numeric(x)) {
+        stop(name, " must contain logical values.", call. = FALSE)
+    }
+    x <- as.logical(x)
+    if (!length(x) || anyNA(x)) {
+        stop(name, " must contain non-missing logical values.", call. = FALSE)
+    }
+    unique(x)
 }
 
 .state.density.visit.cv.lps.candidates <- function(dots, n) {
@@ -852,9 +1015,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     predicted <- matrix(NA_real_, nrow = n.visits, ncol = nrow(candidates))
     error.messages <- rep(NA_character_, nrow(candidates))
     for (cc in seq_len(nrow(candidates))) {
-        cand.dots <- .state.density.visit.cv.scalar.candidate.dots(
+        cand.scalar <- .state.density.visit.cv.scalar.candidate(
             method,
             candidates[cc, , drop = FALSE]
+        )
+        cand.graph.control <- utils::modifyList(
+            graph.control,
+            cand.scalar$graph.control
         )
         for (fold in sort(unique(foldid))) {
             test.pos <- which(foldid == fold)
@@ -868,13 +1035,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                             subject.index = subject.index[train.pos],
                             method = method,
                             graph = graph,
-                            graph.control = graph.control,
+                            graph.control = cand.graph.control,
                             od.control = od.control,
                             return.details = FALSE,
                             od.cv = "none"
                         ),
                         base.dots,
-                        cand.dots
+                        cand.scalar$dots
                     )
                 ),
                 error = function(e) e
@@ -919,6 +1086,42 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
     cv.table$visit.cv.error.message <- error.messages
     list(cv.table = cv.table, predicted.mass = predicted)
+}
+
+.state.density.visit.cv.scalar.candidate <- function(method, candidate) {
+    if (identical(method, "graph_random_walk")) {
+        return(list(
+            dots = list(),
+            graph.control =
+                .state.density.visit.cv.scalar.graph.control(candidate)
+        ))
+    }
+    list(
+        dots = .state.density.visit.cv.scalar.candidate.dots(
+            method,
+            candidate
+        ),
+        graph.control = list()
+    )
+}
+
+.state.density.visit.cv.scalar.graph.control <- function(candidate) {
+    walk.step <- as.integer(candidate$walk.step[[1L]])
+    if (!is.finite(walk.step) || walk.step < 0L) {
+        stop("Internal graph random-walk candidate has invalid walk.step.",
+             call. = FALSE)
+    }
+    graph.control <- list(
+        walk.steps = sort(unique(as.integer(c(0L, walk.step)))),
+        affinity.method = as.character(candidate$affinity.method[[1L]]),
+        affinity.epsilon = as.numeric(candidate$affinity.epsilon[[1L]]),
+        normalize = as.logical(candidate$normalize[[1L]])
+    )
+    affinity.scale <- as.numeric(candidate$affinity.scale[[1L]])
+    if (is.finite(affinity.scale)) {
+        graph.control$affinity.scale <- affinity.scale
+    }
+    graph.control
 }
 
 .state.density.visit.cv.scalar.candidate.dots <- function(method, candidate) {
