@@ -122,3 +122,123 @@ test_that("OD3 chart-kernel validates density-relevant inputs", {
         "reserved argument"
     )
 })
+
+test_that("OD3 local-likelihood density returns finite nonnegative values", {
+    X <- matrix(seq(0, 1, length.out = 31), ncol = 1L)
+    y <- dnorm(X[, 1], mean = 0.45, sd = 0.14)
+    y <- y / sum(y)
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = y,
+        likelihood.family = "density",
+        support.size = 11L,
+        degree = 1L,
+        kernel = "gaussian",
+        coordinate.method = "coordinates",
+        optimizer = "optim"
+    )
+
+    expect_s3_class(fit, "local_likelihood")
+    expect_identical(fit$method.id, "local_likelihood")
+    expect_identical(fit$likelihood.family, "density")
+    expect_length(fit$fitted.values, nrow(X))
+    expect_true(all(is.finite(fit$fitted.values)))
+    expect_true(all(fit$fitted.values >= 0))
+    expect_true(is.data.frame(fit$diagnostics$per.eval))
+    expect_equal(fit$diagnostics$fallback.fraction, 0, tolerance = 1e-12)
+})
+
+test_that("OD3 local-likelihood density normalizes through density accounting", {
+    X <- matrix(seq(0, 1, length.out = 27), ncol = 1L)
+    subject.index <- c(4L, 8L, 8L, 12L, 17L, 21L, 24L)
+    empirical <- tabulate(subject.index, nbins = nrow(X)) / length(subject.index)
+    graph <- make.od3.path.graph(nrow(X))
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = empirical,
+        likelihood.family = "density",
+        support.size = 9L,
+        degree = 0L,
+        kernel = "tricube",
+        coordinate.method = "coordinates"
+    )
+    fit$empirical.rho <- empirical
+    density <- normalize.density(
+        fit,
+        X = X,
+        adj.list = graph$adj.list,
+        keep.source.fit = FALSE
+    )
+
+    expect_s3_class(density, "density_fit")
+    expect_identical(density$status, "ok")
+    expect_identical(density$method.id, "normalized_local_likelihood")
+    expect_equal(sum(density$rho), 1, tolerance = 1e-12)
+    expect_true(all(is.finite(density$rho)))
+    expect_true(all(density$rho >= -1e-12))
+    expect_equal(density$empirical.rho, empirical, tolerance = 1e-12)
+    expect_true(is.finite(density$smoothness$n.local.maxima))
+    expect_identical(density$diagnostics$source.class, "local_likelihood")
+})
+
+test_that("OD3 local-likelihood supports local PCA charts in dimension greater than one", {
+    theta <- seq(0, 2 * pi, length.out = 36)
+    X <- cbind(cos(theta), sin(theta), 0.15 * cos(2 * theta))
+    y <- exp(-8 * (sin(theta) - 0.2)^2)
+    y <- y / sum(y)
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = y,
+        likelihood.family = "density",
+        support.size = 9L,
+        degree = 1L,
+        kernel = "gaussian",
+        coordinate.method = "local.pca",
+        chart.dim = 2L,
+        optimizer = "optim"
+    )
+
+    expect_s3_class(fit, "local_likelihood")
+    expect_true(all(is.finite(fit$fitted.values)))
+    expect_true(all(fit$fitted.values >= 0))
+    expect_true(all(fit$diagnostics$per.eval$chart.dim == 2L))
+})
+
+test_that("OD3 local-likelihood surfaces sparse-mass fallbacks", {
+    X <- matrix(seq(0, 1, length.out = 30), ncol = 1L)
+    y <- numeric(nrow(X))
+    y[seq_len(3L)] <- c(0.3, 0.4, 0.3)
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = y,
+        likelihood.family = "density",
+        support.size = 5L,
+        degree = 1L,
+        kernel = "tricube",
+        coordinate.method = "coordinates",
+        min.local.mass = sqrt(.Machine$double.eps)
+    )
+
+    expect_true(any(fit$diagnostics$per.eval$status == "zero_mass_fallback"))
+    expect_true(all(is.finite(fit$fitted.values)))
+    expect_true(all(fit$fitted.values >= 0))
+    expect_gt(fit$diagnostics$fallback.count, 0)
+})
+
+test_that("OD3 local-likelihood reserves Bernoulli branch explicitly", {
+    X <- matrix(seq(0, 1, length.out = 10), ncol = 1L)
+    y <- rep(c(0, 1), length.out = nrow(X))
+
+    expect_error(
+        fit.local.likelihood(
+            X = X,
+            y = y,
+            likelihood.family = "bernoulli"
+        ),
+        "reserved but not implemented"
+    )
+})
