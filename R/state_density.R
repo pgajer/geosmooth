@@ -320,6 +320,18 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' @param subject.index Integer row indices of subject visits in \code{X}.
 #'   Repeated indices are allowed.
 #' @param od.control OD-facing alias for \code{density.control}.
+#' @param od.cv OD-level selection mode.  \code{"none"} preserves the direct
+#'   fit.  \code{"visit"} holds out subject visits, fits candidates on the
+#'   remaining visits, and selects the candidate minimizing held-out negative
+#'   log occupation mass.
+#' @param visit.foldid Optional positive integer vector assigning subject visits
+#'   to OD-level cross-validation folds.  Its length must equal
+#'   \code{length(subject.index)}.
+#' @param visit.cv.folds Number of visit folds when \code{visit.foldid} is not
+#'   supplied.
+#' @param visit.cv.seed Random seed for generated visit folds.
+#' @param visit.cv.epsilon Positive floor used in held-out
+#'   \code{-log(rho[visit])} scoring.
 #'
 #' @export
 fit.subject.od <- function(
@@ -332,12 +344,36 @@ fit.subject.od <- function(
     graph.control = list(),
     od.control = list(),
     return.details = TRUE,
+    od.cv = c("none", "visit"),
+    visit.foldid = NULL,
+    visit.cv.folds = 5L,
+    visit.cv.seed = 1L,
+    visit.cv.epsilon = 1e-15,
     ...) {
 
     X <- .state.density.validate.X(X)
     subject.index <- .state.density.validate.subject.index(subject.index, nrow(X))
     weights <- .state.density.subject.weights(subject.index, nrow(X))
     method <- match.arg(method)
+    od.cv <- match.arg(od.cv)
+
+    if (identical(od.cv, "visit")) {
+        dots <- .state.density.named.dots(...)
+        return(.state.density.fit.subject.od.visit.cv(
+            X = X,
+            subject.index = subject.index,
+            method = method,
+            graph = graph,
+            graph.control = graph.control,
+            od.control = od.control,
+            return.details = return.details,
+            visit.foldid = visit.foldid,
+            visit.cv.folds = visit.cv.folds,
+            visit.cv.seed = visit.cv.seed,
+            visit.cv.epsilon = visit.cv.epsilon,
+            dots = dots
+        ))
+    }
 
     density.methods <- c("empirical", "graph_random_walk")
     out <- if (method %in% density.methods) {
@@ -436,6 +472,327 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         }
     }
     out
+}
+
+.state.density.fit.subject.od.visit.cv <- function(X,
+                                                   subject.index,
+                                                   method,
+                                                   graph = NULL,
+                                                   graph.control = list(),
+                                                   od.control = list(),
+                                                   return.details = TRUE,
+                                                   visit.foldid = NULL,
+                                                   visit.cv.folds = 5L,
+                                                   visit.cv.seed = 1L,
+                                                   visit.cv.epsilon = 1e-15,
+                                                   dots = list()) {
+    supported <- c("chart_kernel", "local_likelihood_bernoulli")
+    if (!method %in% supported) {
+        stop(
+            "OD-level visit CV is currently implemented for methods: ",
+            paste(supported, collapse = ", "), ".",
+            call. = FALSE
+        )
+    }
+    if ("foldid" %in% names(dots)) {
+        stop(
+            "OD-level visit CV uses 'visit.foldid'.  Do not pass row-level ",
+            "'foldid' through ... when od.cv = \"visit\".",
+            call. = FALSE
+        )
+    }
+    visit.cv.epsilon <- .local.chart.validate.positive.scalar(
+        visit.cv.epsilon, "visit.cv.epsilon"
+    )
+    visit.foldid <- .state.density.prepare.visit.foldid(
+        n.visits = length(subject.index),
+        visit.foldid = visit.foldid,
+        visit.cv.folds = visit.cv.folds,
+        visit.cv.seed = visit.cv.seed
+    )
+    candidate.spec <- .state.density.visit.cv.candidates(
+        method = method,
+        dots = dots,
+        n = nrow(X)
+    )
+    cv.result <- .state.density.visit.cv.table(
+        X = X,
+        subject.index = subject.index,
+        method = method,
+        graph = graph,
+        graph.control = graph.control,
+        od.control = od.control,
+        foldid = visit.foldid,
+        candidates = candidate.spec$candidates,
+        base.dots = candidate.spec$base.dots,
+        epsilon = visit.cv.epsilon
+    )
+    best.idx <- .local.chart.select.best.idx(
+        cv.result$cv.table,
+        score.column = "visit.cv.neg.log.rho"
+    )
+    selected <- cv.result$cv.table[best.idx, , drop = FALSE]
+    final.dots <- c(
+        candidate.spec$base.dots,
+        .state.density.visit.cv.scalar.candidate.dots(method, selected)
+    )
+    final <- do.call(
+        fit.subject.od,
+        c(
+            list(
+                X = X,
+                subject.index = subject.index,
+                method = method,
+                graph = graph,
+                graph.control = graph.control,
+                od.control = od.control,
+                return.details = return.details,
+                od.cv = "none"
+            ),
+            final.dots
+        )
+    )
+    final$theta$od.cv <- "visit"
+    final$theta$visit.cv.score <- "visit.cv.neg.log.rho"
+    final$theta$visit.cv.epsilon <- visit.cv.epsilon
+    final$diagnostics$od.visit.cv <- list(
+        mode = "visit",
+        score = "negative_log_heldout_mass",
+        score.column = "visit.cv.neg.log.rho",
+        selected.candidate.id = selected$candidate.id[[1L]],
+        n.visits = length(subject.index),
+        n.folds = length(unique(visit.foldid)),
+        epsilon = visit.cv.epsilon
+    )
+    final$diagnostics$od.visit.cv.selection <- as.list(selected[1, ])
+    if (isTRUE(return.details)) {
+        final$visit.cv.table <- cv.result$cv.table
+        final$visit.foldid <- visit.foldid
+        final$visit.cv.predicted.mass <- cv.result$predicted.mass
+    }
+    final
+}
+
+.state.density.prepare.visit.foldid <- function(n.visits,
+                                                visit.foldid = NULL,
+                                                visit.cv.folds = 5L,
+                                                visit.cv.seed = 1L) {
+    if (n.visits < 2L) {
+        stop("OD-level visit CV requires at least two subject visits.",
+             call. = FALSE)
+    }
+    if (!is.null(visit.foldid) &&
+        (!is.numeric(visit.foldid) || length(visit.foldid) != n.visits)) {
+        stop("'visit.foldid' must be a positive integer vector with length ",
+             "length(subject.index).", call. = FALSE)
+    }
+    .klp.prepare.foldid(
+        n = n.visits,
+        foldid = visit.foldid,
+        cv.folds = visit.cv.folds,
+        cv.seed = visit.cv.seed
+    )
+}
+
+.state.density.visit.cv.candidates <- function(method, dots, n) {
+    switch(
+        method,
+        chart_kernel = .state.density.visit.cv.chart.kernel.candidates(
+            dots = dots,
+            n = n
+        ),
+        local_likelihood_bernoulli =
+            .state.density.visit.cv.local.likelihood.candidates(
+                dots = dots,
+                n = n
+            ),
+        stop("Unsupported OD-level visit CV method.", call. = FALSE)
+    )
+}
+
+.state.density.visit.cv.chart.kernel.candidates <- function(dots, n) {
+    support.size <- .state.density.null.coalesce(
+        dots$support.size, min(15L, n)
+    )
+    support.grid <- .state.density.null.coalesce(
+        dots$support.grid, support.size
+    )
+    kernel <- .state.density.null.coalesce(dots$kernel, "gaussian")
+    kernel.grid <- .state.density.null.coalesce(dots$kernel.grid, kernel)
+    bandwidth.multiplier <- .state.density.null.coalesce(
+        dots$bandwidth.multiplier, 1
+    )
+    bandwidth.multiplier.grid <- .state.density.null.coalesce(
+        dots$bandwidth.multiplier.grid, bandwidth.multiplier
+    )
+    candidates <- expand.grid(
+        support.size = .klp.clean.support.grid(support.grid, n),
+        kernel = .klp.clean.kernel.grid(kernel.grid),
+        bandwidth.multiplier =
+            .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+    )
+    candidates$candidate.id <- seq_len(nrow(candidates))
+    list(
+        candidates = candidates[, c("candidate.id", "support.size", "kernel",
+                                    "bandwidth.multiplier")],
+        base.dots = .state.density.drop.dots(
+            dots,
+            c("support.size", "support.grid", "kernel", "kernel.grid",
+              "bandwidth.multiplier", "bandwidth.multiplier.grid",
+              "cv.folds", "cv.seed")
+        )
+    )
+}
+
+.state.density.visit.cv.local.likelihood.candidates <- function(dots, n) {
+    support.size <- .state.density.null.coalesce(
+        dots$support.size, min(15L, n)
+    )
+    support.grid <- .state.density.null.coalesce(
+        dots$support.grid, support.size
+    )
+    degree <- .state.density.null.coalesce(dots$degree, 1L)
+    degree.grid <- .state.density.null.coalesce(dots$degree.grid, degree)
+    kernel <- .state.density.null.coalesce(dots$kernel, "gaussian")
+    kernel.grid <- .state.density.null.coalesce(dots$kernel.grid, kernel)
+    bandwidth.multiplier <- .state.density.null.coalesce(
+        dots$bandwidth.multiplier, 1
+    )
+    bandwidth.multiplier.grid <- .state.density.null.coalesce(
+        dots$bandwidth.multiplier.grid, bandwidth.multiplier
+    )
+    lambda.ridge <- .state.density.null.coalesce(dots$lambda.ridge, 1e-8)
+    lambda.ridge.grid <- .state.density.null.coalesce(
+        dots$lambda.ridge.grid, lambda.ridge
+    )
+    candidates <- expand.grid(
+        support.size = .klp.clean.support.grid(support.grid, n),
+        degree = .klp.clean.degree.grid(degree.grid),
+        kernel = .klp.clean.kernel.grid(kernel.grid),
+        bandwidth.multiplier =
+            .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
+        lambda.ridge =
+            .local.likelihood.clean.lambda.ridge.grid(lambda.ridge.grid),
+        KEEP.OUT.ATTRS = FALSE,
+        stringsAsFactors = FALSE
+    )
+    candidates$candidate.id <- seq_len(nrow(candidates))
+    list(
+        candidates = candidates[, c("candidate.id", "support.size", "degree",
+                                    "kernel", "bandwidth.multiplier",
+                                    "lambda.ridge")],
+        base.dots = .state.density.drop.dots(
+            dots,
+            c("support.size", "support.grid", "degree", "degree.grid",
+              "kernel", "kernel.grid", "bandwidth.multiplier",
+              "bandwidth.multiplier.grid", "lambda.ridge",
+              "lambda.ridge.grid", "cv.folds", "cv.seed")
+        )
+    )
+}
+
+.state.density.visit.cv.table <- function(X,
+                                          subject.index,
+                                          method,
+                                          graph,
+                                          graph.control,
+                                          od.control,
+                                          foldid,
+                                          candidates,
+                                          base.dots,
+                                          epsilon) {
+    n.visits <- length(subject.index)
+    predicted <- matrix(NA_real_, nrow = n.visits, ncol = nrow(candidates))
+    error.messages <- rep(NA_character_, nrow(candidates))
+    for (cc in seq_len(nrow(candidates))) {
+        cand.dots <- .state.density.visit.cv.scalar.candidate.dots(
+            method,
+            candidates[cc, , drop = FALSE]
+        )
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- tryCatch(
+                do.call(
+                    fit.subject.od,
+                    c(
+                        list(
+                            X = X,
+                            subject.index = subject.index[train.pos],
+                            method = method,
+                            graph = graph,
+                            graph.control = graph.control,
+                            od.control = od.control,
+                            return.details = FALSE,
+                            od.cv = "none"
+                        ),
+                        base.dots,
+                        cand.dots
+                    )
+                ),
+                error = function(e) e
+            )
+            if (inherits(fit, "error")) {
+                error.messages[[cc]] <- conditionMessage(fit)
+                predicted[test.pos, cc] <- NA_real_
+                next
+            }
+            predicted[test.pos, cc] <- fit$rho[subject.index[test.pos]]
+        }
+    }
+    score <- apply(
+        predicted,
+        2L,
+        function(x) {
+            if (any(!is.finite(x))) {
+                return(Inf)
+            }
+            -mean(log(pmax(x, epsilon)))
+        }
+    )
+    mean.heldout.mass <- apply(
+        predicted,
+        2L,
+        function(x) if (any(is.finite(x))) mean(x[is.finite(x)]) else NA_real_
+    )
+    nonfinite.count <- colSums(!is.finite(predicted))
+    zero.count <- colSums(is.finite(predicted) & predicted <= 0)
+    cv.table <- candidates
+    cv.table$visit.cv.neg.log.rho <- score
+    cv.table$visit.cv.mean.heldout.rho <- mean.heldout.mass
+    cv.table$visit.cv.nonfinite.count <- as.integer(nonfinite.count)
+    cv.table$visit.cv.zero.count <- as.integer(zero.count)
+    cv.table$visit.cv.status <- ifelse(
+        is.finite(score) & nonfinite.count == 0L, "ok", "failed"
+    )
+    cv.table$visit.cv.error.message <- error.messages
+    list(cv.table = cv.table, predicted.mass = predicted)
+}
+
+.state.density.visit.cv.scalar.candidate.dots <- function(method, candidate) {
+    names.to.keep <- switch(
+        method,
+        chart_kernel = c("support.size", "kernel", "bandwidth.multiplier"),
+        local_likelihood_bernoulli = c(
+            "support.size", "degree", "kernel", "bandwidth.multiplier",
+            "lambda.ridge"
+        ),
+        character(0)
+    )
+    out <- as.list(candidate[1, names.to.keep, drop = FALSE])
+    if ("support.size" %in% names(out)) {
+        out$support.size <- as.integer(out$support.size)
+    }
+    if ("degree" %in% names(out)) {
+        out$degree <- as.integer(out$degree)
+    }
+    out
+}
+
+.state.density.drop.dots <- function(dots, names.to.drop) {
+    dots[setdiff(names(dots), names.to.drop)]
 }
 
 .state.density.fit.subject.smoother.od <- function(X,

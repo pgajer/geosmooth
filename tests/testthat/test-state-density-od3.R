@@ -101,6 +101,107 @@ test_that("OD3 subject wrapper dispatches chart_kernel workflow", {
     expect_equal(fit$subject$max.multiplicity, 2)
 })
 
+test_that("OD3 chart-kernel CV selects support/kernel/bandwidth candidates", {
+    n <- 30L
+    X <- matrix(seq(0, 1, length.out = n), ncol = 1L)
+    y <- dnorm(X[, 1], mean = 0.42, sd = 0.12)
+    y <- y / sum(y)
+    foldid <- rep(1:3, length.out = n)
+
+    fit <- fit.chart.kernel(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.grid = c(7L, 11L),
+        kernel.grid = c("gaussian", "tricube"),
+        bandwidth.multiplier.grid = c(0.8, 1.2),
+        coordinate.method = "coordinates"
+    )
+
+    expect_s3_class(fit, "chart_kernel")
+    expect_identical(fit$foldid, as.integer(foldid))
+    expect_true(is.data.frame(fit$cv.table))
+    expect_equal(nrow(fit$cv.table), 8L)
+    expect_true(all(is.finite(fit$cv.table$cv.rmse.observed)))
+    expect_true(fit$selected$support.size %in% c(7L, 11L))
+    expect_true(fit$selected$kernel %in% c("gaussian", "tricube"))
+    expect_true(fit$selected$bandwidth.multiplier %in% c(0.8, 1.2))
+    expect_equal(
+        fit$selected$cv.rmse.observed,
+        min(fit$cv.table$cv.rmse.observed),
+        tolerance = 1e-12
+    )
+    expect_equal(dim(fit$cv.predictions), c(n, 8L))
+})
+
+test_that("OD3 subject chart-kernel workflow preserves CV selection diagnostics", {
+    n <- 32L
+    X <- cbind(seq(0, 1, length.out = n),
+               cos(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(3L, 5L, 9L, 12L, 12L, 17L, 22L, 30L)
+    graph <- make.od3.path.graph(n)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "chart_kernel",
+        graph = graph,
+        foldid = rep(1:4, length.out = n),
+        support.grid = c(7L, 9L),
+        kernel.grid = c("gaussian", "tricube"),
+        bandwidth.multiplier.grid = c(1, 1.3),
+        coordinate.method = "local.pca",
+        chart.dim = 1L
+    )
+
+    expect_s3_class(fit, "density_fit")
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+    expect_true(is.data.frame(fit$diagnostics$source.fit$cv.table))
+    expect_equal(nrow(fit$diagnostics$source.fit$cv.table), 8L)
+    expect_true(is.finite(fit$diagnostics$selection$cv.rmse.observed))
+})
+
+test_that("OD3 subject chart-kernel supports OD-level visit CV", {
+    n <- 34L
+    X <- cbind(seq(0, 1, length.out = n),
+               sin(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(3L, 5L, 7L, 9L, 9L, 15L, 19L, 23L, 29L, 32L)
+    graph <- make.od3.path.graph(n)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "chart_kernel",
+        graph = graph,
+        od.cv = "visit",
+        visit.foldid = rep(1:5, length.out = length(subject.index)),
+        support.grid = c(7L, 9L),
+        kernel.grid = c("gaussian", "tricube"),
+        bandwidth.multiplier.grid = c(0.9, 1.2),
+        coordinate.method = "local.pca",
+        chart.dim = 1L
+    )
+
+    expect_s3_class(fit, "density_fit")
+    expect_identical(fit$theta$od.cv, "visit")
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+    expect_true(is.data.frame(fit$visit.cv.table))
+    expect_equal(nrow(fit$visit.cv.table), 8L)
+    expect_true(all(is.finite(fit$visit.cv.table$visit.cv.neg.log.rho)))
+    expect_equal(dim(fit$visit.cv.predicted.mass),
+                 c(length(subject.index), 8L))
+    expect_true(fit$diagnostics$selection$support.size %in% c(7L, 9L))
+    expect_true(fit$diagnostics$selection$kernel %in%
+                    c("gaussian", "tricube"))
+    expect_identical(fit$diagnostics$od.visit.cv$score,
+                     "negative_log_heldout_mass")
+    expect_equal(
+        fit$diagnostics$od.visit.cv.selection$visit.cv.neg.log.rho,
+        min(fit$visit.cv.table$visit.cv.neg.log.rho),
+        tolerance = 1e-12
+    )
+})
+
 test_that("OD3 chart-kernel validates density-relevant inputs", {
     X <- cbind(seq(0, 1, length.out = 6), 0)
 
@@ -120,6 +221,16 @@ test_that("OD3 chart-kernel validates density-relevant inputs", {
             y = rep(0, nrow(X))
         ),
         "reserved argument"
+    )
+    expect_error(
+        fit.subject.od(
+            X = X,
+            subject.index = c(1L, 3L, 5L),
+            method = "chart_kernel",
+            od.cv = "visit",
+            foldid = rep(1:2, length.out = nrow(X))
+        ),
+        "visit.foldid"
     )
 })
 
@@ -255,6 +366,47 @@ test_that("OD3 local-likelihood Bernoulli returns fitted probabilities", {
     expect_true(is.data.frame(fit$diagnostics$per.eval))
 })
 
+test_that("OD3 local-likelihood Bernoulli CV selects local candidates", {
+    n <- 36L
+    X <- matrix(seq(0, 1, length.out = n), ncol = 1L)
+    p <- plogis(-3 + 7 * X[, 1])
+    y <- as.numeric(p > 0.45)
+    foldid <- rep(1:4, length.out = n)
+
+    fit <- fit.local.likelihood(
+        X = X,
+        y = y,
+        likelihood.family = "bernoulli",
+        foldid = foldid,
+        support.grid = c(9L, 13L),
+        degree.grid = 0:1,
+        kernel.grid = c("gaussian", "tricube"),
+        bandwidth.multiplier.grid = c(0.9, 1.1),
+        lambda.ridge.grid = c(0, 1e-6),
+        coordinate.method = "coordinates",
+        optimizer = "newton"
+    )
+
+    expect_s3_class(fit, "local_likelihood")
+    expect_identical(fit$likelihood.family, "bernoulli")
+    expect_identical(fit$foldid, as.integer(foldid))
+    expect_true(is.data.frame(fit$cv.table))
+    expect_equal(nrow(fit$cv.table), 32L)
+    expect_true(all(is.finite(fit$cv.table$cv.brier.observed)))
+    expect_true(all(is.finite(fit$cv.table$cv.logloss.observed)))
+    expect_true(fit$selected$support.size %in% c(9L, 13L))
+    expect_true(fit$selected$degree %in% 0:1)
+    expect_true(fit$selected$kernel %in% c("gaussian", "tricube"))
+    expect_true(fit$selected$lambda.ridge %in% c(0, 1e-6))
+    expect_equal(
+        fit$selected$cv.brier.observed,
+        min(fit$cv.table$cv.brier.observed),
+        tolerance = 1e-12
+    )
+    expect_equal(dim(fit$cv.predictions), c(n, 32L))
+    expect_true(all(fit$fitted.values >= 0 & fit$fitted.values <= 1))
+})
+
 test_that("OD3 local-likelihood density and Bernoulli OD wrappers share fixture", {
     n <- 29L
     X <- cbind(seq(0, 1, length.out = n),
@@ -304,6 +456,78 @@ test_that("OD3 local-likelihood density and Bernoulli OD wrappers share fixture"
     expect_true(is.finite(bernoulli.fit$smoothness$n.local.maxima))
 })
 
+test_that("OD3 subject local-likelihood Bernoulli workflow preserves CV diagnostics", {
+    n <- 31L
+    X <- cbind(seq(0, 1, length.out = n),
+               sin(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(2L, 7L, 9L, 10L, 15L, 19L, 24L, 29L)
+    graph <- make.od3.path.graph(n)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "local_likelihood_bernoulli",
+        graph = graph,
+        foldid = rep(1:3, length.out = n),
+        support.grid = c(7L, 9L),
+        degree.grid = 0:1,
+        kernel.grid = c("gaussian", "tricube"),
+        lambda.ridge.grid = c(0, 1e-6),
+        coordinate.method = "local.pca",
+        chart.dim = 1L,
+        optimizer = "newton"
+    )
+
+    expect_s3_class(fit, "density_fit")
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+    expect_true(is.data.frame(fit$diagnostics$source.fit$cv.table))
+    expect_equal(nrow(fit$diagnostics$source.fit$cv.table), 16L)
+    expect_true(is.finite(fit$diagnostics$selection$cv.brier.observed))
+    expect_identical(fit$diagnostics$likelihood.family, "bernoulli")
+})
+
+test_that("OD3 subject local-likelihood Bernoulli supports OD-level visit CV", {
+    n <- 33L
+    X <- cbind(seq(0, 1, length.out = n),
+               cos(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(4L, 5L, 8L, 12L, 12L, 16L, 20L, 25L, 28L, 31L)
+    graph <- make.od3.path.graph(n)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "local_likelihood_bernoulli",
+        graph = graph,
+        od.cv = "visit",
+        visit.foldid = rep(1:5, length.out = length(subject.index)),
+        support.grid = c(7L, 9L),
+        degree.grid = 0:1,
+        kernel.grid = c("gaussian", "tricube"),
+        bandwidth.multiplier.grid = c(1, 1.2),
+        lambda.ridge.grid = c(0, 1e-6),
+        coordinate.method = "local.pca",
+        chart.dim = 1L,
+        optimizer = "newton"
+    )
+
+    expect_s3_class(fit, "density_fit")
+    expect_identical(fit$theta$od.cv, "visit")
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+    expect_true(is.data.frame(fit$visit.cv.table))
+    expect_equal(nrow(fit$visit.cv.table), 32L)
+    expect_true(all(is.finite(fit$visit.cv.table$visit.cv.neg.log.rho)))
+    expect_true(fit$diagnostics$selection$support.size %in% c(7L, 9L))
+    expect_true(fit$diagnostics$selection$degree %in% 0:1)
+    expect_true(fit$diagnostics$selection$lambda.ridge %in% c(0, 1e-6))
+    expect_identical(fit$diagnostics$od.visit.cv$score.column,
+                     "visit.cv.neg.log.rho")
+    expect_equal(
+        fit$diagnostics$od.visit.cv.selection$visit.cv.neg.log.rho,
+        min(fit$visit.cv.table$visit.cv.neg.log.rho),
+        tolerance = 1e-12
+    )
+})
+
 test_that("OD3 local-likelihood validates Bernoulli responses", {
     X <- matrix(seq(0, 1, length.out = 10), ncol = 1L)
 
@@ -323,5 +547,23 @@ test_that("OD3 local-likelihood validates Bernoulli responses", {
             likelihood.family = "density"
         ),
         "reserved argument"
+    )
+    expect_error(
+        fit.local.likelihood(
+            X = X,
+            y = rep(1, nrow(X)),
+            likelihood.family = "density",
+            support.grid = c(5L, 7L)
+        ),
+        "bernoulli"
+    )
+    expect_error(
+        fit.subject.od(
+            X = X,
+            subject.index = c(1L, 3L, 5L),
+            method = "local_likelihood_density",
+            od.cv = "visit"
+        ),
+        "currently implemented"
     )
 })

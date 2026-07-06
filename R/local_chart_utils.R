@@ -115,6 +115,150 @@
     min(chart.dim, p, support.size)
 }
 
+.local.chart.requested.chart.dim.label <- function(chart.dim) {
+    if (is.null(chart.dim)) {
+        return(NA_character_)
+    }
+    if (is.character(chart.dim)) {
+        return(as.character(chart.dim[[1L]]))
+    }
+    as.character(as.integer(round(chart.dim[[1L]])))
+}
+
+.local.chart.dim.mode <- function(chart.dim, coordinate.method) {
+    .klp.chart.dim.mode(
+        chart.dim = chart.dim,
+        coordinate.method = coordinate.method
+    )
+}
+
+.local.chart.resolve.chart.dim <- function(
+    X,
+    support.size,
+    degree,
+    coordinate.method,
+    chart.dim,
+    auto.chart.support.metric = c("coordinates", "operator", "both"),
+    auto.chart.selection.metric = c("coordinates", "operator")) {
+
+    auto.chart.support.metric <- match.arg(auto.chart.support.metric)
+    auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
+    p <- ncol(X)
+    support.size <- .local.chart.validate.support.size(support.size, nrow(X))
+
+    if (identical(coordinate.method, "coordinates")) {
+        if (!is.null(chart.dim)) {
+            warning("chart.dim is ignored when coordinate.method = \"coordinates\".",
+                    call. = FALSE)
+        }
+        return(list(
+            chart.dim = p,
+            requested.chart.dim = chart.dim,
+            chart.dim.mode = "ambient",
+            auto.chart.dim = FALSE,
+            auto.chart.dim.local = FALSE,
+            auto.chart.dim.diagnostics = NULL,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        ))
+    }
+
+    if (is.null(chart.dim)) {
+        dim <- max(1L, min(p, support.size - 1L))
+        return(list(
+            chart.dim = as.integer(dim),
+            requested.chart.dim = chart.dim,
+            chart.dim.mode = "ambient.default",
+            auto.chart.dim = FALSE,
+            auto.chart.dim.local = FALSE,
+            auto.chart.dim.diagnostics = NULL,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        ))
+    }
+
+    if (identical(chart.dim, "auto") || identical(chart.dim, "local.auto")) {
+        diagnostics <- .local.pca.auto.chart.dim.with.metric(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            max.anchors = if (identical(chart.dim, "local.auto")) {
+                nrow(X)
+            } else {
+                60L
+            },
+            operator.support.metric = "coordinates",
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+        dim <- max(1L, min(p, support.size, diagnostics$chart.dim))
+        return(list(
+            chart.dim = as.integer(dim),
+            requested.chart.dim = chart.dim,
+            chart.dim.mode = .local.chart.dim.mode(chart.dim,
+                                                   coordinate.method),
+            auto.chart.dim = TRUE,
+            auto.chart.dim.local = identical(chart.dim, "local.auto"),
+            auto.chart.dim.diagnostics = diagnostics,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        ))
+    }
+
+    if (!is.numeric(chart.dim) || length(chart.dim) != 1L ||
+        !is.finite(chart.dim)) {
+        stop("chart.dim must be NULL, one finite integer, \"auto\", ",
+             "or \"local.auto\" for local.pca.",
+             call. = FALSE)
+    }
+    dim <- as.integer(round(chart.dim))
+    if (dim < 1L) {
+        stop("chart.dim must be at least 1.", call. = FALSE)
+    }
+    dim <- min(dim, p, support.size)
+    list(
+        chart.dim = as.integer(dim),
+        requested.chart.dim = chart.dim,
+        chart.dim.mode = "fixed",
+        auto.chart.dim = FALSE,
+        auto.chart.dim.local = FALSE,
+        auto.chart.dim.diagnostics = NULL,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
+    )
+}
+
+.local.chart.resolve.eval.chart.dim <- function(
+    X,
+    x0,
+    support.size,
+    degree,
+    coordinate.method,
+    chart.dim,
+    summary.dim) {
+
+    if (!identical(coordinate.method, "local.pca") ||
+        !identical(chart.dim, "local.auto")) {
+        return(as.integer(summary.dim))
+    }
+    ordered <- .klp.local.order(
+        X.train = X,
+        center = x0,
+        support.size = support.size
+    )
+    dim <- .klp.local.auto.chart.dim.from.order(
+        X.train = X,
+        center = x0,
+        ordered = ordered,
+        support.size = support.size,
+        degree = degree
+    )
+    if (!is.finite(dim) || dim < 1L) {
+        dim <- as.integer(summary.dim)
+    }
+    as.integer(max(1L, min(ncol(X), support.size, dim)))
+}
+
 .local.chart.support <- function(X, x0, support.size) {
     d2 <- rowSums((X - matrix(x0, nrow = nrow(X), ncol = ncol(X),
                               byrow = TRUE))^2)
