@@ -75,6 +75,53 @@ test_that("OD0 density dispatcher is restricted to density-native methods", {
     )
 })
 
+test_that("OD0 density-native methods reject chart-dimension arguments", {
+    X <- matrix(seq(0, 1, length.out = 6), ncol = 1L)
+    weights <- c(1, 0, 2, 0, 0, 1)
+    graph <- list(
+        adj.list = list(2L, c(1L, 3L), c(2L, 4L),
+                        c(3L, 5L), c(4L, 6L), 5L),
+        weight.list = rep(list(1), 6L)
+    )
+
+    expect_error(
+        fit.density.empirical(
+            X = X,
+            weights = weights,
+            chart.dim = "local.auto"
+        ),
+        "does not use local charts"
+    )
+    expect_error(
+        fit.density.graph.random.walk(
+            X = X,
+            weights = weights,
+            graph = graph,
+            chart.dim.grid = c(1L, "auto")
+        ),
+        "does not use local charts"
+    )
+    expect_error(
+        fit.subject.od(
+            X = X,
+            subject.index = c(1L, 3L, 6L),
+            method = "empirical",
+            chart.dim = "auto"
+        ),
+        "does not use local charts"
+    )
+    expect_error(
+        fit.subject.od(
+            X = X,
+            subject.index = c(1L, 3L, 6L),
+            method = "graph_random_walk",
+            graph = graph,
+            chart.dim = "local.auto"
+        ),
+        "does not use local charts"
+    )
+})
+
 test_that("OD0 normalize.density clips and normalizes numeric and fit objects", {
     X <- matrix(1:4, ncol = 1L)
 
@@ -101,6 +148,48 @@ test_that("OD0 normalize.density clips and normalizes numeric and fit objects", 
     expect_equal(lps.density$rho, c(1, 2, 0, 1) / 4, tolerance = 1e-12)
     expect_equal(lps.density$empirical.rho, rep(NA_real_, 4L))
     expect_identical(lps.density$diagnostics$source.class, "lps")
+})
+
+test_that("OD0 normalize.density exposes chart dimensions in a uniform diagnostic", {
+    X <- matrix(seq(0, 1, length.out = 4), ncol = 1L)
+    make.source <- function(cls, dims, field) {
+        source <- list(
+            X.eval = X,
+            fitted.values = c(1, 2, 3, 4),
+            selected = list(requested.chart.dim = "local.auto")
+        )
+        if (identical(field, "per.eval")) {
+            source$diagnostics <- list(per.eval = data.frame(chart.dim = dims))
+        } else if (identical(field, "by.anchor")) {
+            source$chart.dim.by.anchor <- dims
+        } else if (identical(field, "by.eval")) {
+            source$chart.dim.by.eval <- dims
+        }
+        class(source) <- c(cls, "list")
+        source
+    }
+    sources <- list(
+        make.source("chart_kernel", c(1L, 1L, 2L, 2L), "per.eval"),
+        make.source("local_likelihood", c(2L, 2L, 1L, 1L), "per.eval"),
+        make.source("ps_lps", c(1L, 2L, 1L, 2L), "by.anchor"),
+        make.source("lps", c(2L, 1L, 2L, 1L), "by.eval")
+    )
+
+    for (source in sources) {
+        fit <- normalize.density(
+            source,
+            X = X,
+            keep.source.fit = FALSE
+        )
+        expect_s3_class(fit, "density_fit")
+        expect_true(is.integer(fit$diagnostics$chart.dim.by.anchor))
+        expect_equal(
+            fit$diagnostics$chart.dim.by.anchor,
+            fit$diagnostics$chart.dim.telemetry$chart.dim.by.anchor
+        )
+        expect_equal(length(fit$diagnostics$chart.dim.by.anchor), nrow(X))
+        expect_true(is.character(fit$diagnostics$chart.dim.telemetry$source.path))
+    }
 })
 
 test_that("OD0 dependency precheck reports required and optional dependencies", {
