@@ -752,12 +752,17 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             -mean(log(pmax(x, epsilon)))
         }
     )
-    mean.heldout.mass <- apply(
-        predicted,
-        2L,
-        function(x) if (any(is.finite(x))) mean(x[is.finite(x)]) else NA_real_
-    )
     nonfinite.count <- colSums(!is.finite(predicted))
+    mean.heldout.mass <- vapply(
+        seq_len(ncol(predicted)),
+        function(j) {
+            if (nonfinite.count[[j]] > 0L) {
+                return(NA_real_)
+            }
+            mean(predicted[, j])
+        },
+        numeric(1L)
+    )
     zero.count <- colSums(is.finite(predicted) & predicted <= 0)
     cv.table <- candidates
     cv.table$visit.cv.neg.log.rho <- score

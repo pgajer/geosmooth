@@ -92,7 +92,14 @@ visit.cv.neg.log.rho(theta)
 
 Repeated visits are counted repeatedly.  This is intentional: if the same state
 is visited several times, the held-out criterion treats those visits as several
-observations from the subject's occupation process.
+observations from the subject's occupation process.  The consequence is that
+OD-CV0 is a visit-level holdout, not a unique-state holdout.  If two visits map
+to the same row of `X` and those visits are split across folds, the held-out
+visit's state row can still receive empirical mass through the duplicate visit
+that remains in the training folds.  This makes the score optimistic for
+frequently revisited states.  That behavior is part of the OD-CV0 contract; a
+future grouped-state or subject-blocked criterion would need a separate
+explicit mode.
 
 The selected candidate is the finite candidate with the smallest
 `visit.cv.neg.log.rho`.  Ties use the common deterministic package rule: smaller
@@ -121,6 +128,11 @@ visit.cv.zero.count
 visit.cv.status
 visit.cv.error.message
 ```
+
+`visit.cv.mean.heldout.rho` is reported only for candidates whose held-out
+prediction vector is fully finite.  Failed candidates report `NA` in this
+column so that a partial finite mean is not mistaken for a valid candidate
+summary.
 
 Candidate-parameter columns are method-specific.  For example,
 `chart_kernel` records `support.size`, `kernel`, and
@@ -181,14 +193,12 @@ bandwidth.multiplier.grid
 lambda.ridge.grid
 ```
 
-The current OD-CV0 contract does not yet include `chart.dim` as a candidate
-axis.  Closing that gap is the purpose of the next chart-dimension phase.
+The current OD-CV0 contract does not include `chart.dim` as a candidate axis.
+OD-CV1 has added deployable `chart.dim = "auto"` and `"local.auto"` policies
+for chart-kernel and local-likelihood fits, but it still holds the requested
+chart-dimension policy fixed while OD visit CV searches the OD-CV0 axes.
 
 ## Known Gaps For Later OD-CV Phases
-
-OD-CV1 should add `chart.dim = "auto"` and `"local.auto"` support to
-`fit.chart.kernel()` and `fit.local.likelihood()` using the existing LPS
-input-only chart-dimension machinery.
 
 OD-CV2 should extend OD visit CV for chart methods so chart-dimension policies
 and fixed dimensions can be included as candidate axes, and it should add
