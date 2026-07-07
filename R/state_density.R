@@ -1035,14 +1035,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             cand.scalar$graph.control
         )
         cand.dots <- c(base.dots, cand.scalar$dots)
-        if (identical(method, "lps_count")) {
+        if (method %in% c("lps_count", "lps_logistic_binary")) {
             fast.predicted <- tryCatch(
                 .state.density.lps.fixed.visit.predictions(
                     X = X,
                     subject.index = subject.index,
                     foldid = foldid,
                     dots = cand.dots,
-                    od.control = od.control
+                    od.control = od.control,
+                    outcome.family = if (identical(method,
+                                                   "lps_logistic_binary")) {
+                        "bernoulli"
+                    } else {
+                        "gaussian"
+                    }
                 ),
                 error = function(e) e
             )
@@ -1159,13 +1165,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                                        subject.index,
                                                        foldid,
                                                        dots,
-                                                       od.control) {
+                                                       od.control,
+                                                       outcome.family =
+                                                           "gaussian") {
+    outcome.family <- match.arg(outcome.family, c("gaussian", "bernoulli"))
     fixed <- .state.density.lps.fixed.candidate(dots, nrow(X))
     folds <- sort(unique(foldid))
     y.mat <- vapply(
         folds,
         function(fold) {
-            tabulate(subject.index[foldid != fold], nbins = nrow(X))
+            y <- tabulate(subject.index[foldid != fold], nbins = nrow(X))
+            if (identical(outcome.family, "bernoulli")) {
+                y <- as.numeric(y > 0)
+            }
+            y
         },
         numeric(nrow(X))
     )
@@ -1185,8 +1198,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         .state.density.lps.fixed.direct.fitted.matrix(
             X = X,
             y.mat = y.mat,
-            fixed = fixed
+            fixed = fixed,
+            outcome.family = outcome.family
         )
+    }
+    if (identical(outcome.family, "bernoulli")) {
+        fitted[] <- .klp.response.scale(fitted, outcome.family)
     }
     ctrl <- .state.density.control(od.control)
     out <- rep(NA_real_, length(subject.index))
@@ -1204,7 +1221,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     out
 }
 
-.state.density.lps.fixed.direct.fitted.matrix <- function(X, y.mat, fixed) {
+.state.density.lps.fixed.direct.fitted.matrix <- function(X,
+                                                          y.mat,
+                                                          fixed,
+                                                          outcome.family =
+                                                              "gaussian") {
     fitted <- matrix(NA_real_, nrow = nrow(X), ncol = ncol(y.mat))
     chart.dim.info <- .klp.resolve.chart.dim(
         X = X,
@@ -1244,7 +1265,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             ridge.multiplier.grid = fixed$ridge.multiplier.grid,
             ridge.condition.max = fixed$ridge.condition.max,
             unstable.action = fixed$unstable.action,
-            outcome.family = "gaussian",
+            outcome.family = outcome.family,
             bandwidth.multiplier = fixed$bandwidth.multiplier,
             ridge.shrinkage.target = fixed$ridge.shrinkage.target
         )

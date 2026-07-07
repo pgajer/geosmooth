@@ -260,6 +260,60 @@ test_that("OD-CV3 LPS count fixed-candidate fast path matches fold loop", {
     }
 })
 
+test_that("OD-CV3 LPS Bernoulli fixed-candidate fast path matches fold loop", {
+    n <- 24L
+    X <- make.odcv3.curved.X(n)
+    subject.index <- c(2L, 4L, 4L, 7L, 10L, 13L, 17L, 21L, 23L)
+    foldid <- rep(1:3, length.out = length(subject.index))
+    graph <- make.odcv3.path.graph(n)
+
+    for (bandwidth.multiplier in c(1, 1.2)) {
+        dots <- list(
+            support.grid = 9L,
+            degree.grid = 1L,
+            kernel.grid = "gaussian",
+            bandwidth.multiplier.grid = bandwidth.multiplier,
+            coordinate.method = "local.pca",
+            chart.dim = 1L,
+            auto.chart.support.metric = "coordinates",
+            auto.chart.selection.metric = "coordinates",
+            backend = "R",
+            design.basis = "orthogonal.polynomial.drop",
+            ridge.multiplier.grid = c(0, 1e-10),
+            ridge.condition.max = Inf
+        )
+        fast <- .state.density.lps.fixed.visit.predictions(
+            X = X,
+            subject.index = subject.index,
+            foldid = foldid,
+            dots = dots,
+            od.control = list(),
+            outcome.family = "bernoulli"
+        )
+        slow <- rep(NA_real_, length(subject.index))
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = "lps_logistic_binary",
+                        graph = graph,
+                        od.cv = "none",
+                        return.details = FALSE
+                    ),
+                    dots
+                )
+            )
+            slow[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        expect_equal(fast, slow, tolerance = 1e-8)
+    }
+})
+
 test_that("OD-CV3 PS-LPS visit CV accepts explicit fixed lambda selection", {
     n <- 22L
     X <- make.odcv3.curved.X(n)
