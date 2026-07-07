@@ -149,6 +149,64 @@ test_that("OD-CV3 PS-LPS count visit CV searches lambda.sync candidates", {
     expect_identical(fit$diagnostics$source.method, "fit.ps.lps")
 })
 
+test_that("OD-CV3 PS-LPS fixed-candidate fast path matches fold loop", {
+    n <- 24L
+    X <- make.odcv3.curved.X(n)
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 23L)
+    foldid <- rep(1:4, length.out = length(subject.index))
+    graph <- make.odcv3.path.graph(n)
+
+    for (lambda.sync in c(0, 0.1)) {
+        dots <- list(
+            support.size = 9L,
+            degree = 1L,
+            kernel = "gaussian",
+            chart.dim = 1L,
+            auto.chart.support.metric = "coordinates",
+            auto.chart.selection.metric = "coordinates",
+            lambda.sync.grid = lambda.sync,
+            lambda.sync.search = "grid",
+            lambda.sync.selection = "fixed",
+            lambda.ridge = 1e-8,
+            design.basis = "orthogonal.polynomial.drop",
+            ridge.multiplier.grid = c(0, 1e-10),
+            ridge.condition.max = 1e10,
+            sync.neighbor.size = 3L
+        )
+        cache <- .state.density.ps.lps.geometry.cache(X, dots)
+        fast <- .state.density.ps.lps.fixed.visit.predictions(
+            X = X,
+            subject.index = subject.index,
+            foldid = foldid,
+            geometry.cache = cache,
+            dots = dots,
+            od.control = list(),
+            graph = graph
+        )
+        slow <- rep(NA_real_, length(subject.index))
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = "ps_lps_count",
+                        graph = graph,
+                        od.cv = "none",
+                        return.details = FALSE
+                    ),
+                    dots
+                )
+            )
+            slow[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        expect_equal(fast, slow, tolerance = 1e-8)
+    }
+})
+
 test_that("OD-CV3 PS-LPS visit CV requires an explicit chart dimension policy", {
     X <- make.odcv3.curved.X(18L)
     expect_error(

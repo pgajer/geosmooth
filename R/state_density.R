@@ -1053,6 +1053,22 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             }
             candidate.caches[[cc]] <- cache
             cand.dots$ps.lps.geometry.cache <- cache
+            fast.predicted <- tryCatch(
+                .state.density.ps.lps.fixed.visit.predictions(
+                    X = X,
+                    subject.index = subject.index,
+                    foldid = foldid,
+                    geometry.cache = cache,
+                    dots = cand.dots,
+                    od.control = od.control,
+                    graph = graph
+                ),
+                error = function(e) e
+            )
+            if (!inherits(fast.predicted, "error")) {
+                predicted[, cc] <- fast.predicted
+                next
+            }
         }
         for (fold in sort(unique(foldid))) {
             test.pos <- which(foldid == fold)
@@ -1120,6 +1136,172 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         predicted.mass = predicted,
         candidate.caches = candidate.caches
     )
+}
+
+.state.density.ps.lps.fixed.visit.predictions <- function(X,
+                                                          subject.index,
+                                                          foldid,
+                                                          geometry.cache,
+                                                          dots,
+                                                          od.control,
+                                                          graph = NULL) {
+    lambda.sync <- .state.density.ps.lps.fixed.lambda(dots)
+    if (is.null(lambda.sync)) {
+        stop("PS-LPS fast visit-CV requires a fixed scalar lambda.",
+             call. = FALSE)
+    }
+    folds <- sort(unique(foldid))
+    y.mat <- vapply(
+        folds,
+        function(fold) {
+            tabulate(subject.index[foldid != fold], nbins = nrow(X))
+        },
+        numeric(nrow(X))
+    )
+    if (is.null(dim(y.mat))) {
+        y.mat <- matrix(y.mat, ncol = 1L)
+    }
+    fitted <- if (lambda.sync > 0) {
+        .state.density.ps.lps.fixed.sync.fitted.matrix(
+            geometry.cache = geometry.cache,
+            y.mat = y.mat,
+            lambda.sync = lambda.sync,
+            lambda.ridge = dots$lambda.ridge %||% 1e-8,
+            ridge.multiplier.grid =
+                dots$ridge.multiplier.grid %||% (dots$lambda.ridge %||% 1e-8),
+            ridge.condition.max = dots$ridge.condition.max %||% Inf
+        )
+    } else {
+        .state.density.ps.lps.fixed.independent.fitted.matrix(
+            frames = geometry.cache$frames,
+            y.mat = y.mat,
+            lambda.ridge = dots$lambda.ridge %||% 1e-8,
+            ridge.multiplier.grid =
+                dots$ridge.multiplier.grid %||% (dots$lambda.ridge %||% 1e-8),
+            ridge.condition.max = dots$ridge.condition.max %||% Inf
+        )
+    }
+    ctrl <- .state.density.control(od.control)
+    out <- rep(NA_real_, length(subject.index))
+    for (jj in seq_along(folds)) {
+        corrected <- .state.density.correct.raw(fitted[, jj], ctrl)
+        status <- .state.density.status(corrected$rho, corrected$accounting,
+                                        ctrl)
+        if (!identical(status, "ok")) {
+            next
+        }
+        test.pos <- which(foldid == folds[[jj]])
+        out[test.pos] <- corrected$rho[subject.index[test.pos]]
+    }
+    out
+}
+
+.state.density.ps.lps.fixed.lambda <- function(dots) {
+    lambda <- dots$lambda.sync.grid %||% dots$lambda.sync %||% NULL
+    if (is.null(lambda)) {
+        return(NULL)
+    }
+    lambda <- as.numeric(lambda)
+    if (length(lambda) != 1L || !is.finite(lambda) || lambda < 0) {
+        return(NULL)
+    }
+    lambda
+}
+
+.state.density.ps.lps.fixed.sync.fitted.matrix <- function(
+        geometry.cache,
+        y.mat,
+        lambda.sync,
+        lambda.ridge,
+        ridge.multiplier.grid,
+        ridge.condition.max) {
+    system.cache <- .ps.lps.prepare.system.cache(
+        geometry.cache$frames,
+        geometry.cache$sync.rows
+    )
+    component.cache <- .ps.lps.prepare.component.cache(
+        cache = system.cache,
+        y = rep(0, nrow(y.mat)),
+        response.weights = rep(1, nrow(y.mat))
+    )
+    normal.cache <- .ps.lps.component.normal.cache(
+        component.cache = component.cache,
+        lambda.sync = lambda.sync
+    )
+    ridge.choice <- .ps.lps.choose.global.ridge(
+        cross = normal.cache$cross,
+        scale = normal.cache$scale,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max
+    )
+    rhs <- .state.density.ps.lps.rhs.matrix(geometry.cache$frames, y.mat)
+    beta <- .state.density.ps.lps.solve.rhs(ridge.choice$normal, rhs)
+    .state.density.ps.lps.fitted.matrix(geometry.cache$frames, beta)
+}
+
+.state.density.ps.lps.fixed.independent.fitted.matrix <- function(
+        frames,
+        y.mat,
+        lambda.ridge,
+        ridge.multiplier.grid,
+        ridge.condition.max) {
+    fitted <- matrix(NA_real_, nrow = length(frames), ncol = ncol(y.mat))
+    for (ii in seq_along(frames)) {
+        fr <- frames[[ii]]
+        weighted.design <- fr$design * fr$weights
+        cross <- crossprod(fr$design, weighted.design)
+        scale <- max(diag(cross), na.rm = TRUE)
+        if (!is.finite(scale) || scale <= 0) {
+            scale <- 1
+        }
+        ridge.choice <- .ps.lps.choose.global.ridge(
+            cross = cross,
+            scale = scale,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
+            sparse = FALSE
+        )
+        rhs <- crossprod(
+            fr$design,
+            fr$weights * y.mat[fr$index, , drop = FALSE]
+        )
+        beta <- .state.density.ps.lps.solve.rhs(ridge.choice$normal, rhs)
+        fitted[ii, ] <- as.numeric(fr$anchor.design[1L, , drop = FALSE] %*%
+                                   beta)
+    }
+    fitted
+}
+
+.state.density.ps.lps.rhs.matrix <- function(frames, y.mat) {
+    ncoef <- attr(frames, "ncoef")
+    rhs <- matrix(0, nrow = ncoef, ncol = ncol(y.mat))
+    for (fr in frames) {
+        cols <- fr$offset + seq_len(fr$q)
+        rhs[cols, ] <- rhs[cols, ] + crossprod(
+            fr$design,
+            fr$weights * y.mat[fr$index, , drop = FALSE]
+        )
+    }
+    rhs
+}
+
+.state.density.ps.lps.solve.rhs <- function(normal, rhs) {
+    solved <- tryCatch(
+        Matrix::solve(normal, rhs),
+        error = function(e) solve(as.matrix(normal), as.matrix(rhs))
+    )
+    as.matrix(solved)
+}
+
+.state.density.ps.lps.fitted.matrix <- function(frames, beta) {
+    fitted <- matrix(NA_real_, nrow = length(frames), ncol = ncol(beta))
+    for (ii in seq_along(frames)) {
+        fr <- frames[[ii]]
+        idx <- fr$offset + seq_len(fr$q)
+        fitted[ii, ] <- as.numeric(fr$anchor.design[1L, , drop = FALSE] %*%
+                                   beta[idx, , drop = FALSE])
+    }
+    fitted
 }
 
 .state.density.ps.lps.geometry.cache.key <- function(dots) {
@@ -2234,6 +2416,17 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     if (!identical(status, "ok")) {
         warnings <- c(warnings, paste("density accounting status:", status))
     }
+    smoothness <- if (isTRUE(return.details)) {
+        .state.density.smoothness(
+            rho = corrected$rho,
+            X = X,
+            density.control = ctrl,
+            adj.list = adj.list,
+            basin.assignment = basin.assignment
+        )
+    } else {
+        .state.density.empty.smoothness()
+    }
     .state.density.result(
         method.id = method.id,
         status = status,
@@ -2242,13 +2435,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         fitted.raw = fitted.raw,
         theta = theta,
         accounting = accounting,
-        smoothness = .state.density.smoothness(
-            rho = corrected$rho,
-            X = X,
-            density.control = ctrl,
-            adj.list = adj.list,
-            basin.assignment = basin.assignment
-        ),
+        smoothness = smoothness,
         diagnostics = diagnostics,
         warnings = warnings,
         return.details = return.details
