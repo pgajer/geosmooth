@@ -456,6 +456,56 @@ test_that("OD3 local-likelihood density and Bernoulli OD wrappers share fixture"
     expect_true(is.finite(bernoulli.fit$smoothness$n.local.maxima))
 })
 
+test_that("OD3 local-likelihood density fixed visit-CV path matches fold loop", {
+    n <- 30L
+    X <- cbind(seq(0, 1, length.out = n),
+               cos(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(3L, 5L, 5L, 8L, 11L, 14L, 18L, 22L, 25L, 28L)
+    foldid <- rep(1:4, length.out = length(subject.index))
+    graph <- make.od3.path.graph(n)
+
+    for (degree in 0:1) {
+        dots <- list(
+            support.size = 9L,
+            degree = degree,
+            kernel = "gaussian",
+            bandwidth.multiplier = 1.1,
+            lambda.ridge = 1e-8,
+            coordinate.method = "local.pca",
+            chart.dim = 1L,
+            optimizer = "newton"
+        )
+        fast <- .state.density.local.likelihood.density.fixed.visit.predictions(
+            X = X,
+            subject.index = subject.index,
+            foldid = foldid,
+            dots = dots,
+            od.control = list()
+        )
+        slow <- rep(NA_real_, length(subject.index))
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = "local_likelihood_density",
+                        graph = graph,
+                        od.cv = "none",
+                        return.details = FALSE
+                    ),
+                    dots
+                )
+            )
+            slow[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        expect_equal(fast, slow, tolerance = 1e-8)
+    }
+})
+
 test_that("OD3 subject local-likelihood Bernoulli workflow preserves CV diagnostics", {
     n <- 31L
     X <- cbind(seq(0, 1, length.out = n),

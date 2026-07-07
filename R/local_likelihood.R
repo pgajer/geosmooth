@@ -1282,7 +1282,10 @@ fit.local.likelihood <- function(
                                             local.mass,
                                             lambda.ridge) {
     eta <- as.numeric(features %*% beta)
-    log.weights <- ifelse(base > 0, log(base) + eta, -Inf)
+    log.weights <- rep(-Inf, length(base))
+    positive.base <- base > 0
+    log.weights[positive.base] <- log(base[positive.base]) +
+        eta[positive.base]
     logZ <- .local.likelihood.logsumexp(log.weights)
     if (!is.finite(logZ)) {
         m <- length(beta)
@@ -1295,8 +1298,7 @@ fit.local.likelihood <- function(
     }
     prob <- exp(log.weights - logZ)
     mean.features <- colSums(features * prob)
-    weighted.features <- features * matrix(prob, nrow = nrow(features),
-                                           ncol = ncol(features))
+    weighted.features <- features * prob
     second <- crossprod(features, weighted.features)
     cov.features <- second - tcrossprod(mean.features)
     objective <- -sum(target * eta) + local.mass * logZ +
