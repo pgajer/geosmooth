@@ -1481,26 +1481,43 @@ fit.ps.lps <- function(
                                        sqrt(.Machine$double.eps)) {
     n <- nrow(X)
     frames <- vector("list", n)
+    native.local <- tryCatch(
+        rcpp_ps_lps_local_pca_supports(
+            X = as.matrix(X),
+            support_size = as.integer(support.size),
+            chart_dim_by_anchor = as.integer(chart.dim.by.anchor),
+            kernel = as.character(kernel[[1L]])
+        ),
+        error = function(e) NULL
+    )
     for (ii in seq_len(n)) {
         d <- chart.dim.by.anchor[[ii]]
-        ordered <- .klp.local.order(
-            X.train = X,
-            center = X[ii, , drop = TRUE],
-            support.size = support.size
-        )
-        idx <- ordered$index
-        dist <- ordered$distances
-        weights <- .klp.kernel.weights(dist, kernel)
-        if (!any(weights > 0)) weights[] <- 1
-        coords <- .klp.local.coordinates(
-            X.support = X[idx, , drop = FALSE],
-            center = X[ii, , drop = TRUE],
-            coordinate.method = "local.pca",
-            chart.dim = d,
-            local.chart.method = "pca",
-            weights = weights,
-            return.chart = FALSE
-        )
+        if (!is.null(native.local)) {
+            local <- native.local[[ii]]
+            idx <- local$index
+            dist <- local$distances
+            weights <- local$weights
+            coords <- local$coordinates
+        } else {
+            ordered <- .klp.local.order(
+                X.train = X,
+                center = X[ii, , drop = TRUE],
+                support.size = support.size
+            )
+            idx <- ordered$index
+            dist <- ordered$distances
+            weights <- .klp.kernel.weights(dist, kernel)
+            if (!any(weights > 0)) weights[] <- 1
+            coords <- .klp.local.coordinates(
+                X.support = X[idx, , drop = FALSE],
+                center = X[ii, , drop = TRUE],
+                coordinate.method = "local.pca",
+                chart.dim = d,
+                local.chart.method = "pca",
+                weights = weights,
+                return.chart = FALSE
+            )
+        }
         raw.design <- .local.polynomial.design.matrix(coords, degree)
         raw.anchor.design <- .local.polynomial.design.matrix(
             matrix(0, nrow = 1L, ncol = d),
@@ -1583,6 +1600,17 @@ fit.ps.lps <- function(
 
 .ps.lps.prepare.sync.rows <- function(frames, sync.neighbor.size,
                                       overlap.weight) {
+    native.rows <- tryCatch(
+        rcpp_ps_lps_prepare_sync_rows(
+            frames = frames,
+            sync_neighbor_size = as.integer(sync.neighbor.size),
+            overlap_weight = as.character(overlap.weight[[1L]])
+        ),
+        error = function(e) NULL
+    )
+    if (!is.null(native.rows)) {
+        return(native.rows)
+    }
     n <- length(frames)
     pair.keys <- character(0)
     for (ii in seq_len(n)) {

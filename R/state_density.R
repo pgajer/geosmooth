@@ -901,7 +901,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             dots,
             c("support.size", "support.grid", "degree", "degree.grid",
               "kernel", "kernel.grid", "lambda.sync.grid",
-              "lambda.sync.search", "local.candidate.search",
+              "lambda.sync.search", "lambda.sync.selection",
+              "local.candidate.search",
               "chart.dim", "chart.dim.grid", "cv.folds", "cv.seed")
         )
     )
@@ -1245,6 +1246,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         lambda.ridge,
         ridge.multiplier.grid,
         ridge.condition.max) {
+    ridge.grid <- .klp.clean.ridge.multiplier.grid(ridge.multiplier.grid)
+    if (!is.finite(ridge.condition.max) && length(ridge.grid) >= 1L) {
+        native <- tryCatch(
+            rcpp_ps_lps_independent_fitted_matrix(
+                frames = frames,
+                y_mat = y.mat,
+                ridge_multiplier = as.numeric(ridge.grid[[1L]])
+            ),
+            error = function(e) NULL
+        )
+        if (!is.null(native)) {
+            return(native)
+        }
+    }
     fitted <- matrix(NA_real_, nrow = length(frames), ncol = ncol(y.mat))
     for (ii in seq_along(frames)) {
         fr <- frames[[ii]]
@@ -1273,6 +1288,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 }
 
 .state.density.ps.lps.rhs.matrix <- function(frames, y.mat) {
+    native <- tryCatch(
+        rcpp_ps_lps_rhs_matrix(frames = frames, y_mat = y.mat),
+        error = function(e) NULL
+    )
+    if (!is.null(native)) {
+        return(native)
+    }
     ncoef <- attr(frames, "ncoef")
     rhs <- matrix(0, nrow = ncoef, ncol = ncol(y.mat))
     for (fr in frames) {
@@ -1294,6 +1316,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 }
 
 .state.density.ps.lps.fitted.matrix <- function(frames, beta) {
+    native <- tryCatch(
+        rcpp_ps_lps_fitted_matrix(frames = frames, beta = beta),
+        error = function(e) NULL
+    )
+    if (!is.null(native)) {
+        return(native)
+    }
     fitted <- matrix(NA_real_, nrow = length(frames), ncol = ncol(beta))
     for (ii in seq_along(frames)) {
         fr <- frames[[ii]]

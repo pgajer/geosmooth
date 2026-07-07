@@ -238,6 +238,70 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_ps_lps_local_pca_supports
+List rcpp_ps_lps_local_pca_supports(const NumericMatrix& X, const int support_size, const IntegerVector& chart_dim_by_anchor, const std::string& kernel);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_local_pca_supports(SEXP XSEXP, SEXP support_sizeSEXP, SEXP chart_dim_by_anchorSEXP, SEXP kernelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const int >::type support_size(support_sizeSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type chart_dim_by_anchor(chart_dim_by_anchorSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type kernel(kernelSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_local_pca_supports(X, support_size, chart_dim_by_anchor, kernel));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_ps_lps_prepare_sync_rows
+List rcpp_ps_lps_prepare_sync_rows(const List& frames, const int sync_neighbor_size, const std::string& overlap_weight);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_prepare_sync_rows(SEXP framesSEXP, SEXP sync_neighbor_sizeSEXP, SEXP overlap_weightSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type frames(framesSEXP);
+    Rcpp::traits::input_parameter< const int >::type sync_neighbor_size(sync_neighbor_sizeSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type overlap_weight(overlap_weightSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_prepare_sync_rows(frames, sync_neighbor_size, overlap_weight));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_ps_lps_rhs_matrix
+NumericMatrix rcpp_ps_lps_rhs_matrix(const List& frames, const NumericMatrix& y_mat);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_rhs_matrix(SEXP framesSEXP, SEXP y_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type frames(framesSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type y_mat(y_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_rhs_matrix(frames, y_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_ps_lps_fitted_matrix
+NumericMatrix rcpp_ps_lps_fitted_matrix(const List& frames, const NumericMatrix& beta);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_fitted_matrix(SEXP framesSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type frames(framesSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_fitted_matrix(frames, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_ps_lps_independent_fitted_matrix
+NumericMatrix rcpp_ps_lps_independent_fitted_matrix(const List& frames, const NumericMatrix& y_mat, const double ridge_multiplier);
+RcppExport SEXP _geosmooth_rcpp_ps_lps_independent_fitted_matrix(SEXP framesSEXP, SEXP y_matSEXP, SEXP ridge_multiplierSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type frames(framesSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type y_mat(y_matSEXP);
+    Rcpp::traits::input_parameter< const double >::type ridge_multiplier(ridge_multiplierSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_ps_lps_independent_fitted_matrix(frames, y_mat, ridge_multiplier));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_ps_lps_assemble_cached_system
 List rcpp_ps_lps_assemble_cached_system(const List& cache, const NumericVector& y, const NumericVector& response_weights, const double lambda_sync);
 RcppExport SEXP _geosmooth_rcpp_ps_lps_assemble_cached_system(SEXP cacheSEXP, SEXP ySEXP, SEXP response_weightsSEXP, SEXP lambda_syncSEXP) {
@@ -290,6 +354,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe, 3},
     {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
     {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
+    {"_geosmooth_rcpp_ps_lps_local_pca_supports", (DL_FUNC) &_geosmooth_rcpp_ps_lps_local_pca_supports, 4},
+    {"_geosmooth_rcpp_ps_lps_prepare_sync_rows", (DL_FUNC) &_geosmooth_rcpp_ps_lps_prepare_sync_rows, 3},
+    {"_geosmooth_rcpp_ps_lps_rhs_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_rhs_matrix, 2},
+    {"_geosmooth_rcpp_ps_lps_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_fitted_matrix, 2},
+    {"_geosmooth_rcpp_ps_lps_independent_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_independent_fitted_matrix, 3},
     {"_geosmooth_rcpp_ps_lps_assemble_cached_system", (DL_FUNC) &_geosmooth_rcpp_ps_lps_assemble_cached_system, 4},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},
     {NULL, NULL, 0}
