@@ -987,7 +987,7 @@ fit.local.likelihood <- function(
             tol = tol
         ))
     }
-    beta <- numeric(m)
+    beta <- .local.likelihood.bernoulli.initial.beta(features, weights, y.local)
     state <- .local.likelihood.bernoulli.state(
         beta, features, weights, y.local, penalty
     )
@@ -1043,6 +1043,23 @@ fit.local.likelihood <- function(
         gradient.norm = sqrt(sum(state$gradient^2)),
         normalization.constant = NA_real_
     )
+}
+
+.local.likelihood.bernoulli.initial.beta <- function(features,
+                                                     weights,
+                                                     y.local) {
+    beta <- numeric(ncol(features))
+    denom <- sum(weights)
+    if (length(beta) < 1L || !is.finite(denom) || denom <= 0) {
+        return(beta)
+    }
+    p0 <- sum(weights * y.local) / denom
+    if (!is.finite(p0)) {
+        return(beta)
+    }
+    p0 <- min(1 - 1e-6, max(1e-6, p0))
+    beta[[1L]] <- log(p0 / (1 - p0))
+    beta
 }
 
 .local.likelihood.bernoulli.solve.optim <- function(features,
@@ -1109,8 +1126,7 @@ fit.local.likelihood <- function(
     hess.weights <- weights * p * (1 - p)
     hessian <- crossprod(
         features,
-        features * matrix(hess.weights, nrow = nrow(features),
-                          ncol = ncol(features))
+        features * hess.weights
     ) + diag(penalty, nrow = length(beta), ncol = length(beta))
     list(
         objective = objective,
@@ -1323,5 +1339,9 @@ fit.local.likelihood <- function(
 }
 
 .local.likelihood.log1pexp <- function(x) {
-    ifelse(x > 0, x + log1p(exp(-x)), log1p(exp(x)))
+    out <- numeric(length(x))
+    pos <- x > 0
+    out[pos] <- x[pos] + log1p(exp(-x[pos]))
+    out[!pos] <- log1p(exp(x[!pos]))
+    out
 }

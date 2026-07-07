@@ -1057,6 +1057,22 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                 next
             }
         }
+        if (identical(method, "local_likelihood_bernoulli")) {
+            fast.predicted <- tryCatch(
+                .state.density.local.likelihood.bernoulli.fixed.visit.predictions(
+                    X = X,
+                    subject.index = subject.index,
+                    foldid = foldid,
+                    dots = cand.dots,
+                    od.control = od.control
+                ),
+                error = function(e) e
+            )
+            if (!inherits(fast.predicted, "error")) {
+                predicted[, cc] <- fast.predicted
+                next
+            }
+        }
         if (identical(method, "ps_lps_count")) {
             cache.key <- .state.density.ps.lps.geometry.cache.key(cand.dots)
             if (exists(cache.key, envir = geometry.cache.by.key,
@@ -1271,6 +1287,265 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         )
     }
     fitted
+}
+
+.state.density.local.likelihood.bernoulli.fixed.visit.predictions <- function(
+        X,
+        subject.index,
+        foldid,
+        dots,
+        od.control) {
+    fixed <- .state.density.local.likelihood.fixed.candidate(dots, nrow(X))
+    folds <- sort(unique(foldid))
+    y.mat <- vapply(
+        folds,
+        function(fold) {
+            y <- tabulate(subject.index[foldid != fold], nbins = nrow(X))
+            as.numeric(y > 0)
+        },
+        numeric(nrow(X))
+    )
+    if (is.null(dim(y.mat))) {
+        y.mat <- matrix(y.mat, ncol = 1L)
+    }
+    fitted <- .state.density.local.likelihood.bernoulli.fixed.fitted.matrix(
+        X = X,
+        y.mat = y.mat,
+        fixed = fixed
+    )
+    ctrl <- .state.density.control(od.control)
+    out <- rep(NA_real_, length(subject.index))
+    for (jj in seq_along(folds)) {
+        fold <- folds[[jj]]
+        test.pos <- which(foldid == fold)
+        corrected <- .state.density.correct.raw(fitted[, jj], ctrl)
+        status <- .state.density.status(corrected$rho, corrected$accounting,
+                                        ctrl)
+        if (!identical(status, "ok")) {
+            next
+        }
+        out[test.pos] <- corrected$rho[subject.index[test.pos]]
+    }
+    out
+}
+
+.state.density.local.likelihood.fixed.candidate <- function(dots, n) {
+    scalar <- function(name, default = NULL) {
+        value <- dots[[name]]
+        if (is.null(value)) {
+            value <- default
+        }
+        if (is.null(value) || length(value) != 1L) {
+            stop("Local-likelihood fast visit-CV requires a fixed scalar '",
+                 name, "'.", call. = FALSE)
+        }
+        value[[1L]]
+    }
+    if (!is.null(dots$foldid)) {
+        stop("Local-likelihood fast visit-CV does not support nested ",
+             "source-level foldid.", call. = FALSE)
+    }
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
+    )
+    support.size <- as.integer(scalar("support.size",
+                                      dots$support.grid %||% min(15L, n)))
+    support.size <- .local.chart.validate.support.size(support.size, n)
+    degree <- .local.likelihood.validate.degree(
+        as.integer(scalar("degree", dots$degree.grid %||% 1L))
+    )
+    kernel <- .klp.clean.kernel.grid(
+        as.character(scalar("kernel", dots$kernel.grid %||% "gaussian"))
+    )[[1L]]
+    bandwidth.multiplier <- .klp.clean.bandwidth.multiplier.grid(
+        as.numeric(scalar("bandwidth.multiplier",
+                          dots$bandwidth.multiplier.grid %||% 1))
+    )[[1L]]
+    lambda.ridge <- .local.chart.validate.nonnegative.scalar(
+        as.numeric(scalar("lambda.ridge",
+                          dots$lambda.ridge.grid %||% 1e-8)),
+        "lambda.ridge"
+    )
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    quadrature.weights <- .local.chart.validate.quadrature(
+        dots$quadrature.weights %||% NULL,
+        n
+    )
+    min.local.mass <- .local.chart.validate.nonnegative.scalar(
+        dots$min.local.mass %||% sqrt(.Machine$double.eps),
+        "min.local.mass"
+    )
+    min.nonzero.mass <- .local.chart.validate.positive.integer(
+        dots$min.nonzero.mass %||% 1L,
+        "min.nonzero.mass"
+    )
+    fallback <- match.arg(
+        dots$fallback %||% "degree0",
+        c("degree0", "zero", "chart_kernel", "na")
+    )
+    optimizer <- match.arg(dots$optimizer %||% "newton", c("newton", "optim"))
+    max.iter <- .local.chart.validate.positive.integer(
+        dots$max.iter %||% 50L,
+        "max.iter"
+    )
+    tol <- .local.chart.validate.positive.scalar(dots$tol %||% 1e-8, "tol")
+    list(
+        support.size = support.size,
+        degree = degree,
+        kernel = kernel,
+        bandwidth.multiplier = bandwidth.multiplier,
+        coordinate.method = coordinate.method,
+        chart.dim = dots$chart.dim %||% NULL,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        quadrature.weights = quadrature.weights,
+        lambda.ridge = lambda.ridge,
+        min.local.mass = min.local.mass,
+        min.nonzero.mass = min.nonzero.mass,
+        fallback = fallback,
+        optimizer = optimizer,
+        max.iter = max.iter,
+        tol = tol
+    )
+}
+
+.state.density.local.likelihood.bernoulli.fixed.fitted.matrix <- function(
+        X,
+        y.mat,
+        fixed) {
+    chart.dim.info <- .local.chart.resolve.chart.dim(
+        X = X,
+        support.size = fixed$support.size,
+        degree = fixed$degree,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = fixed$chart.dim,
+        auto.chart.support.metric = fixed$auto.chart.support.metric,
+        auto.chart.selection.metric = fixed$auto.chart.selection.metric
+    )
+    fitted <- matrix(NA_real_, nrow = nrow(X), ncol = ncol(y.mat))
+    for (ii in seq_len(nrow(X))) {
+        local.chart.dim <- .local.chart.resolve.eval.chart.dim(
+            X = X,
+            x0 = X[ii, ],
+            support.size = fixed$support.size,
+            degree = fixed$degree,
+            coordinate.method = fixed$coordinate.method,
+            chart.dim = fixed$chart.dim,
+            summary.dim = chart.dim.info$chart.dim
+        )
+        frame <- .state.density.local.likelihood.bernoulli.frame(
+            X = X,
+            x0 = X[ii, ],
+            fixed = fixed,
+            chart.dim = local.chart.dim
+        )
+        fitted[ii, ] <-
+            .state.density.local.likelihood.bernoulli.frame.values(
+                frame = frame,
+                y.mat = y.mat[frame$idx, , drop = FALSE],
+                fixed = fixed
+            )
+    }
+    fitted
+}
+
+.state.density.local.likelihood.bernoulli.frame <- function(X,
+                                                            x0,
+                                                            fixed,
+                                                            chart.dim) {
+    support <- .local.chart.support(X, x0, fixed$support.size)
+    coords <- .local.chart.coordinates(
+        centered = support$centered,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = chart.dim
+    )
+    distances <- sqrt(rowSums(coords^2))
+    kernel.info <- .local.chart.kernel(
+        distances = distances,
+        kernel = fixed$kernel,
+        bandwidth.multiplier = fixed$bandwidth.multiplier
+    )
+    raw.features <- .local.chart.feature.matrix(coords, fixed$degree)
+    list(
+        idx = support$idx,
+        weights = fixed$quadrature.weights[support$idx] * kernel.info$weights,
+        kernel.weights = kernel.info$weights,
+        features = cbind(intercept = 1, raw.features),
+        raw.feature.ncol = ncol(raw.features),
+        effective.support = kernel.info$effective.support,
+        chart.dim = ncol(coords),
+        bandwidth = kernel.info$bandwidth
+    )
+}
+
+.state.density.local.likelihood.bernoulli.frame.values <- function(frame,
+                                                                   y.mat,
+                                                                   fixed) {
+    out <- numeric(ncol(y.mat))
+    weight.total <- sum(frame$weights)
+    if (!is.finite(weight.total) || weight.total <= 0) {
+        return(rep(0, ncol(y.mat)))
+    }
+    degree0 <- fixed$degree == 0L ||
+        frame$raw.feature.ncol == 0L ||
+        frame$effective.support <= ncol(frame$features) + 1L
+    if (degree0) {
+        return(.state.density.local.likelihood.bernoulli.degree0.values(
+            weights = frame$weights,
+            y.mat = y.mat
+        ))
+    }
+    for (jj in seq_len(ncol(y.mat))) {
+        y.local <- y.mat[, jj]
+        local.mass <- sum(frame$kernel.weights * y.local)
+        n.nonzero <- sum(y.local > 0 & frame$kernel.weights > 0)
+        solved <- .local.likelihood.bernoulli.solve(
+            features = frame$features,
+            weights = frame$weights,
+            y.local = y.local,
+            lambda.ridge = fixed$lambda.ridge,
+            optimizer = fixed$optimizer,
+            max.iter = fixed$max.iter,
+            tol = fixed$tol
+        )
+        if (isTRUE(solved$converged) && is.finite(solved$value)) {
+            out[[jj]] <- solved$value
+        } else {
+            fallback <- .local.likelihood.bernoulli.apply.fallback(
+                fallback = fixed$fallback,
+                weights = frame$weights,
+                y.local = y.local,
+                local.mass = local.mass,
+                n.nonzero.local = n.nonzero,
+                effective.support = frame$effective.support,
+                chart.dim = frame$chart.dim,
+                bandwidth = frame$bandwidth,
+                iterations = solved$iterations,
+                objective = solved$objective,
+                gradient.norm = solved$gradient.norm
+            )
+            out[[jj]] <- fallback$value
+        }
+    }
+    out
+}
+
+.state.density.local.likelihood.bernoulli.degree0.values <- function(weights,
+                                                                     y.mat) {
+    denom <- sum(weights)
+    if (!is.finite(denom) || denom <= 0) {
+        return(rep(NA_real_, ncol(y.mat)))
+    }
+    values <- as.numeric(crossprod(weights, y.mat)) / denom
+    pmin(1, pmax(0, values))
 }
 
 .state.density.lps.fixed.geometry.eligible <- function(fixed) {

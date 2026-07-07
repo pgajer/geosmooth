@@ -528,6 +528,56 @@ test_that("OD3 subject local-likelihood Bernoulli supports OD-level visit CV", {
     )
 })
 
+test_that("OD3 local-likelihood Bernoulli fixed visit-CV path matches fold loop", {
+    n <- 28L
+    X <- cbind(seq(0, 1, length.out = n),
+               sin(seq(0, 2 * pi, length.out = n)))
+    subject.index <- c(3L, 5L, 5L, 8L, 11L, 15L, 18L, 22L, 25L, 27L)
+    foldid <- rep(1:4, length.out = length(subject.index))
+    graph <- make.od3.path.graph(n)
+
+    for (bandwidth.multiplier in c(1, 1.2)) {
+        dots <- list(
+            support.size = 9L,
+            degree = 1L,
+            kernel = "gaussian",
+            bandwidth.multiplier = bandwidth.multiplier,
+            lambda.ridge = 1e-6,
+            coordinate.method = "local.pca",
+            chart.dim = 1L,
+            optimizer = "newton"
+        )
+        fast <- .state.density.local.likelihood.bernoulli.fixed.visit.predictions(
+            X = X,
+            subject.index = subject.index,
+            foldid = foldid,
+            dots = dots,
+            od.control = list()
+        )
+        slow <- rep(NA_real_, length(subject.index))
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = "local_likelihood_bernoulli",
+                        graph = graph,
+                        od.cv = "none",
+                        return.details = FALSE
+                    ),
+                    dots
+                )
+            )
+            slow[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        expect_equal(fast, slow, tolerance = 1e-8)
+    }
+})
+
 test_that("OD3 local-likelihood validates Bernoulli responses", {
     X <- matrix(seq(0, 1, length.out = 10), ncol = 1L)
 
