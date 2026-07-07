@@ -125,6 +125,26 @@ rcpp_metric_graph_lowpass_spectrum <- function(s_adj_list, s_weight_list, s_cond
     .Call(`_geosmooth_rcpp_metric_graph_lowpass_spectrum`, s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose)
 }
 
+rcpp_ps_lps_local_pca_supports <- function(X, support_size, chart_dim_by_anchor, kernel) {
+    .Call(`_geosmooth_rcpp_ps_lps_local_pca_supports`, X, support_size, chart_dim_by_anchor, kernel)
+}
+
+rcpp_ps_lps_prepare_sync_rows <- function(frames, sync_neighbor_size, overlap_weight) {
+    .Call(`_geosmooth_rcpp_ps_lps_prepare_sync_rows`, frames, sync_neighbor_size, overlap_weight)
+}
+
+rcpp_ps_lps_rhs_matrix <- function(frames, y_mat) {
+    .Call(`_geosmooth_rcpp_ps_lps_rhs_matrix`, frames, y_mat)
+}
+
+rcpp_ps_lps_fitted_matrix <- function(frames, beta) {
+    .Call(`_geosmooth_rcpp_ps_lps_fitted_matrix`, frames, beta)
+}
+
+rcpp_ps_lps_independent_fitted_matrix <- function(frames, y_mat, ridge_multiplier) {
+    .Call(`_geosmooth_rcpp_ps_lps_independent_fitted_matrix`, frames, y_mat, ridge_multiplier)
+}
+
 rcpp_ps_lps_assemble_cached_system <- function(cache, y, response_weights, lambda_sync) {
     .Call(`_geosmooth_rcpp_ps_lps_assemble_cached_system`, cache, y, response_weights, lambda_sync)
 }

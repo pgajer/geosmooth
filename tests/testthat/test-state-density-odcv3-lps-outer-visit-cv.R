@@ -207,6 +207,35 @@ test_that("OD-CV3 PS-LPS fixed-candidate fast path matches fold loop", {
     }
 })
 
+test_that("OD-CV3 PS-LPS visit CV accepts explicit fixed lambda selection", {
+    n <- 22L
+    X <- make.odcv3.curved.X(n)
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 20L)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "ps_lps_count",
+        od.cv = "visit",
+        visit.foldid = rep(1:3, length.out = length(subject.index)),
+        support.grid = 9L,
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        chart.dim = 1L,
+        lambda.sync.grid = 0.1,
+        lambda.sync.selection = "fixed",
+        lambda.ridge = 1e-8,
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = 1e-10,
+        ridge.condition.max = Inf,
+        sync.neighbor.size = 3L
+    )
+
+    expect.odcv3.visit.fit(fit, length(subject.index), 1L)
+    expect_equal(fit$visit.cv.table$lambda.sync, 0.1)
+    expect_identical(fit$diagnostics$selection$lambda.sync, 0.1)
+})
+
 test_that("OD-CV3 PS-LPS visit CV requires an explicit chart dimension policy", {
     X <- make.odcv3.curved.X(18L)
     expect_error(
