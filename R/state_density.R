@@ -1035,6 +1035,22 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             cand.scalar$graph.control
         )
         cand.dots <- c(base.dots, cand.scalar$dots)
+        if (identical(method, "lps_count")) {
+            fast.predicted <- tryCatch(
+                .state.density.lps.fixed.visit.predictions(
+                    X = X,
+                    subject.index = subject.index,
+                    foldid = foldid,
+                    dots = cand.dots,
+                    od.control = od.control
+                ),
+                error = function(e) e
+            )
+            if (!inherits(fast.predicted, "error")) {
+                predicted[, cc] <- fast.predicted
+                next
+            }
+        }
         if (identical(method, "ps_lps_count")) {
             cache.key <- .state.density.ps.lps.geometry.cache.key(cand.dots)
             if (exists(cache.key, envir = geometry.cache.by.key,
@@ -1136,6 +1152,257 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         cv.table = cv.table,
         predicted.mass = predicted,
         candidate.caches = candidate.caches
+    )
+}
+
+.state.density.lps.fixed.visit.predictions <- function(X,
+                                                       subject.index,
+                                                       foldid,
+                                                       dots,
+                                                       od.control) {
+    fixed <- .state.density.lps.fixed.candidate(dots, nrow(X))
+    folds <- sort(unique(foldid))
+    y.mat <- vapply(
+        folds,
+        function(fold) {
+            tabulate(subject.index[foldid != fold], nbins = nrow(X))
+        },
+        numeric(nrow(X))
+    )
+    if (is.null(dim(y.mat))) {
+        y.mat <- matrix(y.mat, ncol = 1L)
+    }
+    fitted <- if (.state.density.lps.fixed.geometry.eligible(fixed)) {
+        geometry.cache <- .state.density.lps.fixed.geometry.cache(X, fixed)
+        .state.density.ps.lps.fixed.independent.fitted.matrix(
+            frames = geometry.cache$frames,
+            y.mat = y.mat,
+            lambda.ridge = 0,
+            ridge.multiplier.grid = fixed$ridge.multiplier.grid,
+            ridge.condition.max = fixed$ridge.condition.max
+        )
+    } else {
+        .state.density.lps.fixed.direct.fitted.matrix(
+            X = X,
+            y.mat = y.mat,
+            fixed = fixed
+        )
+    }
+    ctrl <- .state.density.control(od.control)
+    out <- rep(NA_real_, length(subject.index))
+    for (jj in seq_along(folds)) {
+        fold <- folds[[jj]]
+        test.pos <- which(foldid == fold)
+        corrected <- .state.density.correct.raw(fitted[, jj], ctrl)
+        status <- .state.density.status(corrected$rho, corrected$accounting,
+                                        ctrl)
+        if (!identical(status, "ok")) {
+            next
+        }
+        out[test.pos] <- corrected$rho[subject.index[test.pos]]
+    }
+    out
+}
+
+.state.density.lps.fixed.direct.fitted.matrix <- function(X, y.mat, fixed) {
+    fitted <- matrix(NA_real_, nrow = nrow(X), ncol = ncol(y.mat))
+    chart.dim.info <- .klp.resolve.chart.dim(
+        X = X,
+        support.size = fixed$support.size,
+        degree = fixed$degree,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = fixed$chart.dim,
+        auto.chart.support.metric = fixed$auto.chart.support.metric,
+        auto.chart.selection.metric = fixed$auto.chart.selection.metric
+    )
+    pred.dim <- .klp.resolve.prediction.chart.dim(
+        X.train = X,
+        X.eval = X,
+        support.size = fixed$support.size,
+        degree = fixed$degree,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = fixed$chart.dim,
+        auto.chart.support.metric = fixed$auto.chart.support.metric,
+        auto.chart.selection.metric = fixed$auto.chart.selection.metric,
+        summary.dim = chart.dim.info$chart.dim
+    )
+    for (jj in seq_len(ncol(y.mat))) {
+        fitted[, jj] <- .klp.predict.local.polynomial(
+            X.train = X,
+            y.train = y.mat[, jj],
+            X.eval = X,
+            support.size = fixed$support.size,
+            degree = fixed$degree,
+            kernel = fixed$kernel,
+            coordinate.method = fixed$coordinate.method,
+            chart.dim = pred.dim$chart.dim,
+            chart.dim.by.eval = pred.dim$chart.dim.by.eval,
+            local.chart.method = fixed$local.chart.method.effective,
+            backend = fixed$backend.used,
+            design.basis = fixed$design.basis,
+            design.drop.tol = fixed$design.drop.tol,
+            ridge.multiplier.grid = fixed$ridge.multiplier.grid,
+            ridge.condition.max = fixed$ridge.condition.max,
+            unstable.action = fixed$unstable.action,
+            outcome.family = "gaussian",
+            bandwidth.multiplier = fixed$bandwidth.multiplier,
+            ridge.shrinkage.target = fixed$ridge.shrinkage.target
+        )
+    }
+    fitted
+}
+
+.state.density.lps.fixed.geometry.eligible <- function(fixed) {
+    identical(fixed$coordinate.method, "local.pca") &&
+        identical(fixed$local.chart.method.effective, "pca") &&
+        identical(as.numeric(fixed$bandwidth.multiplier), 1)
+}
+
+.state.density.lps.fixed.geometry.cache <- function(X, fixed) {
+    chart.dim.info <- .ps.lps.resolve.chart.dim(
+        X = X,
+        support.size = fixed$support.size,
+        degree = fixed$degree,
+        chart.dim = fixed$chart.dim,
+        auto.chart.support.metric = fixed$auto.chart.support.metric,
+        auto.chart.selection.metric = fixed$auto.chart.selection.metric
+    )
+    frames <- .ps.lps.prepare.frames(
+        X = X,
+        y = rep(0, nrow(X)),
+        support.size = fixed$support.size,
+        degree = fixed$degree,
+        kernel = fixed$kernel,
+        chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
+        design.basis = fixed$design.basis,
+        design.drop.tol = fixed$design.drop.tol
+    )
+    list(chart.dim.info = chart.dim.info, frames = frames)
+}
+
+.state.density.lps.fixed.candidate <- function(dots, n) {
+    scalar <- function(name, default = NULL) {
+        value <- dots[[name]]
+        if (is.null(value)) {
+            value <- default
+        }
+        if (is.null(value) || length(value) != 1L) {
+            stop("LPS fast visit-CV requires a fixed scalar '", name, "'.",
+                 call. = FALSE)
+        }
+        value[[1L]]
+    }
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
+    )
+    local.chart.method <- match.arg(
+        dots$local.chart.method %||% "pca",
+        c("pca", "second.order.svd")
+    )
+    if (identical(coordinate.method, "coordinates") &&
+        identical(local.chart.method, "second.order.svd")) {
+        stop("'local.chart.method = \"second.order.svd\"' requires ",
+             "coordinate.method = 'local.pca'.", call. = FALSE)
+    }
+    local.chart.method.effective <- if (identical(coordinate.method,
+                                                  "coordinates")) {
+        "none"
+    } else {
+        local.chart.method
+    }
+    support.size <- as.integer(scalar("support.grid",
+                                      dots$support.size %||% NULL))
+    support.size <- .klp.clean.support.grid(support.size, n)[[1L]]
+    degree <- .klp.clean.degree.grid(
+        as.integer(scalar("degree.grid", dots$degree %||% 0L))
+    )[[1L]]
+    kernel <- .klp.clean.kernel.grid(
+        as.character(scalar("kernel.grid", dots$kernel %||% "gaussian"))
+    )[[1L]]
+    bandwidth.multiplier <- .klp.clean.bandwidth.multiplier.grid(
+        as.numeric(scalar("bandwidth.multiplier.grid",
+                          dots$bandwidth.multiplier %||% 1))
+    )[[1L]]
+    backend <- match.arg(
+        dots$backend %||% "auto",
+        c("auto", "R", "cpp", "cpp.local.pca")
+    )
+    design.basis <- match.arg(
+        dots$design.basis %||% "orthogonal.polynomial.drop",
+        c("orthogonal.polynomial.drop", "monomial",
+          "weighted.qr", "weighted.qr.drop")
+    )
+    design.drop.tol <- .klp.validate.nonnegative.scalar(
+        dots$design.drop.tol %||% 1e-8,
+        "design.drop.tol"
+    )
+    ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
+        dots$ridge.multiplier.grid %||% c(0, 1e-10, 1e-8)
+    )
+    ridge.condition.max <- .klp.validate.positive.scalar(
+        dots$ridge.condition.max %||% 1e12,
+        "ridge.condition.max",
+        allow.infinite = TRUE
+    )
+    unstable.action <- match.arg(
+        dots$unstable.action %||% "na",
+        c("na", "mean")
+    )
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    ridge.shrinkage.target <- match.arg(
+        dots$ridge.shrinkage.target %||% "zero",
+        c("zero", "local.mean")
+    )
+    chart.dim <- dots$chart.dim %||% NULL
+    backend.used <- .klp.resolve.backend(
+        coordinate.method,
+        backend,
+        local.chart.method.effective,
+        design.basis,
+        ridge.multiplier.grid,
+        ridge.condition.max,
+        bandwidth.multiplier
+    )
+    if (.klp.is.local.auto.chart.dim(chart.dim)) {
+        if (!identical(coordinate.method, "local.pca")) {
+            stop("'chart.dim = \"local.auto\"' requires ",
+                 "coordinate.method = 'local.pca'.", call. = FALSE)
+        }
+        if (!identical(local.chart.method.effective, "pca")) {
+            stop("'chart.dim = \"local.auto\"' currently supports only ",
+                 "local.chart.method = 'pca'.", call. = FALSE)
+        }
+        if (identical(backend.used, "cpp.local.pca")) {
+            stop("'chart.dim = \"local.auto\"' currently uses the R ",
+                 "local-PCA backend; use backend = 'auto' or 'R'.",
+                 call. = FALSE)
+        }
+    }
+    list(
+        support.size = support.size,
+        degree = degree,
+        kernel = kernel,
+        bandwidth.multiplier = bandwidth.multiplier,
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim,
+        local.chart.method.effective = local.chart.method.effective,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        backend.used = backend.used,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol,
+        ridge.multiplier.grid = ridge.multiplier.grid,
+        ridge.condition.max = ridge.condition.max,
+        unstable.action = unstable.action,
+        ridge.shrinkage.target = ridge.shrinkage.target
     )
 }
 
