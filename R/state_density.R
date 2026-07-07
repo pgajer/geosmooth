@@ -561,6 +561,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         selected
     )
     final.dots <- c(candidate.spec$base.dots, selected.scalar$dots)
+    if (identical(method, "ps_lps_count") &&
+        !is.null(cv.result$candidate.caches[[best.idx]])) {
+        final.dots$ps.lps.geometry.cache <- cv.result$candidate.caches[[best.idx]]
+    }
     final.graph.control <- utils::modifyList(
         graph.control,
         selected.scalar$graph.control
@@ -1018,6 +1022,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     n.visits <- length(subject.index)
     predicted <- matrix(NA_real_, nrow = n.visits, ncol = nrow(candidates))
     error.messages <- rep(NA_character_, nrow(candidates))
+    candidate.caches <- vector("list", nrow(candidates))
+    geometry.cache.by.key <- new.env(parent = emptyenv())
     for (cc in seq_len(nrow(candidates))) {
         cand.scalar <- .state.density.visit.cv.scalar.candidate(
             method,
@@ -1027,6 +1033,27 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             graph.control,
             cand.scalar$graph.control
         )
+        cand.dots <- c(base.dots, cand.scalar$dots)
+        if (identical(method, "ps_lps_count")) {
+            cache.key <- .state.density.ps.lps.geometry.cache.key(cand.dots)
+            if (exists(cache.key, envir = geometry.cache.by.key,
+                       inherits = FALSE)) {
+                cache <- get(cache.key, envir = geometry.cache.by.key,
+                             inherits = FALSE)
+            } else {
+                cache <- tryCatch(
+                    .state.density.ps.lps.geometry.cache(X, cand.dots),
+                    error = function(e) e
+                )
+                assign(cache.key, cache, envir = geometry.cache.by.key)
+            }
+            if (inherits(cache, "error")) {
+                error.messages[[cc]] <- conditionMessage(cache)
+                next
+            }
+            candidate.caches[[cc]] <- cache
+            cand.dots$ps.lps.geometry.cache <- cache
+        }
         for (fold in sort(unique(foldid))) {
             test.pos <- which(foldid == fold)
             train.pos <- which(foldid != fold)
@@ -1044,8 +1071,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                             return.details = FALSE,
                             od.cv = "none"
                         ),
-                        base.dots,
-                        cand.scalar$dots
+                        cand.dots
                     )
                 ),
                 error = function(e) e
@@ -1089,7 +1115,71 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         is.finite(score) & nonfinite.count == 0L, "ok", "failed"
     )
     cv.table$visit.cv.error.message <- error.messages
-    list(cv.table = cv.table, predicted.mass = predicted)
+    list(
+        cv.table = cv.table,
+        predicted.mass = predicted,
+        candidate.caches = candidate.caches
+    )
+}
+
+.state.density.ps.lps.geometry.cache.key <- function(dots) {
+    value <- function(name, default = "") {
+        x <- dots[[name]]
+        if (is.null(x)) {
+            return(default)
+        }
+        paste(as.character(x), collapse = ",")
+    }
+    paste(
+        value("support.size", value("support.grid", "")),
+        value("degree", value("degree.grid", "2")),
+        value("kernel", value("kernel.grid", "gaussian")),
+        value("chart.dim", ""),
+        value("auto.chart.support.metric", "coordinates"),
+        value("auto.chart.selection.metric", "coordinates"),
+        value("sync.neighbor.size", ""),
+        value("overlap.weight", "normalized.product"),
+        value("design.basis", "monomial"),
+        value("design.drop.tol", format(sqrt(.Machine$double.eps),
+                                        digits = 17L)),
+        sep = "\r"
+    )
+}
+
+.state.density.ps.lps.geometry.cache <- function(X, dots) {
+    local.grid <- .ps.lps.resolve.local.grid(
+        support.size = dots$support.size %||% NULL,
+        support.grid = dots$support.grid %||% NULL,
+        degree = dots$degree %||% 2L,
+        degree.grid = dots$degree.grid %||% NULL,
+        kernel = dots$kernel %||% "gaussian",
+        kernel.grid = dots$kernel.grid %||% NULL,
+        n = nrow(X)
+    )
+    if (nrow(local.grid) != 1L) {
+        return(NULL)
+    }
+    support.size <- local.grid$support.size[[1L]]
+    sync.neighbor.size <- .ps.lps.resolve.sync.neighbor.size(
+        dots$sync.neighbor.size %||% NULL,
+        support.size
+    )
+    .ps.lps.prepare.geometry.cache(
+        X = X,
+        support.size = support.size,
+        degree = local.grid$degree[[1L]],
+        kernel = local.grid$kernel[[1L]],
+        chart.dim = dots$chart.dim,
+        auto.chart.support.metric =
+            dots$auto.chart.support.metric %||% "coordinates",
+        auto.chart.selection.metric =
+            dots$auto.chart.selection.metric %||% "coordinates",
+        sync.neighbor.size = sync.neighbor.size,
+        overlap.weight = dots$overlap.weight %||% "normalized.product",
+        design.basis = dots$design.basis %||% "monomial",
+        design.drop.tol =
+            dots$design.drop.tol %||% sqrt(.Machine$double.eps)
+    )
 }
 
 .state.density.visit.cv.scalar.candidate <- function(method, candidate) {
@@ -1188,6 +1278,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             out$lambda.sync <- NULL
         }
         out$lambda.sync.search <- "grid"
+        out$lambda.sync.selection <- "fixed"
         out$local.candidate.search <- "full"
     }
     out
@@ -1351,6 +1442,14 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         reserved = c("X", "y"),
         context = paste0("fit.subject.od(method = \"", method.id, "\")")
     )
+    if (is.null(dots$lambda.diagnostics)) {
+        dots$lambda.diagnostics <- "selected"
+    }
+    if (is.null(dots$lambda.sync.selection) &&
+        !is.null(dots$lambda.sync.grid) &&
+        length(dots$lambda.sync.grid) == 1L) {
+        dots$lambda.sync.selection <- "fixed"
+    }
     fit <- do.call(fit.ps.lps, c(list(X = X, y = response), dots))
     out <- normalize.density(
         fit,

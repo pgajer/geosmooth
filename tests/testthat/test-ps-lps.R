@@ -980,6 +980,86 @@ test_that("fit.ps.lps guarded lambda search returns telemetry", {
                     names(ps$lambda.sync.search.telemetry)))
 })
 
+test_that("fit.ps.lps selected-only lambda diagnostics preserve selected fit", {
+    set.seed(231)
+    X <- matrix(runif(90), ncol = 3)
+    y <- sin(3 * X[, 1]) + 0.25 * X[, 2]
+    foldid <- rep(seq_len(3L), length.out = length(y))
+    common <- list(
+        X = X,
+        y = y,
+        foldid = foldid,
+        support.size = 12L,
+        degree = 1L,
+        kernel = "tricube",
+        chart.dim = 2L,
+        lambda.sync.grid = c(0, 0.1),
+        lambda.sync.search = "grid",
+        lambda.ridge = 1e-8,
+        sync.neighbor.size = 3L
+    )
+    fit.all <- do.call(fit.ps.lps, c(common, list(lambda.diagnostics = "all")))
+    fit.selected <- do.call(
+        fit.ps.lps,
+        c(common, list(lambda.diagnostics = "selected"))
+    )
+
+    expect_equal(fit.selected$selected$lambda.sync,
+                 fit.all$selected$lambda.sync)
+    expect_equal(fit.selected$fitted.values, fit.all$fitted.values,
+                 tolerance = 1e-8)
+    selected.lambda <- fit.selected$selected$lambda.sync[[1L]]
+    selected.row <- fit.selected$cv.table$lambda.sync == selected.lambda
+    expect_true(all(is.finite(fit.selected$cv.table$sync.energy[selected.row])))
+    if (any(!selected.row)) {
+        expect_true(all(is.na(fit.selected$cv.table$sync.energy[!selected.row])))
+    }
+})
+
+test_that("fit.ps.lps fixed lambda can reuse geometry cache", {
+    set.seed(232)
+    X <- matrix(runif(90), ncol = 3)
+    y <- cos(2 * X[, 1]) - 0.15 * X[, 2]
+    common <- list(
+        X = X,
+        y = y,
+        foldid = rep(seq_len(3L), length.out = length(y)),
+        support.size = 12L,
+        degree = 1L,
+        kernel = "tricube",
+        chart.dim = 2L,
+        lambda.sync.grid = 0.1,
+        lambda.sync.selection = "fixed",
+        lambda.ridge = 1e-8,
+        sync.neighbor.size = 3L
+    )
+    fit.plain <- do.call(fit.ps.lps, common)
+    cache <- .ps.lps.prepare.geometry.cache(
+        X = X,
+        support.size = 12L,
+        degree = 1L,
+        kernel = "tricube",
+        chart.dim = 2L,
+        auto.chart.support.metric = "coordinates",
+        auto.chart.selection.metric = "coordinates",
+        sync.neighbor.size = 3L,
+        overlap.weight = "normalized.product",
+        design.basis = "monomial",
+        design.drop.tol = sqrt(.Machine$double.eps)
+    )
+    fit.cached <- do.call(
+        fit.ps.lps,
+        c(common, list(ps.lps.geometry.cache = cache))
+    )
+
+    expect_equal(fit.cached$selected$lambda.sync[[1L]], 0.1)
+    expect_true(is.na(fit.cached$selected$cv.rmse.observed[[1L]]))
+    expect_equal(fit.cached$lambda.sync.search.telemetry$stage, "fixed")
+    expect_true(isTRUE(fit.cached$geometry.cache.used))
+    expect_equal(fit.cached$fitted.values, fit.plain$fitted.values,
+                 tolerance = 1e-8)
+})
+
 test_that("fit.ps.lps screened local search evaluates an auditable subset", {
     set.seed(24)
     X <- matrix(runif(180), ncol = 3)

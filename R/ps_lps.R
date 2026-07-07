@@ -40,6 +40,11 @@
 #' @param lambda.sync.search Lambda-search policy.  \code{"grid"} evaluates the
 #'   supplied grid exactly.  \code{"guarded"} uses an experimental guarded
 #'   coarse-to-refine search with boundary expansion.
+#' @param lambda.sync.selection Lambda-selection mode. \code{"cv"} performs the
+#'   usual internal fold-weighted lambda selection. \code{"fixed"} treats the
+#'   single value in \code{lambda.sync.grid} as preselected and skips internal
+#'   lambda CV; this is intended for outer selection loops that already score
+#'   scalar candidates.
 #' @param local.candidate.search Local-candidate search policy when
 #'   \code{support.grid}, \code{degree.grid}, or \code{kernel.grid} contains
 #'   more than one candidate. \code{"screened"} is the routine default: it first
@@ -65,6 +70,11 @@
 #'   evaluate positive candidates outside the supplied \code{lambda.sync.grid}.
 #'   \code{max.candidates} is a global cap on distinct evaluated candidates; a
 #'   very small cap can prevent local refinement or boundary expansion.
+#' @param lambda.diagnostics Lambda-diagnostic evaluation policy.
+#'   \code{"all"} computes synchronization-energy and local-GCV diagnostics for
+#'   every evaluated lambda and is the audit/reference mode. \code{"selected"}
+#'   computes those diagnostics only for the selected lambda, which is faster
+#'   for routine selection.
 #' @param lambda.ridge Nonnegative scale-relative ridge used in the chart
 #'   coefficient solve. Use \code{0} for the unregularized least-squares model.
 #' @param design.basis Local polynomial design backend. See
@@ -105,9 +115,11 @@ fit.ps.lps <- function(
     auto.chart.selection.metric = c("coordinates", "operator"),
     lambda.sync.grid = c(0, 1e-3, 1e-2, 1e-1, 1, 10),
     lambda.sync.search = c("grid", "guarded"),
+    lambda.sync.selection = c("cv", "fixed"),
     local.candidate.search = c("screened", "full", "subgrid"),
     local.candidate.search.control = list(),
     lambda.sync.search.control = list(),
+    lambda.diagnostics = c("all", "selected"),
     lambda.ridge = 1e-8,
     design.basis = c("monomial", "weighted.qr", "weighted.qr.drop",
                      "orthogonal.polynomial.drop"),
@@ -116,6 +128,7 @@ fit.ps.lps <- function(
     ridge.condition.max = Inf,
     sync.neighbor.size = NULL,
     overlap.weight = c("normalized.product", "product"),
+    ps.lps.geometry.cache = NULL,
     cv.folds = 5L,
     cv.seed = 1L) {
 
@@ -130,7 +143,9 @@ fit.ps.lps <- function(
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     lambda.sync.search <- match.arg(lambda.sync.search)
+    lambda.sync.selection <- match.arg(lambda.sync.selection)
     local.candidate.search <- match.arg(local.candidate.search)
+    lambda.diagnostics <- match.arg(lambda.diagnostics)
     overlap.weight <- match.arg(overlap.weight)
     design.basis <- match.arg(design.basis)
     design.drop.tol <- .klp.validate.nonnegative.scalar(
@@ -147,6 +162,11 @@ fit.ps.lps <- function(
         any(lambda.sync.grid < 0)) {
         stop("'lambda.sync.grid' must contain finite nonnegative values.",
              call. = FALSE)
+    }
+    if (identical(lambda.sync.selection, "fixed") &&
+        length(lambda.sync.grid) != 1L) {
+        stop("'lambda.sync.selection = \"fixed\"' requires exactly one ",
+             "lambda in 'lambda.sync.grid'.", call. = FALSE)
     }
     lambda.ridge <- as.numeric(lambda.ridge[[1L]])
     if (!is.finite(lambda.ridge) || lambda.ridge < 0) {
@@ -180,9 +200,11 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            lambda.sync.selection = lambda.sync.selection,
             local.candidate.search = local.candidate.search,
             local.candidate.search.control = local.candidate.search.control,
             lambda.sync.search.control = lambda.sync.search.control,
+            lambda.diagnostics = lambda.diagnostics,
             lambda.ridge = lambda.ridge,
             design.basis = design.basis,
             design.drop.tol = design.drop.tol,
@@ -203,36 +225,51 @@ fit.ps.lps <- function(
     )
     timing.start <- proc.time()
     elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
-    chart.dim.info <- .ps.lps.resolve.chart.dim(
-        X = X,
-        support.size = support.size,
-        degree = degree,
-        chart.dim = chart.dim,
-        auto.chart.support.metric = auto.chart.support.metric,
-        auto.chart.selection.metric = auto.chart.selection.metric
-    )
+    if (is.null(ps.lps.geometry.cache)) {
+        chart.dim.info <- .ps.lps.resolve.chart.dim(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            chart.dim = chart.dim,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+    } else {
+        chart.dim.info <- ps.lps.geometry.cache$chart.dim.info
+    }
     chart.dim.by.anchor <- chart.dim.info$chart.dim.by.anchor
-    t.frames <- proc.time()
-    frames <- .ps.lps.prepare.frames(
-        X = X,
-        y = y,
-        support.size = support.size,
-        degree = degree,
-        kernel = kernel,
-        chart.dim.by.anchor = chart.dim.by.anchor,
-        design.basis = design.basis,
-        design.drop.tol = design.drop.tol
-    )
-    phase.frames.sec <- elapsed(t.frames)
-    t.sync.rows <- proc.time()
-    sync.rows <- .ps.lps.prepare.sync.rows(
-        frames = frames,
-        sync.neighbor.size = sync.neighbor.size,
-        overlap.weight = overlap.weight
-    )
-    phase.sync.rows.sec <- elapsed(t.sync.rows)
+    if (is.null(ps.lps.geometry.cache)) {
+        t.frames <- proc.time()
+        frames <- .ps.lps.prepare.frames(
+            X = X,
+            y = y,
+            support.size = support.size,
+            degree = degree,
+            kernel = kernel,
+            chart.dim.by.anchor = chart.dim.by.anchor,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol
+        )
+        phase.frames.sec <- elapsed(t.frames)
+        t.sync.rows <- proc.time()
+        sync.rows <- .ps.lps.prepare.sync.rows(
+            frames = frames,
+            sync.neighbor.size = sync.neighbor.size,
+            overlap.weight = overlap.weight
+        )
+        phase.sync.rows.sec <- elapsed(t.sync.rows)
+        geometry.cache.used <- FALSE
+    } else {
+        frames <- ps.lps.geometry.cache$frames
+        sync.rows <- ps.lps.geometry.cache$sync.rows
+        phase.frames.sec <- 0
+        phase.sync.rows.sec <- 0
+        geometry.cache.used <- TRUE
+    }
     folds <- sort(unique(foldid))
     has.positive.sync <- any(lambda.sync.grid > 0)
+    needs.fold.component.cache <-
+        has.positive.sync && identical(lambda.sync.selection, "cv")
     fold.component.caches <- vector("list", length(folds))
     names(fold.component.caches) <- as.character(folds)
     full.component.cache <- NULL
@@ -243,17 +280,19 @@ fit.ps.lps <- function(
         t.system <- proc.time()
         system.cache <- .ps.lps.prepare.system.cache(frames, sync.rows)
         phase.system.cache.sec <- elapsed(t.system)
-        t.fold.cache <- proc.time()
-        for (fold in folds) {
-            response.weights <- as.numeric(foldid != fold)
-            fold.component.caches[[as.character(fold)]] <-
-                .ps.lps.prepare.component.cache(
-                    cache = system.cache,
-                    y = y,
-                    response.weights = response.weights
-                )
+        if (needs.fold.component.cache) {
+            t.fold.cache <- proc.time()
+            for (fold in folds) {
+                response.weights <- as.numeric(foldid != fold)
+                fold.component.caches[[as.character(fold)]] <-
+                    .ps.lps.prepare.component.cache(
+                        cache = system.cache,
+                        y = y,
+                        response.weights = response.weights
+                    )
+            }
+            phase.fold.component.cache.sec <- elapsed(t.fold.cache)
         }
-        phase.fold.component.cache.sec <- elapsed(t.fold.cache)
         t.full.cache <- proc.time()
         full.component.cache <- .ps.lps.prepare.component.cache(
             cache = system.cache,
@@ -294,42 +333,46 @@ fit.ps.lps <- function(
             pred[foldid == fold] <- fit.fold$fitted.values[foldid == fold]
         }
         cv.rmse <- .klp.rmse(pred, y)
-        t.diag <- proc.time()
-        fit.diag <- if (lambda > 0) {
-            .ps.lps.solve.component.cached(
-                component.cache = full.component.cache,
-                lambda.sync = lambda,
-                lambda.ridge = lambda.ridge,
-                ridge.multiplier.grid = ridge.multiplier.grid,
-                ridge.condition.max = ridge.condition.max,
-                coefficients.only = TRUE
-            )
-        } else {
-            .ps.lps.solve(
-                frames = frames,
-                y = y,
-                response.weights = rep(1, length(y)),
-                lambda.sync = lambda,
-                lambda.ridge = lambda.ridge,
-                ridge.multiplier.grid = ridge.multiplier.grid,
-                ridge.condition.max = ridge.condition.max,
-                sync.rows = sync.rows,
-                coefficients.only = TRUE
-            )
+        fit.diag <- NULL
+        diag.elapsed <- 0
+        if (identical(lambda.diagnostics, "all")) {
+            t.diag <- proc.time()
+            fit.diag <- if (lambda > 0) {
+                .ps.lps.solve.component.cached(
+                    component.cache = full.component.cache,
+                    lambda.sync = lambda,
+                    lambda.ridge = lambda.ridge,
+                    ridge.multiplier.grid = ridge.multiplier.grid,
+                    ridge.condition.max = ridge.condition.max,
+                    coefficients.only = TRUE
+                )
+            } else {
+                .ps.lps.solve(
+                    frames = frames,
+                    y = y,
+                    response.weights = rep(1, length(y)),
+                    lambda.sync = lambda,
+                    lambda.ridge = lambda.ridge,
+                    ridge.multiplier.grid = ridge.multiplier.grid,
+                    ridge.condition.max = ridge.condition.max,
+                    sync.rows = sync.rows,
+                    coefficients.only = TRUE
+                )
+            }
+            diag.elapsed <- elapsed(t.diag)
         }
-        diag.elapsed <- elapsed(t.diag)
         data.frame(
             lambda.sync = lambda,
             lambda.ridge = lambda.ridge,
             cv.rmse.observed = cv.rmse,
-            total.local.gcv.ps = fit.diag$total.local.gcv.ps,
-            sync.energy = fit.diag$sync.energy,
+            total.local.gcv.ps = fit.diag$total.local.gcv.ps %||% NA_real_,
+            sync.energy = fit.diag$sync.energy %||% NA_real_,
             mean.sync.squared.disagreement =
-                fit.diag$mean.sync.squared.disagreement,
-            ridge.median = fit.diag$ridge.median,
-            ridge.max = fit.diag$ridge.max,
+                fit.diag$mean.sync.squared.disagreement %||% NA_real_,
+            ridge.median = fit.diag$ridge.median %||% NA_real_,
+            ridge.max = fit.diag$ridge.max %||% NA_real_,
             ridge.multiplier.selected =
-                fit.diag$ridge.multiplier.selected %||% lambda.ridge,
+                fit.diag$ridge.multiplier.selected %||% NA_real_,
             ridge.condition = fit.diag$ridge.condition %||% NA_real_,
             ridge.status = fit.diag$ridge.status %||% NA_character_,
             evaluation.elapsed.sec = elapsed(t.eval),
@@ -340,7 +383,35 @@ fit.ps.lps <- function(
     }
 
     t.lambda.search <- proc.time()
-    if (identical(lambda.sync.search, "guarded")) {
+    if (identical(lambda.sync.selection, "fixed")) {
+        selected.lambda <- lambda.sync.grid[[1L]]
+        cv.table <- data.frame(
+            lambda.sync = selected.lambda,
+            lambda.ridge = lambda.ridge,
+            cv.rmse.observed = NA_real_,
+            total.local.gcv.ps = NA_real_,
+            sync.energy = NA_real_,
+            mean.sync.squared.disagreement = NA_real_,
+            ridge.median = NA_real_,
+            ridge.max = NA_real_,
+            ridge.multiplier.selected = NA_real_,
+            ridge.condition = NA_real_,
+            ridge.status = NA_character_,
+            evaluation.elapsed.sec = 0,
+            fold.solve.elapsed.sec = 0,
+            diagnostic.elapsed.sec = 0,
+            stringsAsFactors = FALSE
+        )
+        selected <- cv.table
+        search.telemetry <- data.frame(
+            stage = "fixed",
+            lambda.sync = selected.lambda,
+            boundary = "none",
+            expansion = 0L,
+            selected.after.stage = TRUE,
+            stringsAsFactors = FALSE
+        )
+    } else if (identical(lambda.sync.search, "guarded")) {
         search.out <- .ps.lps.search.lambda.sync(
             evaluate = evaluate.lambda,
             lambda.grid = lambda.sync.grid,
@@ -379,6 +450,17 @@ fit.ps.lps <- function(
         )
     }
     phase.final.solve.sec <- elapsed(t.final)
+    selected.lambda <- selected$lambda.sync[[1L]]
+    cv.table <- .ps.lps.fill.selected.lambda.diagnostics(
+        cv.table = cv.table,
+        selected.lambda = selected.lambda,
+        final = final
+    )
+    selected <- cv.table[
+        which(cv.table$lambda.sync == selected.lambda)[[1L]],
+        ,
+        drop = FALSE
+    ]
     timing <- list(
         total.elapsed.sec = elapsed(timing.start),
         phase_frames_sec = phase.frames.sec,
@@ -424,6 +506,8 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            lambda.sync.selection = lambda.sync.selection,
+            lambda.diagnostics = lambda.diagnostics,
             local.candidate.search = local.candidate.search,
             local.candidate.search.control = local.candidate.search.control,
             lambda.sync.search.telemetry = search.telemetry,
@@ -442,6 +526,7 @@ fit.ps.lps <- function(
             } else {
                 "independent"
             },
+            geometry.cache.used = geometry.cache.used,
             ps.lps.timing = timing,
             frame.design.summary = .ps.lps.frame.design.summary(frames)
         ),
@@ -720,8 +805,9 @@ fit.ps.lps <- function(
 .ps.lps.fit.local.grid <- function(
     X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
     auto.chart.selection.metric, lambda.sync.grid, lambda.sync.search,
+    lambda.sync.selection,
     local.candidate.search, local.candidate.search.control,
-    lambda.sync.search.control, lambda.ridge, design.basis,
+    lambda.sync.search.control, lambda.diagnostics, lambda.ridge, design.basis,
     design.drop.tol, ridge.multiplier.grid, ridge.condition.max,
     sync.neighbor.size, overlap.weight, cv.folds, cv.seed) {
 
@@ -802,9 +888,11 @@ fit.ps.lps <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
+            lambda.sync.selection = lambda.sync.selection,
             local.candidate.search = "full",
             local.candidate.search.control = list(),
             lambda.sync.search.control = lambda.sync.search.control,
+            lambda.diagnostics = lambda.diagnostics,
             lambda.ridge = lambda.ridge,
             design.basis = design.basis,
             design.drop.tol = design.drop.tol,
@@ -950,6 +1038,43 @@ fit.ps.lps <- function(
     tied <- x[is.finite(x$cv.rmse.observed) &
                   x$cv.rmse.observed <= cutoff, , drop = FALSE]
     tied[order(tied$lambda.sync), , drop = FALSE][1L, , drop = FALSE]
+}
+
+.ps.lps.fill.selected.lambda.diagnostics <- function(cv.table,
+                                                     selected.lambda,
+                                                     final) {
+    if (!nrow(cv.table)) {
+        return(cv.table)
+    }
+    selected.lambda <- as.numeric(selected.lambda[[1L]])
+    idx <- which(cv.table$lambda.sync == selected.lambda)
+    if (!length(idx)) {
+        return(cv.table)
+    }
+    idx <- idx[[1L]]
+    replacements <- list(
+        total.local.gcv.ps = final$total.local.gcv.ps %||% NA_real_,
+        sync.energy = final$sync.energy %||% NA_real_,
+        mean.sync.squared.disagreement =
+            final$mean.sync.squared.disagreement %||% NA_real_,
+        ridge.median = final$ridge.median %||% NA_real_,
+        ridge.max = final$ridge.max %||% NA_real_,
+        ridge.multiplier.selected =
+            final$ridge.multiplier.selected %||% NA_real_,
+        ridge.condition = final$ridge.condition %||% NA_real_,
+        ridge.status = final$ridge.status %||% NA_character_
+    )
+    for (nm in names(replacements)) {
+        if (!nm %in% names(cv.table)) {
+            cv.table[[nm]] <- if (is.character(replacements[[nm]])) {
+                NA_character_
+            } else {
+                NA_real_
+            }
+        }
+        cv.table[[nm]][idx] <- replacements[[nm]]
+    }
+    cv.table
 }
 
 .ps.lps.raw.best.lambda.table <- function(x) {
@@ -1308,6 +1433,44 @@ fit.ps.lps <- function(
         chart.dim.mode = "fixed",
         auto.chart.dim = NA_integer_,
         auto.chart.dim.diagnostics = NULL
+    )
+}
+
+.ps.lps.prepare.geometry.cache <- function(X, support.size, degree, kernel,
+                                           chart.dim,
+                                           auto.chart.support.metric,
+                                           auto.chart.selection.metric,
+                                           sync.neighbor.size,
+                                           overlap.weight,
+                                           design.basis,
+                                           design.drop.tol) {
+    chart.dim.info <- .ps.lps.resolve.chart.dim(
+        X = X,
+        support.size = support.size,
+        degree = degree,
+        chart.dim = chart.dim,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
+    )
+    frames <- .ps.lps.prepare.frames(
+        X = X,
+        y = rep(0, nrow(X)),
+        support.size = support.size,
+        degree = degree,
+        kernel = kernel,
+        chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
+        design.basis = design.basis,
+        design.drop.tol = design.drop.tol
+    )
+    sync.rows <- .ps.lps.prepare.sync.rows(
+        frames = frames,
+        sync.neighbor.size = sync.neighbor.size,
+        overlap.weight = overlap.weight
+    )
+    list(
+        chart.dim.info = chart.dim.info,
+        frames = frames,
+        sync.rows = sync.rows
     )
 }
 
