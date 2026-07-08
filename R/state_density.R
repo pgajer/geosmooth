@@ -650,7 +650,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             ),
         chart_kernel = .state.density.visit.cv.chart.kernel.candidates(
             dots = dots,
-            n = n
+            n = n,
+            X = X
         ),
         lps_count = .state.density.visit.cv.lps.candidates(
             dots = dots,
@@ -669,12 +670,14 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         local_likelihood_density =
             .state.density.visit.cv.local.likelihood.candidates(
                 dots = dots,
-                n = n
+                n = n,
+                X = X
             ),
         local_likelihood_bernoulli =
             .state.density.visit.cv.local.likelihood.candidates(
                 dots = dots,
-                n = n
+                n = n,
+                X = X
             ),
         stop("Unsupported OD-level visit CV method.", call. = FALSE)
     )
@@ -1018,7 +1021,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
 }
 
-.state.density.visit.cv.chart.kernel.candidates <- function(dots, n) {
+.state.density.visit.cv.chart.kernel.candidates <- function(dots, n,
+                                                            X = NULL) {
+    if (is.null(X)) {
+        stop("OD-level chart-kernel visit-CV candidate construction ",
+             "requires 'X'.", call. = FALSE)
+    }
     support.size <- .state.density.null.coalesce(
         dots$support.size, min(15L, n)
     )
@@ -1037,33 +1045,115 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         dots$chart.dim.grid,
         chart.dim = dots$chart.dim
     )
-    candidates <- expand.grid(
-        support.size = .klp.clean.support.grid(support.grid, n),
-        kernel = .klp.clean.kernel.grid(kernel.grid),
-        bandwidth.multiplier =
-            .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
-        chart.dim = chart.dim.grid$chart.dim,
-        KEEP.OUT.ATTRS = FALSE,
-        stringsAsFactors = FALSE
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
     )
-    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
-        match(candidates$chart.dim, chart.dim.grid$chart.dim)
-    ]
-    candidates$candidate.id <- seq_len(nrow(candidates))
+    selection.strategy <- .coupled.kd.selection.strategy(
+        dots$selection.strategy %||% "grid"
+    )
+    if (.coupled.kd.has.special.chart.dim(
+            dots$chart.dim.grid,
+            chart.dim = dots$chart.dim
+        ) && identical(selection.strategy, "grid")) {
+        candidates <- expand.grid(
+            support.size = .klp.clean.support.grid(support.grid, n),
+            kernel = .klp.clean.kernel.grid(kernel.grid),
+            bandwidth.multiplier =
+                .klp.clean.bandwidth.multiplier.grid(
+                    bandwidth.multiplier.grid
+                ),
+            chart.dim = chart.dim.grid$chart.dim,
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
+        candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+            match(candidates$chart.dim, chart.dim.grid$chart.dim)
+        ]
+        candidates$candidate.id <- seq_len(nrow(candidates))
+        return(list(
+            candidates = candidates[, c("candidate.id", "support.size",
+                                        "kernel", "bandwidth.multiplier",
+                                        "chart.dim", "chart.dim.rank")],
+            base.dots = .state.density.drop.dots(
+                dots,
+                c("support.size", "support.grid", "kernel", "kernel.grid",
+                  "bandwidth.multiplier", "bandwidth.multiplier.grid",
+                  "degree", "degree.grid", "lambda.ridge",
+                  "lambda.ridge.grid",
+                  "chart.dim", "chart.dim.grid", "selection.strategy",
+                  "chart.dim.max", "design.margin", "cv.folds", "cv.seed")
+            ),
+            coupled.kd.selection = list(
+                selection.strategy = "grid",
+                coupled.chart.dim.search = FALSE,
+                reason = "legacy_special_chart_dim_grid",
+                planned.candidates = nrow(candidates),
+                evaluated.candidates = nrow(candidates),
+                skipped.candidates = 0L,
+                reuse.groups = 0L
+            ),
+            coupled.kd.candidate.plan = NULL
+        ))
+    }
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    candidate.spec <- .coupled.kd.chart.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = 1L,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        chart.dim = dots$chart.dim,
+        chart.dim.grid = dots$chart.dim.grid,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = dots$chart.dim.max %||% NULL,
+        design.margin = dots$design.margin %||% 2L
+    )
+    candidates <- candidate.spec$candidates
+    drop.names <- c("support.size", "support.grid", "kernel", "kernel.grid",
+                    "bandwidth.multiplier", "bandwidth.multiplier.grid",
+                    "degree", "degree.grid", "lambda.ridge",
+                    "lambda.ridge.grid",
+                    "chart.dim.grid", "selection.strategy",
+                    "chart.dim.max", "design.margin", "cv.folds",
+                    "cv.seed")
+    if ("chart.dim" %in% names(candidates)) {
+        drop.names <- c(drop.names, "chart.dim")
+    }
     list(
-        candidates = candidates[, c("candidate.id", "support.size", "kernel",
-                                    "bandwidth.multiplier", "chart.dim",
-                                    "chart.dim.rank")],
+        candidates = candidates[, intersect(
+            c("candidate.id", "support.size", "kernel",
+              "bandwidth.multiplier", "chart.dim", "chart.dim.rank",
+              "chart.dim.source", "chart.dim.raw", "chart.dim.clipped",
+              "chart.dim.seed.clipped", "chart.dim.max", "design.ncol",
+              "design.margin", "reuse.key", "reuse.chart.dim.max"),
+            names(candidates)
+        )],
         base.dots = .state.density.drop.dots(
             dots,
-            c("support.size", "support.grid", "kernel", "kernel.grid",
-              "bandwidth.multiplier", "bandwidth.multiplier.grid",
-              "chart.dim", "chart.dim.grid", "cv.folds", "cv.seed")
-        )
+            drop.names
+        ),
+        coupled.kd.selection = candidate.spec$telemetry,
+        coupled.kd.candidate.plan = candidate.spec$coupled.plan
     )
 }
 
-.state.density.visit.cv.local.likelihood.candidates <- function(dots, n) {
+.state.density.visit.cv.local.likelihood.candidates <- function(dots, n,
+                                                                X = NULL) {
+    if (is.null(X)) {
+        stop("OD-level local-likelihood visit-CV candidate construction ",
+             "requires 'X'.", call. = FALSE)
+    }
     support.size <- .state.density.null.coalesce(
         dots$support.size, min(15L, n)
     )
@@ -1088,35 +1178,116 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         dots$chart.dim.grid,
         chart.dim = dots$chart.dim
     )
-    candidates <- expand.grid(
-        support.size = .klp.clean.support.grid(support.grid, n),
-        degree = .klp.clean.degree.grid(degree.grid),
-        kernel = .klp.clean.kernel.grid(kernel.grid),
-        bandwidth.multiplier =
-            .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid),
-        lambda.ridge =
-            .local.likelihood.clean.lambda.ridge.grid(lambda.ridge.grid),
-        chart.dim = chart.dim.grid$chart.dim,
-        KEEP.OUT.ATTRS = FALSE,
-        stringsAsFactors = FALSE
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
     )
-    candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
-        match(candidates$chart.dim, chart.dim.grid$chart.dim)
-    ]
-    candidates$candidate.id <- seq_len(nrow(candidates))
+    selection.strategy <- .coupled.kd.selection.strategy(
+        dots$selection.strategy %||% "grid"
+    )
+    if (.coupled.kd.has.special.chart.dim(
+            dots$chart.dim.grid,
+            chart.dim = dots$chart.dim
+        ) && identical(selection.strategy, "grid")) {
+        candidates <- expand.grid(
+            support.size = .klp.clean.support.grid(support.grid, n),
+            degree = .klp.clean.degree.grid(degree.grid),
+            kernel = .klp.clean.kernel.grid(kernel.grid),
+            bandwidth.multiplier =
+                .klp.clean.bandwidth.multiplier.grid(
+                    bandwidth.multiplier.grid
+                ),
+            lambda.ridge =
+                .local.likelihood.clean.lambda.ridge.grid(lambda.ridge.grid),
+            chart.dim = chart.dim.grid$chart.dim,
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
+        candidates$chart.dim.rank <- chart.dim.grid$chart.dim.rank[
+            match(candidates$chart.dim, chart.dim.grid$chart.dim)
+        ]
+        candidates$candidate.id <- seq_len(nrow(candidates))
+        return(list(
+            candidates = candidates[, c("candidate.id", "support.size",
+                                        "degree", "kernel",
+                                        "bandwidth.multiplier",
+                                        "lambda.ridge", "chart.dim",
+                                        "chart.dim.rank")],
+            base.dots = .state.density.drop.dots(
+                dots,
+                c("support.size", "support.grid", "degree", "degree.grid",
+                  "kernel", "kernel.grid", "bandwidth.multiplier",
+                  "bandwidth.multiplier.grid", "lambda.ridge",
+                  "lambda.ridge.grid", "chart.dim", "chart.dim.grid",
+                  "selection.strategy", "chart.dim.max", "design.margin",
+                  "cv.folds", "cv.seed")
+            ),
+            coupled.kd.selection = list(
+                selection.strategy = "grid",
+                coupled.chart.dim.search = FALSE,
+                reason = "legacy_special_chart_dim_grid",
+                planned.candidates = nrow(candidates),
+                evaluated.candidates = nrow(candidates),
+                skipped.candidates = 0L,
+                reuse.groups = 0L
+            ),
+            coupled.kd.candidate.plan = NULL
+        ))
+    }
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    candidate.spec <- .coupled.kd.chart.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        chart.dim = dots$chart.dim,
+        chart.dim.grid = dots$chart.dim.grid,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = dots$chart.dim.max %||% NULL,
+        design.margin = dots$design.margin %||% 2L
+    )
+    candidates <- .local.likelihood.expand.lambda.ridge.candidates(
+        candidate.spec$candidates,
+        lambda.ridge.grid
+    )
+    telemetry <- candidate.spec$telemetry
+    telemetry$evaluated.candidates <- nrow(candidates)
+    drop.names <- c("support.size", "support.grid", "degree", "degree.grid",
+                    "kernel", "kernel.grid", "bandwidth.multiplier",
+                    "bandwidth.multiplier.grid", "lambda.ridge",
+                    "lambda.ridge.grid", "chart.dim.grid",
+                    "selection.strategy", "chart.dim.max", "design.margin",
+                    "cv.folds", "cv.seed")
+    if ("chart.dim" %in% names(candidates)) {
+        drop.names <- c(drop.names, "chart.dim")
+    }
     list(
-        candidates = candidates[, c("candidate.id", "support.size", "degree",
-                                    "kernel", "bandwidth.multiplier",
-                                    "lambda.ridge", "chart.dim",
-                                    "chart.dim.rank")],
+        candidates = candidates[, intersect(
+            c("candidate.id", "support.size", "degree", "kernel",
+              "bandwidth.multiplier", "lambda.ridge", "chart.dim",
+              "chart.dim.rank", "chart.dim.source", "chart.dim.raw",
+              "chart.dim.clipped", "chart.dim.seed.clipped",
+              "chart.dim.max", "design.ncol", "design.margin",
+              "reuse.key", "reuse.chart.dim.max"),
+            names(candidates)
+        )],
         base.dots = .state.density.drop.dots(
             dots,
-            c("support.size", "support.grid", "degree", "degree.grid",
-              "kernel", "kernel.grid", "bandwidth.multiplier",
-              "bandwidth.multiplier.grid", "lambda.ridge",
-              "lambda.ridge.grid", "chart.dim", "chart.dim.grid",
-              "cv.folds", "cv.seed")
-        )
+            drop.names
+        ),
+        coupled.kd.selection = telemetry,
+        coupled.kd.candidate.plan = candidate.spec$coupled.plan
     )
 }
 

@@ -3,13 +3,15 @@
                                       degree.grid = NULL,
                                       kernel.grid = NULL,
                                       bandwidth.multiplier.grid = NULL,
-                                      lambda.ridge.grid = NULL) {
+                                      lambda.ridge.grid = NULL,
+                                      chart.dim.grid = NULL) {
     !is.null(foldid) ||
         !is.null(support.grid) ||
         !is.null(degree.grid) ||
         !is.null(kernel.grid) ||
         !is.null(bandwidth.multiplier.grid) ||
-        !is.null(lambda.ridge.grid)
+        !is.null(lambda.ridge.grid) ||
+        !is.null(chart.dim.grid)
 }
 
 .local.likelihood.clean.lambda.ridge.grid <- function(lambda.ridge.grid) {

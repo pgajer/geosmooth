@@ -648,15 +648,18 @@ test_that("OD3 local-likelihood validates Bernoulli responses", {
         ),
         "reserved argument"
     )
-    expect_error(
-        fit.local.likelihood(
-            X = X,
-            y = rep(1, nrow(X)),
-            likelihood.family = "density",
-            support.grid = c(5L, 7L)
-        ),
-        "bernoulli"
+    density.cv <- fit.local.likelihood(
+        X = X,
+        y = rep(1, nrow(X)),
+        likelihood.family = "density",
+        support.grid = c(5L, 7L),
+        cv.folds = 2L,
+        cv.seed = 13L
     )
+    expect_s3_class(density.cv, "local_likelihood")
+    expect_equal(nrow(density.cv$cv.table), 2L)
+    expect_true(all(is.finite(density.cv$cv.table$cv.rmse.observed)))
+
     expect_error(
         fit.subject.od(
             X = X,

@@ -47,6 +47,17 @@
 #'   dimension diagnostics as \code{\link{fit.lps}}; \code{"auto"} resolves
 #'   one global chart dimension, while \code{"local.auto"} resolves one
 #'   dimension per evaluation anchor.
+#' @param chart.dim.grid Optional candidate chart dimensions for experimental
+#'   row-wise cross-validation. Numeric grids can be evaluated with
+#'   \code{selection.strategy = "sparse_kd"}.
+#' @param selection.strategy Candidate-selection strategy. \code{"grid"}
+#'   evaluates the requested candidate grid. \code{"sparse_kd"} evaluates a
+#'   sparse support-size by chart-dimension skeleton when
+#'   \code{chart.dim.grid} is supplied.
+#' @param chart.dim.max Optional explicit maximum chart dimension for the
+#'   sparse coupled candidate family.
+#' @param design.margin Nonnegative integer feasibility margin used to screen
+#'   local polynomial design size before candidate evaluation.
 #' @param auto.chart.support.metric Support system used by \code{chart.dim =
 #'   "auto"} or \code{"local.auto"}.  Chart-kernel smoothers currently use
 #'   coordinate supports for both coordinate and operator diagnostics.
@@ -78,6 +89,10 @@ fit.chart.kernel <- function(
     cv.seed = 1L,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    chart.dim.grid = NULL,
+    selection.strategy = c("grid", "sparse_kd"),
+    chart.dim.max = NULL,
+    design.margin = 2L,
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
     quadrature.weights = NULL,
@@ -101,7 +116,8 @@ fit.chart.kernel <- function(
         degree.grid = NULL,
         kernel.grid = kernel.grid,
         bandwidth.multiplier.grid = bandwidth.multiplier.grid,
-        lambda.ridge.grid = NULL
+        lambda.ridge.grid = NULL,
+        chart.dim.grid = chart.dim.grid
     )
     support.grid <- if (is.null(support.grid)) {
         support.size
@@ -114,6 +130,7 @@ fit.chart.kernel <- function(
         .klp.clean.kernel.grid(kernel.grid)
     }
     coordinate.method <- match.arg(coordinate.method)
+    selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     bandwidth.multiplier <- .local.chart.validate.positive.scalar(
@@ -127,6 +144,12 @@ fit.chart.kernel <- function(
     denominator.floor <- .local.chart.validate.positive.scalar(
         denominator.floor, "denominator.floor"
     )
+    design.margin <- as.integer(design.margin)
+    if (length(design.margin) != 1L || !is.finite(design.margin) ||
+        design.margin < 0L) {
+        stop("'design.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
     requested.chart.dim <- chart.dim
     chart.dim.info <- .local.chart.resolve.chart.dim(
         X = X,
@@ -141,15 +164,28 @@ fit.chart.kernel <- function(
 
     cv.table <- NULL
     cv.predictions <- NULL
+    coupled.plan <- NULL
+    coupled.telemetry <- NULL
     if (isTRUE(cv.requested)) {
         foldid <- .klp.prepare.foldid(n, foldid, cv.folds, cv.seed)
-        cand <- expand.grid(
-            support.size = support.grid,
-            kernel = kernel.grid,
-            bandwidth.multiplier = bandwidth.multiplier.grid,
-            KEEP.OUT.ATTRS = FALSE,
-            stringsAsFactors = FALSE
+        candidate.spec <- .coupled.kd.chart.candidate.spec(
+            X = X,
+            support.grid = support.grid,
+            degree.grid = 1L,
+            kernel.grid = kernel.grid,
+            bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+            chart.dim = requested.chart.dim,
+            chart.dim.grid = chart.dim.grid,
+            coordinate.method = coordinate.method,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            selection.strategy = selection.strategy,
+            chart.dim.max = chart.dim.max,
+            design.margin = design.margin
         )
+        cand <- candidate.spec$candidates
+        coupled.plan <- candidate.spec$coupled.plan
+        coupled.telemetry <- candidate.spec$telemetry
         cv.result <- .chart.kernel.cv.table(
             X = X,
             y = y,
@@ -169,6 +205,12 @@ fit.chart.kernel <- function(
         support.size <- selected.row$support.size[[1L]]
         kernel <- selected.row$kernel[[1L]]
         bandwidth.multiplier <- selected.row$bandwidth.multiplier[[1L]]
+        requested.chart.dim <- if ("chart.dim" %in% names(selected.row) &&
+                                   !is.na(selected.row$chart.dim[[1L]])) {
+            .local.chart.decode.chart.dim(selected.row$chart.dim[[1L]])
+        } else {
+            requested.chart.dim
+        }
         chart.dim.info <- .local.chart.resolve.chart.dim(
             X = X,
             support.size = support.size,
@@ -269,6 +311,7 @@ fit.chart.kernel <- function(
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric,
             denominator.floor = denominator.floor,
+            selection.strategy = selection.strategy,
             cv.rmse.observed = if (!is.null(cv.table)) {
                 min(cv.table$cv.rmse.observed, na.rm = TRUE)
             } else {
@@ -278,10 +321,17 @@ fit.chart.kernel <- function(
         cv.table = cv.table,
         foldid = if (isTRUE(cv.requested)) foldid else NULL,
         cv.predictions = if (isTRUE(return.details)) cv.predictions else NULL,
+        coupled.kd.candidate.plan = if (isTRUE(return.details)) {
+            coupled.plan
+        } else {
+            NULL
+        },
+        selection.strategy = selection.strategy,
         quadrature.weights = quadrature.weights,
         diagnostics = diagnostics,
         call = match.call()
     )
+    out$diagnostics$coupled.kd.selection <- coupled.telemetry
     class(out) <- c("chart_kernel", "list")
     out
 }
@@ -298,18 +348,23 @@ fit.chart.kernel <- function(
                                    denominator.floor) {
     pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
     folds <- sort(unique(foldid))
+    candidate.chart.dim <- "chart.dim" %in% names(cand) &&
+        any(!is.na(cand$chart.dim))
     for (fold in folds) {
         test <- which(foldid == fold)
         train <- which(foldid != fold)
         X.train <- X[train, , drop = FALSE]
         y.train <- y[train]
         q.train <- quadrature.weights[train]
-        chart.dim.fold <- if (identical(coordinate.method, "coordinates")) {
-            NULL
-        } else {
-            chart.dim
-        }
         for (rr in seq_len(nrow(cand))) {
+            chart.dim.fold <- if (identical(coordinate.method,
+                                            "coordinates")) {
+                NULL
+            } else if (isTRUE(candidate.chart.dim)) {
+                .local.chart.decode.chart.dim(cand$chart.dim[[rr]])
+            } else {
+                chart.dim
+            }
             fit <- fit.chart.kernel(
                 X = X.train,
                 y = y.train,

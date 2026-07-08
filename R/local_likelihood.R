@@ -52,6 +52,17 @@
 #'   dimension diagnostics as \code{\link{fit.lps}}; \code{"auto"} resolves
 #'   one global chart dimension, while \code{"local.auto"} resolves one
 #'   dimension per evaluation anchor.
+#' @param chart.dim.grid Optional candidate chart dimensions for experimental
+#'   cross-validation. Numeric grids can be evaluated with
+#'   \code{selection.strategy = "sparse_kd"}.
+#' @param selection.strategy Candidate-selection strategy. \code{"grid"}
+#'   evaluates the requested candidate grid. \code{"sparse_kd"} evaluates a
+#'   sparse support-size by chart-dimension skeleton when
+#'   \code{chart.dim.grid} is supplied.
+#' @param chart.dim.max Optional explicit maximum chart dimension for the
+#'   sparse coupled candidate family.
+#' @param design.margin Nonnegative integer feasibility margin used to screen
+#'   local polynomial design size before candidate evaluation.
 #' @param auto.chart.support.metric Support system used by \code{chart.dim =
 #'   "auto"} or \code{"local.auto"}.  Local-likelihood smoothers currently use
 #'   coordinate supports for both coordinate and operator diagnostics.
@@ -96,6 +107,10 @@ fit.local.likelihood <- function(
     cv.seed = 1L,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    chart.dim.grid = NULL,
+    selection.strategy = c("grid", "sparse_kd"),
+    chart.dim.max = NULL,
+    design.margin = 2L,
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
     quadrature.weights = NULL,
@@ -136,13 +151,9 @@ fit.local.likelihood <- function(
         degree.grid = degree.grid,
         kernel.grid = kernel.grid,
         bandwidth.multiplier.grid = bandwidth.multiplier.grid,
-        lambda.ridge.grid = lambda.ridge.grid
+        lambda.ridge.grid = lambda.ridge.grid,
+        chart.dim.grid = chart.dim.grid
     )
-    if (isTRUE(cv.requested) && !identical(likelihood.family, "bernoulli")) {
-        stop("CV selection in fit.local.likelihood() is currently ",
-             "implemented for likelihood.family = \"bernoulli\" only.",
-             call. = FALSE)
-    }
     support.grid <- if (is.null(support.grid)) {
         support.size
     } else {
@@ -167,8 +178,15 @@ fit.local.likelihood <- function(
         .klp.clean.bandwidth.multiplier.grid(bandwidth.multiplier.grid)
     }
     coordinate.method <- match.arg(coordinate.method)
+    selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
+    design.margin <- as.integer(design.margin)
+    if (length(design.margin) != 1L || !is.finite(design.margin) ||
+        design.margin < 0L) {
+        stop("'design.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
     requested.chart.dim <- chart.dim
     chart.dim.info <- .local.chart.resolve.chart.dim(
         X = X,
@@ -204,22 +222,40 @@ fit.local.likelihood <- function(
 
     cv.table <- NULL
     cv.predictions <- NULL
+    coupled.plan <- NULL
+    coupled.telemetry <- NULL
     if (isTRUE(cv.requested)) {
         foldid <- .klp.prepare.foldid(n, foldid, cv.folds, cv.seed)
-        cand <- expand.grid(
-            support.size = support.grid,
-            degree = degree.grid,
-            kernel = kernel.grid,
-            bandwidth.multiplier = bandwidth.multiplier.grid,
-            lambda.ridge = lambda.ridge.grid,
-            KEEP.OUT.ATTRS = FALSE,
-            stringsAsFactors = FALSE
+        candidate.spec <- .coupled.kd.chart.candidate.spec(
+            X = X,
+            support.grid = support.grid,
+            degree.grid = degree.grid,
+            kernel.grid = kernel.grid,
+            bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+            chart.dim = requested.chart.dim,
+            chart.dim.grid = chart.dim.grid,
+            coordinate.method = coordinate.method,
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric,
+            selection.strategy = selection.strategy,
+            chart.dim.max = chart.dim.max,
+            design.margin = design.margin
         )
-        cv.result <- .local.likelihood.bernoulli.cv.table(
+        cand <- .local.likelihood.expand.lambda.ridge.candidates(
+            candidate.spec$candidates,
+            lambda.ridge.grid
+        )
+        coupled.plan <- candidate.spec$coupled.plan
+        coupled.telemetry <- candidate.spec$telemetry
+        if (!is.null(coupled.telemetry)) {
+            coupled.telemetry$evaluated.candidates <- nrow(cand)
+        }
+        cv.result <- .local.likelihood.cv.table(
             X = X,
             y = y,
             foldid = foldid,
             cand = cand,
+            likelihood.family = likelihood.family,
             coordinate.method = coordinate.method,
             chart.dim = requested.chart.dim,
             auto.chart.support.metric = auto.chart.support.metric,
@@ -234,16 +270,25 @@ fit.local.likelihood <- function(
         )
         cv.table <- cv.result$cv.table
         cv.predictions <- cv.result$predictions
-        best.idx <- .local.chart.select.best.idx(
-            cv.table,
-            score.column = "cv.brier.observed"
-        )
+        score.column <- if (identical(likelihood.family, "bernoulli")) {
+            "cv.brier.observed"
+        } else {
+            "cv.rmse.observed"
+        }
+        best.idx <- .local.chart.select.best.idx(cv.table,
+                                                 score.column = score.column)
         selected.row <- cv.table[best.idx, , drop = FALSE]
         support.size <- selected.row$support.size[[1L]]
         degree <- selected.row$degree[[1L]]
         kernel <- selected.row$kernel[[1L]]
         bandwidth.multiplier <- selected.row$bandwidth.multiplier[[1L]]
         lambda.ridge <- selected.row$lambda.ridge[[1L]]
+        requested.chart.dim <- if ("chart.dim" %in% names(selected.row) &&
+                                   !is.na(selected.row$chart.dim[[1L]])) {
+            .local.chart.decode.chart.dim(selected.row$chart.dim[[1L]])
+        } else {
+            requested.chart.dim
+        }
         chart.dim.info <- .local.chart.resolve.chart.dim(
             X = X,
             support.size = support.size,
@@ -389,14 +434,26 @@ fit.local.likelihood <- function(
             min.nonzero.mass = min.nonzero.mass,
             fallback = fallback,
             optimizer = optimizer,
+            selection.strategy = selection.strategy,
             max.iter = max.iter,
             tol = tol,
-            cv.brier.observed = if (!is.null(cv.table)) {
+            cv.rmse.observed = if (!is.null(cv.table) &&
+                                   "cv.rmse.observed" %in%
+                                       names(cv.table)) {
+                min(cv.table$cv.rmse.observed, na.rm = TRUE)
+            } else {
+                NA_real_
+            },
+            cv.brier.observed = if (!is.null(cv.table) &&
+                                    "cv.brier.observed" %in%
+                                        names(cv.table)) {
                 min(cv.table$cv.brier.observed, na.rm = TRUE)
             } else {
                 NA_real_
             },
-            cv.logloss.observed = if (!is.null(cv.table)) {
+            cv.logloss.observed = if (!is.null(cv.table) &&
+                                      "cv.logloss.observed" %in%
+                                          names(cv.table)) {
                 min(cv.table$cv.logloss.observed, na.rm = TRUE)
             } else {
                 NA_real_
@@ -405,48 +462,75 @@ fit.local.likelihood <- function(
         cv.table = cv.table,
         foldid = if (isTRUE(cv.requested)) foldid else NULL,
         cv.predictions = if (isTRUE(return.details)) cv.predictions else NULL,
+        coupled.kd.candidate.plan = if (isTRUE(return.details)) {
+            coupled.plan
+        } else {
+            NULL
+        },
+        selection.strategy = selection.strategy,
         quadrature.weights = quadrature.weights,
         diagnostics = diagnostics,
         call = match.call()
     )
+    out$diagnostics$coupled.kd.selection <- coupled.telemetry
     class(out) <- c("local_likelihood", "list")
     out
 }
 
-.local.likelihood.bernoulli.cv.table <- function(X,
-                                                 y,
-                                                 foldid,
-                                                 cand,
-                                                 coordinate.method,
-                                                 chart.dim,
-                                                 auto.chart.support.metric,
-                                                 auto.chart.selection.metric,
-                                                 quadrature.weights,
-                                                 min.local.mass,
-                                                 min.nonzero.mass,
-                                                 fallback,
-                                                 optimizer,
-                                                 max.iter,
-                                                 tol) {
+.local.likelihood.expand.lambda.ridge.candidates <- function(cand,
+                                                             lambda.ridge.grid) {
+    lambda.ridge.grid <- .local.likelihood.clean.lambda.ridge.grid(
+        lambda.ridge.grid
+    )
+    out <- cand[rep(seq_len(nrow(cand)), each = length(lambda.ridge.grid)),
+                ,
+                drop = FALSE]
+    out$lambda.ridge <- rep(lambda.ridge.grid, times = nrow(cand))
+    out$candidate.id <- seq_len(nrow(out))
+    rownames(out) <- NULL
+    out
+}
+
+.local.likelihood.cv.table <- function(X,
+                                       y,
+                                       foldid,
+                                       cand,
+                                       likelihood.family,
+                                       coordinate.method,
+                                       chart.dim,
+                                       auto.chart.support.metric,
+                                       auto.chart.selection.metric,
+                                       quadrature.weights,
+                                       min.local.mass,
+                                       min.nonzero.mass,
+                                       fallback,
+                                       optimizer,
+                                       max.iter,
+                                       tol) {
     pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
     folds <- sort(unique(foldid))
+    candidate.chart.dim <- "chart.dim" %in% names(cand) &&
+        any(!is.na(cand$chart.dim))
     for (fold in folds) {
         test <- which(foldid == fold)
         train <- which(foldid != fold)
         X.train <- X[train, , drop = FALSE]
         y.train <- y[train]
         q.train <- quadrature.weights[train]
-        chart.dim.fold <- if (identical(coordinate.method, "coordinates")) {
-            NULL
-        } else {
-            chart.dim
-        }
         for (rr in seq_len(nrow(cand))) {
+            chart.dim.fold <- if (identical(coordinate.method,
+                                            "coordinates")) {
+                NULL
+            } else if (isTRUE(candidate.chart.dim)) {
+                .local.chart.decode.chart.dim(cand$chart.dim[[rr]])
+            } else {
+                chart.dim
+            }
             fit <- fit.local.likelihood(
                 X = X.train,
                 y = y.train,
                 X.eval = X[test, , drop = FALSE],
-                likelihood.family = "bernoulli",
+                likelihood.family = likelihood.family,
                 support.size = cand$support.size[[rr]],
                 degree = cand$degree[[rr]],
                 kernel = cand$kernel[[rr]],
@@ -474,17 +558,19 @@ fit.local.likelihood <- function(
         function(j) .klp.rmse(pred[, j], y),
         numeric(1L)
     )
-    cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
-    cv.table$cv.logloss.observed <- vapply(
-        seq_len(ncol(pred)),
-        function(j) {
-            if (!all(is.finite(pred[, j]))) {
-                return(Inf)
-            }
-            .klp.logloss(y, pmin(pmax(pred[, j], 1e-15), 1 - 1e-15))
-        },
-        numeric(1L)
-    )
+    if (identical(likelihood.family, "bernoulli")) {
+        cv.table$cv.brier.observed <- cv.table$cv.rmse.observed^2
+        cv.table$cv.logloss.observed <- vapply(
+            seq_len(ncol(pred)),
+            function(j) {
+                if (!all(is.finite(pred[, j]))) {
+                    return(Inf)
+                }
+                .klp.logloss(y, pmin(pmax(pred[, j], 1e-15), 1 - 1e-15))
+            },
+            numeric(1L)
+        )
+    }
     list(cv.table = cv.table, predictions = pred)
 }
 
