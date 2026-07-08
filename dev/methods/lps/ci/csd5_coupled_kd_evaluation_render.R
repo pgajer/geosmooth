@@ -145,11 +145,25 @@ status.table$attempted <- rowSums(status.table[setdiff(names(status.table),
 status.table$failed <- status.table$attempted - status.table$ok
 status.table <- status.table[, c("strategy", "attempted", "ok", "failed")]
 
+relative.regret.eps <- 1e-12
+scores$outer.relative.regret <- scores$outer.regret /
+    pmax(scores$reference.outer.rmse, relative.regret.eps)
+scores$outer.relative.regret.percent <- 100 * scores$outer.relative.regret
+
+if (!"outer.relative.regret.percent" %in% names(summary)) {
+    rel.summary <- aggregate(outer.relative.regret.percent ~ strategy,
+                             data = scores[scores$status == "ok", ,
+                                           drop = FALSE],
+                             FUN = stats::median)
+    summary <- merge(summary, rel.summary, by = "strategy", all.x = TRUE)
+}
+
 summary.display <- summary
 summary.name.map <- c(
     strategy = "strategy",
     outer.rmse = "R_med",
     outer.regret = "Delta_med",
+    outer.relative.regret.percent = "Delta_rel_pct_med",
     elapsed.sec = "T_med",
     evaluated.candidates = "cand_med",
     unique.pca.builds = "pca_med",
@@ -162,41 +176,62 @@ summary.display <- summary.display[order(summary.display$Delta_med), ]
 make.regret.runtime.plot <- function() {
     path <- file.path(fig.dir, "figure_1_regret_runtime.svg")
     ok <- scores[scores$status == "ok", , drop = FALSE]
-    plot.df <- aggregate(cbind(outer.regret, elapsed.sec) ~ strategy,
+    plot.df <- aggregate(cbind(outer.relative.regret.percent, elapsed.sec) ~
+                             strategy,
                          data = ok, FUN = stats::median)
-    mad.regret <- aggregate(outer.regret ~ strategy, data = ok,
+    mad.regret <- aggregate(outer.relative.regret.percent ~ strategy,
+                            data = ok,
                             FUN = stats::mad)
     mad.time <- aggregate(elapsed.sec ~ strategy, data = ok, FUN = stats::mad)
-    plot.df$mad.regret <- mad.regret$outer.regret[
+    plot.df$mad.regret <- mad.regret$outer.relative.regret.percent[
         match(plot.df$strategy, mad.regret$strategy)
     ]
     plot.df$mad.time <- mad.time$elapsed.sec[
         match(plot.df$strategy, mad.time$strategy)
     ]
-    cols <- c(auto = "#4C78A8", local_auto = "#59A14F",
-              sparse_kd = "#F28E2B", full_kd = "#E15759")
+    point.cols <- c(auto = "#0072B2", local_auto = "#009E73",
+                    sparse_kd = "#E69F00", full_kd = "#CC79A7")
+    point.pch <- c(auto = 16, local_auto = 17, sparse_kd = 15, full_kd = 18)
+    label.map <- c(auto = "auto", local_auto = "local.auto",
+                   sparse_kd = "sparse kd", full_kd = "full kd")
     write.svg(path, width = 8.6, height = 5.6, {
         old <- par(mar = c(5, 5, 3, 1))
         on.exit(par(old), add = TRUE)
-        x.pad <- diff(range(plot.df$elapsed.sec)) * 0.08
-        y.pad <- diff(range(plot.df$outer.regret)) * 0.18
-        plot(plot.df$elapsed.sec, plot.df$outer.regret,
-             pch = 16, cex = 1.2, col = cols[plot.df$strategy],
-             xlim = range(plot.df$elapsed.sec) + c(-x.pad, x.pad),
-             ylim = range(plot.df$outer.regret) + c(-y.pad, y.pad),
+        x.bounds <- range(c(plot.df$elapsed.sec - plot.df$mad.time,
+                            plot.df$elapsed.sec + plot.df$mad.time),
+                          finite = TRUE)
+        y.lower <- pmax(0, plot.df$outer.relative.regret.percent -
+                            plot.df$mad.regret)
+        y.upper <- plot.df$outer.relative.regret.percent + plot.df$mad.regret
+        y.bounds <- range(c(y.lower, y.upper),
+                          finite = TRUE)
+        x.pad <- diff(x.bounds) * 0.08
+        y.pad <- diff(y.bounds) * 0.10
+        plot(plot.df$elapsed.sec, plot.df$outer.relative.regret.percent,
+             pch = point.pch[plot.df$strategy], cex = 1.25,
+             col = point.cols[plot.df$strategy],
+             xlim = x.bounds + c(-x.pad, x.pad),
+             ylim = y.bounds + c(-y.pad, y.pad),
              xlab = "Median elapsed seconds per outer fit",
-             ylab = "Median regret vs full-grid outer reference",
-             main = "Figure 1. Runtime versus full-grid outer regret")
-        arrows(plot.df$elapsed.sec - plot.df$mad.time, plot.df$outer.regret,
-               plot.df$elapsed.sec + plot.df$mad.time, plot.df$outer.regret,
+             ylab = "Median relative regret versus reference (%)",
+             main = "Figure 1. Runtime versus relative outer regret")
+        arrows(plot.df$elapsed.sec - plot.df$mad.time,
+               plot.df$outer.relative.regret.percent,
+               plot.df$elapsed.sec + plot.df$mad.time,
+               plot.df$outer.relative.regret.percent,
                code = 3, angle = 90, length = 0.04,
                col = grDevices::adjustcolor("#B22222", 0.75))
-        arrows(plot.df$elapsed.sec, plot.df$outer.regret - plot.df$mad.regret,
-               plot.df$elapsed.sec, plot.df$outer.regret + plot.df$mad.regret,
+        arrows(plot.df$elapsed.sec, y.lower,
+               plot.df$elapsed.sec, y.upper,
                code = 3, angle = 90, length = 0.04,
                col = grDevices::adjustcolor("#B22222", 0.75))
-        legend("topleft", legend = names(cols), pch = 16, col = cols,
-               bty = "n", cex = 0.85)
+        text(plot.df$elapsed.sec,
+             plot.df$outer.relative.regret.percent,
+             labels = label.map[plot.df$strategy],
+             pos = c(auto = 3, local_auto = 3, sparse_kd = 4, full_kd = 4)[
+                 plot.df$strategy
+             ],
+             cex = 0.78, col = point.cols[plot.df$strategy])
         grid(col = "#E6E6E6")
     })
     path
@@ -207,19 +242,21 @@ make.selected.kd.plot <- function() {
     ok <- scores[scores$status == "ok" &
                      scores$strategy %in% c("sparse_kd", "full_kd"), ,
                  drop = FALSE]
-    cols <- c(sparse_kd = "#F28E2B", full_kd = "#E15759")
+    cols <- c(sparse_kd = "#E69F00", full_kd = "#0072B2")
+    pchs <- c(sparse_kd = 17, full_kd = 16)
     write.svg(path, width = 9, height = 5.8, {
         old <- par(mar = c(5, 5, 3, 1))
         on.exit(par(old), add = TRUE)
         plot(ok$selected.support.size,
              suppressWarnings(as.integer(ok$selected.chart.dim)),
-             pch = 16, cex = 0.9, col = cols[ok$strategy],
+             pch = pchs[ok$strategy], cex = 0.95, col = cols[ok$strategy],
              xlim = c(14, 36), ylim = c(0.5, 8.5),
              xlab = "Selected support size k",
              ylab = "Selected chart dimension d",
              main = "Figure 2. Selected numeric (k,d) over outer tasks")
         legend("bottomright", bty = "n",
-               legend = names(cols), pch = 16, col = cols)
+               legend = c("sparse kd", "full kd"),
+               pch = pchs[names(cols)], col = cols)
         grid(col = "#E6E6E6")
     })
     path
@@ -259,8 +296,8 @@ make.reuse.plot <- function() {
         0
     )
     yy <- seq_len(nrow(reuse))
-    cols <- c(auto = "#4C78A8", local_auto = "#59A14F",
-              sparse_kd = "#F28E2B", full_kd = "#E15759")
+    cols <- c(auto = "#0072B2", local_auto = "#009E73",
+              sparse_kd = "#E69F00", full_kd = "#CC79A7")
     write.svg(path, width = 8.6, height = 5.3, {
         old <- par(mar = c(5, 9, 3, 1))
         on.exit(par(old), add = TRUE)
@@ -289,8 +326,10 @@ make.paired.regret.plot <- function() {
     path <- file.path(fig.dir, "figure_5_paired_regret_intervals.svg")
     ok <- scores[scores$status == "ok", , drop = FALSE]
     strategies <- c("auto", "local_auto", "sparse_kd", "full_kd")
+    scale.y <- function(x) log10(1 + pmax(0, x))
+    y.ticks.raw <- c(0, 10, 25, 50, 100, 250, 500, 1000, 3000)
     stats <- do.call(rbind, lapply(seq_along(strategies), function(ii) {
-        x <- ok$outer.regret[ok$strategy == strategies[[ii]]]
+        x <- ok$outer.relative.regret.percent[ok$strategy == strategies[[ii]]]
         bb <- bayes.boot.median(x, seed = 20260708L + ii)
         data.frame(strategy = strategies[[ii]], x = ii,
                    median = bb[["median"]], lo = bb[["lo"]],
@@ -303,26 +342,37 @@ make.paired.regret.plot <- function() {
     write.svg(path, width = 9.2, height = 5.6, {
         old <- par(mar = c(6, 5, 3, 1))
         on.exit(par(old), add = TRUE)
+        y.values <- scale.y(c(0, ok$outer.relative.regret.percent,
+                              stats$lo, stats$hi))
         plot(seq_along(strategies), rep(0, length(strategies)), type = "n",
-             xaxt = "n", xlab = "", ylab = "Outer RMSE regret vs oracle reference",
+             xaxt = "n", xlab = "",
+             yaxt = "n",
+             ylab = "Relative outer regret versus reference (%)",
              xlim = c(0.45, length(strategies) + 0.55),
-             ylim = range(c(0, ok$outer.regret, stats$lo, stats$hi),
-                          finite = TRUE),
-             main = "Figure 5. Paired outer-regret distribution")
+             ylim = range(y.values, finite = TRUE),
+             main = "Figure 5. Paired relative-regret distribution")
+        shown.ticks <- y.ticks.raw[
+            scale.y(y.ticks.raw) >= par("usr")[3] &
+                scale.y(y.ticks.raw) <= par("usr")[4]
+        ]
+        axis(2, at = scale.y(shown.ticks), labels = shown.ticks, las = 2)
         abline(h = 0, lty = 2, col = "#666666")
         for (ii in seq_along(strategies)) {
-            vals <- ok$outer.regret[ok$strategy == strategies[[ii]]]
+            vals <- ok$outer.relative.regret.percent[
+                ok$strategy == strategies[[ii]]
+            ]
             set.seed(100 + ii)
             jitter <- stats::runif(length(vals), -0.08, 0.08)
-            points(rep(ii, length(vals)) + jitter, vals,
+            points(rep(ii, length(vals)) + jitter, scale.y(vals),
                    pch = 16, cex = 0.55,
                    col = grDevices::adjustcolor("#666666", 0.45))
         }
-        arrows(stats$x, stats$lo, stats$x, stats$hi, code = 3,
+        arrows(stats$x, scale.y(stats$lo), stats$x, scale.y(stats$hi), code = 3,
                angle = 90, length = 0.05, col = "#B22222", lwd = 2)
-        points(stats$x, stats$median, pch = 16, cex = 1.3, col = "#B22222")
+        points(stats$x, scale.y(stats$median), pch = 16, cex = 1.3,
+               col = "#B22222")
         axis(1, at = seq_along(strategies), labels = strategies, las = 2)
-        text(stats$x, stats$hi,
+        text(stats$x, scale.y(stats$hi),
              labels = paste0(stats$n.equal, " equal / ", stats$n.worse,
                              " worse"),
              pos = 3, cex = 0.62)
@@ -403,7 +453,20 @@ R_s^{\\star}=\\min_{(k,d)\\in\\mathcal G_{\\mathrm{full}}} R_{s,(k,d)},
 \\Delta_{s,m}=R_{s,m}-R_s^{\\star}.
 \\]
 <p>Thus positive regret \\(\\Delta_{s,m}\\) means the selected strategy was worse
-than the full-grid truth-facing reference on that same outer fold.</p>
+than the full-grid truth-facing reference on that same outer fold.  Because an
+absolute RMSE loss is difficult to interpret without the scale of the task, the
+main figures also report percent relative regret</p>
+\\[
+\\Delta^{\\mathrm{rel}}_{s,m}
+=
+100\\,
+\\frac{R_{s,m}-R_s^{\\star}}{R_s^{\\star}+\\epsilon},
+\\qquad \\epsilon=10^{-12}.
+\\]
+<p>A value of \\(5\\) means that the selected strategy had 5% larger outer RMSE
+than the full-grid reference on the same task.  A value of \\(100\\) means twice
+the reference RMSE.  The tiny \\(\\epsilon\\) only protects against division by
+zero and has no visible effect in this result bundle.</p>
 <div class="callout"><strong>Scope.</strong> This first report validates the
 LPS implementation path where full Cartesian references are feasible.  PS-LPS
 uses the same sparse candidate machinery after CSD4, but its synchronized
@@ -434,11 +497,14 @@ dimension), <code>local_auto</code> (anchor-specific automatic dimensions),
 <h2>Strategy Summary</h2>
 <p>This table summarizes successful outer tasks.  \\(R_{\\mathrm{med}}\\) is the
 median outer RMSE \\(R_{s,m}\\), \\(\\Delta_{\\mathrm{med}}\\) is the median regret
-\\(\\Delta_{s,m}\\), \\(T_{\\mathrm{med}}\\) is median end-to-end serial wall time
-per outer fit in seconds, <code>cand</code> is the median evaluated candidate
+\\(\\Delta_{s,m}\\), \\(\\Delta^{\\mathrm{rel}}_{\\mathrm{pct,med}}\\) is the median
+percent relative regret, \\(T_{\\mathrm{med}}\\) is median end-to-end serial wall
+time per outer fit in seconds, <code>cand</code> is the median evaluated candidate
 count, and <code>pca</code> is the median number of unique reusable local-PCA
 support groups.  Values are medians across 24 matched outer tasks per
-strategy.</p>',
+strategy.  The absolute and relative regret columns should be read together:
+the first gives the raw RMSE loss, and the second says how large that loss is
+relative to the task reference error.</p>',
 small.table.html(summary.display, digits = 4L),
 '<p>Full linked artifacts:
 <a href="', tab.rel("csd5_strategy_outer_scores.csv"), '">outer scores</a>,
@@ -449,19 +515,24 @@ and <a href="', tab.rel("csd5_result_metadata.csv"), '">metadata</a>.</p>
 </section>
 
 <section>
-<h2>Runtime And Regret</h2>
+<h2>Runtime And Relative Regret</h2>
 <p>This diagnostic asks whether sparse coupled selection reduces time without
-moving far from the full-grid outer reference.  The red intervals are median
-absolute deviations, shown as descriptive spread rather than inferential
-confidence intervals.</p>
+moving far from the full-grid outer reference.  The vertical axis is percent
+relative regret, so a value of 10 means a 10% larger outer RMSE than the
+reference.  The red intervals are median absolute deviations, shown as
+descriptive spread rather than inferential confidence intervals.</p>
 <div class="figure"><img src="', fig.rel(fig1), '" alt="Runtime versus regret">
-<p class="caption"><strong>Figure 1.</strong> Runtime versus full-grid outer
-regret.  Each point is a strategy median across matched outer tasks.  Lower is
-better on the vertical axis, and farther left is faster.</p></div>
+<p class="caption"><strong>Figure 1.</strong> Runtime versus percent relative
+outer regret.  Each labeled point is a strategy median across matched outer
+tasks.  Lower is better on the vertical axis, and farther left is faster.  Red
+intervals show median absolute deviations across tasks for runtime and percent
+relative regret; lower vertical interval ends are capped at zero because
+relative regret is nonnegative.</p></div>
 <p>The sparse selector evaluates a much smaller candidate set and is visibly
 faster than the full numeric grid in this focused LPS lane.  The median regret
-gap between sparse and full numeric selection is small relative to the gap
-between automatic dimension rules and the full-grid reference.</p>
+gap between sparse and full numeric selection remains interpretable on the
+percent scale: the sparse rule pays a modest relative-error cost for a large
+runtime and PCA-build reduction.</p>
 </section>
 
 <section>
@@ -512,16 +583,21 @@ mechanism behind the runtime reduction seen in Figure 1.</p>
 <section>
 <h2>Paired Outer-Regret Comparison</h2>
 <p>This paired diagnostic compares every method to the same full-grid outer
-oracle on each matched task.  Points are task-level regrets
-\\(\\Delta_{s,m}\\).  Red points and intervals are Bayesian-bootstrap medians and
-95% credible intervals for the median paired regret.  The label above each
-method gives the number of tasks tied with the oracle and the number worse than
-the oracle, using tolerance \\(10^{-8}\\).</p>
+oracle on each matched task.  Points are task-level percent relative regrets
+\\(\\Delta^{\\mathrm{rel}}_{s,m}\\).  Red points and intervals are
+Bayesian-bootstrap medians and 95% credible intervals for the median paired
+relative regret.  The label above each method gives the number of tasks tied
+with the oracle and the number worse than the oracle, using tolerance
+\\(10^{-8}\\) on the absolute regret scale.</p>
 <div class="figure"><img src="', fig.rel(fig5), '" alt="Paired regret with Bayesian bootstrap intervals">
-<p class="caption"><strong>Figure 5.</strong> Paired outer-regret distribution
-relative to the full-grid truth-facing reference.  The dashed line is zero
-regret; lower values are better, and zero is the best possible value under this
-reference definition.</p></div>
+<p class="caption"><strong>Figure 5.</strong> Paired percent relative-regret
+distribution relative to the full-grid truth-facing reference.  The dashed line
+is zero regret; lower values are better, and zero is the best possible value
+under this reference definition.  The vertical axis uses a \\(\\log_{10}(1+x)\\)
+display transform but labels ticks in ordinary percent units, because the
+relative regrets span orders of magnitude.  Percent relative regret makes
+large-looking absolute RMSE losses easier to judge against the error scale of
+the matched task.</p></div>
 <p>The paired view is the main method-comparison evidence.  It shows whether a
 strategy has occasional severe misses even when its median summary looks
 acceptable.</p>
