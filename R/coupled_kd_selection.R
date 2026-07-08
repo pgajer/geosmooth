@@ -545,6 +545,22 @@
     unique(c(as.character(out), special))
 }
 
+.coupled.kd.has.special.chart.dim <- function(chart.dim.grid,
+                                              chart.dim = NULL) {
+    cleaned <- .local.chart.clean.chart.dim.grid(
+        chart.dim.grid,
+        chart.dim = chart.dim
+    )
+    decoded <- lapply(cleaned$chart.dim, function(x) {
+        tryCatch(.local.chart.decode.chart.dim(x), error = function(e) NA)
+    })
+    any(vapply(
+        decoded,
+        function(x) !(is.numeric(x) || is.null(x)),
+        logical(1L)
+    ))
+}
+
 .coupled.kd.auto.chart.dim.function <- function(X,
                                                 coordinate.method,
                                                 auto.chart.support.metric,
@@ -693,5 +709,36 @@
             chart.dim.max = chart.dim.max,
             design.margin = design.margin
         )
+    )
+}
+
+.coupled.kd.chart.candidate.spec <- function(X,
+                                             support.grid,
+                                             degree.grid,
+                                             kernel.grid,
+                                             bandwidth.multiplier.grid,
+                                             chart.dim = NULL,
+                                             chart.dim.grid = NULL,
+                                             coordinate.method,
+                                             auto.chart.support.metric,
+                                             auto.chart.selection.metric,
+                                             selection.strategy = "grid",
+                                             chart.dim.max = NULL,
+                                             design.margin = 2L) {
+    .coupled.kd.lps.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        chart.dim = chart.dim,
+        chart.dim.grid = chart.dim.grid,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = chart.dim.max,
+        design.margin = design.margin,
+        reuse.type = "chart"
     )
 }
