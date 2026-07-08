@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CSD5 Coupled Support-Size and Chart-Dimension Evaluation</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7f8; color: #1f2a2e; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+section { background: white; border: 1px solid #d9e0e3; border-radius: 10px; padding: 22px; margin: 0 0 20px; }
+h1 { font-size: 34px; margin: 0 0 8px; }
+h2 { font-size: 23px; margin-top: 0; }
+p { line-height: 1.55; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border-bottom: 1px solid #e5eaed; padding: 7px 8px; text-align: left; }
+th { background: #eef3f5; }
+.meta { color: #5a686d; font-size: 14px; }
+.figure { margin: 18px 0; }
+.figure img { width: 100%; max-width: 980px; display: block; border: 1px solid #dde5e8; border-radius: 8px; background: #fff; }
+.caption { font-size: 14px; color: #344247; margin-top: 8px; }
+.callout { border-left: 4px solid #1f766d; padding: 10px 14px; background: #eef8f6; }
+code { background: #eef2f4; padding: 1px 4px; border-radius: 4px; }
+a { color: #126d73; }
+</style>
+</head>
+<body>
+<main>
+<section>
+<h1>CSD5 Coupled Support-Size and Chart-Dimension Evaluation</h1>
+<p class="meta">Built 2026-07-08 17:02:54 EDT from <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd5_coupled_kd_evaluation_report.R</code>.</p>
+<p>This focused CSD5 report asks whether the sparse coupled selector over
+support size <code>k</code> and chart dimension <code>d</code> behaves like a
+full Cartesian reference while reducing candidate count and PCA work.  The
+report is deliberately truth-facing: every strategy is selected using only
+inner folds on the outer-training set, then scored on an outer fold that no
+selector saw.  The full-grid reference is the best candidate on that same outer
+truth target, not the candidate with the lowest inner CV score.</p>
+<div class="callout"><strong>Scope.</strong> This first report validates the
+LPS implementation path where full Cartesian references are feasible.  PS-LPS
+uses the same sparse candidate machinery after CSD4, but its full-grid
+synchronized solve reference is intentionally left for a larger runtime study.</div>
+</section>
+
+<section>
+<h2>Design</h2>
+<p>The full Cartesian reference universe is
+<code>k in 15:35</code> and <code>d in 1:8</code>, filtered by
+<code>q(d,g)+design.margin <= k</code>.  Here the report uses degree
+<code>g=1</code>, so <code>q(d,1)=d+1</code>, and all planned candidates are
+feasible.  The strategy arms are:</p>
+<table>
+<tr><th>Label</th><th>Meaning</th></tr>
+<tr><td><code>auto</code></td><td>Global automatic chart dimension with support selected over <code>15:35</code>.</td></tr>
+<tr><td><code>local_auto</code></td><td>Anchor-specific automatic chart dimension with support selected over <code>15:35</code>.</td></tr>
+<tr><td><code>sparse_kd</code></td><td>Sparse coupled numeric <code>(k,d)</code> skeleton drawn from the same candidate universe.</td></tr>
+<tr><td><code>full_kd</code></td><td>Full Cartesian numeric <code>(k,d)</code> selector using inner CV.</td></tr>
+</table>
+<p>The benchmark cells include homogeneous 1D and 2D embedded manifolds, a
+heterogeneous surface--line union, and a simplex-boundary geometry intended to
+probe OD-style data structure.</p>
+</section>
+
+<section>
+<h2>Main Questions Status</h2>
+<p><strong>Near-best recovery.</strong> The sparse selector is evaluated by
+outer-fold regret against the full Cartesian truth-facing reference.  This is
+the central quantity in Figure 1 and the summary table below.</p>
+<p><strong>Runtime and candidate count.</strong> Figure 4 shows that the sparse
+selector evaluates fewer candidates and reuses PCA coordinates across chart
+dimensions within support groups.</p>
+<p><strong>Homogeneous versus heterogeneous behavior.</strong> The family-level
+summary separates homogeneous manifold cells from heterogeneous and
+simplex-boundary cells.  This is a smoke-sized evaluation, so these rows are
+diagnostic rather than final evidence for defaults.</p>
+</section>
+
+<section>
+<h2>Summary Tables</h2><table><tr><th>strategy</th><th>outer.rmse</th><th>outer.regret</th><th>elapsed.sec</th><th>evaluated.candidates</th><th>unique.pca.builds</th><th>n.ok</th><th>failure.rate</th></tr><tr><td>full_kd</td><td>0.07801</td><td>0.01002</td><td>1.213</td><td>  168</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>0.08544</td><td>0.01411</td><td>0.1375</td><td>    9</td><td>    3</td><td>   24</td><td>0</td></tr>
+<tr><td>local_auto</td><td>0.1037</td><td>0.02933</td><td>0.9875</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>auto</td><td>0.09671</td><td>0.03101</td><td>0.7255</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr></table><p>Full tables are available as
+<a href="tables/csd5_strategy_outer_scores.csv">strategy outer scores</a>,
+<a href="tables/csd5_full_grid_candidate_scores.csv">full-grid candidate scores</a>,
+<a href="tables/csd5_strategy_summary.csv">strategy summary</a>, and
+<a href="tables/csd5_family_strategy_summary.csv">family summary</a>.</p>
+</section>
+
+<section>
+<h2>Figures</h2>
+<div class="figure"><img src="figures/figure_1_regret_runtime.svg" alt="Runtime versus regret">
+<p class="caption"><strong>Figure 1.</strong> Runtime versus full-grid outer
+regret.  Points show strategy medians across matched outer tasks.  Red bars show
+median absolute deviations, so a strategy is attractive when it sits low and to
+the left.</p></div>
+<div class="figure"><img src="figures/figure_2_selected_kd.svg" alt="Selected k d">
+<p class="caption"><strong>Figure 2.</strong> Selected numeric
+<code>(k,d)</code> values for sparse and full numeric selectors.  This reveals
+whether the sparse skeleton systematically pushes toward smaller supports or
+lower dimensions.</p></div>
+<div class="figure"><img src="figures/figure_3_example_full_grid_surface.svg" alt="Full-grid score surface">
+<p class="caption"><strong>Figure 3.</strong> A representative full-grid outer
+score surface.  The red cross marks the outer truth-facing full-grid winner.
+This is the surface the sparse selector is trying to approximate with fewer
+candidate evaluations.</p></div>
+<div class="figure"><img src="figures/figure_4_reuse_accounting.svg" alt="Reuse accounting">
+<p class="caption"><strong>Figure 4.</strong> Candidate and PCA-reuse
+accounting.  For numeric chart-dimension grids, the implementation builds the
+maximum-dimension PCA coordinates once per reusable support/kernel group and
+slices them for lower dimensions.  The <code>auto</code> and
+<code>local_auto</code> arms are not numeric dimension-grid arms, so their bars
+show evaluated candidates with no avoided-build segment.</p></div>
+</section>
+
+<section>
+<h2>Family-Level Summary</h2><table><tr><th>strategy</th><th>dataset.family</th><th>outer.regret</th></tr><tr><td>auto</td><td>heterogeneous/non-manifold</td><td>0.1999</td></tr>
+<tr><td>full_kd</td><td>heterogeneous/non-manifold</td><td>0.1079</td></tr>
+<tr><td>local_auto</td><td>heterogeneous/non-manifold</td><td>0.1921</td></tr>
+<tr><td>sparse_kd</td><td>heterogeneous/non-manifold</td><td>0.02098</td></tr>
+<tr><td>auto</td><td>homogeneous 1D manifold</td><td>0.03616</td></tr>
+<tr><td>full_kd</td><td>homogeneous 1D manifold</td><td>0.009354</td></tr>
+<tr><td>local_auto</td><td>homogeneous 1D manifold</td><td>0.0522</td></tr>
+<tr><td>sparse_kd</td><td>homogeneous 1D manifold</td><td>0.02179</td></tr>
+<tr><td>auto</td><td>homogeneous 2D manifold</td><td>0.01725</td></tr>
+<tr><td>full_kd</td><td>homogeneous 2D manifold</td><td>0.009436</td></tr>
+<tr><td>local_auto</td><td>homogeneous 2D manifold</td><td>0.01756</td></tr>
+<tr><td>sparse_kd</td><td>homogeneous 2D manifold</td><td>0.02609</td></tr>
+<tr><td>auto</td><td>OD-style simplex-boundary geometry</td><td>0.01391</td></tr>
+<tr><td>full_kd</td><td>OD-style simplex-boundary geometry</td><td>0.000608</td></tr>
+<tr><td>local_auto</td><td>OD-style simplex-boundary geometry</td><td>0.01282</td></tr>
+<tr><td>sparse_kd</td><td>OD-style simplex-boundary geometry</td><td>0.000007859</td></tr></table><p>The simplex-boundary row is included because CSD selection will eventually
+matter for OD-style examples.  The present report only uses continuous
+truth-facing LPS fits, so OD density recovery and subject-level visit-law
+scoring still require a dedicated OD evaluation.</p>
+</section>
+
+<section>
+<h2>Interpretation</h2>
+<p>The useful reading of this report is comparative rather than absolute.  If
+<code>sparse_kd</code> has small regret relative to the full-grid outer
+reference while evaluating far fewer candidates, then the sparse skeleton is
+doing its intended job.  If the selected <code>(k,d)</code> values differ from
+<code>full_kd</code> but the outer regret remains small, that is not a failure:
+it means the outer score surface is flat enough that several local chart
+configurations are practically equivalent.</p>
+<p>No package defaults are changed by this phase.  The report is evidence for
+auditing CSD selection behavior and deciding which larger PS-LPS or OD-style
+benchmarks should be run next.</p>
+</section>
+</main>
+</body>
+</html>

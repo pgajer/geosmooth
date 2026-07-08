@@ -1,0 +1,17 @@
+"strategy","dataset.family","outer.regret"
+"auto","heterogeneous/non-manifold",0.199933122042992
+"full_kd","heterogeneous/non-manifold",0.10788496254532
+"local_auto","heterogeneous/non-manifold",0.192068712524534
+"sparse_kd","heterogeneous/non-manifold",0.0209813590131426
+"auto","homogeneous 1D manifold",0.0361559655793431
+"full_kd","homogeneous 1D manifold",0.009354100763884
+"local_auto","homogeneous 1D manifold",0.0521979396649353
+"sparse_kd","homogeneous 1D manifold",0.0217867610239675
+"auto","homogeneous 2D manifold",0.0172452313233883
+"full_kd","homogeneous 2D manifold",0.00943552940152978
+"local_auto","homogeneous 2D manifold",0.0175557072756189
+"sparse_kd","homogeneous 2D manifold",0.0260935171887614
+"auto","OD-style simplex-boundary geometry",0.0139081917491229
+"full_kd","OD-style simplex-boundary geometry",0.000608044541831101
+"local_auto","OD-style simplex-boundary geometry",0.012822290715416
+"sparse_kd","OD-style simplex-boundary geometry",7.85860280058844e-06
