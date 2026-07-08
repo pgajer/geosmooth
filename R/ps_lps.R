@@ -36,6 +36,17 @@
 #'   \code{"coordinates"}.
 #' @param auto.chart.selection.metric Which auto chart-dimension diagnostic to
 #'   select when both diagnostics are requested.
+#' @param chart.dim.grid Optional candidate chart dimensions for experimental
+#'   local-candidate selection. Numeric grids can be evaluated with
+#'   \code{selection.strategy = "sparse_kd"}.
+#' @param selection.strategy Candidate-selection strategy. \code{"grid"}
+#'   evaluates the requested candidate grid. \code{"sparse_kd"} evaluates a
+#'   sparse support-size by chart-dimension skeleton when
+#'   \code{chart.dim.grid} is supplied.
+#' @param chart.dim.max Optional explicit maximum chart dimension for the
+#'   sparse coupled candidate family.
+#' @param design.margin Nonnegative integer feasibility margin used to screen
+#'   local polynomial design size before candidate evaluation.
 #' @param lambda.sync.grid Candidate synchronization strengths.
 #' @param lambda.sync.search Lambda-search policy.  \code{"grid"} evaluates the
 #'   supplied grid exactly.  \code{"guarded"} uses an experimental guarded
@@ -107,12 +118,16 @@ fit.ps.lps <- function(
     support.size = NULL,
     degree = 2L,
     kernel = "gaussian",
-    chart.dim,
+    chart.dim = NULL,
     support.grid = NULL,
     degree.grid = NULL,
     kernel.grid = NULL,
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
+    chart.dim.grid = NULL,
+    selection.strategy = c("grid", "sparse_kd"),
+    chart.dim.max = NULL,
+    design.margin = 2L,
     lambda.sync.grid = c(0, 1e-3, 1e-2, 1e-1, 1, 10),
     lambda.sync.search = c("grid", "guarded"),
     lambda.sync.selection = c("cv", "fixed"),
@@ -142,9 +157,14 @@ fit.ps.lps <- function(
     }
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
+    selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
     lambda.sync.search <- match.arg(lambda.sync.search)
     lambda.sync.selection <- match.arg(lambda.sync.selection)
     local.candidate.search <- match.arg(local.candidate.search)
+    if (!is.null(chart.dim.grid) &&
+        identical(local.candidate.search, "screened")) {
+        local.candidate.search <- "full"
+    }
     lambda.diagnostics <- match.arg(lambda.diagnostics)
     overlap.weight <- match.arg(overlap.weight)
     design.basis <- match.arg(design.basis)
@@ -179,17 +199,36 @@ fit.ps.lps <- function(
     ridge.multiplier.grid <- .klp.clean.ridge.multiplier.grid(
         ridge.multiplier.grid
     )
+    design.margin <- as.integer(design.margin)
+    if (length(design.margin) != 1L || !is.finite(design.margin) ||
+        design.margin < 0L) {
+        stop("'design.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
+    if (is.null(chart.dim) && is.null(chart.dim.grid)) {
+        stop("Supply 'chart.dim' or 'chart.dim.grid' for fit.ps.lps().",
+             call. = FALSE)
+    }
     foldid <- .klp.prepare.foldid(nrow(X), foldid, cv.folds, cv.seed)
-    local.grid <- .ps.lps.resolve.local.grid(
+    local.spec <- .ps.lps.resolve.local.candidate.spec(
+        X = X,
         support.size = support.size,
         support.grid = support.grid,
         degree = degree,
         degree.grid = degree.grid,
         kernel = kernel,
         kernel.grid = kernel.grid,
+        chart.dim = chart.dim,
+        chart.dim.grid = chart.dim.grid,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = chart.dim.max,
+        design.margin = design.margin,
         n = nrow(X)
     )
-    if (nrow(local.grid) > 1L) {
+    local.grid <- local.spec$local.grid
+    if (nrow(local.grid) > 1L || !is.null(chart.dim.grid)) {
         return(.ps.lps.fit.local.grid(
             X = X,
             y = y,
@@ -213,7 +252,10 @@ fit.ps.lps <- function(
             sync.neighbor.size = sync.neighbor.size,
             overlap.weight = overlap.weight,
             cv.folds = cv.folds,
-            cv.seed = cv.seed
+            cv.seed = cv.seed,
+            selection.strategy = selection.strategy,
+            coupled.kd.selection = local.spec$telemetry,
+            coupled.kd.candidate.plan = local.spec$coupled.plan
         ))
     }
     support.size <- local.grid$support.size[[1L]]
@@ -507,6 +549,7 @@ fit.ps.lps <- function(
             lambda.sync.grid = lambda.sync.grid,
             lambda.sync.search = lambda.sync.search,
             lambda.sync.selection = lambda.sync.selection,
+            selection.strategy = selection.strategy,
             lambda.diagnostics = lambda.diagnostics,
             local.candidate.search = local.candidate.search,
             local.candidate.search.control = local.candidate.search.control,
@@ -532,6 +575,9 @@ fit.ps.lps <- function(
         ),
         final
     )
+    out$diagnostics$coupled.kd.selection <- local.spec$telemetry
+    out$coupled.kd.candidate.plan <- local.spec$coupled.plan
+    out$selection.strategy <- selection.strategy
     class(out) <- c("ps_lps", "list")
     out
 }
@@ -567,6 +613,81 @@ fit.ps.lps <- function(
         stringsAsFactors = FALSE
     )
     cand[order(cand$support.size, cand$degree, cand$kernel), , drop = FALSE]
+}
+
+.ps.lps.resolve.local.candidate.spec <- function(X,
+                                                 support.size = NULL,
+                                                 support.grid = NULL,
+                                                 degree = 2L,
+                                                 degree.grid = NULL,
+                                                 kernel = "gaussian",
+                                                 kernel.grid = NULL,
+                                                 chart.dim = NULL,
+                                                 chart.dim.grid = NULL,
+                                                 auto.chart.support.metric,
+                                                 auto.chart.selection.metric,
+                                                 selection.strategy = "grid",
+                                                 chart.dim.max = NULL,
+                                                 design.margin = 2L,
+                                                 n) {
+    if (is.null(chart.dim.grid)) {
+        return(list(
+            local.grid = .ps.lps.resolve.local.grid(
+                support.size = support.size,
+                support.grid = support.grid,
+                degree = degree,
+                degree.grid = degree.grid,
+                kernel = kernel,
+                kernel.grid = kernel.grid,
+                n = n
+            ),
+            telemetry = NULL,
+            coupled.plan = NULL
+        ))
+    }
+    support.grid <- if (is.null(support.grid)) {
+        if (is.null(support.size)) c(10L, 15L, 20L) else support.size
+    } else {
+        if (!is.null(support.size)) {
+            stop("Use either 'support.size' or 'support.grid', not both.",
+                 call. = FALSE)
+        }
+        support.grid
+    }
+    if (is.null(degree.grid)) degree.grid <- degree
+    if (is.null(kernel.grid)) kernel.grid <- kernel
+    candidate.spec <- .coupled.kd.lps.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = 1,
+        chart.dim = chart.dim,
+        chart.dim.grid = chart.dim.grid,
+        coordinate.method = "local.pca",
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = chart.dim.max,
+        design.margin = design.margin,
+        reuse.type = "weighted"
+    )
+    local.grid <- candidate.spec$candidates
+    keep <- intersect(
+        c("candidate.id", "support.size", "degree", "kernel", "chart.dim",
+          "chart.dim.rank", "chart.dim.source", "chart.dim.raw",
+          "chart.dim.clipped", "chart.dim.seed.clipped", "chart.dim.max",
+          "design.ncol", "design.margin", "reuse.key",
+          "reuse.chart.dim.max"),
+        names(local.grid)
+    )
+    local.grid <- local.grid[, keep, drop = FALSE]
+    local.grid$local.candidate.id <- seq_len(nrow(local.grid))
+    list(
+        local.grid = local.grid,
+        telemetry = candidate.spec$telemetry,
+        coupled.plan = candidate.spec$coupled.plan
+    )
 }
 
 .ps.lps.resolve.sync.neighbor.size <- function(sync.neighbor.size,
@@ -630,6 +751,13 @@ fit.ps.lps <- function(
           as.character(kernel), sep = "\r")
 }
 
+.ps.lps.local.grid.chart.dim <- function(row, chart.dim) {
+    if ("chart.dim" %in% names(row) && !is.na(row$chart.dim[[1L]])) {
+        return(.local.chart.decode.chart.dim(row$chart.dim[[1L]]))
+    }
+    chart.dim
+}
+
 .ps.lps.screen.local.grid <- function(
     X, y, foldid, local.grid, chart.dim, auto.chart.support.metric,
     auto.chart.selection.metric, local.candidate.search,
@@ -653,6 +781,7 @@ fit.ps.lps <- function(
         ))
     }
 
+    has.candidate.chart.dim <- "chart.dim" %in% names(local.grid)
     ctl <- .ps.lps.local.search.control(local.candidate.search.control)
     if (identical(local.candidate.search, "subgrid")) {
         guard.supports <- sort(unique(local.grid$support.size))
@@ -681,6 +810,12 @@ fit.ps.lps <- function(
         ))
     }
 
+    if (isTRUE(has.candidate.chart.dim)) {
+        stop("'local.candidate.search = \"screened\"' is not yet supported ",
+             "with candidate-specific 'chart.dim'. Use ",
+             "'local.candidate.search = \"full\"' or \"subgrid\".",
+             call. = FALSE)
+    }
     if (!(identical(chart.dim, "auto") ||
           .klp.is.local.auto.chart.dim(chart.dim) ||
           (length(chart.dim) == 1L && is.numeric(chart.dim)))) {
@@ -809,7 +944,10 @@ fit.ps.lps <- function(
     local.candidate.search, local.candidate.search.control,
     lambda.sync.search.control, lambda.diagnostics, lambda.ridge, design.basis,
     design.drop.tol, ridge.multiplier.grid, ridge.condition.max,
-    sync.neighbor.size, overlap.weight, cv.folds, cv.seed) {
+    sync.neighbor.size, overlap.weight, cv.folds, cv.seed,
+    selection.strategy = "grid",
+    coupled.kd.selection = NULL,
+    coupled.kd.candidate.plan = NULL) {
 
     local.grid.timing.start <- proc.time()
     elapsed <- function(start) unname((proc.time() - start)[["elapsed"]])
@@ -836,8 +974,20 @@ fit.ps.lps <- function(
     fits <- vector("list", nrow(local.grid))
     candidate.rows <- vector("list", nrow(local.grid))
     lambda.rows <- vector("list", nrow(local.grid))
+    weighted.reuse.plan <- if ("chart.dim" %in% names(local.grid)) {
+        .coupled.kd.reuse.plan(local.grid, reuse.type = "weighted")
+    } else {
+        data.frame()
+    }
+    weighted.support.cache <- new.env(parent = emptyenv())
     for (ii in seq_len(nrow(local.grid))) {
         row <- local.grid[ii, , drop = FALSE]
+        row.chart.dim <- .ps.lps.local.grid.chart.dim(row, chart.dim)
+        row.chart.dim.label <- if ("chart.dim" %in% names(row)) {
+            as.character(row$chart.dim[[1L]])
+        } else {
+            NA_character_
+        }
         screen.row <- screen$table[screen$table$local.candidate.id == ii, ,
                                    drop = FALSE]
         if (!ii %in% active.ids) {
@@ -846,7 +996,7 @@ fit.ps.lps <- function(
                 support.size = row$support.size[[1L]],
                 degree = row$degree[[1L]],
                 kernel = row$kernel[[1L]],
-                chart.dim = NA_real_,
+                chart.dim = row.chart.dim.label,
                 chart.dim.mode = NA_character_,
                 selected.lambda.sync = NA_real_,
                 selected.lambda.ridge = NA_real_,
@@ -873,6 +1023,35 @@ fit.ps.lps <- function(
             next
         }
         t.candidate <- proc.time()
+        geometry.cache <- NULL
+        if ("chart.dim" %in% names(row)) {
+            candidate.sync.size <- .ps.lps.resolve.sync.neighbor.size(
+                sync.neighbor.size,
+                row$support.size[[1L]]
+            )
+            local.pca.supports <- .coupled.kd.shared.local.pca.supports(
+                X = X,
+                support.size = row$support.size[[1L]],
+                chart.dim = row.chart.dim,
+                kernel = row$kernel[[1L]],
+                reuse.plan = weighted.reuse.plan,
+                cache.env = weighted.support.cache
+            )
+            geometry.cache <- .ps.lps.prepare.geometry.cache(
+                X = X,
+                support.size = row$support.size[[1L]],
+                degree = row$degree[[1L]],
+                kernel = row$kernel[[1L]],
+                chart.dim = row.chart.dim,
+                auto.chart.support.metric = auto.chart.support.metric,
+                auto.chart.selection.metric = auto.chart.selection.metric,
+                sync.neighbor.size = candidate.sync.size,
+                overlap.weight = overlap.weight,
+                design.basis = design.basis,
+                design.drop.tol = design.drop.tol,
+                local.pca.supports = local.pca.supports
+            )
+        }
         fit <- fit.ps.lps(
             X = X,
             y = y,
@@ -880,7 +1059,7 @@ fit.ps.lps <- function(
             support.size = row$support.size[[1L]],
             degree = row$degree[[1L]],
             kernel = row$kernel[[1L]],
-            chart.dim = chart.dim,
+            chart.dim = row.chart.dim,
             support.grid = NULL,
             degree.grid = NULL,
             kernel.grid = NULL,
@@ -900,6 +1079,7 @@ fit.ps.lps <- function(
             ridge.condition.max = ridge.condition.max,
             sync.neighbor.size = sync.neighbor.size,
             overlap.weight = overlap.weight,
+            ps.lps.geometry.cache = geometry.cache,
             cv.folds = cv.folds,
             cv.seed = cv.seed
         )
@@ -1001,6 +1181,7 @@ fit.ps.lps <- function(
         ))
     )
     best.fit$local.candidate.search <- local.candidate.search
+    best.fit$selection.strategy <- selection.strategy
     best.fit$local.candidate.search.control <- screen$control
     best.fit$local.candidate.screen.table <- screen$table
     best.fit$local.candidate.screen.lps.selected <-
@@ -1008,7 +1189,10 @@ fit.ps.lps <- function(
     best.fit$selected.local.candidate <-
         candidate.table[best.idx, , drop = FALSE]
     best.fit$selection.contract <-
-        if (identical(local.candidate.search, "screened")) {
+        if (!is.null(coupled.kd.selection) &&
+            isTRUE(coupled.kd.selection$coupled.chart.dim.search)) {
+            "sparse_kd_coupled_support_chart_dim_with_lambda_sync"
+        } else if (identical(local.candidate.search, "screened")) {
             "screened_lps_cv_then_materialized_fold_cv_with_lambda_sync"
         } else if (identical(local.candidate.search, "subgrid")) {
             "subgrid_then_materialized_fold_cv_with_lambda_sync"
@@ -1021,6 +1205,8 @@ fit.ps.lps <- function(
                                     "chart.dim.mode"), drop = FALSE],
         best.fit$selected
     )
+    best.fit$diagnostics$coupled.kd.selection <- coupled.kd.selection
+    best.fit$coupled.kd.candidate.plan <- coupled.kd.candidate.plan
     best.fit
 }
 
