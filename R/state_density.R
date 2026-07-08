@@ -1025,9 +1025,19 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     error.messages <- rep(NA_character_, nrow(candidates))
     candidate.caches <- vector("list", nrow(candidates))
     geometry.cache.by.key <- new.env(parent = emptyenv())
-    ps.lps.local.pca.supports.by.key <- new.env(parent = emptyenv())
-    ps.lps.chart.dim.reuse.plan <- if (identical(method, "ps_lps_count")) {
+    weighted.local.pca.supports.by.key <- new.env(parent = emptyenv())
+    weighted.chart.dim.reuse.plan <- if (method %in%
+                                         c("lps_count", "lps_logistic_binary",
+                                           "ps_lps_count")) {
         .state.density.ps.lps.chart.dim.reuse.plan(candidates)
+    } else {
+        data.frame()
+    }
+    chart.local.pca.supports.by.key <- new.env(parent = emptyenv())
+    chart.dim.reuse.plan <- if (method %in%
+                                c("chart_kernel", "local_likelihood_density",
+                                  "local_likelihood_bernoulli")) {
+        .state.density.chart.pca.reuse.plan(candidates)
     } else {
         data.frame()
     }
@@ -1042,6 +1052,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         )
         cand.dots <- c(base.dots, cand.scalar$dots)
         if (method %in% c("lps_count", "lps_logistic_binary")) {
+            local.pca.supports <- .state.density.ps.lps.shared.local.pca.supports(
+                X = X,
+                dots = cand.dots,
+                reuse.plan = weighted.chart.dim.reuse.plan,
+                cache.env = weighted.local.pca.supports.by.key
+            )
             fast.predicted <- tryCatch(
                 .state.density.lps.fixed.visit.predictions(
                     X = X,
@@ -1054,7 +1070,31 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                         "bernoulli"
                     } else {
                         "gaussian"
-                    }
+                    },
+                    local.pca.supports = local.pca.supports
+                ),
+                error = function(e) e
+            )
+            if (!inherits(fast.predicted, "error")) {
+                predicted[, cc] <- fast.predicted
+                next
+            }
+        }
+        if (identical(method, "chart_kernel")) {
+            local.pca.supports <- .state.density.chart.shared.local.pca.supports(
+                X = X,
+                dots = cand.dots,
+                reuse.plan = chart.dim.reuse.plan,
+                cache.env = chart.local.pca.supports.by.key
+            )
+            fast.predicted <- tryCatch(
+                .state.density.chart.kernel.fixed.visit.predictions(
+                    X = X,
+                    subject.index = subject.index,
+                    foldid = foldid,
+                    dots = cand.dots,
+                    od.control = od.control,
+                    local.pca.supports = local.pca.supports
                 ),
                 error = function(e) e
             )
@@ -1064,13 +1104,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             }
         }
         if (identical(method, "local_likelihood_density")) {
+            local.pca.supports <- .state.density.chart.shared.local.pca.supports(
+                X = X,
+                dots = cand.dots,
+                reuse.plan = chart.dim.reuse.plan,
+                cache.env = chart.local.pca.supports.by.key
+            )
             fast.predicted <- tryCatch(
                 .state.density.local.likelihood.density.fixed.visit.predictions(
                     X = X,
                     subject.index = subject.index,
                     foldid = foldid,
                     dots = cand.dots,
-                    od.control = od.control
+                    od.control = od.control,
+                    local.pca.supports = local.pca.supports
                 ),
                 error = function(e) e
             )
@@ -1080,13 +1127,20 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             }
         }
         if (identical(method, "local_likelihood_bernoulli")) {
+            local.pca.supports <- .state.density.chart.shared.local.pca.supports(
+                X = X,
+                dots = cand.dots,
+                reuse.plan = chart.dim.reuse.plan,
+                cache.env = chart.local.pca.supports.by.key
+            )
             fast.predicted <- tryCatch(
                 .state.density.local.likelihood.bernoulli.fixed.visit.predictions(
                     X = X,
                     subject.index = subject.index,
                     foldid = foldid,
                     dots = cand.dots,
-                    od.control = od.control
+                    od.control = od.control,
+                    local.pca.supports = local.pca.supports
                 ),
                 error = function(e) e
             )
@@ -1099,8 +1153,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             local.pca.supports <- .state.density.ps.lps.shared.local.pca.supports(
                 X = X,
                 dots = cand.dots,
-                reuse.plan = ps.lps.chart.dim.reuse.plan,
-                cache.env = ps.lps.local.pca.supports.by.key
+                reuse.plan = weighted.chart.dim.reuse.plan,
+                cache.env = weighted.local.pca.supports.by.key
             )
             cache.key <- .state.density.ps.lps.geometry.cache.key(cand.dots)
             if (exists(cache.key, envir = geometry.cache.by.key,
@@ -1215,7 +1269,9 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                                                        dots,
                                                        od.control,
                                                        outcome.family =
-                                                           "gaussian") {
+                                                           "gaussian",
+                                                       local.pca.supports =
+                                                           NULL) {
     outcome.family <- match.arg(outcome.family, c("gaussian", "bernoulli"))
     fixed <- .state.density.lps.fixed.candidate(dots, nrow(X))
     folds <- sort(unique(foldid))
@@ -1234,7 +1290,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         y.mat <- matrix(y.mat, ncol = 1L)
     }
     fitted <- if (.state.density.lps.fixed.geometry.eligible(fixed)) {
-        geometry.cache <- .state.density.lps.fixed.geometry.cache(X, fixed)
+        geometry.cache <- .state.density.lps.fixed.geometry.cache(
+            X,
+            fixed,
+            local.pca.supports = local.pca.supports
+        )
         .state.density.ps.lps.fixed.independent.fitted.matrix(
             frames = geometry.cache$frames,
             y.mat = y.mat,
@@ -1321,12 +1381,183 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     fitted
 }
 
+.state.density.chart.kernel.fixed.visit.predictions <- function(
+        X,
+        subject.index,
+        foldid,
+        dots,
+        od.control,
+        local.pca.supports = NULL) {
+    fixed <- .state.density.chart.kernel.fixed.candidate(dots, nrow(X))
+    folds <- sort(unique(foldid))
+    y.mat <- vapply(
+        folds,
+        function(fold) {
+            tabulate(subject.index[foldid != fold], nbins = nrow(X))
+        },
+        numeric(nrow(X))
+    )
+    if (is.null(dim(y.mat))) {
+        y.mat <- matrix(y.mat, ncol = 1L)
+    }
+    fitted <- .state.density.chart.kernel.fixed.fitted.matrix(
+        X = X,
+        y.mat = y.mat,
+        fixed = fixed,
+        local.pca.supports = local.pca.supports
+    )
+    ctrl <- .state.density.control(od.control)
+    out <- rep(NA_real_, length(subject.index))
+    for (jj in seq_along(folds)) {
+        fold <- folds[[jj]]
+        test.pos <- which(foldid == fold)
+        corrected <- .state.density.correct.raw(fitted[, jj], ctrl)
+        status <- .state.density.status(corrected$rho, corrected$accounting,
+                                        ctrl)
+        if (!identical(status, "ok")) {
+            next
+        }
+        out[test.pos] <- corrected$rho[subject.index[test.pos]]
+    }
+    out
+}
+
+.state.density.chart.kernel.fixed.candidate <- function(dots, n) {
+    scalar <- function(name, default = NULL) {
+        value <- dots[[name]]
+        if (is.null(value)) {
+            value <- default
+        }
+        if (is.null(value) || length(value) != 1L) {
+            stop("Chart-kernel fast visit-CV requires a fixed scalar '",
+                 name, "'.", call. = FALSE)
+        }
+        value[[1L]]
+    }
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
+    )
+    support.size <- as.integer(scalar("support.size",
+                                      dots$support.grid %||% min(15L, n)))
+    support.size <- .local.chart.validate.support.size(support.size, n)
+    kernel <- .klp.clean.kernel.grid(
+        as.character(scalar("kernel", dots$kernel.grid %||% "gaussian"))
+    )[[1L]]
+    bandwidth.multiplier <- .klp.clean.bandwidth.multiplier.grid(
+        as.numeric(scalar("bandwidth.multiplier",
+                          dots$bandwidth.multiplier.grid %||% 1))
+    )[[1L]]
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    quadrature.weights <- .local.chart.validate.quadrature(
+        dots$quadrature.weights %||% NULL,
+        n
+    )
+    denominator.floor <- .local.chart.validate.positive.scalar(
+        dots$denominator.floor %||% sqrt(.Machine$double.eps),
+        "denominator.floor"
+    )
+    list(
+        support.size = support.size,
+        kernel = kernel,
+        bandwidth.multiplier = bandwidth.multiplier,
+        coordinate.method = coordinate.method,
+        chart.dim = dots$chart.dim %||% NULL,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        quadrature.weights = quadrature.weights,
+        denominator.floor = denominator.floor
+    )
+}
+
+.state.density.chart.kernel.fixed.fitted.matrix <- function(
+        X,
+        y.mat,
+        fixed,
+        local.pca.supports = NULL) {
+    chart.dim.info <- .local.chart.resolve.chart.dim(
+        X = X,
+        support.size = fixed$support.size,
+        degree = 1L,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = fixed$chart.dim,
+        auto.chart.support.metric = fixed$auto.chart.support.metric,
+        auto.chart.selection.metric = fixed$auto.chart.selection.metric
+    )
+    fitted <- matrix(NA_real_, nrow = nrow(X), ncol = ncol(y.mat))
+    for (ii in seq_len(nrow(X))) {
+        local.chart.dim <- .local.chart.resolve.eval.chart.dim(
+            X = X,
+            x0 = X[ii, ],
+            support.size = fixed$support.size,
+            degree = 1L,
+            coordinate.method = fixed$coordinate.method,
+            chart.dim = fixed$chart.dim,
+            summary.dim = chart.dim.info$chart.dim
+        )
+        frame <- .state.density.chart.kernel.frame(
+            X = X,
+            x0 = X[ii, ],
+            fixed = fixed,
+            chart.dim = local.chart.dim,
+            local.pca.support = .state.density.local.pca.support.at(
+                local.pca.supports,
+                ii
+            )
+        )
+        denom <- sum(frame$weights * frame$quadrature.weights)
+        if (!is.finite(denom) || denom <= fixed$denominator.floor) {
+            denom <- fixed$denominator.floor
+        }
+        fitted[ii, ] <- as.numeric(crossprod(frame$weights, y.mat[frame$idx, ,
+                                                                  drop = FALSE])) /
+            denom
+    }
+    fitted
+}
+
+.state.density.chart.kernel.frame <- function(X,
+                                              x0,
+                                              fixed,
+                                              chart.dim,
+                                              local.pca.support = NULL) {
+    local <- .state.density.local.chart.frame.components(
+        X = X,
+        x0 = x0,
+        support.size = fixed$support.size,
+        coordinate.method = fixed$coordinate.method,
+        chart.dim = chart.dim,
+        local.pca.support = local.pca.support
+    )
+    kernel.info <- .local.chart.kernel(
+        distances = local$distances,
+        kernel = fixed$kernel,
+        bandwidth.multiplier = fixed$bandwidth.multiplier
+    )
+    list(
+        idx = local$idx,
+        weights = kernel.info$weights,
+        quadrature.weights = fixed$quadrature.weights[local$idx],
+        chart.dim = ncol(local$coords),
+        bandwidth = kernel.info$bandwidth,
+        effective.support = kernel.info$effective.support
+    )
+}
+
 .state.density.local.likelihood.density.fixed.visit.predictions <- function(
         X,
         subject.index,
         foldid,
         dots,
-        od.control) {
+        od.control,
+        local.pca.supports = NULL) {
     fixed <- .state.density.local.likelihood.fixed.candidate(dots, nrow(X))
     folds <- sort(unique(foldid))
     y.mat <- vapply(
@@ -1343,7 +1574,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     fitted <- .state.density.local.likelihood.density.fixed.fitted.matrix(
         X = X,
         y.mat = y.mat,
-        fixed = fixed
+        fixed = fixed,
+        local.pca.supports = local.pca.supports
     )
     ctrl <- .state.density.control(od.control)
     out <- rep(NA_real_, length(subject.index))
@@ -1366,7 +1598,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         subject.index,
         foldid,
         dots,
-        od.control) {
+        od.control,
+        local.pca.supports = NULL) {
     fixed <- .state.density.local.likelihood.fixed.candidate(dots, nrow(X))
     folds <- sort(unique(foldid))
     y.mat <- vapply(
@@ -1383,7 +1616,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     fitted <- .state.density.local.likelihood.bernoulli.fixed.fitted.matrix(
         X = X,
         y.mat = y.mat,
-        fixed = fixed
+        fixed = fixed,
+        local.pca.supports = local.pca.supports
     )
     ctrl <- .state.density.control(od.control)
     out <- rep(NA_real_, length(subject.index))
@@ -1492,7 +1726,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.local.likelihood.density.fixed.fitted.matrix <- function(
         X,
         y.mat,
-        fixed) {
+        fixed,
+        local.pca.supports = NULL) {
     chart.dim.info <- .local.chart.resolve.chart.dim(
         X = X,
         support.size = fixed$support.size,
@@ -1517,7 +1752,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             X = X,
             x0 = X[ii, ],
             fixed = fixed,
-            chart.dim = local.chart.dim
+            chart.dim = local.chart.dim,
+            local.pca.support = .state.density.local.pca.support.at(
+                local.pca.supports,
+                ii
+            )
         )
         fitted[ii, ] <-
             .state.density.local.likelihood.density.frame.values(
@@ -1532,7 +1771,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.local.likelihood.bernoulli.fixed.fitted.matrix <- function(
         X,
         y.mat,
-        fixed) {
+        fixed,
+        local.pca.supports = NULL) {
     chart.dim.info <- .local.chart.resolve.chart.dim(
         X = X,
         support.size = fixed$support.size,
@@ -1557,7 +1797,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             X = X,
             x0 = X[ii, ],
             fixed = fixed,
-            chart.dim = local.chart.dim
+            chart.dim = local.chart.dim,
+            local.pca.support = .state.density.local.pca.support.at(
+                local.pca.supports,
+                ii
+            )
         )
         fitted[ii, ] <-
             .state.density.local.likelihood.bernoulli.frame.values(
@@ -1572,27 +1816,30 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.local.likelihood.density.frame <- function(X,
                                                           x0,
                                                           fixed,
-                                                          chart.dim) {
-    support <- .local.chart.support(X, x0, fixed$support.size)
-    coords <- .local.chart.coordinates(
-        centered = support$centered,
+                                                          chart.dim,
+                                                          local.pca.support =
+                                                              NULL) {
+    local <- .state.density.local.chart.frame.components(
+        X = X,
+        x0 = x0,
+        support.size = fixed$support.size,
         coordinate.method = fixed$coordinate.method,
-        chart.dim = chart.dim
+        chart.dim = chart.dim,
+        local.pca.support = local.pca.support
     )
-    distances <- sqrt(rowSums(coords^2))
     kernel.info <- .local.chart.kernel(
-        distances = distances,
+        distances = local$distances,
         kernel = fixed$kernel,
         bandwidth.multiplier = fixed$bandwidth.multiplier
     )
     list(
-        idx = support$idx,
-        base = fixed$quadrature.weights[support$idx] * kernel.info$weights,
-        quadrature.weights = fixed$quadrature.weights[support$idx],
+        idx = local$idx,
+        base = fixed$quadrature.weights[local$idx] * kernel.info$weights,
+        quadrature.weights = fixed$quadrature.weights[local$idx],
         kernel.weights = kernel.info$weights,
-        features = .local.chart.feature.matrix(coords, fixed$degree),
+        features = .local.chart.feature.matrix(local$coords, fixed$degree),
         effective.support = kernel.info$effective.support,
-        chart.dim = ncol(coords),
+        chart.dim = ncol(local$coords),
         bandwidth = kernel.info$bandwidth
     )
 }
@@ -1600,28 +1847,31 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.local.likelihood.bernoulli.frame <- function(X,
                                                             x0,
                                                             fixed,
-                                                            chart.dim) {
-    support <- .local.chart.support(X, x0, fixed$support.size)
-    coords <- .local.chart.coordinates(
-        centered = support$centered,
+                                                            chart.dim,
+                                                            local.pca.support =
+                                                                NULL) {
+    local <- .state.density.local.chart.frame.components(
+        X = X,
+        x0 = x0,
+        support.size = fixed$support.size,
         coordinate.method = fixed$coordinate.method,
-        chart.dim = chart.dim
+        chart.dim = chart.dim,
+        local.pca.support = local.pca.support
     )
-    distances <- sqrt(rowSums(coords^2))
     kernel.info <- .local.chart.kernel(
-        distances = distances,
+        distances = local$distances,
         kernel = fixed$kernel,
         bandwidth.multiplier = fixed$bandwidth.multiplier
     )
-    raw.features <- .local.chart.feature.matrix(coords, fixed$degree)
+    raw.features <- .local.chart.feature.matrix(local$coords, fixed$degree)
     list(
-        idx = support$idx,
-        weights = fixed$quadrature.weights[support$idx] * kernel.info$weights,
+        idx = local$idx,
+        weights = fixed$quadrature.weights[local$idx] * kernel.info$weights,
         kernel.weights = kernel.info$weights,
         features = cbind(intercept = 1, raw.features),
         raw.feature.ncol = ncol(raw.features),
         effective.support = kernel.info$effective.support,
-        chart.dim = ncol(coords),
+        chart.dim = ncol(local$coords),
         bandwidth = kernel.info$bandwidth
     )
 }
@@ -1767,7 +2017,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         identical(as.numeric(fixed$bandwidth.multiplier), 1)
 }
 
-.state.density.lps.fixed.geometry.cache <- function(X, fixed) {
+.state.density.lps.fixed.geometry.cache <- function(X,
+                                                    fixed,
+                                                    local.pca.supports =
+                                                        NULL) {
     chart.dim.info <- .ps.lps.resolve.chart.dim(
         X = X,
         support.size = fixed$support.size,
@@ -1784,7 +2037,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         kernel = fixed$kernel,
         chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
         design.basis = fixed$design.basis,
-        design.drop.tol = fixed$design.drop.tol
+        design.drop.tol = fixed$design.drop.tol,
+        local.pca.supports = local.pca.supports
     )
     list(chart.dim.info = chart.dim.info, frames = frames)
 }
@@ -2133,6 +2387,48 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
 }
 
+.state.density.local.pca.support.at <- function(local.pca.supports, ii) {
+    if (is.null(local.pca.supports)) {
+        return(NULL)
+    }
+    local.pca.supports[[ii]]
+}
+
+.state.density.local.chart.frame.components <- function(X,
+                                                        x0,
+                                                        support.size,
+                                                        coordinate.method,
+                                                        chart.dim,
+                                                        local.pca.support =
+                                                            NULL) {
+    if (!is.null(local.pca.support) &&
+        identical(coordinate.method, "local.pca")) {
+        idx <- local.pca.support$index
+        coords <- as.matrix(local.pca.support$coordinates)
+        if (ncol(coords) < chart.dim) {
+            stop("Precomputed local PCA coordinates have fewer columns ",
+                 "than the requested chart dimension.", call. = FALSE)
+        }
+        coords <- coords[, seq_len(chart.dim), drop = FALSE]
+        return(list(
+            idx = idx,
+            coords = coords,
+            distances = sqrt(rowSums(coords^2))
+        ))
+    }
+    support <- .local.chart.support(X, x0, support.size)
+    coords <- .local.chart.coordinates(
+        centered = support$centered,
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim
+    )
+    list(
+        idx = support$idx,
+        coords = coords,
+        distances = sqrt(rowSums(coords^2))
+    )
+}
+
 .state.density.ps.lps.chart.dim.reuse.plan <- function(candidates) {
     if (!nrow(candidates) || !"chart.dim" %in% names(candidates)) {
         return(data.frame())
@@ -2168,6 +2464,45 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         chart.dim = tab$max.chart.dim
     )
     tab
+}
+
+.state.density.chart.pca.reuse.plan <- function(candidates) {
+    if (!nrow(candidates) || !"chart.dim" %in% names(candidates) ||
+        !"support.size" %in% names(candidates)) {
+        return(data.frame())
+    }
+    decoded <- lapply(
+        candidates$chart.dim,
+        function(x) {
+            out <- tryCatch(.local.chart.decode.chart.dim(x),
+                            error = function(e) NULL)
+            if (is.numeric(out) && length(out) == 1L &&
+                is.finite(out) && out >= 1L) {
+                return(as.integer(out))
+            }
+            NA_integer_
+        }
+    )
+    dim <- unlist(decoded, use.names = FALSE)
+    ok <- is.finite(dim)
+    if (!any(ok)) {
+        return(data.frame())
+    }
+    tab <- unique(candidates[ok, "support.size", drop = FALSE])
+    tab$max.chart.dim <- NA_integer_
+    for (ii in seq_len(nrow(tab))) {
+        same <- ok & candidates$support.size == tab$support.size[[ii]]
+        tab$max.chart.dim[[ii]] <- max(dim[same], na.rm = TRUE)
+    }
+    tab$reuse.key <- .state.density.chart.pca.supports.key(
+        support.size = tab$support.size,
+        chart.dim = tab$max.chart.dim
+    )
+    tab
+}
+
+.state.density.chart.pca.supports.key <- function(support.size, chart.dim) {
+    paste(as.integer(support.size), as.integer(chart.dim), sep = "\r")
 }
 
 .state.density.ps.lps.local.pca.supports.key <- function(support.size,
@@ -2218,6 +2553,53 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             chart_dim_by_anchor = rep(as.integer(row$max.chart.dim[[1L]]),
                                       nrow(X)),
             kernel = as.character(kernel)
+        ),
+        error = function(e) NULL
+    )
+    if (!is.null(supports)) {
+        assign(key, supports, envir = cache.env)
+    }
+    supports
+}
+
+.state.density.chart.shared.local.pca.supports <- function(X, dots,
+                                                           reuse.plan,
+                                                           cache.env) {
+    if (is.null(reuse.plan) || !nrow(reuse.plan)) {
+        return(NULL)
+    }
+    coordinate.method <- dots$coordinate.method %||% "coordinates"
+    if (!identical(coordinate.method, "local.pca")) {
+        return(NULL)
+    }
+    chart.dim <- dots$chart.dim %||% NULL
+    if (is.null(chart.dim) || !is.numeric(chart.dim) ||
+        length(chart.dim) != 1L || !is.finite(chart.dim)) {
+        return(NULL)
+    }
+    support.size <- dots$support.size %||% dots$support.grid %||% NULL
+    if (is.null(support.size) || length(support.size) != 1L) {
+        return(NULL)
+    }
+    row <- reuse.plan[
+        reuse.plan$support.size == as.integer(support.size),
+        ,
+        drop = FALSE
+    ]
+    if (nrow(row) != 1L || row$max.chart.dim[[1L]] < as.integer(chart.dim)) {
+        return(NULL)
+    }
+    key <- row$reuse.key[[1L]]
+    if (exists(key, envir = cache.env, inherits = FALSE)) {
+        return(get(key, envir = cache.env, inherits = FALSE))
+    }
+    supports <- tryCatch(
+        rcpp_ps_lps_local_pca_supports(
+            X = as.matrix(X),
+            support_size = as.integer(support.size),
+            chart_dim_by_anchor = rep(as.integer(row$max.chart.dim[[1L]]),
+                                      nrow(X)),
+            kernel = "gaussian"
         ),
         error = function(e) NULL
     )
