@@ -1443,7 +1443,8 @@ fit.ps.lps <- function(
                                            sync.neighbor.size,
                                            overlap.weight,
                                            design.basis,
-                                           design.drop.tol) {
+                                           design.drop.tol,
+                                           local.pca.supports = NULL) {
     chart.dim.info <- .ps.lps.resolve.chart.dim(
         X = X,
         support.size = support.size,
@@ -1460,7 +1461,8 @@ fit.ps.lps <- function(
         kernel = kernel,
         chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
         design.basis = design.basis,
-        design.drop.tol = design.drop.tol
+        design.drop.tol = design.drop.tol,
+        local.pca.supports = local.pca.supports
     )
     sync.rows <- .ps.lps.prepare.sync.rows(
         frames = frames,
@@ -1478,18 +1480,26 @@ fit.ps.lps <- function(
                                    chart.dim.by.anchor,
                                    design.basis = "monomial",
                                    design.drop.tol =
-                                       sqrt(.Machine$double.eps)) {
+                                       sqrt(.Machine$double.eps),
+                                   local.pca.supports = NULL) {
     n <- nrow(X)
     frames <- vector("list", n)
-    native.local <- tryCatch(
-        rcpp_ps_lps_local_pca_supports(
-            X = as.matrix(X),
-            support_size = as.integer(support.size),
-            chart_dim_by_anchor = as.integer(chart.dim.by.anchor),
-            kernel = as.character(kernel[[1L]])
-        ),
-        error = function(e) NULL
-    )
+    native.local <- local.pca.supports
+    if (!is.null(native.local) && length(native.local) != n) {
+        stop("'local.pca.supports' must contain one entry per anchor.",
+             call. = FALSE)
+    }
+    if (is.null(native.local)) {
+        native.local <- tryCatch(
+            rcpp_ps_lps_local_pca_supports(
+                X = as.matrix(X),
+                support_size = as.integer(support.size),
+                chart_dim_by_anchor = as.integer(chart.dim.by.anchor),
+                kernel = as.character(kernel[[1L]])
+            ),
+            error = function(e) NULL
+        )
+    }
     for (ii in seq_len(n)) {
         d <- chart.dim.by.anchor[[ii]]
         if (!is.null(native.local)) {
@@ -1497,7 +1507,12 @@ fit.ps.lps <- function(
             idx <- local$index
             dist <- local$distances
             weights <- local$weights
-            coords <- local$coordinates
+            coords <- as.matrix(local$coordinates)
+            if (ncol(coords) < d) {
+                stop("Precomputed local PCA coordinates have fewer columns ",
+                     "than the requested chart dimension.", call. = FALSE)
+            }
+            coords <- coords[, seq_len(d), drop = FALSE]
         } else {
             ordered <- .klp.local.order(
                 X.train = X,

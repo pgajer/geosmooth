@@ -149,6 +149,57 @@ test_that("OD-CV3 PS-LPS count visit CV searches lambda.sync candidates", {
     expect_identical(fit$diagnostics$source.method, "fit.ps.lps")
 })
 
+test_that("OD-CV3 PS-LPS numeric chart-dimension grids reuse max PCA supports", {
+    n <- 28L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(2 * t), cos(3 * t))
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 25L)
+    old.calls <- getOption("geosmooth.test.ps.lps.local.pca.calls")
+    options(geosmooth.test.ps.lps.local.pca.calls = 0L)
+    on.exit(options(geosmooth.test.ps.lps.local.pca.calls = old.calls),
+            add = TRUE)
+    trace(
+        "rcpp_ps_lps_local_pca_supports",
+        tracer = quote(options(
+            geosmooth.test.ps.lps.local.pca.calls =
+                getOption("geosmooth.test.ps.lps.local.pca.calls", 0L) + 1L
+        )),
+        where = asNamespace("geosmooth"),
+        print = FALSE
+    )
+    on.exit(
+        suppressWarnings(untrace(
+            "rcpp_ps_lps_local_pca_supports",
+            where = asNamespace("geosmooth")
+        )),
+        add = TRUE
+    )
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "ps_lps_count",
+        graph = make.odcv3.path.graph(n),
+        od.cv = "visit",
+        visit.foldid = rep(1:4, length.out = length(subject.index)),
+        support.grid = c(9L, 11L),
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        chart.dim.grid = c(1L, 2L, 4L),
+        lambda.sync.grid = 0,
+        lambda.ridge = 1e-8,
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = c(0, 1e-10),
+        ridge.condition.max = 1e10,
+        sync.neighbor.size = 3L
+    )
+
+    expect.odcv3.visit.fit(fit, length(subject.index), 6L)
+    expect_setequal(fit$visit.cv.table$chart.dim, c("1", "2", "4"))
+    calls <- getOption("geosmooth.test.ps.lps.local.pca.calls", NA_integer_)
+    expect_equal(calls, 2L)
+})
+
 test_that("OD-CV3 PS-LPS fixed-candidate fast path matches fold loop", {
     n <- 24L
     X <- make.odcv3.curved.X(n)
