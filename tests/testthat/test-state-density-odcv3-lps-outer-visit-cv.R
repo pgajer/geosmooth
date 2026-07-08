@@ -35,6 +35,36 @@ expect.odcv3.visit.fit <- function(fit, n.visits, n.candidates) {
     )
 }
 
+with.odcv3.local.pca.call.counter <- function(expr) {
+    expr <- substitute(expr)
+    old.calls <- getOption("geosmooth.test.ps.lps.local.pca.calls")
+    options(geosmooth.test.ps.lps.local.pca.calls = 0L)
+    on.exit(options(geosmooth.test.ps.lps.local.pca.calls = old.calls),
+            add = TRUE)
+    trace(
+        "rcpp_ps_lps_local_pca_supports",
+        tracer = quote(options(
+            geosmooth.test.ps.lps.local.pca.calls =
+                getOption("geosmooth.test.ps.lps.local.pca.calls", 0L) + 1L
+        )),
+        where = asNamespace("geosmooth"),
+        print = FALSE
+    )
+    on.exit(
+        suppressWarnings(untrace(
+            "rcpp_ps_lps_local_pca_supports",
+            where = asNamespace("geosmooth")
+        )),
+        add = TRUE
+    )
+    value <- eval(expr, parent.frame())
+    list(
+        value = value,
+        calls = getOption("geosmooth.test.ps.lps.local.pca.calls",
+                          NA_integer_)
+    )
+}
+
 test_that("OD-CV3 LPS count visit CV searches outer scalar candidates", {
     n <- 34L
     X <- make.odcv3.curved.X(n)
@@ -154,28 +184,8 @@ test_that("OD-CV3 PS-LPS numeric chart-dimension grids reuse max PCA supports", 
     t <- seq(-1, 1, length.out = n)
     X <- cbind(t, t^2, sin(2 * t), cos(3 * t))
     subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 25L)
-    old.calls <- getOption("geosmooth.test.ps.lps.local.pca.calls")
-    options(geosmooth.test.ps.lps.local.pca.calls = 0L)
-    on.exit(options(geosmooth.test.ps.lps.local.pca.calls = old.calls),
-            add = TRUE)
-    trace(
-        "rcpp_ps_lps_local_pca_supports",
-        tracer = quote(options(
-            geosmooth.test.ps.lps.local.pca.calls =
-                getOption("geosmooth.test.ps.lps.local.pca.calls", 0L) + 1L
-        )),
-        where = asNamespace("geosmooth"),
-        print = FALSE
-    )
-    on.exit(
-        suppressWarnings(untrace(
-            "rcpp_ps_lps_local_pca_supports",
-            where = asNamespace("geosmooth")
-        )),
-        add = TRUE
-    )
 
-    fit <- fit.subject.od(
+    counted <- with.odcv3.local.pca.call.counter(fit.subject.od(
         X = X,
         subject.index = subject.index,
         method = "ps_lps_count",
@@ -192,12 +202,101 @@ test_that("OD-CV3 PS-LPS numeric chart-dimension grids reuse max PCA supports", 
         ridge.multiplier.grid = c(0, 1e-10),
         ridge.condition.max = 1e10,
         sync.neighbor.size = 3L
-    )
+    ))
 
+    fit <- counted$value
     expect.odcv3.visit.fit(fit, length(subject.index), 6L)
     expect_setequal(fit$visit.cv.table$chart.dim, c("1", "2", "4"))
-    calls <- getOption("geosmooth.test.ps.lps.local.pca.calls", NA_integer_)
-    expect_equal(calls, 2L)
+    expect_equal(counted$calls, 2L)
+})
+
+test_that("OD-CV3 LPS numeric chart-dimension grids reuse max PCA supports", {
+    n <- 28L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(2 * t), cos(3 * t))
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 25L)
+
+    counted <- with.odcv3.local.pca.call.counter(fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "lps_count",
+        graph = make.odcv3.path.graph(n),
+        od.cv = "visit",
+        visit.foldid = rep(1:4, length.out = length(subject.index)),
+        support.grid = c(9L, 11L),
+        degree.grid = 1L,
+        kernel.grid = "gaussian",
+        bandwidth.multiplier.grid = 1,
+        coordinate.method = "local.pca",
+        chart.dim.grid = c(1L, 2L, 4L),
+        backend = "R",
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = c(0, 1e-10),
+        ridge.condition.max = 1e10
+    ))
+
+    fit <- counted$value
+    expect.odcv3.visit.fit(fit, length(subject.index), 6L)
+    expect_setequal(fit$visit.cv.table$chart.dim, c("1", "2", "4"))
+    expect_equal(counted$calls, 2L)
+})
+
+test_that("OD-CV3 chart-kernel numeric chart-dimension grids reuse PCA coordinates", {
+    n <- 28L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(2 * t), cos(3 * t))
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 25L)
+
+    counted <- with.odcv3.local.pca.call.counter(fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "chart_kernel",
+        graph = make.odcv3.path.graph(n),
+        od.cv = "visit",
+        visit.foldid = rep(1:4, length.out = length(subject.index)),
+        support.grid = c(9L, 11L),
+        kernel.grid = "gaussian",
+        bandwidth.multiplier.grid = 1,
+        coordinate.method = "local.pca",
+        chart.dim.grid = c(1L, 2L, 4L)
+    ))
+
+    fit <- counted$value
+    expect.odcv3.visit.fit(fit, length(subject.index), 6L)
+    expect_setequal(fit$visit.cv.table$chart.dim, c("1", "2", "4"))
+    expect_equal(counted$calls, 2L)
+})
+
+test_that("OD-CV3 local-likelihood numeric chart-dimension grids reuse PCA coordinates", {
+    n <- 28L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(2 * t), cos(3 * t))
+    subject.index <- c(2L, 4L, 7L, 10L, 13L, 17L, 21L, 25L)
+
+    for (method in c("local_likelihood_density",
+                     "local_likelihood_bernoulli")) {
+        counted <- with.odcv3.local.pca.call.counter(fit.subject.od(
+            X = X,
+            subject.index = subject.index,
+            method = method,
+            graph = make.odcv3.path.graph(n),
+            od.cv = "visit",
+            visit.foldid = rep(1:4, length.out = length(subject.index)),
+            support.grid = c(9L, 11L),
+            degree.grid = 1L,
+            kernel.grid = "gaussian",
+            bandwidth.multiplier.grid = 1,
+            coordinate.method = "local.pca",
+            chart.dim.grid = c(1L, 2L, 4L),
+            lambda.ridge.grid = 1e-8,
+            fallback = "degree0"
+        ))
+
+        fit <- counted$value
+        expect.odcv3.visit.fit(fit, length(subject.index), 6L)
+        expect_setequal(fit$visit.cv.table$chart.dim, c("1", "2", "4"))
+        expect_equal(counted$calls, 2L)
+    }
 })
 
 test_that("OD-CV3 PS-LPS fixed-candidate fast path matches fold loop", {
@@ -352,6 +451,116 @@ test_that("OD-CV3 LPS Bernoulli fixed-candidate fast path matches fold loop", {
                         X = X,
                         subject.index = subject.index[train.pos],
                         method = "lps_logistic_binary",
+                        graph = graph,
+                        od.cv = "none",
+                        return.details = FALSE
+                    ),
+                    dots
+                )
+            )
+            slow[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        expect_equal(fast, slow, tolerance = 1e-8)
+    }
+})
+
+test_that("OD-CV3 chart-kernel fixed-candidate fast path matches fold loop", {
+    n <- 24L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(t))
+    subject.index <- c(2L, 4L, 4L, 7L, 10L, 13L, 17L, 21L, 23L)
+    foldid <- rep(1:3, length.out = length(subject.index))
+    graph <- make.odcv3.path.graph(n)
+    dots <- list(
+        support.size = 9L,
+        kernel = "gaussian",
+        bandwidth.multiplier = 1,
+        coordinate.method = "local.pca",
+        chart.dim = 2L,
+        auto.chart.support.metric = "coordinates",
+        auto.chart.selection.metric = "coordinates"
+    )
+
+    fast <- .state.density.chart.kernel.fixed.visit.predictions(
+        X = X,
+        subject.index = subject.index,
+        foldid = foldid,
+        dots = dots,
+        od.control = list()
+    )
+    slow <- rep(NA_real_, length(subject.index))
+    for (fold in sort(unique(foldid))) {
+        test.pos <- which(foldid == fold)
+        train.pos <- which(foldid != fold)
+        fit <- do.call(
+            fit.subject.od,
+            c(
+                list(
+                    X = X,
+                    subject.index = subject.index[train.pos],
+                    method = "chart_kernel",
+                    graph = graph,
+                    od.cv = "none",
+                    return.details = FALSE
+                ),
+                dots
+            )
+        )
+        slow[test.pos] <- fit$rho[subject.index[test.pos]]
+    }
+    expect_equal(fast, slow, tolerance = 1e-8)
+})
+
+test_that("OD-CV3 local-likelihood fixed-candidate fast paths match fold loop", {
+    n <- 24L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(t))
+    subject.index <- c(2L, 4L, 4L, 7L, 10L, 13L, 17L, 21L, 23L)
+    foldid <- rep(1:3, length.out = length(subject.index))
+    graph <- make.odcv3.path.graph(n)
+    dots <- list(
+        support.size = 9L,
+        degree = 1L,
+        kernel = "gaussian",
+        bandwidth.multiplier = 1,
+        coordinate.method = "local.pca",
+        chart.dim = 2L,
+        auto.chart.support.metric = "coordinates",
+        auto.chart.selection.metric = "coordinates",
+        lambda.ridge = 1e-8,
+        fallback = "degree0"
+    )
+
+    for (method in c("local_likelihood_density",
+                     "local_likelihood_bernoulli")) {
+        fast <- if (identical(method, "local_likelihood_density")) {
+            .state.density.local.likelihood.density.fixed.visit.predictions(
+                X = X,
+                subject.index = subject.index,
+                foldid = foldid,
+                dots = dots,
+                od.control = list()
+            )
+        } else {
+            .state.density.local.likelihood.bernoulli.fixed.visit.predictions(
+                X = X,
+                subject.index = subject.index,
+                foldid = foldid,
+                dots = dots,
+                od.control = list()
+            )
+        }
+        slow <- rep(NA_real_, length(subject.index))
+        for (fold in sort(unique(foldid))) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = method,
                         graph = graph,
                         od.cv = "none",
                         return.details = FALSE
