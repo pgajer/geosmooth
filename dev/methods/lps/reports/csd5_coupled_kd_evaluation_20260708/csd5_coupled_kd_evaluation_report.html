@@ -31,7 +31,7 @@ a { color: #126d73; }
 <main>
 <section>
 <h1>CSD5 Coupled Support-Size and Chart-Dimension Evaluation</h1>
-<p class="meta">Report build: 2026-07-08 18:53:04 EDT. Result generation: 2026-07-08 17:02:54 EDT. Bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd5_coupled_kd_evaluation_20260708</code>. Render source:
+<p class="meta">Report build: 2026-07-08 19:43:51 EDT. Result generation: 2026-07-08 19:40:26 EDT. Bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd5_coupled_kd_evaluation_20260708</code>. Render source:
 <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd5_coupled_kd_evaluation_render.R</code>.</p>
 <p>This focused CSD5 report asks whether a sparse coupled selector over support
 size \(k\) and chart dimension \(d\) can approximate a full Cartesian
@@ -52,7 +52,20 @@ R_s^{\star}=\min_{(k,d)\in\mathcal G_{\mathrm{full}}} R_{s,(k,d)},
 \Delta_{s,m}=R_{s,m}-R_s^{\star}.
 \]
 <p>Thus positive regret \(\Delta_{s,m}\) means the selected strategy was worse
-than the full-grid truth-facing reference on that same outer fold.</p>
+than the full-grid truth-facing reference on that same outer fold.  Because an
+absolute RMSE loss is difficult to interpret without the scale of the task, the
+main figures also report percent relative regret</p>
+\[
+\Delta^{\mathrm{rel}}_{s,m}
+=
+100\,
+\frac{R_{s,m}-R_s^{\star}}{R_s^{\star}+\epsilon},
+\qquad \epsilon=10^{-12}.
+\]
+<p>A value of \(5\) means that the selected strategy had 5% larger outer RMSE
+than the full-grid reference on the same task.  A value of \(100\) means twice
+the reference RMSE.  The tiny \(\epsilon\) only protects against division by
+zero and has no visible effect in this result bundle.</p>
 <div class="callout"><strong>Scope.</strong> This first report validates the
 LPS implementation path where full Cartesian references are feasible.  PS-LPS
 uses the same sparse candidate machinery after CSD4, but its synchronized
@@ -84,14 +97,17 @@ dimension), <code>local_auto</code> (anchor-specific automatic dimensions),
 <h2>Strategy Summary</h2>
 <p>This table summarizes successful outer tasks.  \(R_{\mathrm{med}}\) is the
 median outer RMSE \(R_{s,m}\), \(\Delta_{\mathrm{med}}\) is the median regret
-\(\Delta_{s,m}\), \(T_{\mathrm{med}}\) is median end-to-end serial wall time
-per outer fit in seconds, <code>cand</code> is the median evaluated candidate
+\(\Delta_{s,m}\), \(\Delta^{\mathrm{rel}}_{\mathrm{pct,med}}\) is the median
+percent relative regret, \(T_{\mathrm{med}}\) is median end-to-end serial wall
+time per outer fit in seconds, <code>cand</code> is the median evaluated candidate
 count, and <code>pca</code> is the median number of unique reusable local-PCA
 support groups.  Values are medians across 24 matched outer tasks per
-strategy.</p><table><tr><th>strategy</th><th>R_med</th><th>Delta_med</th><th>T_med</th><th>cand_med</th><th>pca_med</th><th>n_ok</th><th>fail_rate</th></tr><tr><td>full_kd</td><td>0.07801</td><td>0.01002</td><td>1.213</td><td>  168</td><td>   21</td><td>   24</td><td>0</td></tr>
-<tr><td>sparse_kd</td><td>0.08544</td><td>0.01411</td><td>0.1375</td><td>    9</td><td>    3</td><td>   24</td><td>0</td></tr>
-<tr><td>local_auto</td><td>0.1037</td><td>0.02933</td><td>0.9875</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr>
-<tr><td>auto</td><td>0.09671</td><td>0.03101</td><td>0.7255</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr></table><p>Full linked artifacts:
+strategy.  The absolute and relative regret columns should be read together:
+the first gives the raw RMSE loss, and the second says how large that loss is
+relative to the task reference error.</p><table><tr><th>strategy</th><th>R_med</th><th>Delta_med</th><th>Delta_rel_pct_med</th><th>T_med</th><th>cand_med</th><th>pca_med</th><th>n_ok</th><th>fail_rate</th></tr><tr><td>full_kd</td><td>0.07801</td><td>0.01002</td><td>33.39</td><td>1.229</td><td>  168</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>0.08544</td><td>0.01411</td><td>24.19</td><td>0.1395</td><td>    9</td><td>    3</td><td>   24</td><td>0</td></tr>
+<tr><td>local_auto</td><td>0.1037</td><td>0.02933</td><td>111.4</td><td>1.001</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>auto</td><td>0.09671</td><td>0.03101</td><td>102.2</td><td>0.738</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr></table><p>Full linked artifacts:
 <a href="tables/csd5_strategy_outer_scores.csv">outer scores</a>,
 <a href="tables/csd5_full_grid_candidate_scores.csv">full-grid candidate scores</a>,
 <a href="tables/csd5_strategy_summary.csv">strategy summary</a>,
@@ -100,19 +116,24 @@ and <a href="tables/csd5_result_metadata.csv">metadata</a>.</p>
 </section>
 
 <section>
-<h2>Runtime And Regret</h2>
+<h2>Runtime And Relative Regret</h2>
 <p>This diagnostic asks whether sparse coupled selection reduces time without
-moving far from the full-grid outer reference.  The red intervals are median
-absolute deviations, shown as descriptive spread rather than inferential
-confidence intervals.</p>
+moving far from the full-grid outer reference.  The vertical axis is percent
+relative regret, so a value of 10 means a 10% larger outer RMSE than the
+reference.  The red intervals are median absolute deviations, shown as
+descriptive spread rather than inferential confidence intervals.</p>
 <div class="figure"><img src="figures/figure_1_regret_runtime.svg" alt="Runtime versus regret">
-<p class="caption"><strong>Figure 1.</strong> Runtime versus full-grid outer
-regret.  Each point is a strategy median across matched outer tasks.  Lower is
-better on the vertical axis, and farther left is faster.</p></div>
+<p class="caption"><strong>Figure 1.</strong> Runtime versus percent relative
+outer regret.  Each labeled point is a strategy median across matched outer
+tasks.  Lower is better on the vertical axis, and farther left is faster.  Red
+intervals show median absolute deviations across tasks for runtime and percent
+relative regret; lower vertical interval ends are capped at zero because
+relative regret is nonnegative.</p></div>
 <p>The sparse selector evaluates a much smaller candidate set and is visibly
 faster than the full numeric grid in this focused LPS lane.  The median regret
-gap between sparse and full numeric selection is small relative to the gap
-between automatic dimension rules and the full-grid reference.</p>
+gap between sparse and full numeric selection remains interpretable on the
+percent scale: the sparse rule pays a modest relative-error cost for a large
+runtime and PCA-build reduction.</p>
 </section>
 
 <section>
@@ -163,16 +184,21 @@ mechanism behind the runtime reduction seen in Figure 1.</p>
 <section>
 <h2>Paired Outer-Regret Comparison</h2>
 <p>This paired diagnostic compares every method to the same full-grid outer
-oracle on each matched task.  Points are task-level regrets
-\(\Delta_{s,m}\).  Red points and intervals are Bayesian-bootstrap medians and
-95% credible intervals for the median paired regret.  The label above each
-method gives the number of tasks tied with the oracle and the number worse than
-the oracle, using tolerance \(10^{-8}\).</p>
+oracle on each matched task.  Points are task-level percent relative regrets
+\(\Delta^{\mathrm{rel}}_{s,m}\).  Red points and intervals are
+Bayesian-bootstrap medians and 95% credible intervals for the median paired
+relative regret.  The label above each method gives the number of tasks tied
+with the oracle and the number worse than the oracle, using tolerance
+\(10^{-8}\) on the absolute regret scale.</p>
 <div class="figure"><img src="figures/figure_5_paired_regret_intervals.svg" alt="Paired regret with Bayesian bootstrap intervals">
-<p class="caption"><strong>Figure 5.</strong> Paired outer-regret distribution
-relative to the full-grid truth-facing reference.  The dashed line is zero
-regret; lower values are better, and zero is the best possible value under this
-reference definition.</p></div>
+<p class="caption"><strong>Figure 5.</strong> Paired percent relative-regret
+distribution relative to the full-grid truth-facing reference.  The dashed line
+is zero regret; lower values are better, and zero is the best possible value
+under this reference definition.  The vertical axis uses a \(\log_{10}(1+x)\)
+display transform but labels ticks in ordinary percent units, because the
+relative regrets span orders of magnitude.  Percent relative regret makes
+large-looking absolute RMSE losses easier to judge against the error scale of
+the matched task.</p></div>
 <p>The paired view is the main method-comparison evidence.  It shows whether a
 strategy has occasional severe misses even when its median summary looks
 acceptable.</p>
