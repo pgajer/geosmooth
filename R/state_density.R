@@ -537,7 +537,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         method = method,
         dots = dots,
         graph.control = graph.control,
-        n = nrow(X)
+        n = nrow(X),
+        X = X
     )
     cv.result <- .state.density.visit.cv.table(
         X = X,
@@ -598,10 +599,18 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         epsilon = visit.cv.epsilon
     )
     final$diagnostics$od.visit.cv.selection <- as.list(selected[1, ])
+    if (!is.null(candidate.spec$coupled.kd.selection)) {
+        final$diagnostics$coupled.kd.selection <-
+            candidate.spec$coupled.kd.selection
+    }
     if (isTRUE(return.details)) {
         final$visit.cv.table <- cv.result$cv.table
         final$visit.foldid <- visit.foldid
         final$visit.cv.predicted.mass <- cv.result$predicted.mass
+        if (!is.null(candidate.spec$coupled.kd.candidate.plan)) {
+            final$coupled.kd.candidate.plan <-
+                candidate.spec$coupled.kd.candidate.plan
+        }
     }
     final
 }
@@ -630,7 +639,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.visit.cv.candidates <- function(method,
                                                dots,
                                                graph.control = list(),
-                                               n) {
+                                               n,
+                                               X = NULL) {
     switch(
         method,
         graph_random_walk =
@@ -644,11 +654,13 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         ),
         lps_count = .state.density.visit.cv.lps.candidates(
             dots = dots,
-            n = n
+            n = n,
+            X = X
         ),
         lps_logistic_binary = .state.density.visit.cv.lps.candidates(
             dots = dots,
-            n = n
+            n = n,
+            X = X
         ),
         ps_lps_count = .state.density.visit.cv.ps.lps.candidates(
             dots = dots,
@@ -811,7 +823,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     unique(x)
 }
 
-.state.density.visit.cv.lps.candidates <- function(dots, n) {
+.state.density.visit.cv.lps.candidates <- function(dots, n, X = NULL) {
+    if (is.null(X)) {
+        stop("OD-level LPS visit-CV candidate construction requires 'X'.",
+             call. = FALSE)
+    }
     support.grid <- .state.density.null.coalesce(
         dots$support.grid, c(10L, 15L, 20L)
     )
@@ -822,10 +838,93 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     bandwidth.multiplier.grid <- .state.density.null.coalesce(
         dots$bandwidth.multiplier.grid, 1
     )
-    chart.dim.grid <- .local.chart.clean.chart.dim.grid(
+    coordinate.method <- match.arg(
+        dots$coordinate.method %||% "coordinates",
+        c("coordinates", "local.pca")
+    )
+    auto.chart.support.metric <- match.arg(
+        dots$auto.chart.support.metric %||% "coordinates",
+        c("coordinates", "operator", "both")
+    )
+    auto.chart.selection.metric <- match.arg(
+        dots$auto.chart.selection.metric %||% "coordinates",
+        c("coordinates", "operator")
+    )
+    selection.strategy <- .coupled.kd.selection.strategy(
+        dots$selection.strategy %||% "grid"
+    )
+    chart.dim.clean <- .local.chart.clean.chart.dim.grid(
         dots$chart.dim.grid,
         chart.dim = dots$chart.dim
     )
+    chart.dim.decoded <- lapply(chart.dim.clean$chart.dim, function(x) {
+        tryCatch(.local.chart.decode.chart.dim(x), error = function(e) NA)
+    })
+    chart.dim.has.special <- any(vapply(
+        chart.dim.decoded,
+        function(x) !(is.numeric(x) || is.null(x)),
+        logical(1L)
+    ))
+    if (isTRUE(chart.dim.has.special) &&
+        identical(selection.strategy, "grid")) {
+        return(.state.density.visit.cv.lps.legacy.candidates(
+            dots = dots,
+            n = n,
+            support.grid = support.grid,
+            degree.grid = degree.grid,
+            kernel.grid = kernel.grid,
+            bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+            chart.dim.grid = chart.dim.clean
+        ))
+    }
+    design.margin <- as.integer(dots$design.margin %||% 2L)
+    if (length(design.margin) != 1L || !is.finite(design.margin) ||
+        design.margin < 0L) {
+        stop("'design.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
+    candidate.spec <- .coupled.kd.lps.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        chart.dim = dots$chart.dim,
+        chart.dim.grid = dots$chart.dim.grid,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = dots$chart.dim.max %||% NULL,
+        design.margin = design.margin,
+        reuse.type = "weighted"
+    )
+    drop.names <- c("support.grid", "degree.grid", "kernel.grid",
+                    "bandwidth.multiplier.grid", "chart.dim.grid",
+                    "selection.strategy", "chart.dim.max", "design.margin",
+                    "cv.folds", "cv.seed")
+    if (!is.null(candidate.spec$coupled.plan)) {
+        drop.names <- c(drop.names, "chart.dim")
+    }
+    list(
+        candidates = candidate.spec$candidates,
+        base.dots = .state.density.drop.dots(
+            dots,
+            drop.names
+        ),
+        coupled.kd.selection = candidate.spec$telemetry,
+        coupled.kd.candidate.plan = candidate.spec$coupled.plan
+    )
+}
+
+.state.density.visit.cv.lps.legacy.candidates <- function(
+        dots,
+        n,
+        support.grid,
+        degree.grid,
+        kernel.grid,
+        bandwidth.multiplier.grid,
+        chart.dim.grid) {
     candidates <- expand.grid(
         support.size = .klp.clean.support.grid(support.grid, n),
         degree = .klp.clean.degree.grid(degree.grid),
@@ -848,8 +947,19 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             dots,
             c("support.grid", "degree.grid", "kernel.grid",
               "bandwidth.multiplier.grid", "chart.dim", "chart.dim.grid",
+              "selection.strategy", "chart.dim.max", "design.margin",
               "cv.folds", "cv.seed")
-        )
+        ),
+        coupled.kd.selection = list(
+            selection.strategy = "grid",
+            coupled.chart.dim.search = FALSE,
+            reason = "legacy_special_chart_dim_grid",
+            planned.candidates = nrow(candidates),
+            evaluated.candidates = nrow(candidates),
+            skipped.candidates = 0L,
+            reuse.groups = 0L
+        ),
+        coupled.kd.candidate.plan = NULL
     )
 }
 

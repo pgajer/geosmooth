@@ -503,3 +503,195 @@
         }
     )
 }
+
+.coupled.kd.selection.strategy <- function(selection.strategy = "grid") {
+    selection.strategy <- selection.strategy %||% "grid"
+    match.arg(selection.strategy, c("grid", "sparse_kd"))
+}
+
+.coupled.kd.sparse.support.grid <- function(support.grid) {
+    support.grid <- sort(unique(as.integer(support.grid)))
+    if (length(support.grid) <= 3L) {
+        return(support.grid)
+    }
+    mid <- support.grid[[ceiling(length(support.grid) / 2)]]
+    sort(unique(c(support.grid[[1L]], mid, support.grid[[length(support.grid)]])))
+}
+
+.coupled.kd.sparse.chart.dim.grid <- function(chart.dim.grid,
+                                              chart.dim.max = NULL) {
+    cleaned <- .local.chart.clean.chart.dim.grid(chart.dim.grid)
+    decoded <- lapply(cleaned$chart.dim, function(x) {
+        tryCatch(.local.chart.decode.chart.dim(x), error = function(e) NULL)
+    })
+    numeric.dim <- sort(unique(unlist(lapply(decoded, function(x) {
+        if (is.numeric(x) && length(x) == 1L && is.finite(x)) {
+            as.integer(x)
+        } else {
+            NA_integer_
+        }
+    }), use.names = FALSE)))
+    numeric.dim <- numeric.dim[is.finite(numeric.dim)]
+    special <- unique(cleaned$chart.dim[!vapply(decoded, is.numeric,
+                                               logical(1L))])
+    out <- integer()
+    if (length(numeric.dim)) {
+        d.hi <- max(numeric.dim)
+        if (!is.null(chart.dim.max)) {
+            d.hi <- min(d.hi, as.integer(chart.dim.max))
+        }
+        out <- sort(unique(c(numeric.dim[numeric.dim %in% c(1L, 2L)], d.hi)))
+    }
+    unique(c(as.character(out), special))
+}
+
+.coupled.kd.auto.chart.dim.function <- function(X,
+                                                coordinate.method,
+                                                auto.chart.support.metric,
+                                                auto.chart.selection.metric) {
+    force(X)
+    force(coordinate.method)
+    force(auto.chart.support.metric)
+    force(auto.chart.selection.metric)
+    function(support.size, degree) {
+        info <- .klp.resolve.chart.dim(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            coordinate.method = coordinate.method,
+            chart.dim = "auto",
+            auto.chart.support.metric = auto.chart.support.metric,
+            auto.chart.selection.metric = auto.chart.selection.metric
+        )
+        as.integer(info$chart.dim)
+    }
+}
+
+.coupled.kd.lps.candidate.spec <- function(X,
+                                           support.grid,
+                                           degree.grid,
+                                           kernel.grid,
+                                           bandwidth.multiplier.grid,
+                                           chart.dim = NULL,
+                                           chart.dim.grid = NULL,
+                                           coordinate.method,
+                                           auto.chart.support.metric,
+                                           auto.chart.selection.metric,
+                                           selection.strategy = "grid",
+                                           chart.dim.max = NULL,
+                                           design.margin = 2L,
+                                           reuse.type = c("weighted",
+                                                          "chart")) {
+    reuse.type <- match.arg(reuse.type)
+    selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
+    support.grid <- .klp.clean.support.grid(support.grid, nrow(X))
+    degree.grid <- .klp.clean.degree.grid(degree.grid)
+    kernel.grid <- .klp.clean.kernel.grid(kernel.grid)
+    bandwidth.multiplier.grid <- .klp.clean.bandwidth.multiplier.grid(
+        bandwidth.multiplier.grid
+    )
+    chart.dim.grid <- if (is.null(chart.dim.grid)) {
+        NULL
+    } else if (identical(selection.strategy, "sparse_kd")) {
+        .coupled.kd.sparse.chart.dim.grid(
+            chart.dim.grid,
+            chart.dim.max = chart.dim.max
+        )
+    } else {
+        chart.dim.grid
+    }
+    support.eval.grid <- if (identical(selection.strategy, "sparse_kd")) {
+        .coupled.kd.sparse.support.grid(support.grid)
+    } else {
+        support.grid
+    }
+    if (is.null(chart.dim.grid)) {
+        cand <- expand.grid(
+            support.size = support.eval.grid,
+            degree = degree.grid,
+            kernel = kernel.grid,
+            bandwidth.multiplier = bandwidth.multiplier.grid,
+            KEEP.OUT.ATTRS = FALSE,
+            stringsAsFactors = FALSE
+        )
+        cand$candidate.id <- seq_len(nrow(cand))
+        return(list(
+            candidates = cand,
+            coupled.plan = NULL,
+            telemetry = list(
+                selection.strategy = "grid",
+                coupled.chart.dim.search = FALSE,
+                planned.candidates = nrow(cand),
+                evaluated.candidates = nrow(cand),
+                skipped.candidates = 0L,
+                reuse.groups = 0L
+            )
+        ))
+    }
+    if (!identical(coordinate.method, "local.pca")) {
+        stop("'chart.dim.grid' requires coordinate.method = 'local.pca'.",
+             call. = FALSE)
+    }
+    auto.fun <- .coupled.kd.auto.chart.dim.function(
+        X = X,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
+    )
+    plan <- .coupled.kd.candidate.table(
+        support.grid = support.eval.grid,
+        degree.grid = degree.grid,
+        chart.dim.grid = chart.dim.grid,
+        ambient.dim = ncol(X),
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        stage = if (identical(selection.strategy, "sparse_kd")) {
+            "skeleton"
+        } else {
+            "full_reference"
+        },
+        chart.dim.max = chart.dim.max,
+        design.margin = design.margin,
+        auto.chart.dim = auto.fun,
+        reuse.type = reuse.type
+    )
+    feasible <- plan$feasible & is.finite(plan$chart.dim.clipped)
+    cand <- plan[feasible, , drop = FALSE]
+    if (!nrow(cand)) {
+        stop("Coupled support/chart-dimension selection produced no ",
+             "feasible candidates.", call. = FALSE)
+    }
+    cand <- cand[, c("candidate.id", "support.size", "degree", "kernel",
+                     "bandwidth.multiplier", "chart.dim",
+                     "chart.dim.source", "chart.dim.raw",
+                     "chart.dim.clipped", "chart.dim.seed.clipped",
+                     "chart.dim.max", "design.ncol", "design.margin",
+                     "reuse.key", "reuse.chart.dim.max"),
+                 drop = FALSE]
+    cand$chart.dim <- as.character(cand$chart.dim.clipped)
+    cand$chart.dim.rank <- match(
+        cand$chart.dim,
+        unique(cand$chart.dim[order(cand$chart.dim.clipped)])
+    )
+    cand$candidate.id <- seq_len(nrow(cand))
+    reuse.plan <- .coupled.kd.reuse.plan(cand, reuse.type = reuse.type)
+    list(
+        candidates = cand,
+        coupled.plan = plan,
+        telemetry = list(
+            selection.strategy = selection.strategy,
+            coupled.chart.dim.search = TRUE,
+            planned.candidates = nrow(plan),
+            evaluated.candidates = nrow(cand),
+            skipped.candidates = sum(!feasible),
+            reuse.groups = nrow(reuse.plan),
+            reuse.type = reuse.type,
+            support.grid.planned = support.grid,
+            support.grid.evaluated = sort(unique(cand$support.size)),
+            chart.dim.grid.planned = chart.dim.grid,
+            chart.dim.evaluated = sort(unique(cand$chart.dim.clipped)),
+            chart.dim.max = chart.dim.max,
+            design.margin = design.margin
+        )
+    )
+}
