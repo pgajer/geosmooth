@@ -10,6 +10,8 @@ Research lineage: [provenance.md](provenance.md).
 - `audit_contracts/`: work orders, acceptance criteria, and audit contracts.
 - `audits/`: audit reports and audit responses.
 - `handoffs/`: implementer, auditor, and phase handoffs.
+- `patches/`: unmerged prototype patches that are useful for future package
+  work but are not part of the current source tree.
 - `reports/`: rendered analysis reports.
 - `runs/`: run directories, manifests, and launch records.
 - `results/`: durable result tables or serialized outputs.

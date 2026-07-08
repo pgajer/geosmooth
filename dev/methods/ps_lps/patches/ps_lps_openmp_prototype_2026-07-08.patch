@@ -1,0 +1,298 @@
+diff --git a/src/Makevars b/src/Makevars
+index 565fc02..563a710 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -8,7 +8,12 @@ PKG_CPPFLAGS += -DDLL_API=
+ PKG_CPPFLAGS += -include ../inst/include/geosmooth/eigen_config.hpp
+ 
+ CXX_STD = CXX17
+-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
++
++# OpenMP (prototype): parallelize the per-anchor PS-LPS local-PCA loop.
++# LLVM/Homebrew clang accepts -fopenmp natively.
++# -O2 appended last so it overrides pkgload's dev-mode -O0 (fair benchmark).
++PKG_CXXFLAGS = -fopenmp -O2
++PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -fopenmp
+ 
+ SOURCES_CPP = $(wildcard *.cpp)
+ SOURCES_C = $(wildcard *.c)
+diff --git a/src/ps_lps_cache_rcpp.cpp b/src/ps_lps_cache_rcpp.cpp
+index 57482a4..e160f83 100644
+--- a/src/ps_lps_cache_rcpp.cpp
++++ b/src/ps_lps_cache_rcpp.cpp
+@@ -4,6 +4,7 @@
+ 
+ #include <algorithm>
+ #include <cmath>
++#include <exception>
+ #include <limits>
+ #include <map>
+ #include <set>
+@@ -11,22 +12,14 @@
+ #include <utility>
+ #include <vector>
+ 
++#ifdef _OPENMP
++#include <omp.h>
++#endif
++
+ using namespace Rcpp;
+ 
+ namespace {
+ 
+-Eigen::MatrixXd numeric_matrix_to_eigen_rows(
+-        const NumericMatrix& X,
+-        const std::vector<int>& rows) {
+-    Eigen::MatrixXd out(rows.size(), X.ncol());
+-    for (int jj = 0; jj < X.ncol(); ++jj) {
+-        for (int ii = 0; ii < static_cast<int>(rows.size()); ++ii) {
+-            out(ii, jj) = X(rows[ii], jj);
+-        }
+-    }
+-    return out;
+-}
+-
+ NumericMatrix eigen_matrix_to_numeric_local(const Eigen::MatrixXd& X) {
+     NumericMatrix out(X.rows(), X.cols());
+     for (int jj = 0; jj < X.cols(); ++jj) {
+@@ -37,38 +30,54 @@ NumericMatrix eigen_matrix_to_numeric_local(const Eigen::MatrixXd& X) {
+     return out;
+ }
+ 
+-NumericVector ps_lps_kernel_weights(const std::vector<double>& distances,
+-                                    const std::string& kernel) {
+-    const int n = distances.size();
+-    NumericVector weights(n);
++// Thread-safe (no R API) kernel-id mapping and weight computation, used inside
++// the OpenMP parallel region.
++enum KernelId {
++    KERNEL_GAUSSIAN = 0,
++    KERNEL_TRICUBE = 1,
++    KERNEL_EPANECHNIKOV = 2,
++    KERNEL_TRIANGULAR = 3,
++    KERNEL_UNKNOWN = -1
++};
++
++int ps_lps_kernel_id(const std::string& kernel) {
++    if (kernel == "gaussian") return KERNEL_GAUSSIAN;
++    if (kernel == "tricube") return KERNEL_TRICUBE;
++    if (kernel == "epanechnikov") return KERNEL_EPANECHNIKOV;
++    if (kernel == "triangular") return KERNEL_TRIANGULAR;
++    return KERNEL_UNKNOWN;
++}
++
++std::vector<double> ps_lps_kernel_weights_plain(
++        const std::vector<double>& distances,
++        int kernel_id) {
++    const int n = static_cast<int>(distances.size());
++    std::vector<double> weights(n, 0.0);
+     if (n == 0) {
+         return weights;
+     }
+     double h = 0.0;
+     for (int ii = 0; ii < n; ++ii) {
+-        if (R_finite(distances[ii])) {
++        if (std::isfinite(distances[ii])) {
+             h = std::max(h, distances[ii]);
+         }
+     }
+-    if (!R_finite(h) || h <= 0.0) {
++    if (!std::isfinite(h) || h <= 0.0) {
+         h = 1.0;
+     }
+     const double denom = h + std::sqrt(std::numeric_limits<double>::epsilon());
+     for (int ii = 0; ii < n; ++ii) {
+         const double u = distances[ii] / denom;
+         double w = 0.0;
+-        if (kernel == "gaussian") {
+-            w = std::exp(-0.5 * u * u);
+-        } else if (kernel == "tricube") {
+-            w = u < 1.0 ? std::pow(1.0 - u * u * u, 3.0) : 0.0;
+-        } else if (kernel == "epanechnikov") {
+-            w = std::max(0.0, 1.0 - u * u);
+-        } else if (kernel == "triangular") {
+-            w = std::max(0.0, 1.0 - u);
+-        } else {
+-            stop("Unsupported PS-LPS kernel in native frame helper.");
++        switch (kernel_id) {
++            case KERNEL_GAUSSIAN: w = std::exp(-0.5 * u * u); break;
++            case KERNEL_TRICUBE:
++                w = u < 1.0 ? std::pow(1.0 - u * u * u, 3.0) : 0.0; break;
++            case KERNEL_EPANECHNIKOV: w = std::max(0.0, 1.0 - u * u); break;
++            case KERNEL_TRIANGULAR: w = std::max(0.0, 1.0 - u); break;
++            default: w = 0.0; break;
+         }
+-        weights[ii] = R_finite(w) ? w : 0.0;
++        weights[ii] = std::isfinite(w) ? w : 0.0;
+     }
+     bool any_positive = false;
+     for (int ii = 0; ii < n; ++ii) {
+@@ -78,9 +87,7 @@ NumericVector ps_lps_kernel_weights(const std::vector<double>& distances,
+         }
+     }
+     if (!any_positive) {
+-        for (int ii = 0; ii < n; ++ii) {
+-            weights[ii] = 1.0;
+-        }
++        std::fill(weights.begin(), weights.end(), 1.0);
+     }
+     return weights;
+ }
+@@ -102,59 +109,109 @@ List rcpp_ps_lps_local_pca_supports(
+         stop("'chart_dim_by_anchor' must have one entry per row of X.");
+     }
+     const int k = std::min(std::max(1, support_size), n);
+-    List out(n);
+-    std::vector<std::pair<double, int> > order(n);
+-    for (int aa = 0; aa < n; ++aa) {
++
++    // Phase 0 (serial): validate the kernel and copy inputs into thread-safe
++    // plain C++/Eigen structures. After this point the parallel compute loop
++    // touches no R API, so it is safe under OpenMP.
++    const int kernel_id = ps_lps_kernel_id(kernel);
++    if (kernel_id == KERNEL_UNKNOWN) {
++        stop("Unsupported PS-LPS kernel in native frame helper.");
++    }
++    Eigen::MatrixXd Xe(n, p);
++    for (int jj = 0; jj < p; ++jj) {
+         for (int ii = 0; ii < n; ++ii) {
+-            double d2 = 0.0;
+-            for (int jj = 0; jj < p; ++jj) {
+-                const double delta = X(ii, jj) - X(aa, jj);
+-                d2 += delta * delta;
+-            }
+-            order[ii] = std::make_pair(d2, ii);
++            Xe(ii, jj) = X(ii, jj);
+         }
+-        std::sort(order.begin(), order.end(),
+-                  [](const std::pair<double, int>& lhs,
+-                     const std::pair<double, int>& rhs) {
+-                      if (lhs.first < rhs.first) return true;
+-                      if (lhs.first > rhs.first) return false;
+-                      return lhs.second < rhs.second;
+-                  });
+-        IntegerVector index(k);
+-        NumericVector distances(k);
+-        std::vector<int> rows(k);
+-        std::vector<double> dvec(k);
+-        for (int rr = 0; rr < k; ++rr) {
+-            rows[rr] = order[rr].second;
+-            index[rr] = rows[rr] + 1;
+-            const double dist = std::sqrt(order[rr].first);
+-            distances[rr] = dist;
+-            dvec[rr] = dist;
++    }
++    std::vector<int> cdim(n);
++    for (int aa = 0; aa < n; ++aa) {
++        cdim[aa] = chart_dim_by_anchor[aa];
++    }
++
++    struct AnchorResult {
++        std::vector<int> index;         // 1-based design rows
++        std::vector<double> distances;
++        std::vector<double> weights;
++        Eigen::MatrixXd coordinates;
++    };
++    std::vector<AnchorResult> res(n);
++    std::vector<std::string> errmsg(n);
++
++    // Phase 1 (parallel): per-anchor local PCA into plain buffers. Any
++    // Rcpp::stop thrown inside compute_local_pca_chart is caught per-anchor so
++    // no exception unwinds across the OpenMP region.
++    #ifdef _OPENMP
++    #pragma omp parallel for schedule(dynamic)
++    #endif
++    for (int aa = 0; aa < n; ++aa) {
++        try {
++            std::vector<std::pair<double, int> > order(n);
++            for (int ii = 0; ii < n; ++ii) {
++                double d2 = 0.0;
++                for (int jj = 0; jj < p; ++jj) {
++                    const double delta = Xe(ii, jj) - Xe(aa, jj);
++                    d2 += delta * delta;
++                }
++                order[ii] = std::make_pair(d2, ii);
++            }
++            std::partial_sort(
++                order.begin(), order.begin() + k, order.end(),
++                [](const std::pair<double, int>& lhs,
++                   const std::pair<double, int>& rhs) {
++                    if (lhs.first < rhs.first) return true;
++                    if (lhs.first > rhs.first) return false;
++                    return lhs.second < rhs.second;
++                });
++            std::vector<int> index(k);
++            std::vector<double> distances(k);
++            std::vector<int> rows(k);
++            std::vector<double> dvec(k);
++            for (int rr = 0; rr < k; ++rr) {
++                rows[rr] = order[rr].second;
++                index[rr] = rows[rr] + 1;
++                const double dist = std::sqrt(order[rr].first);
++                distances[rr] = dist;
++                dvec[rr] = dist;
++            }
++            std::vector<double> weights =
++                ps_lps_kernel_weights_plain(dvec, kernel_id);
++            Eigen::MatrixXd local(k, p);
++            for (int rr = 0; rr < k; ++rr) {
++                local.row(rr) = Xe.row(rows[rr]);
++            }
++            Eigen::RowVectorXd anchor = Xe.row(aa);
++            geosmooth::local_pca_chart_result_t chart =
++                geosmooth::compute_local_pca_chart(
++                    local, anchor, cdim[aa], "fixed", 0.9, "anchor",
++                    nullptr, true, false);
++            AnchorResult r;
++            r.index = std::move(index);
++            r.distances = std::move(distances);
++            r.weights = std::move(weights);
++            r.coordinates = chart.coordinates;
++            res[aa] = std::move(r);
++        } catch (std::exception& e) {
++            errmsg[aa] = e.what();
++        } catch (...) {
++            errmsg[aa] = "unknown error in parallel local PCA support build.";
+         }
+-        NumericVector weights = ps_lps_kernel_weights(dvec, kernel);
+-        Eigen::MatrixXd local = numeric_matrix_to_eigen_rows(X, rows);
+-        Eigen::RowVectorXd anchor(p);
+-        for (int jj = 0; jj < p; ++jj) {
+-            anchor(jj) = X(aa, jj);
++    }
++
++    // Re-raise the first captured error (if any) in a serial, R-safe context.
++    for (int aa = 0; aa < n; ++aa) {
++        if (!errmsg[aa].empty()) {
++            stop(errmsg[aa]);
+         }
+-        const int chart_dim = chart_dim_by_anchor[aa];
+-        geosmooth::local_pca_chart_result_t chart =
+-            geosmooth::compute_local_pca_chart(
+-                local,
+-                anchor,
+-                chart_dim,
+-                "fixed",
+-                0.9,
+-                "anchor",
+-                nullptr,
+-                true,
+-                false
+-            );
++    }
++
++    // Phase 2 (serial): assemble the R list from the plain buffers.
++    List out(n);
++    for (int aa = 0; aa < n; ++aa) {
+         out[aa] = List::create(
+-            _["index"] = index,
+-            _["distances"] = distances,
+-            _["weights"] = weights,
+-            _["coordinates"] = eigen_matrix_to_numeric_local(chart.coordinates)
++            _["index"] = wrap(res[aa].index),
++            _["distances"] = wrap(res[aa].distances),
++            _["weights"] = wrap(res[aa].weights),
++            _["coordinates"] = eigen_matrix_to_numeric_local(res[aa].coordinates)
+         );
+     }
+     return out;
