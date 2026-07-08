@@ -37,6 +37,12 @@
 #'   \code{X} only. The experimental special value \code{"local.auto"}
 #'   estimates a local chart dimension separately for each prediction anchor in
 #'   the ordinary local-PCA R backend.
+#' @param chart.dim.grid Optional candidate chart dimensions for experimental
+#'   coupled support-size by chart-dimension selection. When supplied,
+#'   \code{coordinate.method} must be \code{"local.pca"} and the evaluated
+#'   candidates use scalar numeric chart dimensions after feasibility filtering.
+#'   The default \code{NULL} preserves the historical single-\code{chart.dim}
+#'   behavior.
 #' @param local.chart.method Local chart constructor used when
 #'   \code{coordinate.method = "local.pca"}. \code{"pca"} preserves the ordinary
 #'   local-PCA chart path. \code{"second.order.svd"} uses an experimental
@@ -143,6 +149,15 @@
 #'   \code{"bernoulli"}); it has \emph{no effect} on the
 #'   \code{"binomial"} local logistic solver, whose ridge keeps the
 #'   historical structure (a warning is issued if combined).
+#' @param selection.strategy Candidate-selection strategy. \code{"grid"}
+#'   preserves the full Cartesian candidate grid. The experimental
+#'   \code{"sparse_kd"} strategy evaluates a sparse coupled support-size by
+#'   chart-dimension skeleton when \code{chart.dim.grid} is supplied.
+#' @param chart.dim.max Optional explicit maximum chart dimension for the
+#'   experimental coupled selector.
+#' @param design.margin Nonnegative prefit margin used to mark coupled
+#'   \code{(support.size, chart.dim)} candidates infeasible when the full local
+#'   polynomial design would be underdetermined.
 #' @return A list of class \code{"lps"} with response-scale
 #'   \code{fitted.values}, unmodified local least-squares
 #'   \code{fitted.values.raw}, selected parameters, a candidate CV table, the
@@ -174,6 +189,7 @@ fit.lps <- function(
     X.eval = NULL,
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
+    chart.dim.grid = NULL,
     local.chart.method = c("pca", "second.order.svd"),
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
@@ -187,13 +203,17 @@ fit.lps <- function(
     outcome.family = c("gaussian", "bernoulli", "binomial"),
     bandwidth.multiplier.grid = 1,
     keep.cv.predictions = FALSE,
-    ridge.shrinkage.target = c("zero", "local.mean")) {
+    ridge.shrinkage.target = c("zero", "local.mean"),
+    selection.strategy = c("grid", "sparse_kd"),
+    chart.dim.max = NULL,
+    design.margin = 2L) {
 
     X <- as.matrix(X)
     y <- as.numeric(y)
     outcome.family <- match.arg(outcome.family)
     keep.cv.predictions <- isTRUE(keep.cv.predictions)
     ridge.shrinkage.target <- match.arg(ridge.shrinkage.target)
+    selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
     if (identical(outcome.family, "binomial") &&
         identical(ridge.shrinkage.target, "local.mean")) {
         # E2.13 scope (S G4 resolution): the alignment applies to the
@@ -248,6 +268,12 @@ fit.lps <- function(
     bandwidth.multiplier.grid <- .klp.clean.bandwidth.multiplier.grid(
         bandwidth.multiplier.grid
     )
+    design.margin <- as.integer(design.margin)
+    if (length(design.margin) != 1L || !is.finite(design.margin) ||
+        design.margin < 0L) {
+        stop("'design.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     backend.used <- .klp.resolve.backend(
@@ -291,19 +317,25 @@ fit.lps <- function(
                  call. = FALSE)
         }
     }
-    support.grid <- .klp.clean.support.grid(support.grid, nrow(X))
-    degree.grid <- .klp.clean.degree.grid(degree.grid)
-    kernel.grid <- .klp.clean.kernel.grid(kernel.grid)
     foldid <- .klp.prepare.foldid(nrow(X), foldid, cv.folds, cv.seed)
 
-    cand <- expand.grid(
-        support.size = support.grid,
-        degree = degree.grid,
-        kernel = kernel.grid,
-        bandwidth.multiplier = bandwidth.multiplier.grid,
-        KEEP.OUT.ATTRS = FALSE,
-        stringsAsFactors = FALSE
+    candidate.spec <- .coupled.kd.lps.candidate.spec(
+        X = X,
+        support.grid = support.grid,
+        degree.grid = degree.grid,
+        kernel.grid = kernel.grid,
+        bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        chart.dim = chart.dim,
+        chart.dim.grid = chart.dim.grid,
+        coordinate.method = coordinate.method,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric,
+        selection.strategy = selection.strategy,
+        chart.dim.max = chart.dim.max,
+        design.margin = design.margin,
+        reuse.type = "weighted"
     )
+    cand <- candidate.spec$candidates
     logistic.cv.telemetry <- .klp.logistic.telemetry.new(outcome.family)
     logistic.final.telemetry <- .klp.logistic.telemetry.new(outcome.family)
     cv.result <- .klp.cv.table(
@@ -331,12 +363,18 @@ fit.lps <- function(
     score.column <- .klp.selection.score.column(outcome.family)
     best.idx <- .klp.select.best.idx(cv.table, score.column = score.column)
     selected <- cv.table[best.idx, , drop = FALSE]
+    candidate.chart.dim.search <- !is.null(chart.dim.grid)
+    selected.chart.dim.request <- if (isTRUE(candidate.chart.dim.search)) {
+        as.integer(selected$chart.dim[[1L]])
+    } else {
+        chart.dim
+    }
     selected.dim <- .klp.resolve.chart.dim(
         X = X,
         support.size = selected$support.size[[1L]],
         degree = selected$degree[[1L]],
         coordinate.method = coordinate.method,
-        chart.dim = chart.dim,
+        chart.dim = selected.chart.dim.request,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric
     )
@@ -346,7 +384,7 @@ fit.lps <- function(
         support.size = selected$support.size[[1L]],
         degree = selected$degree[[1L]],
         coordinate.method = coordinate.method,
-        chart.dim = chart.dim,
+        chart.dim = selected.chart.dim.request,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
         summary.dim = selected.dim$chart.dim
@@ -424,25 +462,31 @@ fit.lps <- function(
         coordinate.method = coordinate.method,
         local.chart.method = local.chart.method,
         local.chart.method.effective = local.chart.method.effective,
-        requested.chart.dim = chart.dim,
+        requested.chart.dim = selected.chart.dim.request,
+        requested.chart.dim.grid = chart.dim.grid,
         chart.dim = selected.dim$chart.dim,
         local.chart.diagnostics = chart.diagnostics,
         local.chart.diagnostics.summary = chart.diagnostics.summary,
-        auto.chart.dim = .klp.is.auto.chart.dim(chart.dim),
-        auto.chart.dim.local = .klp.is.local.auto.chart.dim(chart.dim),
-        chart.dim.mode = .klp.chart.dim.mode(chart.dim, coordinate.method),
+        auto.chart.dim = .klp.is.auto.chart.dim(selected.chart.dim.request),
+        auto.chart.dim.local =
+            .klp.is.local.auto.chart.dim(selected.chart.dim.request),
+        chart.dim.mode = .klp.chart.dim.mode(selected.chart.dim.request,
+                                            coordinate.method),
         diagnostics = list(
             chart.dim = .local.chart.dimension.telemetry(
                 chart.dim.info = list(
                     chart.dim = selected.dim$chart.dim,
-                    requested.chart.dim = chart.dim,
+                    requested.chart.dim = selected.chart.dim.request,
                     chart.dim.mode = .klp.chart.dim.mode(
-                        chart.dim,
+                        selected.chart.dim.request,
                         coordinate.method
                     ),
-                    auto.chart.dim = .klp.is.auto.chart.dim(chart.dim),
+                    auto.chart.dim =
+                        .klp.is.auto.chart.dim(selected.chart.dim.request),
                     auto.chart.dim.local =
-                        .klp.is.local.auto.chart.dim(chart.dim),
+                        .klp.is.local.auto.chart.dim(
+                            selected.chart.dim.request
+                        ),
                     auto.chart.dim.diagnostics = selected.dim$diagnostics,
                     auto.chart.support.metric = auto.chart.support.metric,
                     auto.chart.selection.metric = auto.chart.selection.metric
@@ -461,6 +505,8 @@ fit.lps <- function(
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
         bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+        selection.strategy = selection.strategy,
+        coupled.kd.candidate.plan = candidate.spec$coupled.plan,
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         ridge.shrinkage.target = ridge.shrinkage.target,
@@ -468,6 +514,7 @@ fit.lps <- function(
         logistic.diagnostics = logistic.diagnostics,
         call = match.call()
     )
+    out$diagnostics$coupled.kd.selection <- candidate.spec$telemetry
     if (keep.cv.predictions) {
         # E2.12: the per-candidate out-of-fold prediction matrix (columns in
         # cv.table row order), so the selection score can be recomputed from
@@ -1038,8 +1085,20 @@ lps.backend.diagnostics <- function(object) {
     if (is.null(cand$bandwidth.multiplier)) {
         cand$bandwidth.multiplier <- 1
     }
-    cand$chart.dim <- NA_integer_
-    local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
+    candidate.chart.dim <- "chart.dim" %in% names(cand) &&
+        any(!is.na(cand$chart.dim))
+    if (isTRUE(candidate.chart.dim)) {
+        decoded <- .coupled.kd.numeric.chart.dim.vector(cand$chart.dim)
+        if (any(!is.finite(decoded)) || any(decoded < 1L)) {
+            stop("Candidate-specific chart dimensions must be positive ",
+                 "integer values.", call. = FALSE)
+        }
+        cand$chart.dim <- as.integer(decoded)
+        local.auto.dim <- FALSE
+    } else {
+        cand$chart.dim <- NA_integer_
+        local.auto.dim <- .klp.is.local.auto.chart.dim(chart.dim)
+    }
     if (identical(coordinate.method, "coordinates") &&
         identical(backend, "cpp")) {
         if (any(cand$bandwidth.multiplier != 1)) {
@@ -1057,24 +1116,27 @@ lps.backend.diagnostics <- function(object) {
         )
         return(list(cv.table = cand, predictions = NULL))
     }
-    dim.lookup <- list()
-    combos <- unique(cand[, c("support.size", "degree"), drop = FALSE])
-    for (ii in seq_len(nrow(combos))) {
-        info <- .klp.resolve.chart.dim(
-            X = X,
-            support.size = combos$support.size[[ii]],
-            degree = combos$degree[[ii]],
-            coordinate.method = coordinate.method,
-            chart.dim = chart.dim,
-            auto.chart.support.metric = auto.chart.support.metric,
-            auto.chart.selection.metric = auto.chart.selection.metric
-        )
-        key <- paste(combos$support.size[[ii]], combos$degree[[ii]], sep = "_")
-        dim.lookup[[key]] <- info$chart.dim
-    }
-    for (rr in seq_len(nrow(cand))) {
-        key <- paste(cand$support.size[[rr]], cand$degree[[rr]], sep = "_")
-        cand$chart.dim[[rr]] <- dim.lookup[[key]]
+    if (!isTRUE(candidate.chart.dim)) {
+        dim.lookup <- list()
+        combos <- unique(cand[, c("support.size", "degree"), drop = FALSE])
+        for (ii in seq_len(nrow(combos))) {
+            info <- .klp.resolve.chart.dim(
+                X = X,
+                support.size = combos$support.size[[ii]],
+                degree = combos$degree[[ii]],
+                coordinate.method = coordinate.method,
+                chart.dim = chart.dim,
+                auto.chart.support.metric = auto.chart.support.metric,
+                auto.chart.selection.metric = auto.chart.selection.metric
+            )
+            key <- paste(combos$support.size[[ii]], combos$degree[[ii]],
+                         sep = "_")
+            dim.lookup[[key]] <- info$chart.dim
+        }
+        for (rr in seq_len(nrow(cand))) {
+            key <- paste(cand$support.size[[rr]], cand$degree[[rr]], sep = "_")
+            cand$chart.dim[[rr]] <- dim.lookup[[key]]
+        }
     }
     if (identical(coordinate.method, "local.pca") &&
         identical(local.chart.method, "pca") &&
