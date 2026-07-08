@@ -34,6 +34,11 @@ from `gflow`.
   sweeps, migration/parity tests, and acceptance-style mini-experiments should
   live in opt-in grouped targets such as `make test-validation` or
   `make test-all`, not in the default edit-test loop.
+- For runtime profiling and benchmark claims involving native code, do not rely
+  on default `pkgload::load_all()` timings unless the debug build is the object
+  of study. Use an optimized source build or installed package, and record the
+  load/build mode. See
+  `/Users/pgajer/.codex/notes/agent_instructions/r_packages/optimized_package_builds_for_runtime_benchmarks.md`.
 
 ## Benchmark Design
 
