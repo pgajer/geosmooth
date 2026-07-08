@@ -2430,75 +2430,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 }
 
 .state.density.ps.lps.chart.dim.reuse.plan <- function(candidates) {
-    if (!nrow(candidates) || !"chart.dim" %in% names(candidates)) {
-        return(data.frame())
-    }
-    decoded <- lapply(
-        candidates$chart.dim,
-        function(x) {
-            out <- tryCatch(.local.chart.decode.chart.dim(x),
-                            error = function(e) NULL)
-            if (is.numeric(out) && length(out) == 1L &&
-                is.finite(out) && out >= 1L) {
-                return(as.integer(out))
-            }
-            NA_integer_
-        }
-    )
-    dim <- unlist(decoded, use.names = FALSE)
-    ok <- is.finite(dim)
-    if (!any(ok)) {
-        return(data.frame())
-    }
-    tab <- unique(candidates[ok, c("support.size", "kernel"), drop = FALSE])
-    tab$max.chart.dim <- NA_integer_
-    for (ii in seq_len(nrow(tab))) {
-        same <- ok &
-            candidates$support.size == tab$support.size[[ii]] &
-            candidates$kernel == tab$kernel[[ii]]
-        tab$max.chart.dim[[ii]] <- max(dim[same], na.rm = TRUE)
-    }
-    tab$reuse.key <- .state.density.ps.lps.local.pca.supports.key(
-        support.size = tab$support.size,
-        kernel = tab$kernel,
-        chart.dim = tab$max.chart.dim
-    )
-    tab
+    .coupled.kd.reuse.plan(candidates, reuse.type = "weighted")
 }
 
 .state.density.chart.pca.reuse.plan <- function(candidates) {
-    if (!nrow(candidates) || !"chart.dim" %in% names(candidates) ||
-        !"support.size" %in% names(candidates)) {
-        return(data.frame())
-    }
-    decoded <- lapply(
-        candidates$chart.dim,
-        function(x) {
-            out <- tryCatch(.local.chart.decode.chart.dim(x),
-                            error = function(e) NULL)
-            if (is.numeric(out) && length(out) == 1L &&
-                is.finite(out) && out >= 1L) {
-                return(as.integer(out))
-            }
-            NA_integer_
-        }
-    )
-    dim <- unlist(decoded, use.names = FALSE)
-    ok <- is.finite(dim)
-    if (!any(ok)) {
-        return(data.frame())
-    }
-    tab <- unique(candidates[ok, "support.size", drop = FALSE])
-    tab$max.chart.dim <- NA_integer_
-    for (ii in seq_len(nrow(tab))) {
-        same <- ok & candidates$support.size == tab$support.size[[ii]]
-        tab$max.chart.dim[[ii]] <- max(dim[same], na.rm = TRUE)
-    }
-    tab$reuse.key <- .state.density.chart.pca.supports.key(
-        support.size = tab$support.size,
-        chart.dim = tab$max.chart.dim
-    )
-    tab
+    .coupled.kd.reuse.plan(candidates, reuse.type = "chart")
 }
 
 .state.density.chart.pca.supports.key <- function(support.size, chart.dim) {
@@ -2522,6 +2458,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     if (is.null(reuse.plan) || !nrow(reuse.plan)) {
         return(NULL)
     }
+    coordinate.method <- dots$coordinate.method %||% "local.pca"
+    if (!identical(coordinate.method, "local.pca")) {
+        return(NULL)
+    }
     chart.dim <- dots$chart.dim %||% NULL
     if (is.null(chart.dim) || !is.numeric(chart.dim) ||
         length(chart.dim) != 1L || !is.finite(chart.dim)) {
@@ -2533,33 +2473,16 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         length(kernel) != 1L) {
         return(NULL)
     }
-    row <- reuse.plan[
-        reuse.plan$support.size == as.integer(support.size) &
-            reuse.plan$kernel == as.character(kernel),
-        ,
-        drop = FALSE
-    ]
-    if (nrow(row) != 1L || row$max.chart.dim[[1L]] < as.integer(chart.dim)) {
-        return(NULL)
-    }
-    key <- row$reuse.key[[1L]]
-    if (exists(key, envir = cache.env, inherits = FALSE)) {
-        return(get(key, envir = cache.env, inherits = FALSE))
-    }
-    supports <- tryCatch(
-        rcpp_ps_lps_local_pca_supports(
-            X = as.matrix(X),
-            support_size = as.integer(support.size),
-            chart_dim_by_anchor = rep(as.integer(row$max.chart.dim[[1L]]),
-                                      nrow(X)),
-            kernel = as.character(kernel)
-        ),
-        error = function(e) NULL
+    .coupled.kd.shared.local.pca.supports(
+        X = X,
+        support.size = support.size,
+        chart.dim = chart.dim,
+        kernel = kernel,
+        coordinate.method = coordinate.method,
+        reuse.plan = reuse.plan,
+        cache.env = cache.env,
+        reuse.type = "weighted"
     )
-    if (!is.null(supports)) {
-        assign(key, supports, envir = cache.env)
-    }
-    supports
 }
 
 .state.density.chart.shared.local.pca.supports <- function(X, dots,
@@ -2581,32 +2504,16 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     if (is.null(support.size) || length(support.size) != 1L) {
         return(NULL)
     }
-    row <- reuse.plan[
-        reuse.plan$support.size == as.integer(support.size),
-        ,
-        drop = FALSE
-    ]
-    if (nrow(row) != 1L || row$max.chart.dim[[1L]] < as.integer(chart.dim)) {
-        return(NULL)
-    }
-    key <- row$reuse.key[[1L]]
-    if (exists(key, envir = cache.env, inherits = FALSE)) {
-        return(get(key, envir = cache.env, inherits = FALSE))
-    }
-    supports <- tryCatch(
-        rcpp_ps_lps_local_pca_supports(
-            X = as.matrix(X),
-            support_size = as.integer(support.size),
-            chart_dim_by_anchor = rep(as.integer(row$max.chart.dim[[1L]]),
-                                      nrow(X)),
-            kernel = "gaussian"
-        ),
-        error = function(e) NULL
+    .coupled.kd.shared.local.pca.supports(
+        X = X,
+        support.size = support.size,
+        chart.dim = chart.dim,
+        kernel = "gaussian",
+        coordinate.method = coordinate.method,
+        reuse.plan = reuse.plan,
+        cache.env = cache.env,
+        reuse.type = "chart"
     )
-    if (!is.null(supports)) {
-        assign(key, supports, envir = cache.env)
-    }
-    supports
 }
 
 .state.density.ps.lps.geometry.cache <- function(X, dots,
