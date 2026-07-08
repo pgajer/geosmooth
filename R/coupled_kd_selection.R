@@ -318,3 +318,188 @@
     out$candidate.id <- seq_len(nrow(out))
     out
 }
+
+.coupled.kd.numeric.chart.dim.vector <- function(chart.dim) {
+    unlist(
+        lapply(
+            chart.dim,
+            function(x) {
+                decoded <- tryCatch(.local.chart.decode.chart.dim(x),
+                                    error = function(e) NULL)
+                if (is.numeric(decoded) && length(decoded) == 1L &&
+                    is.finite(decoded) && decoded >= 1L) {
+                    as.integer(decoded)
+                } else {
+                    NA_integer_
+                }
+            }
+        ),
+        use.names = FALSE
+    )
+}
+
+.coupled.kd.reuse.plan <- function(candidates,
+                                   reuse.type = c("weighted", "chart")) {
+    reuse.type <- match.arg(reuse.type)
+    if (!is.data.frame(candidates) || !nrow(candidates) ||
+        !"chart.dim" %in% names(candidates) ||
+        !"support.size" %in% names(candidates)) {
+        return(data.frame())
+    }
+    if (identical(reuse.type, "weighted") &&
+        !"kernel" %in% names(candidates)) {
+        return(data.frame())
+    }
+    dim <- .coupled.kd.numeric.chart.dim.vector(candidates$chart.dim)
+    ok <- is.finite(dim)
+    if ("feasible" %in% names(candidates)) {
+        ok <- ok & !is.na(candidates$feasible) &
+            as.logical(candidates$feasible)
+    }
+    if (!any(ok)) {
+        return(data.frame())
+    }
+    group.cols <- if (identical(reuse.type, "weighted")) {
+        c("support.size", "kernel")
+    } else {
+        "support.size"
+    }
+    tab <- unique(candidates[ok, group.cols, drop = FALSE])
+    tab$max.chart.dim <- NA_integer_
+    tab$n.candidates <- NA_integer_
+    tab$candidate.ids <- NA_character_
+    for (ii in seq_len(nrow(tab))) {
+        same <- ok & candidates$support.size == tab$support.size[[ii]]
+        if (identical(reuse.type, "weighted")) {
+            same <- same & candidates$kernel == tab$kernel[[ii]]
+        }
+        tab$max.chart.dim[[ii]] <- max(dim[same], na.rm = TRUE)
+        tab$n.candidates[[ii]] <- sum(same)
+        tab$candidate.ids[[ii]] <- paste(candidates$candidate.id[same],
+                                         collapse = ",")
+    }
+    tab$reuse.chart.dim.max <- tab$max.chart.dim
+    tab$reuse.key <- mapply(
+        .coupled.kd.reuse.key,
+        support.size = tab$support.size,
+        kernel = if (identical(reuse.type, "weighted")) tab$kernel else "",
+        max.chart.dim = tab$max.chart.dim,
+        MoreArgs = list(reuse.type = reuse.type),
+        USE.NAMES = FALSE
+    )
+    rownames(tab) <- NULL
+    tab
+}
+
+.coupled.kd.lookup.reuse.plan <- function(reuse.plan,
+                                          support.size,
+                                          chart.dim,
+                                          kernel = "gaussian",
+                                          reuse.type =
+                                              c("weighted", "chart")) {
+    reuse.type <- match.arg(reuse.type)
+    if (is.null(reuse.plan) || !is.data.frame(reuse.plan) ||
+        !nrow(reuse.plan)) {
+        return(NULL)
+    }
+    chart.dim <- as.integer(chart.dim)
+    if (length(chart.dim) != 1L || !is.finite(chart.dim) || chart.dim < 1L) {
+        return(NULL)
+    }
+    row <- reuse.plan[
+        as.integer(reuse.plan$support.size) == as.integer(support.size),
+        ,
+        drop = FALSE
+    ]
+    if (identical(reuse.type, "weighted")) {
+        if (!"kernel" %in% names(row)) {
+            return(NULL)
+        }
+        row <- row[as.character(row$kernel) == as.character(kernel), ,
+                   drop = FALSE]
+    }
+    if (nrow(row) != 1L || row$max.chart.dim[[1L]] < chart.dim) {
+        return(NULL)
+    }
+    row
+}
+
+.coupled.kd.shared.local.pca.supports <- function(
+        X,
+        support.size,
+        chart.dim,
+        kernel = "gaussian",
+        coordinate.method = "local.pca",
+        reuse.plan,
+        cache.env,
+        reuse.type = c("weighted", "chart")) {
+    reuse.type <- match.arg(reuse.type)
+    if (!identical(coordinate.method, "local.pca")) {
+        return(NULL)
+    }
+    if (is.null(cache.env)) {
+        cache.env <- new.env(parent = emptyenv())
+    }
+    row <- .coupled.kd.lookup.reuse.plan(
+        reuse.plan = reuse.plan,
+        support.size = support.size,
+        chart.dim = chart.dim,
+        kernel = kernel,
+        reuse.type = reuse.type
+    )
+    if (is.null(row)) {
+        return(NULL)
+    }
+    key <- row$reuse.key[[1L]]
+    if (exists(key, envir = cache.env, inherits = FALSE)) {
+        return(get(key, envir = cache.env, inherits = FALSE))
+    }
+    native.kernel <- if (identical(reuse.type, "weighted")) {
+        as.character(kernel)
+    } else {
+        "gaussian"
+    }
+    supports <- tryCatch(
+        rcpp_ps_lps_local_pca_supports(
+            X = as.matrix(X),
+            support_size = as.integer(support.size),
+            chart_dim_by_anchor = rep(as.integer(row$max.chart.dim[[1L]]),
+                                      nrow(X)),
+            kernel = native.kernel
+        ),
+        error = function(e) NULL
+    )
+    if (!is.null(supports)) {
+        assign(key, supports, envir = cache.env)
+    }
+    supports
+}
+
+.coupled.kd.local.pca.support.cache <- function(
+        X,
+        candidates,
+        reuse.type = c("weighted", "chart"),
+        cache.env = new.env(parent = emptyenv())) {
+    reuse.type <- match.arg(reuse.type)
+    reuse.plan <- .coupled.kd.reuse.plan(candidates, reuse.type = reuse.type)
+    list(
+        reuse.type = reuse.type,
+        reuse.plan = reuse.plan,
+        cache.env = cache.env,
+        get = function(support.size,
+                       chart.dim,
+                       kernel = "gaussian",
+                       coordinate.method = "local.pca") {
+            .coupled.kd.shared.local.pca.supports(
+                X = X,
+                support.size = support.size,
+                chart.dim = chart.dim,
+                kernel = kernel,
+                coordinate.method = coordinate.method,
+                reuse.plan = reuse.plan,
+                cache.env = cache.env,
+                reuse.type = reuse.type
+            )
+        }
+    )
+}
