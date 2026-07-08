@@ -680,6 +680,79 @@ test_that("PS-LPS component cache reproduces direct solves across lambda.sync va
     }
 })
 
+test_that("PS-LPS max-dimension local PCA supports reproduce smaller chart fits", {
+    set.seed(221)
+    n <- 42L
+    t <- seq(-1, 1, length.out = n)
+    X <- cbind(t, t^2, sin(2 * t), cos(3 * t), t^3)
+    y <- sin(4 * t) + 0.25 * t^2
+    support.size <- 13L
+    kernel <- "tricube"
+    degree <- 2L
+    max.dim <- 4L
+    max.supports <- rcpp_ps_lps_local_pca_supports(
+        X = X,
+        support_size = support.size,
+        chart_dim_by_anchor = rep(max.dim, n),
+        kernel = kernel
+    )
+
+    for (chart.dim in c(1L, 2L, 4L)) {
+        direct <- .ps.lps.prepare.geometry.cache(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            kernel = kernel,
+            chart.dim = chart.dim,
+            auto.chart.support.metric = "coordinates",
+            auto.chart.selection.metric = "coordinates",
+            sync.neighbor.size = 3L,
+            overlap.weight = "normalized.product",
+            design.basis = "orthogonal.polynomial.drop",
+            design.drop.tol = sqrt(.Machine$double.eps)
+        )
+        reused <- .ps.lps.prepare.geometry.cache(
+            X = X,
+            support.size = support.size,
+            degree = degree,
+            kernel = kernel,
+            chart.dim = chart.dim,
+            auto.chart.support.metric = "coordinates",
+            auto.chart.selection.metric = "coordinates",
+            sync.neighbor.size = 3L,
+            overlap.weight = "normalized.product",
+            design.basis = "orthogonal.polynomial.drop",
+            design.drop.tol = sqrt(.Machine$double.eps),
+            local.pca.supports = max.supports
+        )
+        expect_equal(
+            .ps.lps.frame.design.summary(reused$frames),
+            .ps.lps.frame.design.summary(direct$frames)
+        )
+        for (lambda.sync in c(0, 0.1)) {
+            direct.fit <- .ps.lps.solve(
+                frames = direct$frames,
+                y = y,
+                response.weights = rep(1, n),
+                lambda.sync = lambda.sync,
+                lambda.ridge = 1e-8,
+                sync.rows = direct$sync.rows
+            )
+            reused.fit <- .ps.lps.solve(
+                frames = reused$frames,
+                y = y,
+                response.weights = rep(1, n),
+                lambda.sync = lambda.sync,
+                lambda.ridge = 1e-8,
+                sync.rows = reused$sync.rows
+            )
+            expect_equal(reused.fit$fitted.values,
+                         direct.fit$fitted.values,
+                         tolerance = 1e-9)
+        }
+    }
+})
+
 test_that("fit.ps.lps component-cache integration matches direct mixed-grid tuning loop", {
     set.seed(22)
     X <- matrix(runif(150), ncol = 3)
