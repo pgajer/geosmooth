@@ -367,6 +367,8 @@ relative.regret.eps <- 1e-12
 scores$outer.relative.regret <- scores$outer.regret /
     pmax(scores$reference.outer.rmse, relative.regret.eps)
 scores$outer.relative.regret.percent <- 100 * scores$outer.relative.regret
+scores$outer.rmse.ratio <- scores$outer.rmse /
+    pmax(scores$reference.outer.rmse, relative.regret.eps)
 scores$support.distance.to.reference <-
     abs(scores$selected.support.size - scores$reference.support.size)
 scores$chart.dim.distance.to.reference <-
@@ -375,7 +377,8 @@ scores$chart.dim.distance.to.reference <-
 
 summary <- aggregate(
     cbind(outer.rmse, outer.regret, outer.relative.regret.percent,
-          elapsed.sec, evaluated.candidates, unique.pca.builds) ~ strategy,
+          outer.rmse.ratio, elapsed.sec, evaluated.candidates,
+          unique.pca.builds) ~ strategy,
     data = scores[scores$status == "ok", ],
     FUN = stats::median
 )
@@ -389,7 +392,7 @@ summary$failure.rate <- aggregate(status ~ strategy, data = scores,
                                   ]
 
 family.summary <- aggregate(
-    cbind(outer.regret, outer.relative.regret.percent) ~
+    cbind(outer.regret, outer.relative.regret.percent, outer.rmse.ratio) ~
         strategy + dataset.family,
     data = scores[scores$status == "ok", ],
     FUN = stats::median
