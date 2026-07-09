@@ -2523,6 +2523,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         ridge.condition.max,
         bandwidth.multiplier
     )
+    if (identical(chart.activation, "subject.od") &&
+        !identical(backend.used, "R")) {
+        backend.used <- "R"
+    }
     if (.klp.is.local.auto.chart.dim(chart.dim)) {
         if (!identical(coordinate.method, "local.pca")) {
             stop("'chart.dim = \"local.auto\"' requires ",

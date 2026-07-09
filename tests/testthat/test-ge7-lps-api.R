@@ -23,6 +23,43 @@ test_that("GE7 fit.lps is the canonical LPS entry point", {
     expect_match(capture.output(print(fit))[[1L]], "LPS")
 })
 
+test_that("LPS sparse chart activation routes native backends through R", {
+    X <- matrix(seq(0, 1, length.out = 20), ncol = 1L)
+    y <- numeric(nrow(X))
+    y[c(9L, 11L)] <- 1
+
+    fit <- fit.lps(
+        X = X,
+        y = y,
+        support.grid = 5L,
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "coordinates",
+        backend = "cpp",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean",
+        chart.activation = "subject.od",
+        chart.activation.response = y,
+        cv.folds = 2L
+    )
+
+    expect_identical(fit$backend, "cpp")
+    expect_identical(fit$backend.used, "R")
+    expect_true(isTRUE(fit$diagnostics$chart.activation$enabled))
+    expect_true(any(!fit$chart.activation.diagnostics$active))
+    expect_true(all(fit$fitted.values.raw[
+        !fit$chart.activation.diagnostics$active
+    ] == 0))
+
+    backend.diag <- lps.backend.diagnostics(fit)
+    expect_identical(
+        backend.diag$backend.auto.policy,
+        "explicit_coordinates_cpp_activation_R_reference"
+    )
+})
+
 test_that("LPS Bernoulli mode validates 0/1 responses and reports probabilities", {
     X <- matrix(seq(0, 1, length.out = 30), ncol = 1L)
     y <- as.numeric(X[, 1] > 0.45)

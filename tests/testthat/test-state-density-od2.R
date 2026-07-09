@@ -180,6 +180,37 @@ test_that("OD2 LPS defaults deactivate sparse subject charts", {
     expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
 })
 
+test_that("OD2 LPS visit-CV reports R reference backend under sparse activation", {
+    X <- cbind(seq(0, 1, length.out = 24),
+               sin(seq(0, 1, length.out = 24)))
+    subject.index <- c(10L, 12L, 14L, 16L)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "lps_count",
+        od.cv = "visit",
+        visit.cv.folds = 2L,
+        support.grid = 7L,
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        chart.dim.grid = 1L,
+        backend = "cpp.local.pca",
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean"
+    )
+
+    source <- fit$diagnostics$source.fit
+    expect_identical(source$backend, "cpp.local.pca")
+    expect_identical(source$backend.used, "R")
+    expect_true(isTRUE(source$diagnostics$chart.activation$enabled))
+    expect_true(any(!source$chart.activation.diagnostics$active))
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+})
+
 test_that("OD2 PS-LPS defaults remove inactive charts from synchronization", {
     X <- matrix(seq(0, 1, length.out = 24), ncol = 1L)
     subject.index <- c(11L, 13L)
