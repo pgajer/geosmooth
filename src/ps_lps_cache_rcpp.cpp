@@ -324,6 +324,16 @@ NumericMatrix rcpp_ps_lps_independent_fitted_matrix(
     NumericMatrix fitted(n, ncol_y);
     for (int ii = 0; ii < n; ++ii) {
         const List fr = frames[ii];
+        bool active = true;
+        if (fr.containsElementNamed("active")) {
+            active = as<bool>(fr["active"]);
+        }
+        if (!active) {
+            for (int cc = 0; cc < ncol_y; ++cc) {
+                fitted(ii, cc) = 0.0;
+            }
+            continue;
+        }
         const IntegerVector index = fr["index"];
         const NumericVector weights = fr["weights"];
         const NumericMatrix design = fr["design"];
