@@ -23,7 +23,7 @@ test_that("GE7 fit.lps is the canonical LPS entry point", {
     expect_match(capture.output(print(fit))[[1L]], "LPS")
 })
 
-test_that("LPS sparse chart activation routes native backends through R", {
+test_that("LPS sparse chart activation routes coordinate C++ through R", {
     X <- matrix(seq(0, 1, length.out = 20), ncol = 1L)
     y <- numeric(nrow(X))
     y[c(9L, 11L)] <- 1
@@ -58,6 +58,43 @@ test_that("LPS sparse chart activation routes native backends through R", {
         backend.diag$backend.auto.policy,
         "explicit_coordinates_cpp_activation_R_reference"
     )
+})
+
+test_that("LPS sparse chart activation supports native local-PCA backend", {
+    X <- cbind(seq(0, 1, length.out = 24),
+               sin(seq(0, 1, length.out = 24)))
+    y <- numeric(nrow(X))
+    y[c(10L, 12L, 14L)] <- 1
+    common <- list(
+        X = X,
+        y = y,
+        support.grid = 7L,
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "local.pca",
+        local.chart.method = "pca",
+        chart.dim = 1L,
+        design.basis = "monomial",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf,
+        unstable.action = "mean",
+        chart.activation = "subject.od",
+        chart.activation.response = y,
+        cv.folds = 2L
+    )
+
+    fit.r <- do.call(fit.lps, c(common, list(backend = "R")))
+    fit.cpp <- do.call(fit.lps, c(common, list(backend = "cpp.local.pca")))
+
+    expect_identical(fit.cpp$backend, "cpp.local.pca")
+    expect_identical(fit.cpp$backend.used, "cpp.local.pca")
+    expect_true(isTRUE(fit.cpp$diagnostics$chart.activation$enabled))
+    expect_true(any(!fit.cpp$chart.activation.diagnostics$active))
+    expect_equal(fit.cpp$fitted.values.raw, fit.r$fitted.values.raw,
+                 tolerance = 1e-8)
+    expect_true(all(fit.cpp$fitted.values.raw[
+        !fit.cpp$chart.activation.diagnostics$active
+    ] == 0))
 })
 
 test_that("LPS Bernoulli mode validates 0/1 responses and reports probabilities", {

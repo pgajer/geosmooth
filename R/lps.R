@@ -317,7 +317,7 @@ fit.lps <- function(
         bandwidth.multiplier.grid
     )
     if (isTRUE(chart.activation.info$enabled) &&
-        !identical(backend.used, "R")) {
+        !backend.used %in% c("R", "cpp.local.pca")) {
         backend.used <- "R"
     }
     if (outcome.family %in% c("bernoulli", "binomial") &&
@@ -371,6 +371,11 @@ fit.lps <- function(
         reuse.type = "weighted"
     )
     cand <- candidate.spec$candidates
+    if (isTRUE(chart.activation.info$enabled) &&
+        identical(backend.used, "cpp.local.pca") &&
+        nrow(cand) != 1L) {
+        backend.used <- "R"
+    }
     logistic.cv.telemetry <- .klp.logistic.telemetry.new(outcome.family)
     logistic.final.telemetry <- .klp.logistic.telemetry.new(outcome.family)
     cv.result <- .klp.cv.table(
@@ -1647,6 +1652,52 @@ lps.backend.diagnostics <- function(object) {
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
     support.size <- min(as.integer(support.size), nrow(X.train))
+    if (isTRUE(chart.activation.info$enabled) &&
+        .klp.can.use.native.local.pca.frames(
+            X.train = X.train,
+            X.eval = X.eval,
+            coordinate.method = coordinate.method,
+            local.chart.method = local.chart.method,
+            backend = backend,
+            design.basis = design.basis,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            ridge.condition.max = ridge.condition.max,
+            bandwidth.multiplier = bandwidth.multiplier,
+            outcome.family = outcome.family
+        )) {
+        chart.dim.by.anchor <- if (is.null(chart.dim.by.eval)) {
+            rep(as.integer(chart.dim), nrow(X.train))
+        } else {
+            as.integer(chart.dim.by.eval)
+        }
+        native <- .klp.predict.local.pca.native.frames(
+            X = X.train,
+            y.mat = matrix(y.train, ncol = 1L),
+            support.size = support.size,
+            degree = degree,
+            kernel = kernel,
+            chart.dim.by.anchor = chart.dim.by.anchor,
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            ridge.multiplier.grid = ridge.multiplier.grid,
+            chart.activation.info = chart.activation.info,
+            return.chart.diagnostics = return.chart.diagnostics,
+            local.chart.method = local.chart.method
+        )
+        if (!is.null(native)) {
+            if (!return.chart.diagnostics) {
+                return(as.numeric(native$predictions[, 1L]))
+            }
+            return(list(
+                predictions = as.numeric(native$predictions[, 1L]),
+                chart.diagnostics = native$chart.diagnostics,
+                chart.diagnostics.summary =
+                    native$chart.diagnostics.summary,
+                chart.activation.diagnostics =
+                    native$chart.activation.diagnostics
+            ))
+        }
+    }
     if (identical(coordinate.method, "coordinates") &&
         identical(backend, "cpp")) {
         if (!identical(as.numeric(bandwidth.multiplier[[1L]]), 1)) {
@@ -1751,6 +1802,126 @@ lps.backend.diagnostics <- function(object) {
         ),
         chart.activation.diagnostics = activation.diagnostics
     )
+}
+
+.klp.can.use.native.local.pca.frames <- function(
+    X.train, X.eval, coordinate.method, local.chart.method, backend,
+    design.basis, ridge.multiplier.grid, ridge.condition.max,
+    bandwidth.multiplier, outcome.family) {
+
+    identical(backend, "cpp.local.pca") &&
+        identical(coordinate.method, "local.pca") &&
+        identical(local.chart.method, "pca") &&
+        identical(design.basis, "monomial") &&
+        identical(outcome.family, "gaussian") &&
+        length(ridge.multiplier.grid) == 1L &&
+        !is.finite(ridge.condition.max) &&
+        length(bandwidth.multiplier) == 1L &&
+        identical(as.numeric(bandwidth.multiplier[[1L]]), 1) &&
+        identical(dim(X.train), dim(X.eval)) &&
+        isTRUE(all(X.train == X.eval))
+}
+
+.klp.predict.local.pca.native.frames <- function(
+    X, y.mat, support.size, degree, kernel, chart.dim.by.anchor,
+    design.basis = "monomial", design.drop.tol = 1e-8,
+    ridge.multiplier.grid = 0, chart.activation.info = NULL,
+    return.chart.diagnostics = FALSE, local.chart.method = "pca",
+    local.pca.supports = NULL) {
+
+    frames <- tryCatch(
+        .ps.lps.prepare.frames(
+            X = X,
+            y = rep(0, nrow(X)),
+            support.size = support.size,
+            degree = degree,
+            kernel = kernel,
+            chart.dim.by.anchor = as.integer(chart.dim.by.anchor),
+            design.basis = design.basis,
+            design.drop.tol = design.drop.tol,
+            local.pca.supports = local.pca.supports,
+            chart.activation.info = chart.activation.info
+        ),
+        error = function(e) NULL
+    )
+    if (is.null(frames)) {
+        return(NULL)
+    }
+    fitted <- tryCatch(
+        rcpp_ps_lps_independent_fitted_matrix(
+            frames = frames,
+            y_mat = as.matrix(y.mat),
+            ridge_multiplier = as.numeric(ridge.multiplier.grid[[1L]])
+        ),
+        error = function(e) NULL
+    )
+    if (is.null(fitted)) {
+        return(NULL)
+    }
+    activation.diagnostics <- attr(frames, "chart.activation.diagnostics")
+    chart.diagnostics <- if (isTRUE(return.chart.diagnostics)) {
+        .klp.local.fit.diagnostics.from.frames(frames, local.chart.method)
+    } else {
+        NULL
+    }
+    list(
+        predictions = fitted,
+        frames = frames,
+        chart.diagnostics = chart.diagnostics,
+        chart.diagnostics.summary = .klp.local.chart.diagnostics.summary(
+            chart.diagnostics,
+            local.chart.method
+        ),
+        chart.activation.diagnostics = activation.diagnostics
+    )
+}
+
+.klp.local.fit.diagnostics.from.frames <- function(frames,
+                                                   local.chart.method) {
+    rows <- lapply(frames, function(fr) {
+        active <- isTRUE(fr$active %||% TRUE)
+        reason <- as.character(fr$inactive.reason %||% "active")
+        dist <- as.numeric(fr$distances %||% numeric(0))
+        zero.bandwidth <- length(dist) > 0L &&
+            all(is.finite(dist)) &&
+            max(dist) <= sqrt(.Machine$double.eps)
+        data.frame(
+            eval.index = as.integer(fr$anchor),
+            local.chart.method = local.chart.method,
+            fallback.used = !active,
+            fallback.reason = if (active) "none" else {
+                paste0("inactive_", reason)
+            },
+            primary.failure.reason = NA_character_,
+            effective.support = as.integer(length(fr$index)),
+            quadratic.ncol = NA_integer_,
+            design.rank = as.integer(fr$rank %||% NA_integer_),
+            design.condition = NA_real_,
+            fit.method = if (active) "native_independent_lps" else {
+                "inactive_zero"
+            },
+            ridge.lambda = NA_real_,
+            fit.residual.frobenius = NA_real_,
+            curvature.fitted.frobenius = NA_real_,
+            corrected.residual.frobenius = NA_real_,
+            first.rank = NA_integer_,
+            second.rank = NA_integer_,
+            plain.pca.fallback.feasible = NA,
+            status = if (active) {
+                if (is.finite(fr$rank %||% NA_integer_) &&
+                    as.integer(fr$rank) > 0L) {
+                    "ok"
+                } else {
+                    "rank_unavailable"
+                }
+            } else {
+                paste0("inactive_", reason)
+            },
+            zero.bandwidth = zero.bandwidth,
+            stringsAsFactors = FALSE
+        )
+    })
+    do.call(rbind, rows)
 }
 
 .klp.local.neighborhood <- function(X.train, y.train, center, support.size,

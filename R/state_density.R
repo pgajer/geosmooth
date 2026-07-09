@@ -1658,18 +1658,12 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         y.mat <- matrix(y.mat, ncol = 1L)
     }
     fitted <- if (.state.density.lps.fixed.geometry.eligible(fixed) &&
-                  identical(fixed$chart.activation, "none")) {
-        geometry.cache <- .state.density.lps.fixed.geometry.cache(
+                  identical(fixed$backend.used, "cpp.local.pca")) {
+        .state.density.lps.fixed.native.fitted.matrix(
             X,
             fixed,
-            local.pca.supports = local.pca.supports
-        )
-        .state.density.ps.lps.fixed.independent.fitted.matrix(
-            frames = geometry.cache$frames,
             y.mat = y.mat,
-            lambda.ridge = 0,
-            ridge.multiplier.grid = fixed$ridge.multiplier.grid,
-            ridge.condition.max = fixed$ridge.condition.max
+            local.pca.supports = local.pca.supports
         )
     } else {
         .state.density.lps.fixed.direct.fitted.matrix(
@@ -1696,6 +1690,46 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         out[test.pos] <- corrected$rho[subject.index[test.pos]]
     }
     out
+}
+
+.state.density.lps.fixed.native.fitted.matrix <- function(
+        X,
+        fixed,
+        y.mat,
+        local.pca.supports = NULL) {
+    if (identical(fixed$chart.activation, "none")) {
+        geometry.cache <- .state.density.lps.fixed.geometry.cache(
+            X,
+            fixed,
+            local.pca.supports = local.pca.supports
+        )
+        return(.state.density.ps.lps.fixed.independent.fitted.matrix(
+            frames = geometry.cache$frames,
+            y.mat = y.mat,
+            lambda.ridge = 0,
+            ridge.multiplier.grid = fixed$ridge.multiplier.grid,
+            ridge.condition.max = fixed$ridge.condition.max
+        ))
+    }
+    fitted <- matrix(NA_real_, nrow = nrow(X), ncol = ncol(y.mat))
+    for (jj in seq_len(ncol(y.mat))) {
+        geometry.cache <- .state.density.lps.fixed.geometry.cache(
+            X,
+            fixed,
+            local.pca.supports = local.pca.supports,
+            chart.activation.response = y.mat[, jj]
+        )
+        fitted[, jj] <- as.numeric(
+            .state.density.ps.lps.fixed.independent.fitted.matrix(
+                frames = geometry.cache$frames,
+                y.mat = y.mat[, jj, drop = FALSE],
+                lambda.ridge = 0,
+                ridge.multiplier.grid = fixed$ridge.multiplier.grid,
+                ridge.condition.max = fixed$ridge.condition.max
+            )[, 1L]
+        )
+    }
+    fitted
 }
 
 .state.density.lps.fixed.direct.fitted.matrix <- function(X,
@@ -2396,7 +2430,16 @@ density.dependency.precheck <- function(check.gflow = TRUE,
 .state.density.lps.fixed.geometry.cache <- function(X,
                                                     fixed,
                                                     local.pca.supports =
+                                                        NULL,
+                                                    chart.activation.response =
                                                         NULL) {
+    chart.activation.info <- .klp.prepare.chart.activation(
+        chart.activation = fixed$chart.activation,
+        chart.activation.response = chart.activation.response,
+        fallback.response = rep(0, nrow(X)),
+        n = nrow(X),
+        control = fixed$chart.activation.control
+    )
     chart.dim.info <- .ps.lps.resolve.chart.dim(
         X = X,
         support.size = fixed$support.size,
@@ -2414,9 +2457,16 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
         design.basis = fixed$design.basis,
         design.drop.tol = fixed$design.drop.tol,
-        local.pca.supports = local.pca.supports
+        local.pca.supports = local.pca.supports,
+        chart.activation.info = chart.activation.info
     )
-    list(chart.dim.info = chart.dim.info, frames = frames)
+    list(
+        chart.dim.info = chart.dim.info,
+        chart.activation.info = chart.activation.info,
+        chart.activation.diagnostics =
+            attr(frames, "chart.activation.diagnostics"),
+        frames = frames
+    )
 }
 
 .state.density.lps.fixed.candidate <- function(dots, n) {
@@ -2524,7 +2574,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         bandwidth.multiplier
     )
     if (identical(chart.activation, "subject.od") &&
-        !identical(backend.used, "R")) {
+        !backend.used %in% c("R", "cpp.local.pca")) {
         backend.used <- "R"
     }
     if (.klp.is.local.auto.chart.dim(chart.dim)) {
