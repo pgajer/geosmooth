@@ -1,0 +1,49 @@
+"task.id","dataset.id","dataset.family","max.rmse.ratio","max.relative.regret.percent","near.105","near.115","near.125","near.150","candidate.count"
+"curve_1d_embedded_p8::1::2","curve_1d_embedded_p8","homogeneous 1D manifold",31.9044931143457,3090.44931143457,5,9,13,29,168
+"curve_1d_embedded_p8::1::3","curve_1d_embedded_p8","homogeneous 1D manifold",5.38875808530091,438.875808530091,3,16,46,72,168
+"curve_1d_highdim_p40::1::3","curve_1d_highdim_p40","high-dimensional embedded 1D",4.97684241396411,397.684241396411,2,21,44,95,168
+"curve_1d_embedded_p8::1::1","curve_1d_embedded_p8","homogeneous 1D manifold",4.37555845135017,337.555845135017,2,5,14,52,168
+"curve_1d_embedded_p8::2::1","curve_1d_embedded_p8","homogeneous 1D manifold",4.15587568264971,315.587568264971,4,7,18,46,168
+"curve_1d_highdim_p40::2::3","curve_1d_highdim_p40","high-dimensional embedded 1D",4.0413226472714,304.13226472714,1,2,2,7,168
+"curve_1d_highdim_p40::1::2","curve_1d_highdim_p40","high-dimensional embedded 1D",3.80828534553747,280.828534553747,11,31,44,58,168
+"curve_1d_highdim_p40::1::1","curve_1d_highdim_p40","high-dimensional embedded 1D",3.79041364821791,279.041364821791,23,31,33,49,168
+"curve_1d_embedded_p8::2::2","curve_1d_embedded_p8","homogeneous 1D manifold",3.70263849928917,270.263849928917,4,18,25,46,168
+"surface_line_union_p8::2::1","surface_line_union_p8","heterogeneous/non-manifold",3.52822467240521,252.822467240521,2,3,4,7,168
+"surface_line_union_p8::1::2","surface_line_union_p8","heterogeneous/non-manifold",3.38254793588874,238.254793588874,2,2,3,4,168
+"simplex_faces_p8::2::2","simplex_faces_p8","OD-style simplex-boundary geometry",3.29069919704465,229.069919704465,8,21,48,90,168
+"surface_line_union_p8::2::2","surface_line_union_p8","heterogeneous/non-manifold",3.17356410901665,217.356410901665,1,1,2,6,168
+"surface_line_union_p8::1::1","surface_line_union_p8","heterogeneous/non-manifold",3.0566268000779,205.66268000779,1,2,2,7,168
+"surface_line_union_p8::1::3","surface_line_union_p8","heterogeneous/non-manifold",2.61540003238225,161.540003238225,1,1,10,29,168
+"surface_line_union_p8::2::3","surface_line_union_p8","heterogeneous/non-manifold",2.56978370200265,156.978370200265,1,3,15,25,168
+"curve_1d_highdim_p40::2::2","curve_1d_highdim_p40","high-dimensional embedded 1D",2.55841423094313,155.841423094313,17,45,76,104,168
+"volume_3d_embedded_p12::1::3","volume_3d_embedded_p12","homogeneous 3D manifold",2.07409985843746,107.409985843746,3,15,19,55,168
+"simplex_faces_p8::1::2","simplex_faces_p8","OD-style simplex-boundary geometry",2.0443920750433,104.43920750433,21,34,55,105,168
+"surface_2d_highdim_p24::2::2","surface_2d_highdim_p24","high-dimensional embedded 2D",1.95228032742772,95.2280327427717,2,11,41,97,168
+"curve_1d_embedded_p8::2::3","curve_1d_embedded_p8","homogeneous 1D manifold",1.94368246593254,94.368246593254,3,12,27,69,168
+"surface_2d_highdim_p24::1::3","surface_2d_highdim_p24","high-dimensional embedded 2D",1.85845592696623,85.8455926966227,1,8,34,78,168
+"rank_blocks_p40::1::3","rank_blocks_p40","rank/block heterogeneity",1.83836856857122,83.8368568571216,1,1,1,14,168
+"curve_1d_highdim_p40::2::1","curve_1d_highdim_p40","high-dimensional embedded 1D",1.70388317982828,70.3883179828282,1,19,83,118,168
+"rank_blocks_p40::2::2","rank_blocks_p40","rank/block heterogeneity",1.67093968494441,67.0939684944413,2,3,3,31,168
+"rank_blocks_p40::2::1","rank_blocks_p40","rank/block heterogeneity",1.5818154615813,58.1815461581298,1,2,6,34,168
+"surface_2d_embedded_p8::1::1","surface_2d_embedded_p8","homogeneous 2D manifold",1.53395851233752,53.3958512337521,4,24,43,84,168
+"surface_2d_highdim_p24::2::3","surface_2d_highdim_p24","high-dimensional embedded 2D",1.46314639663664,46.3146396636636,1,5,12,39,168
+"surface_2d_highdim_p24::1::2","surface_2d_highdim_p24","high-dimensional embedded 2D",1.43561123806863,43.5611238068626,2,16,72,161,168
+"surface_2d_highdim_p24::1::1","surface_2d_highdim_p24","high-dimensional embedded 2D",1.42778743666424,42.7787436664243,2,8,29,100,168
+"surface_2d_embedded_p8::2::3","surface_2d_embedded_p8","homogeneous 2D manifold",1.40135054498795,40.1350544987954,6,22,40,87,168
+"simplex_faces_p8::2::1","simplex_faces_p8","OD-style simplex-boundary geometry",1.39960732421058,39.9607324210584,25,83,88,107,168
+"volume_3d_embedded_p12::1::1","volume_3d_embedded_p12","homogeneous 3D manifold",1.38556456522454,38.5564565224539,18,87,128,166,168
+"volume_3d_embedded_p12::2::3","volume_3d_embedded_p12","homogeneous 3D manifold",1.38253055429557,38.253055429557,7,19,29,158,168
+"volume_3d_embedded_p12::2::1","volume_3d_embedded_p12","homogeneous 3D manifold",1.36147058298102,36.1470582981022,5,42,94,140,168
+"simplex_faces_p8::2::3","simplex_faces_p8","OD-style simplex-boundary geometry",1.356724119183,35.6724119182997,10,26,50,116,168
+"rank_blocks_p40::1::2","rank_blocks_p40","rank/block heterogeneity",1.35475511634335,35.4755116343352,4,17,40,115,168
+"simplex_faces_p8::1::1","simplex_faces_p8","OD-style simplex-boundary geometry",1.31089934168905,31.0899341689047,20,90,99,108,168
+"surface_2d_embedded_p8::1::2","surface_2d_embedded_p8","homogeneous 2D manifold",1.29537371405635,29.5373714056353,4,25,57,112,168
+"rank_blocks_p40::1::1","rank_blocks_p40","rank/block heterogeneity",1.27318995997021,27.3189959970214,3,19,97,137,168
+"surface_2d_highdim_p24::2::1","surface_2d_highdim_p24","high-dimensional embedded 2D",1.25218676988622,25.2186769886221,4,18,49,150,168
+"volume_3d_embedded_p12::1::2","volume_3d_embedded_p12","homogeneous 3D manifold",1.24074619747304,24.0746197473044,2,47,140,168,168
+"surface_2d_embedded_p8::1::3","surface_2d_embedded_p8","homogeneous 2D manifold",1.22413071873761,22.4130718737607,1,6,31,113,168
+"surface_2d_embedded_p8::2::1","surface_2d_embedded_p8","homogeneous 2D manifold",1.21928549296395,21.9285492963954,6,23,53,119,168
+"simplex_faces_p8::1::3","simplex_faces_p8","OD-style simplex-boundary geometry",1.21144551542849,21.144551542849,42,119,121,128,168
+"surface_2d_embedded_p8::2::2","surface_2d_embedded_p8","homogeneous 2D manifold",1.12207677087821,12.2076770878211,13,34,55,110,168
+"volume_3d_embedded_p12::2::2","volume_3d_embedded_p12","homogeneous 3D manifold",1.12114589211374,12.1145892113743,25,147,166,168,168
+"rank_blocks_p40::2::3","rank_blocks_p40","rank/block heterogeneity",1.09214489846102,9.21448984610176,49,110,122,141,168
