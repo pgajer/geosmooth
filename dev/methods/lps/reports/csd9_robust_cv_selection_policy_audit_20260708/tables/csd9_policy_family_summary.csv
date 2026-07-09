@@ -1,0 +1,57 @@
+"policy","short.label","dataset.family","median.truth.ratio"
+"eps01_low_d_mid_k","1% low-d","heterogeneous/non-manifold",1.96364533217747
+"eps03_large_k_low_d","3% large-k","heterogeneous/non-manifold",2.02902977844885
+"eps03_low_d_mid_k","3% low-d","heterogeneous/non-manifold",2.02902977844885
+"eps05_low_d_mid_k","5% low-d","heterogeneous/non-manifold",2.0126082253716
+"penalty_boundary_mid_k","boundary penalty","heterogeneous/non-manifold",1.96364533217747
+"cv_min","CV min","heterogeneous/non-manifold",2.32616005801005
+"penalty_low_d","low-d penalty","heterogeneous/non-manifold",1.96364533217747
+"eps01_low_d_mid_k","1% low-d","high-dimensional embedded 1D",1.36778635142909
+"eps03_large_k_low_d","3% large-k","high-dimensional embedded 1D",1.68805648217154
+"eps03_low_d_mid_k","3% low-d","high-dimensional embedded 1D",1.64890928348607
+"eps05_low_d_mid_k","5% low-d","high-dimensional embedded 1D",1.64890928348607
+"penalty_boundary_mid_k","boundary penalty","high-dimensional embedded 1D",1.70061911612467
+"cv_min","CV min","high-dimensional embedded 1D",1.70061911612467
+"penalty_low_d","low-d penalty","high-dimensional embedded 1D",1.70061911612467
+"eps01_low_d_mid_k","1% low-d","high-dimensional embedded 2D",1.29293947509621
+"eps03_large_k_low_d","3% large-k","high-dimensional embedded 2D",1.36408959096423
+"eps03_low_d_mid_k","3% low-d","high-dimensional embedded 2D",1.35269006983388
+"eps05_low_d_mid_k","5% low-d","high-dimensional embedded 2D",1.31940833646661
+"penalty_boundary_mid_k","boundary penalty","high-dimensional embedded 2D",1.29293947509621
+"cv_min","CV min","high-dimensional embedded 2D",1.29293947509621
+"penalty_low_d","low-d penalty","high-dimensional embedded 2D",1.29293947509621
+"eps01_low_d_mid_k","1% low-d","homogeneous 1D manifold",1.6137710984609
+"eps03_large_k_low_d","3% large-k","homogeneous 1D manifold",1.6137710984609
+"eps03_low_d_mid_k","3% low-d","homogeneous 1D manifold",1.6137710984609
+"eps05_low_d_mid_k","5% low-d","homogeneous 1D manifold",1.6137710984609
+"penalty_boundary_mid_k","boundary penalty","homogeneous 1D manifold",1.6137710984609
+"cv_min","CV min","homogeneous 1D manifold",1.6137710984609
+"penalty_low_d","low-d penalty","homogeneous 1D manifold",1.6137710984609
+"eps01_low_d_mid_k","1% low-d","homogeneous 2D manifold",1.10522279927604
+"eps03_large_k_low_d","3% large-k","homogeneous 2D manifold",1.11534007802496
+"eps03_low_d_mid_k","3% low-d","homogeneous 2D manifold",1.11534007802496
+"eps05_low_d_mid_k","5% low-d","homogeneous 2D manifold",1.17108506312311
+"penalty_boundary_mid_k","boundary penalty","homogeneous 2D manifold",1.11716375852044
+"cv_min","CV min","homogeneous 2D manifold",1.10522279927604
+"penalty_low_d","low-d penalty","homogeneous 2D manifold",1.13493029020828
+"eps01_low_d_mid_k","1% low-d","homogeneous 3D manifold",1.22242731444145
+"eps03_large_k_low_d","3% large-k","homogeneous 3D manifold",1.17408742568015
+"eps03_low_d_mid_k","3% low-d","homogeneous 3D manifold",1.19892425387135
+"eps05_low_d_mid_k","5% low-d","homogeneous 3D manifold",1.18020055717291
+"penalty_boundary_mid_k","boundary penalty","homogeneous 3D manifold",1.22242731444145
+"cv_min","CV min","homogeneous 3D manifold",1.22242731444145
+"penalty_low_d","low-d penalty","homogeneous 3D manifold",1.22242731444145
+"eps01_low_d_mid_k","1% low-d","OD-style simplex-boundary geometry",1.05035906206204
+"eps03_large_k_low_d","3% large-k","OD-style simplex-boundary geometry",1.08533293701813
+"eps03_low_d_mid_k","3% low-d","OD-style simplex-boundary geometry",1.1534668700383
+"eps05_low_d_mid_k","5% low-d","OD-style simplex-boundary geometry",1.15200038703408
+"penalty_boundary_mid_k","boundary penalty","OD-style simplex-boundary geometry",1.07121312932361
+"cv_min","CV min","OD-style simplex-boundary geometry",1.01418446182721
+"penalty_low_d","low-d penalty","OD-style simplex-boundary geometry",1.05678165737709
+"eps01_low_d_mid_k","1% low-d","rank/block heterogeneity",1.32975723291622
+"eps03_large_k_low_d","3% large-k","rank/block heterogeneity",1.32690978770836
+"eps03_low_d_mid_k","3% low-d","rank/block heterogeneity",1.34127768586321
+"eps05_low_d_mid_k","5% low-d","rank/block heterogeneity",1.3939964994266
+"penalty_boundary_mid_k","boundary penalty","rank/block heterogeneity",1.3822872304048
+"cv_min","CV min","rank/block heterogeneity",1.3559684452387
+"penalty_low_d","low-d penalty","rank/block heterogeneity",1.3822872304048
