@@ -316,6 +316,10 @@ fit.lps <- function(
         ridge.condition.max,
         bandwidth.multiplier.grid
     )
+    if (isTRUE(chart.activation.info$enabled) &&
+        !identical(backend.used, "R")) {
+        backend.used <- "R"
+    }
     if (outcome.family %in% c("bernoulli", "binomial") &&
         identical(backend, "auto")) {
         backend.used <- "R"
@@ -781,8 +785,18 @@ lps.backend.diagnostics <- function(object) {
         } else {
             "auto_unknown"
         }
+    } else if (identical(backend.requested, "cpp.local.pca") &&
+               identical(backend.used, "R") &&
+               isTRUE((object$diagnostics$chart.activation$enabled) %||%
+                      FALSE)) {
+        "explicit_local_pca_native_activation_R_reference"
     } else if (identical(backend.requested, "cpp.local.pca")) {
         "explicit_local_pca_native_opt_in"
+    } else if (identical(backend.requested, "cpp") &&
+               identical(backend.used, "R") &&
+               isTRUE((object$diagnostics$chart.activation$enabled) %||%
+                      FALSE)) {
+        "explicit_coordinates_cpp_activation_R_reference"
     } else {
         paste0("explicit_", backend.requested)
     }
