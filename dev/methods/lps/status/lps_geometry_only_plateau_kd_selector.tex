@@ -1,0 +1,235 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\providecommand{\reportbuilddatetime}{unknown}
+\InputIfFileExists{lps_geometry_only_plateau_kd_selector_build_info.tex}{}{}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Gfull}{\mathcal G_{\mathrm{full}}}
+\newcommand{\Gplateau}{\mathcal G_{\mathrm{plateau}}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\CV}{\operatorname{CV}}
+\newcommand{\TVE}{\operatorname{TVE}}
+\newcommand{\RMSE}{\operatorname{RMSE}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{Geometry-Only Plateau Selection for LPS}\\[3pt]
+\large A support-size and chart-dimension selector for local PCA charts}
+\author{\small Source:\\[-1pt]
+\begin{minipage}{0.92\textwidth}
+\centering\footnotesize\ttfamily
+\detokenize{~/current_projects/geosmooth/dev/methods/lps/status/}\\
+\detokenize{lps_geometry_only_plateau_kd_selector.tex}
+\end{minipage}}
+\date{Build \reportbuilddatetime}
+
+\begin{document}
+\maketitle
+
+\section{Purpose}
+
+This note defines the geometry-only \code{plateau\_kd} selector for local
+polynomial smoothing (LPS).  The selector chooses a support size \(k\) and a
+local PCA chart dimension \(d\) before looking at the response \(y\).  Its
+purpose is to test whether a stable geometric dimension plateau can provide a
+useful deployable alternative to response-CV selection over the full Cartesian
+grid of \((k,d)\) candidates.
+
+The selector is deliberately conservative in its first implementation.  It is
+not intended to replace \code{full\_kd}; it is a new comparator.  The important
+distinction is that \code{full\_kd} asks which \((k,d)\) has the best inner-CV
+prediction score, while \code{plateau\_kd} asks which \((k,d)\) is suggested by
+the input geometry alone.
+
+\section{The local chart objects}
+
+Let
+\[
+  X=\{x_1,\ldots,x_n\}\subset\R^p
+\]
+be the observed data cloud.  For an anchor \(a\), the support of size \(k\) is
+\[
+  U_a(k)=\{x_a\}\cup
+  \{\text{the }k-1\text{ nearest neighbors of }x_a\}.
+\]
+The centered support matrix is
+\[
+  Z_a(k)
+  =
+  \begin{bmatrix}
+  (x_i-x_a)^\top
+  \end{bmatrix}_{x_i\in U_a(k)}.
+\]
+Let
+\[
+  \sigma_{a1}(k)\ge \sigma_{a2}(k)\ge\cdots\ge 0
+\]
+be the singular values of \(Z_a(k)\).  The total-variance-explained dimension at
+threshold \(\tau\), currently \(\tau=0.95\), is
+\[
+  d_a(k;\tau)
+  =
+  \min\left\{
+  d:
+  \frac{\sum_{j=1}^d \sigma_{aj}(k)^2}
+       {\sum_j \sigma_{aj}(k)^2}
+  \ge \tau
+  \right\}.
+\]
+This dimension is clipped to the feasible design range.  If the local
+polynomial degree is \(g\), the number of polynomial columns is
+\[
+  q(d,g)=\binom{d+g}{g}.
+\]
+With design margin \(m\), a candidate is feasible only when
+\[
+  q(d,g)+m\le k.
+\]
+The current implementation also bounds \(d\) by the user-supplied numeric
+\code{chart.dim.grid}; for example, the CSD comparisons use \(d\in\{1,\ldots,8\}\).
+This keeps \code{plateau\_kd} inside the same numeric universe as
+\code{full\_kd}.
+
+\section{The plateau rule}
+
+Let
+\[
+  \mathcal K=\{k_1<k_2<\cdots<k_L\}
+\]
+be the support-size grid.  For each representative anchor \(a\), compute the
+dimension path
+\[
+  d_a(k_1;\tau),d_a(k_2;\tau),\ldots,d_a(k_L;\tau).
+\]
+The baseline dimension is
+\[
+  d_a^0=d_a(k_1;\tau).
+\]
+The plateau endpoint is the last support size in the initial stable prefix:
+\[
+  k_a^\star
+  =
+  \max\left\{
+  k_\ell:
+  d_a(k_r;\tau)=d_a^0
+  \text{ for every } r\le \ell
+  \right\}.
+\]
+This is an initial-prefix rule.  If the dimension changes and later returns to
+\(d_a^0\), the later return is ignored.  This makes the rule closer to the
+simple geometric question: how far can the neighborhood grow before the local
+dimension estimate first changes?
+
+For a global LPS fit, the anchor-specific quantities are aggregated by medians:
+\[
+  k^\star
+  =
+  \operatorname{nearest}_{k\in\mathcal K}
+  \operatorname{median}_a k_a^\star,
+  \qquad
+  d^\star
+  =
+  \operatorname{clip}
+  \left(
+  \operatorname{round}\operatorname{median}_a d_a^0
+  \right).
+\]
+The clipping enforces the supplied dimension grid, the ambient dimension, and
+the polynomial-design feasibility inequality at \(k^\star\).  The resulting
+candidate family is therefore
+\[
+  \Gplateau=\{(k^\star,d^\star)\},
+\]
+with one row for each requested degree, kernel, and bandwidth multiplier.  In
+the CSD comparison reported with this note, the degree, kernel, and bandwidth
+multiplier are fixed, so \(\Gplateau\) contains one candidate.
+
+\section{Comparison with existing selectors}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Selector & Meaning \\
+\midrule
+\code{auto} &
+Uses observed \(X\) to estimate one global chart dimension \(d\), then selects
+support size \(k\) by the ordinary LPS CV grid.  The chosen dimension is shared
+by all anchors. \\
+\code{local.auto} &
+Uses observed \(X\) to estimate a dimension \(d_a\) separately for each anchor.
+The support size is still selected by the ordinary LPS CV grid. \\
+\code{full\_kd} &
+Evaluates the full Cartesian numeric grid
+\(\Gfull=\mathcal K\times\mathcal D\) by inner CV and chooses the one global
+pair \((k^\star,d^\star)\) with the best CV score. \\
+\code{sparse\_kd} &
+Evaluates a smaller deterministic skeleton of the same Cartesian grid by inner
+CV.  It is a response-CV shortcut to \code{full\_kd}. \\
+\code{plateau\_kd} &
+Uses \(X\) only to choose one global \((k^\star,d^\star)\) from the initial
+dimension plateau.  CV is still reported for the selected candidate, but CV
+does not choose the pair. \\
+\bottomrule
+\end{tabularx}
+
+\section{What the comparison should reveal}
+
+The \code{plateau\_kd} selector tests a specific hypothesis.  If the dominant
+mistake in \code{full\_kd} is noisy inner-CV ranking over many nearby
+candidates, then a geometry-only plateau may sometimes perform comparably while
+being much cheaper and more stable.  If the response really needs a support
+scale different from the geometry plateau, then \code{plateau\_kd} should lose
+to \code{full\_kd}, and the loss should be visible in truth-facing RMSE.
+
+The associated HTML comparison therefore reports, for each synthetic dataset,
+\[
+  R_m
+  =
+  \left\{
+  \frac{1}{n}\sum_{i=1}^n
+  \left(\widehat f_m(x_i)-f_i\right)^2
+  \right\}^{1/2},
+\]
+where \(f_i\) is the known synthetic truth and \(\widehat f_m\) is the fitted
+LPS estimate under method \(m\).  The report also records the selected support
+size, selected chart dimension, observed CV score, and runtime.  In the 1D and
+2D examples the truth and fitted functions are plotted directly; in higher
+dimensions the report uses summary tables because direct surface display is not
+meaningful.
+
+\section{Limitations}
+
+The current \code{plateau\_kd} implementation is intentionally a first,
+auditable rule.  It uses the total-variance-explained dimension only; it does
+not yet combine variance thresholds with eigengaps, participation rank, or a
+response-facing near-tie rule.  It aggregates local plateau endpoints into one
+global \((k,d)\), so it is not an anchor-specific local-scale method.  A later
+local variant could use \(k_a^\star\) and \(d_a^0\) anchor by anchor, but that
+would be a different selector and should be tested separately.
+
+\section{Implementation status}
+
+The selector is implemented through the shared coupled candidate-specification
+path.  The public trigger is
+\[
+  \code{selection.strategy = "plateau\_kd"}
+\]
+with \(\code{coordinate.method = "local.pca"}\) and an explicit numeric
+\code{chart.dim.grid}.  The fit object records the strategy, the selected
+candidate, and per-anchor plateau diagnostics under
+\[
+  \code{fit\$diagnostics\$coupled.kd.selection}.
+\]
+The implementation includes a unit test that verifies the one-candidate LPS path
+and verifies that the selector refuses to run without an explicit numeric
+dimension universe.
+
+\end{document}

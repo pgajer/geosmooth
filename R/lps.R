@@ -153,6 +153,26 @@
 #'   preserves the full Cartesian candidate grid. The experimental
 #'   \code{"sparse_kd"} strategy evaluates a sparse coupled support-size by
 #'   chart-dimension skeleton when \code{chart.dim.grid} is supplied.
+#'   \code{"plateau_kd"} is a geometry-only selector: from observed \code{X}
+#'   only, it estimates the local PCA variance dimension over the supplied
+#'   support grid, finds the initial support-size plateau where that dimension
+#'   is stable from the smallest support size, aggregates plateau endpoints
+#'   across representative anchors, and evaluates the resulting single
+#'   \code{(support.size, chart.dim)} candidate.
+#' @param chart.activation Optional sparse-response chart activation rule.
+#'   \code{"none"} preserves the ordinary LPS behavior.  \code{"subject.od"}
+#'   is intended for subject-occupation density workflows: a local chart whose
+#'   support contains too little subject occupation mass, too few positive
+#'   subject-visited points, or only fringe occupation receives fitted value
+#'   zero without constructing the local polynomial fit.
+#' @param chart.activation.response Optional nonnegative response used only by
+#'   \code{chart.activation = "subject.od"} to decide whether a chart is active.
+#'   When omitted, \code{y} is used.
+#' @param chart.activation.control List controlling sparse chart activation.
+#'   Supported fields are \code{mass.min}, \code{n.positive.min},
+#'   \code{positive.tol}, \code{core.weight.rule},
+#'   \code{core.weight.quantile}, and \code{core.weight.min}.  The OD default is
+#'   two positive support points and a chart-specific 0.25 weight quantile.
 #' @param chart.dim.max Optional explicit maximum chart dimension for the
 #'   experimental coupled selector.
 #' @param design.margin Nonnegative prefit margin used to mark coupled
@@ -204,7 +224,10 @@ fit.lps <- function(
     bandwidth.multiplier.grid = 1,
     keep.cv.predictions = FALSE,
     ridge.shrinkage.target = c("zero", "local.mean"),
-    selection.strategy = c("grid", "sparse_kd"),
+    selection.strategy = c("grid", "sparse_kd", "plateau_kd"),
+    chart.activation = c("none", "subject.od"),
+    chart.activation.response = NULL,
+    chart.activation.control = list(),
     chart.dim.max = NULL,
     design.margin = 2L) {
 
@@ -214,6 +237,14 @@ fit.lps <- function(
     keep.cv.predictions <- isTRUE(keep.cv.predictions)
     ridge.shrinkage.target <- match.arg(ridge.shrinkage.target)
     selection.strategy <- .coupled.kd.selection.strategy(selection.strategy)
+    chart.activation <- match.arg(chart.activation)
+    chart.activation.info <- .klp.prepare.chart.activation(
+        chart.activation = chart.activation,
+        chart.activation.response = chart.activation.response,
+        fallback.response = y,
+        n = nrow(X),
+        control = chart.activation.control
+    )
     if (identical(outcome.family, "binomial") &&
         identical(ridge.shrinkage.target, "local.mean")) {
         # E2.13 scope (S G4 resolution): the alignment applies to the
@@ -410,7 +441,8 @@ fit.lps <- function(
         logistic.telemetry = logistic.final.telemetry,
         return.chart.diagnostics = TRUE,
         bandwidth.multiplier = selected[["bandwidth.multiplier"]][[1L]],
-        ridge.shrinkage.target = ridge.shrinkage.target
+        ridge.shrinkage.target = ridge.shrinkage.target,
+        chart.activation.info = chart.activation.info
     )
     fitted <- if (is.list(fitted.result) &&
                   !is.null(fitted.result$predictions)) {
@@ -447,6 +479,15 @@ fit.lps <- function(
             local.chart.method.effective
         )
     }
+    chart.activation.diagnostics <- if (is.list(fitted.result)) {
+        fitted.result$chart.activation.diagnostics
+    } else {
+        NULL
+    }
+    chart.activation.summary <- .klp.chart.activation.summary(
+        chart.activation.diagnostics,
+        chart.activation.info
+    )
     out <- list(
         method.id = "lps",
         method.family = "local_polynomial_smoother",
@@ -494,7 +535,8 @@ fit.lps <- function(
                 chart.dim.by.anchor = selected.pred.dim$chart.dim.by.eval,
                 n.anchor = nrow(X.eval),
                 source.path = "fit.lps.prediction.chart_dim_resolution"
-            )
+            ),
+            chart.activation = chart.activation.summary
         ),
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric,
@@ -510,6 +552,9 @@ fit.lps <- function(
         unstable.action = unstable.action,
         outcome.family = outcome.family,
         ridge.shrinkage.target = ridge.shrinkage.target,
+        chart.activation = chart.activation,
+        chart.activation.control = chart.activation.info$control,
+        chart.activation.diagnostics = chart.activation.diagnostics,
         probability.diagnostics = probability.diagnostics,
         logistic.diagnostics = logistic.diagnostics,
         call = match.call()
@@ -1582,7 +1627,8 @@ lps.backend.diagnostics <- function(object) {
                                           logistic.telemetry = NULL,
                                           return.chart.diagnostics = FALSE,
                                           bandwidth.multiplier = 1,
-                                          ridge.shrinkage.target = "zero") {
+                                          ridge.shrinkage.target = "zero",
+                                          chart.activation.info = NULL) {
     X.train <- as.matrix(X.train)
     X.eval <- as.matrix(X.eval)
     y.train <- as.numeric(y.train)
@@ -1604,6 +1650,7 @@ lps.backend.diagnostics <- function(object) {
     }
     out <- rep(NA_real_, nrow(X.eval))
     diagnostics <- vector("list", nrow(X.eval))
+    activation.rows <- vector("list", nrow(X.eval))
     for (i in seq_len(nrow(X.eval))) {
         fit.chart.dim <- if (is.null(chart.dim.by.eval)) {
             as.integer(chart.dim)
@@ -1617,6 +1664,25 @@ lps.backend.diagnostics <- function(object) {
         local.d <- d[idx]
         weights <- .klp.kernel.weights(local.d, kernel, bandwidth.multiplier)
         if (!any(weights > 0)) weights[] <- 1
+        activation <- .klp.chart.activation.row(
+            info = chart.activation.info,
+            anchor = i,
+            support.index = idx,
+            weights = weights
+        )
+        activation.rows[[i]] <- activation$row
+        if (!isTRUE(activation$active)) {
+            out[[i]] <- 0
+            if (return.chart.diagnostics) {
+                diagnostics[[i]] <- .klp.inactive.local.fit.diagnostics.row(
+                    eval.index = i,
+                    local.chart.method = local.chart.method,
+                    local.distances = local.d,
+                    reason = activation$reason
+                )
+            }
+            next
+        }
         local.coords <- .klp.local.coordinates(
             X.support = X.train[idx, , drop = FALSE],
             center = center,
@@ -1661,13 +1727,15 @@ lps.backend.diagnostics <- function(object) {
     }
     if (!return.chart.diagnostics) return(out)
     diagnostics <- do.call(rbind, diagnostics)
+    activation.diagnostics <- do.call(rbind, activation.rows)
     list(
         predictions = out,
         chart.diagnostics = diagnostics,
         chart.diagnostics.summary = .klp.local.chart.diagnostics.summary(
             diagnostics,
             local.chart.method
-        )
+        ),
+        chart.activation.diagnostics = activation.diagnostics
     )
 }
 
@@ -2583,6 +2651,263 @@ lps.backend.diagnostics <- function(object) {
         return(default)
     }
     x[[name]][[1L]]
+}
+
+.klp.prepare.chart.activation <- function(chart.activation = "none",
+                                          chart.activation.response = NULL,
+                                          fallback.response,
+                                          n,
+                                          control = list()) {
+    chart.activation <- match.arg(chart.activation, c("none", "subject.od"))
+    if (identical(chart.activation, "none")) {
+        return(list(enabled = FALSE, mode = "none", response = NULL,
+                    control = .klp.chart.activation.control(control)))
+    }
+    response <- if (is.null(chart.activation.response)) {
+        fallback.response
+    } else {
+        chart.activation.response
+    }
+    response <- as.numeric(response)
+    if (length(response) != n || any(!is.finite(response)) ||
+        any(response < 0)) {
+        stop("'chart.activation.response' must be a finite nonnegative ",
+             "numeric vector with length nrow(X).", call. = FALSE)
+    }
+    list(
+        enabled = TRUE,
+        mode = chart.activation,
+        response = response,
+        control = .klp.chart.activation.control(control)
+    )
+}
+
+.klp.chart.activation.control <- function(control = list()) {
+    if (is.null(control)) control <- list()
+    if (!is.list(control)) {
+        stop("'chart.activation.control' must be a list.", call. = FALSE)
+    }
+    positive.tol <- as.numeric(control$positive.tol %||% 0)
+    if (length(positive.tol) != 1L || !is.finite(positive.tol) ||
+        positive.tol < 0) {
+        stop("'chart.activation.control$positive.tol' must be a finite ",
+             "nonnegative scalar.", call. = FALSE)
+    }
+    mass.min <- as.numeric(control$mass.min %||% 0)
+    if (length(mass.min) != 1L || !is.finite(mass.min) || mass.min < 0) {
+        stop("'chart.activation.control$mass.min' must be a finite ",
+             "nonnegative scalar.", call. = FALSE)
+    }
+    n.positive.min <- as.integer(control$n.positive.min %||% 2L)
+    if (length(n.positive.min) != 1L || !is.finite(n.positive.min) ||
+        n.positive.min < 1L) {
+        stop("'chart.activation.control$n.positive.min' must be a positive ",
+             "integer scalar.", call. = FALSE)
+    }
+    core.weight.rule <- match.arg(
+        control$core.weight.rule %||% "chart_quantile",
+        c("chart_quantile", "fixed", "none")
+    )
+    core.weight.quantile <- as.numeric(control$core.weight.quantile %||% 0.25)
+    if (length(core.weight.quantile) != 1L ||
+        !is.finite(core.weight.quantile) ||
+        core.weight.quantile < 0 || core.weight.quantile > 1) {
+        stop("'chart.activation.control$core.weight.quantile' must be in ",
+             "[0, 1].", call. = FALSE)
+    }
+    core.weight.min <- control$core.weight.min
+    if (is.null(core.weight.min)) {
+        core.weight.min <- if (identical(core.weight.rule, "fixed")) 0.25 else NA_real_
+    }
+    core.weight.min <- as.numeric(core.weight.min)
+    if (length(core.weight.min) != 1L ||
+        (!is.na(core.weight.min) &&
+         (!is.finite(core.weight.min) || core.weight.min < 0))) {
+        stop("'chart.activation.control$core.weight.min' must be a finite ",
+             "nonnegative scalar or NA.", call. = FALSE)
+    }
+    list(
+        mass.min = mass.min,
+        n.positive.min = n.positive.min,
+        positive.tol = positive.tol,
+        core.weight.rule = core.weight.rule,
+        core.weight.quantile = core.weight.quantile,
+        core.weight.min = core.weight.min
+    )
+}
+
+.klp.chart.activation.row <- function(info, anchor, support.index, weights) {
+    if (is.null(info) || !isTRUE(info$enabled)) {
+        return(list(
+            active = TRUE,
+            reason = "active",
+            row = .klp.chart.activation.data.row(
+                anchor = anchor,
+                enabled = FALSE,
+                active = TRUE,
+                reason = "disabled",
+                support.index = support.index,
+                mass = NA_real_,
+                n.positive = NA_integer_,
+                core.score = NA_real_,
+                core.threshold = NA_real_
+            )
+        ))
+    }
+    ctrl <- info$control
+    values <- info$response[support.index]
+    mass <- sum(values, na.rm = TRUE)
+    positive <- is.finite(values) & values > ctrl$positive.tol
+    n.positive <- sum(positive)
+    core.score <- if (mass > 0) {
+        sum(weights * values, na.rm = TRUE) / mass
+    } else {
+        NA_real_
+    }
+    core.threshold <- switch(
+        ctrl$core.weight.rule,
+        chart_quantile = as.numeric(stats::quantile(
+            weights[is.finite(weights)],
+            probs = ctrl$core.weight.quantile,
+            names = FALSE,
+            type = 7
+        )),
+        fixed = ctrl$core.weight.min,
+        none = NA_real_
+    )
+    reason <- "active"
+    active <- TRUE
+    if (mass <= ctrl$mass.min || n.positive == 0L) {
+        active <- FALSE
+        reason <- "no_subject_mass"
+    } else if (n.positive < ctrl$n.positive.min) {
+        active <- FALSE
+        reason <- "insufficient_positive_support"
+    } else if (!identical(ctrl$core.weight.rule, "none") &&
+               is.finite(core.threshold) &&
+               (!is.finite(core.score) || core.score < core.threshold)) {
+        active <- FALSE
+        reason <- "fringe_only"
+    }
+    list(
+        active = active,
+        reason = reason,
+        row = .klp.chart.activation.data.row(
+            anchor = anchor,
+            enabled = TRUE,
+            active = active,
+            reason = reason,
+            support.index = support.index,
+            mass = mass,
+            n.positive = n.positive,
+            core.score = core.score,
+            core.threshold = core.threshold
+        )
+    )
+}
+
+.klp.chart.activation.data.row <- function(anchor, enabled, active, reason,
+                                           support.index, mass, n.positive,
+                                           core.score, core.threshold) {
+    data.frame(
+        anchor = as.integer(anchor),
+        enabled = as.logical(enabled),
+        active = as.logical(active),
+        reason = as.character(reason),
+        support.size = as.integer(length(support.index)),
+        subject.mass = as.numeric(mass),
+        n.positive = as.integer(n.positive),
+        core.score = as.numeric(core.score),
+        core.threshold = as.numeric(core.threshold),
+        stringsAsFactors = FALSE
+    )
+}
+
+.klp.chart.activation.summary <- function(diagnostics, info) {
+    enabled <- !is.null(info) && isTRUE(info$enabled)
+    ctrl <- if (is.null(info)) {
+        .klp.chart.activation.control(list())
+    } else {
+        info$control
+    }
+    if (is.null(diagnostics) || !nrow(diagnostics)) {
+        return(c(
+            list(
+                enabled = enabled,
+                mode = if (enabled) info$mode else "none",
+                n.charts = 0L,
+                n.active = 0L,
+                n.inactive = 0L,
+                active.fraction = NA_real_,
+                inactive.reasons = data.frame(
+                    reason = character(0),
+                    count = integer(0),
+                    stringsAsFactors = FALSE
+                )
+            ),
+            ctrl
+        ))
+    }
+    active <- as.logical(diagnostics$active)
+    active[is.na(active)] <- FALSE
+    reasons <- diagnostics$reason[!active]
+    tab <- if (length(reasons)) {
+        reason.table <- sort(table(reasons), decreasing = TRUE)
+        data.frame(
+            reason = names(reason.table),
+            count = as.integer(reason.table),
+            stringsAsFactors = FALSE
+        )
+    } else {
+        data.frame(reason = character(0), count = integer(0),
+                   stringsAsFactors = FALSE)
+    }
+    finite.core <- diagnostics$core.score[is.finite(diagnostics$core.score)]
+    c(
+        list(
+            enabled = enabled,
+            mode = if (enabled) info$mode else "none",
+            n.charts = nrow(diagnostics),
+            n.active = sum(active),
+            n.inactive = sum(!active),
+            active.fraction = mean(active),
+            inactive.reasons = tab,
+            median.core.score = if (length(finite.core)) {
+                stats::median(finite.core)
+            } else {
+                NA_real_
+            }
+        ),
+        ctrl
+    )
+}
+
+.klp.inactive.local.fit.diagnostics.row <- function(eval.index,
+                                                    local.chart.method,
+                                                    local.distances,
+                                                    reason) {
+    data.frame(
+        eval.index = as.integer(eval.index),
+        local.chart.method = local.chart.method,
+        fallback.used = TRUE,
+        fallback.reason = paste0("inactive_", reason),
+        primary.failure.reason = NA_character_,
+        effective.support = as.integer(length(local.distances)),
+        quadratic.ncol = NA_integer_,
+        design.rank = 0L,
+        design.condition = NA_real_,
+        fit.method = "inactive_zero",
+        ridge.lambda = NA_real_,
+        fit.residual.frobenius = NA_real_,
+        curvature.fitted.frobenius = NA_real_,
+        corrected.residual.frobenius = NA_real_,
+        first.rank = NA_integer_,
+        second.rank = NA_integer_,
+        plain.pca.fallback.feasible = NA,
+        status = paste0("inactive_", reason),
+        zero.bandwidth = FALSE,
+        stringsAsFactors = FALSE
+    )
 }
 
 .klp.local.fit.diagnostics.row <- function(eval.index, local.chart.method,

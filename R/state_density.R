@@ -1657,7 +1657,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     if (is.null(dim(y.mat))) {
         y.mat <- matrix(y.mat, ncol = 1L)
     }
-    fitted <- if (.state.density.lps.fixed.geometry.eligible(fixed)) {
+    fitted <- if (.state.density.lps.fixed.geometry.eligible(fixed) &&
+                  identical(fixed$chart.activation, "none")) {
         geometry.cache <- .state.density.lps.fixed.geometry.cache(
             X,
             fixed,
@@ -1743,7 +1744,14 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             unstable.action = fixed$unstable.action,
             outcome.family = outcome.family,
             bandwidth.multiplier = fixed$bandwidth.multiplier,
-            ridge.shrinkage.target = fixed$ridge.shrinkage.target
+            ridge.shrinkage.target = fixed$ridge.shrinkage.target,
+            chart.activation.info = .klp.prepare.chart.activation(
+                chart.activation = fixed$chart.activation,
+                chart.activation.response = y.mat[, jj],
+                fallback.response = y.mat[, jj],
+                n = nrow(X),
+                control = fixed$chart.activation.control
+            )
         )
     }
     fitted
@@ -2492,6 +2500,19 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         dots$ridge.shrinkage.target %||% "zero",
         c("zero", "local.mean")
     )
+    chart.activation <- match.arg(
+        dots$chart.activation %||% "subject.od",
+        c("none", "subject.od")
+    )
+    chart.activation.control <- if (is.null(dots$chart.activation.control)) {
+        list(
+            n.positive.min = 2L,
+            core.weight.rule = "chart_quantile",
+            core.weight.quantile = 0.25
+        )
+    } else {
+        dots$chart.activation.control
+    }
     chart.dim <- dots$chart.dim %||% NULL
     backend.used <- .klp.resolve.backend(
         coordinate.method,
@@ -2533,7 +2554,9 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         ridge.multiplier.grid = ridge.multiplier.grid,
         ridge.condition.max = ridge.condition.max,
         unstable.action = unstable.action,
-        ridge.shrinkage.target = ridge.shrinkage.target
+        ridge.shrinkage.target = ridge.shrinkage.target,
+        chart.activation = chart.activation,
+        chart.activation.control = chart.activation.control
     )
 }
 
@@ -2559,6 +2582,34 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     )
     if (is.null(dim(y.mat))) {
         y.mat <- matrix(y.mat, ncol = 1L)
+    }
+    chart.activation <- match.arg(
+        dots$chart.activation %||% "subject.od",
+        c("none", "subject.od")
+    )
+    if (identical(chart.activation, "subject.od")) {
+        out <- rep(NA_real_, length(subject.index))
+        for (fold in folds) {
+            test.pos <- which(foldid == fold)
+            train.pos <- which(foldid != fold)
+            fit <- do.call(
+                fit.subject.od,
+                c(
+                    list(
+                        X = X,
+                        subject.index = subject.index[train.pos],
+                        method = "ps_lps_count",
+                        graph = graph,
+                        od.control = od.control,
+                        return.details = FALSE,
+                        od.cv = "none"
+                    ),
+                    dots
+                )
+            )
+            out[test.pos] <- fit$rho[subject.index[test.pos]]
+        }
+        return(out)
     }
     fitted <- if (lambda.sync > 0) {
         .state.density.ps.lps.fixed.sync.fitted.matrix(
@@ -3141,6 +3192,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         reserved = c("X", "y", "outcome.family"),
         context = paste0("fit.subject.od(method = \"", method.id, "\")")
     )
+    dots <- .state.density.add.default.chart.activation(dots, empirical)
     fit <- do.call(
         fit.lps,
         c(list(X = X, y = response, outcome.family = outcome.family), dots)
@@ -3190,6 +3242,11 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         length(dots$lambda.sync.grid) == 1L) {
         dots$lambda.sync.selection <- "fixed"
     }
+    dots <- .state.density.add.default.chart.activation(dots, empirical)
+    if (!is.null(dots$ps.lps.geometry.cache) &&
+        identical(dots$chart.activation %||% "none", "subject.od")) {
+        dots$ps.lps.geometry.cache <- NULL
+    }
     fit <- do.call(fit.ps.lps, c(list(X = X, y = response), dots))
     out <- normalize.density(
         fit,
@@ -3211,6 +3268,25 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         source.fit = fit,
         return.details = return.details
     )
+}
+
+.state.density.add.default.chart.activation <- function(dots, empirical) {
+    if (is.null(dots$chart.activation)) {
+        dots$chart.activation <- "subject.od"
+    }
+    if (identical(dots$chart.activation, "subject.od") &&
+        is.null(dots$chart.activation.response)) {
+        dots$chart.activation.response <- empirical
+    }
+    if (identical(dots$chart.activation, "subject.od") &&
+        is.null(dots$chart.activation.control)) {
+        dots$chart.activation.control <- list(
+            n.positive.min = 2L,
+            core.weight.rule = "chart_quantile",
+            core.weight.quantile = 0.25
+        )
+    }
+    dots
 }
 
 .state.density.fit.chart.kernel.od <- function(X,

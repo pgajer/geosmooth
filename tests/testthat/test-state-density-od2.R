@@ -149,6 +149,77 @@ test_that("OD2 PS-LPS occupation workflow reports synchronization telemetry", {
     expect_true(is.finite(fit$smoothness$n.local.maxima))
 })
 
+test_that("OD2 LPS defaults deactivate sparse subject charts", {
+    X <- matrix(seq(0, 1, length.out = 30), ncol = 1L)
+    subject.index <- c(14L, 16L)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "lps_count",
+        support.grid = 5L,
+        degree.grid = 1L,
+        kernel.grid = "tricube",
+        coordinate.method = "coordinates",
+        backend = "R",
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = 0,
+        ridge.condition.max = Inf
+    )
+
+    activation <- fit$diagnostics$source.fit$diagnostics$chart.activation
+    rows <- fit$diagnostics$source.fit$chart.activation.diagnostics
+    expect_true(isTRUE(activation$enabled))
+    expect_equal(activation$n.positive.min, 2L)
+    expect_equal(activation$core.weight.rule, "chart_quantile")
+    expect_equal(activation$core.weight.quantile, 0.25)
+    expect_true(activation$n.inactive > 0L)
+    expect_true(any(rows$reason == "no_subject_mass"))
+    expect_true(any(rows$reason == "insufficient_positive_support"))
+    expect_true(all(fit$diagnostics$source.fit$fitted.values.raw[!rows$active] == 0))
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+})
+
+test_that("OD2 PS-LPS defaults remove inactive charts from synchronization", {
+    X <- matrix(seq(0, 1, length.out = 24), ncol = 1L)
+    subject.index <- c(11L, 13L)
+
+    fit <- fit.subject.od(
+        X = X,
+        subject.index = subject.index,
+        method = "ps_lps_count",
+        support.size = 5L,
+        degree = 1L,
+        kernel = "tricube",
+        chart.dim = 1L,
+        lambda.sync.grid = 0.1,
+        lambda.sync.selection = "fixed",
+        lambda.sync.search = "grid",
+        local.candidate.search = "full",
+        lambda.ridge = 1e-8,
+        design.basis = "orthogonal.polynomial.drop",
+        ridge.multiplier.grid = c(0, 1e-8),
+        ridge.condition.max = 1e10,
+        sync.neighbor.size = 2L,
+        cv.folds = 3L
+    )
+
+    source <- fit$diagnostics$source.fit
+    activation <- source$diagnostics$chart.activation
+    frame.summary <- source$frame.design.summary
+    expect_true(isTRUE(activation$enabled))
+    expect_true(activation$n.inactive > 0L)
+    expect_true(any(!frame.summary$active))
+    expect_true(all(source$fitted.values[!frame.summary$active] == 0))
+    if (length(source$sync.rows)) {
+        active <- frame.summary$active
+        expect_true(all(vapply(source$sync.rows, function(sr) {
+            isTRUE(active[[sr$i]]) && isTRUE(active[[sr$j]])
+        }, logical(1L))))
+    }
+    expect_equal(sum(fit$rho), 1, tolerance = 1e-12)
+})
+
 test_that("OD2 smoother workflows reject reserved pass-through arguments", {
     X <- matrix(seq(0, 1, length.out = 12), ncol = 1L)
     expect_error(

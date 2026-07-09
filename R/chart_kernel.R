@@ -53,7 +53,9 @@
 #' @param selection.strategy Candidate-selection strategy. \code{"grid"}
 #'   evaluates the requested candidate grid. \code{"sparse_kd"} evaluates a
 #'   sparse support-size by chart-dimension skeleton when
-#'   \code{chart.dim.grid} is supplied.
+#'   \code{chart.dim.grid} is supplied. \code{"plateau_kd"} uses the same
+#'   geometry-only support-size and chart-dimension plateau rule as
+#'   \code{\link{fit.lps}}.
 #' @param chart.dim.max Optional explicit maximum chart dimension for the
 #'   sparse coupled candidate family.
 #' @param design.margin Nonnegative integer feasibility margin used to screen
@@ -90,7 +92,7 @@ fit.chart.kernel <- function(
     coordinate.method = c("coordinates", "local.pca"),
     chart.dim = NULL,
     chart.dim.grid = NULL,
-    selection.strategy = c("grid", "sparse_kd"),
+    selection.strategy = c("grid", "sparse_kd", "plateau_kd"),
     chart.dim.max = NULL,
     design.margin = 2L,
     auto.chart.support.metric = c("coordinates", "operator", "both"),

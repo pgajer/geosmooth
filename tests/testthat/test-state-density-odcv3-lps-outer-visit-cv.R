@@ -201,7 +201,8 @@ test_that("OD-CV3 PS-LPS numeric chart-dimension grids reuse max PCA supports", 
         design.basis = "orthogonal.polynomial.drop",
         ridge.multiplier.grid = c(0, 1e-10),
         ridge.condition.max = 1e10,
-        sync.neighbor.size = 3L
+        sync.neighbor.size = 3L,
+        chart.activation = "none"
     ))
 
     fit <- counted$value

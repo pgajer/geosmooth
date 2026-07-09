@@ -1,0 +1,5 @@
+"strategy","acceptable_gap","boundary_large_gap","full_grid_selection_miss","large_selection_gap","near_oracle","sparse_grid_miss","watch_gap"
+"auto",4,6,0,31,4,0,3
+"full_kd",4,0,29,0,7,0,8
+"local_auto",1,5,0,35,2,0,5
+"sparse_kd",7,23,0,7,3,3,5

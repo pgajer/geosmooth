@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CSD-deg2 CSD7 Task-Level Failure Diagnostics</title>
+<script>
+window.MathJax = {tex: {inlineMath: [["\\(","\\)"],["$","$"]],
+displayMath: [["\\[","\\]"],["$$","$$"]]}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       margin: 0; padding: 0; color: #1f2a2e; background: #f6f7f5; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+section { background: #fff; border: 1px solid #d8dfdc; border-radius: 8px;
+          padding: 24px; margin: 18px 0; }
+h1 { font-size: 34px; margin-bottom: 8px; }
+h2 { margin-top: 0; }
+.meta { color: #5d6b66; font-size: 14px; line-height: 1.5; }
+.callout { border-left: 4px solid #0f766e; padding: 10px 14px;
+           background: #eef7f5; margin: 14px 0; }
+.warning { border-left: 4px solid #b45309; padding: 10px 14px;
+           background: #fff7ed; margin: 14px 0; }
+.figure { margin: 20px 0; }
+.figure img { width: 100%; height: auto; border: 1px solid #d8dfdc;
+              border-radius: 4px; background: #fff; }
+.caption { color: #43504b; font-size: 15px; line-height: 1.45; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+th, td { border: 1px solid #d8dfdc; padding: 7px 9px; vertical-align: top; }
+th { background: #edf2f0; text-align: left; }
+code { background: #eef2f0; padding: 1px 4px; border-radius: 3px; }
+a { color: #0f766e; }
+</style>
+</head>
+<body><main>
+<h1>CSD-deg2 CSD7 Task-Level Failure Diagnostics</h1>
+<div class="meta">
+Report build: 2026-07-09 10:34:35 EDT<br>
+Source: <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd7_task_failure_diagnostics_render.R</code><br>
+Input CSD6 bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd6_deg2_expanded_relative_regret_20260709</code><br>
+Output bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd7_deg2_task_failure_diagnostics_20260709</code>
+</div>
+
+<section>
+<h2>Purpose</h2>
+<p>CSD6 showed that coupled support-size and chart-dimension selection can be
+fast, but the selected fits can still be far from the truth-facing full-grid
+oracle.  CSD7 asks a narrower diagnostic question: <em>when a selector has high
+regret, what kind of miss is it?</em></p>
+<p>For each outer task \(s\), let \(R_{s,m}\) be the Truth RMSE of method
+\(m\), and let</p>
+\[
+  R_s^\star = \min_{k\in \{15,\ldots,35\},\ d\in \{1,\ldots,6\}}
+  R_s(k,d)
+\]
+<p>be the best Truth RMSE over the full numeric reference grid.  CSD7 reports
+the ratio</p>
+\[
+  \kappa_{s,m}=\frac{R_{s,m}}{R_s^\star}
+\]
+<p>and the relative regret \(100(\kappa_{s,m}-1)\).  Values near \(1\) mean the
+selected fit is close to the full-grid oracle.  Large values mean the selected
+fit is much worse than a candidate that was available in the reference grid.</p>
+<div class="warning">
+<strong>Important limitation.</strong> CSD7 is a post-processing diagnostic over
+the CSD6 artifacts.  CSD6 saved the full truth-facing grid \(R_s(k,d)\), but it
+did not save the full inner-CV score surface for every candidate.  Therefore
+CSD7 can identify outside-reference-grid selections, boundary misses, sparse-grid
+misses, and full-grid selection misses against the truth reference.  It cannot
+yet prove the detailed shape of the CV surface without a new run that persists
+full inner-CV candidate scores.
+</div>
+</section>
+
+<section>
+<h2>Failure Classes</h2>
+<p>Each method-task row is assigned one descriptive class.  The thresholds are
+diagnostic, not a statistical test: near-oracle means
+\(\kappa\le1.15\), acceptable means \(1.15&lt;\kappa\le1.25\), watch means
+\(1.25&lt;\kappa\le1.5\), and large gap means \(\kappa&gt;1.5\).  A
+<code>sparse_grid_miss</code> means <code>sparse_kd</code> is poor while
+<code>full_kd</code> is near-oracle on the same task.  A
+<code>full_grid_selection_miss</code> means even the full numeric grid selector
+is poor relative to the truth-facing oracle, which points toward selection/CV
+instability rather than only sparse-grid coverage.  The
+<code>outside_reference_grid</code> class means the selected coordinates could
+not be replayed inside the CSD6 numeric reference grid, often because an
+automatic dimension rule chose a chart dimension above the reference cap
+\(d=8\).</p>
+<table><tr><th>strategy</th><th>acceptable_gap</th><th>boundary_large_gap</th><th>full_grid_selection_miss</th><th>large_selection_gap</th><th>near_oracle</th><th>sparse_grid_miss</th><th>watch_gap</th></tr><tr><td>auto</td><td>4</td><td>6</td><td>0</td><td>31</td><td>4</td><td>0</td><td>3</td></tr>
+<tr><td>full_kd</td><td>4</td><td>0</td><td>29</td><td>0</td><td>7</td><td>0</td><td>8</td></tr>
+<tr><td>local_auto</td><td>1</td><td>5</td><td>0</td><td>35</td><td>2</td><td>0</td><td>5</td></tr>
+<tr><td>sparse_kd</td><td>7</td><td>23</td><td>0</td><td>7</td><td>3</td><td>3</td><td>5</td></tr></table>
+<div class="figure"><img src="figures/figure_1_failure_class_counts.svg" alt="Failure class counts">
+<p class="caption"><strong>Figure 1.</strong> Failure-class accounting by
+selector.  Each horizontal stack contains the 48 outer-task rows for one
+selector.  Green classes are close to the truth-facing full-grid oracle; orange
+and red classes mark larger gaps.  The class names are descriptive labels used
+to triage where additional selector work should focus.</p></div>
+<p>The most important distinction is between sparse-only misses and full-grid
+selection misses.  If sparse misses dominate, the sparse grid should be refined.
+If full-grid misses dominate, changing the sparse grid alone will not solve the
+problem because the larger candidate set is also selecting poorly.</p>
+</section>
+
+<section>
+<h2>Distance From The Truth-Facing Oracle</h2>
+<p>The full-grid oracle has coordinates \((k_s^\star,d_s^\star)\).  For a
+selected method with coordinates \((\hat k_{s,m},\hat d_{s,m})\), CSD7 plots
+the simple coordinate distance</p>
+\[
+  D_{s,m}=|\hat k_{s,m}-k_s^\star|+|\hat d_{s,m}-d_s^\star|.
+\]
+<p>This is not a geometry-aware distance between fits; it is only a quick
+diagnostic for whether poor fits tend to select far-away candidate coordinates.
+If \(D_{s,m}\) is small and \(\kappa_{s,m}\) is still large, then the truth
+surface is locally steep or unstable near the oracle.  If \(D_{s,m}\) is large,
+then the selector is moving to a very different part of the grid.</p>
+<div class="figure"><img src="figures/figure_2_selected_distance_vs_ratio.svg" alt="Selection distance versus RMSE ratio">
+<p class="caption"><strong>Figure 2.</strong> Selected-coordinate distance
+versus RMSE ratio.  The vertical axis is logarithmic because a few tasks have
+very large ratios.  Horizontal guide lines mark \(\kappa=1.05,1.15,1.25,1.5\),
+and \(2\).  Points high above the \(2\) line are severe misses; points far to
+the right also selected a \((k,d)\) pair far from the truth-facing oracle.</p></div>
+</section>
+
+<section>
+<h2>Geometry Families</h2>
+<p>The CSD6 bundle deliberately mixes homogeneous manifolds, high-dimensional
+embeddings, non-manifold unions, simplex-boundary geometry, and rank-block
+heterogeneity.  Family-level summaries ask whether high regret is concentrated
+in only one kind of geometry.</p>
+<table><tr><th>strategy</th><th>dataset.family</th><th>median.rmse.ratio</th><th>median.relative.regret.percent</th><th>median.k.distance</th><th>median.d.distance</th></tr><tr><td>auto</td><td>heterogeneous/non-manifold</td><td>2.89</td><td> 189</td><td> 7.5</td><td>   1</td></tr>
+<tr><td>full_kd</td><td>heterogeneous/non-manifold</td><td>2.35</td><td> 135</td><td> 5.5</td><td>   1</td></tr>
+<tr><td>local_auto</td><td>heterogeneous/non-manifold</td><td>2.92</td><td> 192</td><td>   4</td><td>   1</td></tr>
+<tr><td>sparse_kd</td><td>heterogeneous/non-manifold</td><td>4.27</td><td> 327</td><td>   9</td><td> 2.5</td></tr>
+<tr><td>auto</td><td>high-dimensional embedded 1D</td><td>5.23</td><td> 423</td><td>   3</td><td> 2.5</td></tr>
+<tr><td>full_kd</td><td>high-dimensional embedded 1D</td><td>1.81</td><td>80.6</td><td>   3</td><td>   1</td></tr>
+<tr><td>local_auto</td><td>high-dimensional embedded 1D</td><td>5.23</td><td> 423</td><td>   3</td><td> 2.5</td></tr>
+<tr><td>sparse_kd</td><td>high-dimensional embedded 1D</td><td>2.89</td><td> 189</td><td>   8</td><td>   1</td></tr>
+<tr><td>auto</td><td>high-dimensional embedded 2D</td><td>2.03</td><td> 103</td><td> 9.5</td><td> 0.5</td></tr>
+<tr><td>full_kd</td><td>high-dimensional embedded 2D</td><td>2.42</td><td> 142</td><td>10.5</td><td> 1.5</td></tr>
+<tr><td>local_auto</td><td>high-dimensional embedded 2D</td><td>1.81</td><td>  81</td><td> 6.5</td><td> 0.5</td></tr>
+<tr><td>sparse_kd</td><td>high-dimensional embedded 2D</td><td>1.81</td><td>81.5</td><td> 7.5</td><td>   2</td></tr>
+<tr><td>auto</td><td>homogeneous 1D manifold</td><td> 1.2</td><td>20.1</td><td> 6.5</td><td>0</td></tr>
+<tr><td>full_kd</td><td>homogeneous 1D manifold</td><td>1.28</td><td>28.4</td><td>   7</td><td> 0.5</td></tr>
+<tr><td>local_auto</td><td>homogeneous 1D manifold</td><td>3.46</td><td> 246</td><td> 6.5</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>homogeneous 1D manifold</td><td>1.23</td><td>22.9</td><td>   8</td><td>0</td></tr>
+<tr><td>auto</td><td>homogeneous 2D manifold</td><td>2.37</td><td> 137</td><td> 9.5</td><td> 0.5</td></tr>
+<tr><td>full_kd</td><td>homogeneous 2D manifold</td><td>1.56</td><td>  56</td><td>   5</td><td>   3</td></tr>
+<tr><td>local_auto</td><td>homogeneous 2D manifold</td><td>2.27</td><td> 127</td><td> 7.5</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>homogeneous 2D manifold</td><td>1.71</td><td>71.3</td><td>  10</td><td>   4</td></tr>
+<tr><td>auto</td><td>homogeneous 3D manifold</td><td>3.71</td><td> 271</td><td>   5</td><td> 3.5</td></tr>
+<tr><td>full_kd</td><td>homogeneous 3D manifold</td><td>1.45</td><td>44.8</td><td> 4.5</td><td> 0.5</td></tr>
+<tr><td>local_auto</td><td>homogeneous 3D manifold</td><td>3.71</td><td> 271</td><td>   5</td><td> 3.5</td></tr>
+<tr><td>sparse_kd</td><td>homogeneous 3D manifold</td><td>1.31</td><td>31.4</td><td>  11</td><td>0</td></tr>
+<tr><td>auto</td><td>OD-style simplex-boundary geometry</td><td>1.86</td><td>85.6</td><td> 4.5</td><td>   1</td></tr>
+<tr><td>full_kd</td><td>OD-style simplex-boundary geometry</td><td>1.56</td><td>56.4</td><td>   4</td><td>   1</td></tr>
+<tr><td>local_auto</td><td>OD-style simplex-boundary geometry</td><td>1.72</td><td>  72</td><td>   6</td><td>   1</td></tr>
+<tr><td>sparse_kd</td><td>OD-style simplex-boundary geometry</td><td>4.63</td><td> 363</td><td> 3.5</td><td> 1.5</td></tr>
+<tr><td>auto</td><td>rank/block heterogeneity</td><td>2.12</td><td> 112</td><td>   5</td><td>   1</td></tr>
+<tr><td>full_kd</td><td>rank/block heterogeneity</td><td>2.13</td><td> 113</td><td>   4</td><td>   1</td></tr>
+<tr><td>local_auto</td><td>rank/block heterogeneity</td><td>1.98</td><td>97.8</td><td>   5</td><td>   1</td></tr>
+<tr><td>sparse_kd</td><td>rank/block heterogeneity</td><td>4.97</td><td> 397</td><td>   7</td><td> 3.5</td></tr></table>
+<div class="figure"><img src="figures/figure_3_family_failure_summary.svg" alt="Family-level median RMSE ratio">
+<p class="caption"><strong>Figure 3.</strong> Median RMSE ratio by geometry
+family and selector.  Each point is the family-level median \(\kappa=R_m/R^\star\).
+The dashed vertical line is the oracle value \(\kappa=1\); dotted guide lines
+mark \(1.05\), \(1.15\), \(1.25\), \(1.5\), and \(2\).  Families with points
+far to the right are the cases driving the largest practical concern.</p></div>
+</section>
+
+<section>
+<h2>Near-Oracle Multiplicity</h2>
+<p>A task may be easy to select if many full-grid candidates are close to the
+truth-facing oracle.  CSD7 counts how many candidates satisfy
+\(R_s(k,d)\le1.15R_s^\star\).  A small count means the good region of the
+truth surface is narrow; a large count means there are many almost-equivalent
+choices.</p>
+<div class="figure"><img src="figures/figure_4_near_oracle_candidate_counts.svg" alt="Near-oracle candidate counts">
+<p class="caption"><strong>Figure 4.</strong> Number of near-oracle full-grid
+candidates versus the worst selector ratio in the same task.  If severe misses
+occur when the near-oracle count is small, then the selection problem is
+sharply localized.  If severe misses occur even when the count is large, then
+the issue is less about a narrow optimum and more about selection bias or
+score mismatch.</p></div>
+</section>
+
+<section>
+<h2>Large-Gap Truth Surfaces</h2>
+<p>The next figure shows representative large-gap tasks.  The heatmap is the
+truth-facing full-grid surface \(R_s(k,d)\); darker colors are lower Truth RMSE.
+The red cross is the full-grid oracle, the orange square is the
+<code>sparse_kd</code> selected candidate, and the pink dot is the
+<code>full_kd</code> selected candidate.</p>
+<div class="figure"><img src="figures/figure_5_large_gap_truth_surfaces.svg" alt="Large-gap truth surfaces">
+<p class="caption"><strong>Figure 5.</strong> Representative large-gap
+truth-facing score surfaces.  These panels separate two different problems:
+whether the sparse grid even looks in the right region, and whether the full
+numeric grid selector chooses a candidate near the truth-facing oracle.  The
+figure does not show inner-CV surfaces; it shows only the saved CSD6 truth
+reference surface.</p></div>
+<p>The table below lists the largest individual gaps.  It is intentionally
+short; the full row-level diagnostics are linked in the reproducibility
+section.</p>
+<table><tr><th>dataset</th><th>family</th><th>rep</th><th>fold</th><th>strategy</th><th>R_m</th><th>R_star</th><th>R_ratio</th><th>Delta_rel_pct</th><th>k_sel</th><th>d_sel</th><th>k_star</th><th>d_star</th><th>near_1.15_count</th><th>near_1.25_count</th><th>class</th></tr><tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   1</td><td>   3</td><td>auto</td><td>24.9</td><td>1.82</td><td>13.7</td><td>1270</td><td>  15</td><td>   3</td><td>  28</td><td>   4</td><td>   3</td><td>   3</td><td>boundary_large_gap</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   1</td><td>   3</td><td>local_auto</td><td>24.9</td><td>1.82</td><td>13.7</td><td>1270</td><td>  15</td><td>   3</td><td>  28</td><td>   4</td><td>   3</td><td>   3</td><td>boundary_large_gap</td></tr>
+<tr><td>curve_1d_embedded_p8</td><td>homogeneous 1D manifold</td><td>   1</td><td>   2</td><td>local_auto</td><td>0.151</td><td>0.012</td><td>12.6</td><td>1162</td><td>  18</td><td>   2</td><td>  16</td><td>   2</td><td>   2</td><td>   3</td><td>large_selection_gap</td></tr>
+<tr><td>simplex_faces_p8</td><td>OD-style simplex-boundary geometry</td><td>   2</td><td>   2</td><td>sparse_kd</td><td>0.158</td><td>0.0128</td><td>12.3</td><td>1128</td><td>  25</td><td>   2</td><td>  25</td><td>   5</td><td>   3</td><td>   8</td><td>large_selection_gap</td></tr>
+<tr><td>simplex_faces_p8</td><td>OD-style simplex-boundary geometry</td><td>   1</td><td>   2</td><td>sparse_kd</td><td>0.228</td><td>0.0199</td><td>11.5</td><td>1048</td><td>  25</td><td>   2</td><td>  34</td><td>   4</td><td>  13</td><td>  24</td><td>large_selection_gap</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   1</td><td>   1</td><td>auto</td><td>12.9</td><td>1.31</td><td>9.78</td><td> 878</td><td>  20</td><td>   4</td><td>  16</td><td>   1</td><td>   2</td><td>   3</td><td>large_selection_gap</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   1</td><td>   1</td><td>local_auto</td><td>12.9</td><td>1.31</td><td>9.78</td><td> 878</td><td>  20</td><td>   4</td><td>  16</td><td>   1</td><td>   2</td><td>   3</td><td>large_selection_gap</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>homogeneous 3D manifold</td><td>   1</td><td>   3</td><td>auto</td><td>0.665</td><td>0.0815</td><td>8.16</td><td> 716</td><td>  21</td><td>   4</td><td>  26</td><td>   1</td><td>   9</td><td>  10</td><td>large_selection_gap</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>homogeneous 3D manifold</td><td>   1</td><td>   3</td><td>local_auto</td><td>0.665</td><td>0.0815</td><td>8.16</td><td> 716</td><td>  21</td><td>   4</td><td>  26</td><td>   1</td><td>   9</td><td>  10</td><td>large_selection_gap</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>   1</td><td>   2</td><td>full_kd</td><td>0.225</td><td>0.0295</td><td>7.64</td><td> 664</td><td>  15</td><td>   1</td><td>  22</td><td>   4</td><td>   3</td><td>   3</td><td>full_grid_selection_miss</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>   1</td><td>   2</td><td>sparse_kd</td><td>0.225</td><td>0.0295</td><td>7.64</td><td> 664</td><td>  15</td><td>   1</td><td>  22</td><td>   4</td><td>   3</td><td>   3</td><td>boundary_large_gap</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>   2</td><td>   2</td><td>sparse_kd</td><td>0.259</td><td>0.0419</td><td>6.18</td><td> 518</td><td>  15</td><td>   1</td><td>  35</td><td>   5</td><td>   3</td><td>   6</td><td>boundary_large_gap</td></tr>
+<tr><td>rank_blocks_p40</td><td>rank/block heterogeneity</td><td>   2</td><td>   3</td><td>sparse_kd</td><td>0.417</td><td>0.0742</td><td>5.61</td><td> 461</td><td>  35</td><td>   2</td><td>  29</td><td>   5</td><td>   3</td><td>   7</td><td>boundary_large_gap</td></tr>
+<tr><td>rank_blocks_p40</td><td>rank/block heterogeneity</td><td>   1</td><td>   3</td><td>sparse_kd</td><td>0.415</td><td>0.0769</td><td> 5.4</td><td> 440</td><td>  25</td><td>   2</td><td>  35</td><td>   6</td><td>   4</td><td>   4</td><td>large_selection_gap</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   2</td><td>   3</td><td>auto</td><td>10.9</td><td>2.06</td><td>5.29</td><td> 429</td><td>  28</td><td>   5</td><td>  31</td><td>   3</td><td>   2</td><td>   4</td><td>large_selection_gap</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>   2</td><td>   3</td><td>local_auto</td><td>10.9</td><td>2.06</td><td>5.29</td><td> 429</td><td>  28</td><td>   5</td><td>  31</td><td>   3</td><td>   2</td><td>   4</td><td>large_selection_gap</td></tr></table>
+</section>
+
+<section>
+<h2>What We Learned</h2>
+<p>CSD7 changes the next-step question.  The problem is not only sparse-grid
+coverage.  Some high-regret rows are sparse-grid misses, but full-grid selection
+misses also occur.  That means a larger sparse grid alone is unlikely to close
+the gap.  The next useful CSD step should persist candidate-level inner-CV
+scores and compare them directly with the truth-facing grid.  That would let us
+distinguish a genuinely noisy CV surface from a deterministic rule that is
+systematically biased toward the wrong part of the grid.</p>
+<p>Until that candidate-level CV surface exists, the safest interpretation is
+that coupled \((k,d)\) selection is promising but not ready to be treated as a
+settled default.  It needs a CV-surface audit and probably a robust selection
+rule, such as near-tie handling, one-standard-error-style biasing, repeated CV,
+or a staged rule that avoids boundary and narrow-optimum failures.</p>
+</section>
+
+<section>
+<h2>Reproducibility</h2>
+<p>CSD7 was generated from cached CSD6 artifacts and did not rerun any model
+fits.</p>
+<ul>
+<li>Render command: <code>Rscript dev/methods/lps/ci/csd7_task_failure_diagnostics_render.R --input-dir=/Users/pgajer/current_projects/geosmooth/dev/methods/lps/reports/csd6_deg2_expanded_relative_regret_20260709</code></li>
+<li>Input strategy scores: <a href="../csd6_expanded_relative_regret_20260708/tables/csd6_strategy_outer_scores.csv">CSD6 strategy outer scores</a></li>
+<li>Input full-grid candidate scores: <a href="../csd6_expanded_relative_regret_20260708/tables/csd6_full_grid_candidate_scores.csv">CSD6 full-grid candidate scores</a></li>
+<li>Row-level diagnostics: <a href="tables/csd7_row_level_failure_diagnostics.csv">csd7_row_level_failure_diagnostics.csv</a></li>
+<li>Failure-class summary: <a href="tables/csd7_failure_class_summary.csv">csd7_failure_class_summary.csv</a></li>
+<li>Family summary: <a href="tables/csd7_family_failure_summary.csv">csd7_family_failure_summary.csv</a></li>
+<li>Task summary: <a href="tables/csd7_task_level_summary.csv">csd7_task_level_summary.csv</a></li>
+<li>Metadata: <a href="tables/csd7_result_metadata.csv">csd7_result_metadata.csv</a></li>
+</ul>
+</section>
+
+</main></body></html>
