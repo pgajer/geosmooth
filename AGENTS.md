@@ -48,7 +48,8 @@ from `gflow`.
 
 ## Research Reports
 
-- Every phase HTML report should follow
+- Every HTML research report, dashboard, and generated analysis summary should
+  follow
   `/Users/pgajer/.codex/notes/agent_instructions/reports/html_report_style_guide.md`.
 - For figure/table readability and report polishing, follow
   `/Users/pgajer/.codex/notes/agent_instructions/reports/report_figure_table_qc.md`.
