@@ -41,10 +41,20 @@ setwd(repo.dir)
 suppressPackageStartupMessages(pkgload::load_all(repo.dir, quiet = TRUE))
 
 cli <- parse.args(commandArgs(trailingOnly = TRUE))
+experiment.degree <- as.integer(cli$degree %||% 1L)
+if (length(experiment.degree) != 1L || !is.finite(experiment.degree) ||
+    experiment.degree < 0L) {
+    stop("'--degree' must be a nonnegative integer scalar.", call. = FALSE)
+}
 date.tag <- format(Sys.Date(), "%Y%m%d")
+report.prefix <- cli$`report-prefix` %||% if (experiment.degree == 1L) {
+    "csd8_candidate_cv_surface_audit"
+} else {
+    paste0("csd8_deg", experiment.degree, "_candidate_cv_surface_audit")
+}
 report.root <- cli$`report-dir` %||% file.path(
     repo.dir, "dev/methods/lps/reports",
-    paste0("csd8_candidate_cv_surface_audit_", date.tag)
+    paste0(report.prefix, "_", date.tag)
 )
 fig.dir <- file.path(report.root, "figures")
 tab.dir <- file.path(report.root, "tables")
@@ -256,7 +266,7 @@ fit.full.grid.cv.surface <- function(X.train, y.train, inner.seed, dataset.id,
             X = X.train,
             y = y.train,
             support.grid = 15:35,
-            degree.grid = 1L,
+            degree.grid = experiment.degree,
             kernel.grid = "gaussian",
             bandwidth.multiplier.grid = 1,
             coordinate.method = "local.pca",
@@ -357,9 +367,11 @@ metadata <- data.frame(
     value = c(
         format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
         "~/current_projects/geosmooth/dev/methods/lps/ci/csd8_candidate_cv_surface_audit_run.R",
-        "Rscript dev/methods/lps/ci/csd8_candidate_cv_surface_audit_run.R",
+        paste("Rscript dev/methods/lps/ci/csd8_candidate_cv_surface_audit_run.R",
+              paste0("--degree=", experiment.degree)),
         "~/current_projects/geosmooth",
-        "3", "2", "15:35", "1:8", "1", "2", as.character(length(make.datasets())),
+        "3", "2", "15:35", "1:8", as.character(experiment.degree), "2",
+        as.character(length(make.datasets())),
         as.character(nrow(cv.surface)),
         "CSD8 persists candidate-level inner-CV scores and joins them to the CSD6 truth-facing grid in the render step."
     ),

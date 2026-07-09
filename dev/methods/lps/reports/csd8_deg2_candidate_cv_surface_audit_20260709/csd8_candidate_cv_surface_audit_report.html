@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CSD-deg2 CSD8 Candidate-Level CV Surface Audit</title>
+<script>
+window.MathJax = {tex: {inlineMath: [["\\(","\\)"],["$","$"]],
+displayMath: [["\\[","\\]"],["$$","$$"]]}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       margin: 0; padding: 0; color: #1f2a2e; background: #f6f7f5; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+section { background: #fff; border: 1px solid #d8dfdc; border-radius: 8px;
+          padding: 24px; margin: 18px 0; }
+h1 { font-size: 34px; margin-bottom: 8px; }
+h2 { margin-top: 0; }
+.meta { color: #5d6b66; font-size: 14px; line-height: 1.5; }
+.callout { border-left: 4px solid #0f766e; padding: 10px 14px;
+           background: #eef7f5; margin: 14px 0; }
+.figure { margin: 20px 0; }
+.figure img { width: 100%; height: auto; border: 1px solid #d8dfdc;
+              border-radius: 4px; background: #fff; }
+.caption { color: #43504b; font-size: 15px; line-height: 1.45; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+th, td { border: 1px solid #d8dfdc; padding: 7px 9px; vertical-align: top; }
+th { background: #edf2f0; text-align: left; }
+code { background: #eef2f0; padding: 1px 4px; border-radius: 3px; }
+a { color: #0f766e; }
+</style>
+</head>
+<body><main>
+<h1>CSD-deg2 CSD8 Candidate-Level CV Surface Audit</h1>
+<div class="meta">
+Report build: 2026-07-09 10:35:45 EDT<br>
+Source: <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd8_candidate_cv_surface_audit_render.R</code><br>
+CSD8 bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd8_deg2_candidate_cv_surface_audit_20260709</code><br>
+CSD6 truth-reference bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd6_deg2_expanded_relative_regret_20260709</code>
+</div>
+
+<section>
+<h2>Purpose</h2>
+<p>CSD7 showed that some large gaps are not sparse-grid misses: even the full
+numeric \\((k,d)\\) selector can choose a candidate far from the
+truth-facing oracle.  CSD8 adds the missing evidence by saving candidate-level
+inner-CV scores and joining them to the CSD6 truth-facing grid.</p>
+<p>For each task \\(s\\) and candidate \\((k,d)\\), this report compares
+the inner-CV score \\(\widehat R^{\mathrm{CV}}_s(k,d)\\) with the
+truth-facing score \\(R_s(k,d)\\).  We use two task-normalized ratios:</p>
+\\[
+  C_s(k,d)=\frac{\widehat R^{\mathrm{CV}}_s(k,d)}
+                 {\min_{k,d}\widehat R^{\mathrm{CV}}_s(k,d)},
+  \qquad
+  T_s(k,d)=\frac{R_s(k,d)}{\min_{k,d}R_s(k,d)}.
+\\]
+<p>If CV is a good selector, candidates with small \\(C_s(k,d)\\) should also
+have small \\(T_s(k,d)\\).  In particular, the CV winner should have
+\\(T_s\\) close to one, and the truth winner should have a good CV rank.</p>
+<table><tr><th>metric</th><th>value</th></tr><tr><td>outer tasks</td><td>48</td></tr>
+<tr><td>candidate rows</td><td>4848</td></tr>
+<tr><td>large CV-winner misses</td><td>29</td></tr>
+<tr><td>median CV-winner truth ratio</td><td>1.723</td></tr>
+<tr><td>median CV rank of truth winner</td><td>   44</td></tr></table>
+</section>
+
+<section>
+<h2>Candidate-Level Alignment</h2>
+<p>Every point in the next figure is one candidate from one outer task.  The
+x-axis is the candidate CV score relative to the task-best CV score; the y-axis
+is the candidate Truth RMSE relative to the task-best Truth RMSE.</p>
+<div class="figure"><img src="figures/figure_1_cv_truth_alignment_scatter.svg" alt="Candidate-level CV truth alignment">
+<p class="caption"><strong>Figure 1.</strong> Candidate-level CV versus truth
+alignment.  Points near the lower-left corner are good under both criteria.
+Points near the left but high on the y-axis are dangerous: CV views them as
+near-optimal, but truth RMSE is much worse than the oracle.  Both axes are
+log-scaled because the disagreement can span orders of magnitude.</p></div>
+</section>
+
+<section>
+<h2>CV Winner Quality</h2>
+<p>The next figure asks a direct selector question: if we choose the candidate
+with the smallest inner-CV RMSE, how far is its truth RMSE from the
+truth-facing oracle?</p>
+<div class="figure"><img src="figures/figure_2_cv_winner_truth_ratio.svg" alt="CV winner quality by family">
+<p class="caption"><strong>Figure 2.</strong> Truth RMSE ratio of the inner-CV
+winner by geometry family.  Values near one mean CV selected a candidate close
+to the truth-facing oracle.  Values above \(1.5\) or \(2\) are the cases where
+CV itself is the main suspect, because the full numeric grid contained a much
+better truth-facing candidate.</p></div>
+</section>
+
+<section>
+<h2>Does CV Recognize The Truth Winner?</h2>
+<p>For each task, the truth winner is the candidate with the smallest
+\\(R_s(k,d)\\).  CSD8 records its rank under the inner-CV score.  A small
+rank means CV saw the truth winner as competitive; a large rank means the
+truth winner looked bad under CV.</p>
+<div class="figure"><img src="figures/figure_3_truth_winner_cv_rank.svg" alt="CV rank of truth winner">
+<p class="caption"><strong>Figure 3.</strong> CV rank of the truth-oracle
+candidate versus the truth ratio of the CV winner.  The most concerning tasks
+are in the upper-right: CV selects a poor truth candidate and also ranks the
+truth winner poorly.</p></div>
+</section>
+
+<section>
+<h2>Surface Pairs</h2>
+<p>The paired heatmaps show why candidate-level persistence matters.  In each
+row, the left panel is the task-normalized CV surface \(C_s(k,d)\), and the
+right panel is the task-normalized truth surface \(T_s(k,d)\).  The orange dot
+marks the CV winner; the red cross marks the truth winner.</p>
+<div class="figure"><img src="figures/figure_4_cv_truth_surface_pairs.svg" alt="CV and truth surface pairs">
+<p class="caption"><strong>Figure 4.</strong> Representative CV/truth surface
+pairs for the largest CSD8 CV-winner misses.  A good selector would place the
+orange dot close to the dark region of the truth panel.  Separated orange and
+red marks indicate that the CV surface and truth surface disagree about the
+best \\((k,d)\\) region.</p></div>
+</section>
+
+<section>
+<h2>Largest Task-Level Misses</h2>
+<p>The table lists tasks where the CV winner has the largest truth RMSE ratio.
+The columns <code>near.cv.05</code> and <code>near.truth.15</code> count how many
+candidates are within 5% of the best CV score and within 15% of the truth
+oracle, respectively.</p>
+<table><tr><th>dataset.id</th><th>dataset.family</th><th>repetition</th><th>outer.fold</th><th>cv.winner.k</th><th>cv.winner.d</th><th>truth.winner.k</th><th>truth.winner.d</th><th>cv.winner.truth.ratio</th><th>truth.winner.cv.rank</th><th>cv.truth.rank.spearman</th><th>near.cv.05</th><th>near.truth.15</th></tr><tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>    1</td><td>    2</td><td>   15</td><td>    1</td><td>   22</td><td>    4</td><td>7.637</td><td>   85</td><td>-0.6837</td><td>    2</td><td>    3</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>    1</td><td>    2</td><td>   23</td><td>    1</td><td>   27</td><td>    3</td><td>5.122</td><td>   29</td><td>0.2069</td><td>   11</td><td>    4</td></tr>
+<tr><td>surface_2d_highdim_p24</td><td>high-dimensional embedded 2D</td><td>    2</td><td>    3</td><td>   17</td><td>    2</td><td>   28</td><td>    5</td><td>4.436</td><td>   50</td><td>0.08224</td><td>    1</td><td>    1</td></tr>
+<tr><td>rank_blocks_p40</td><td>rank/block heterogeneity</td><td>    2</td><td>    2</td><td>   32</td><td>    5</td><td>   27</td><td>    4</td><td>4.251</td><td>   15</td><td>0.2455</td><td>    4</td><td>    2</td></tr>
+<tr><td>surface_2d_highdim_p24</td><td>high-dimensional embedded 2D</td><td>    1</td><td>    2</td><td>   16</td><td>    3</td><td>   30</td><td>    5</td><td>4.136</td><td>   31</td><td>0.2911</td><td>    3</td><td>    2</td></tr>
+<tr><td>rank_blocks_p40</td><td>rank/block heterogeneity</td><td>    1</td><td>    3</td><td>   32</td><td>    6</td><td>   35</td><td>    6</td><td> 3.82</td><td>    1</td><td>0.6258</td><td>    4</td><td>    4</td></tr>
+<tr><td>curve_1d_embedded_p8</td><td>homogeneous 1D manifold</td><td>    2</td><td>    1</td><td>   15</td><td>    2</td><td>   26</td><td>    2</td><td>3.423</td><td>   22</td><td>0.01454</td><td>    2</td><td>    2</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>    2</td><td>    3</td><td>   28</td><td>    1</td><td>   31</td><td>    3</td><td>3.354</td><td>   59</td><td>0.3511</td><td>    8</td><td>    2</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>    2</td><td>    2</td><td>   20</td><td>    3</td><td>   35</td><td>    5</td><td>3.154</td><td>   85</td><td>0.3408</td><td>    2</td><td>    3</td></tr>
+<tr><td>simplex_faces_p8</td><td>OD-style simplex-boundary geometry</td><td>    2</td><td>    2</td><td>   28</td><td>    4</td><td>   25</td><td>    5</td><td>2.823</td><td>   96</td><td>0.03012</td><td>    1</td><td>    3</td></tr>
+<tr><td>surface_2d_highdim_p24</td><td>high-dimensional embedded 2D</td><td>    1</td><td>    1</td><td>   22</td><td>    4</td><td>   30</td><td>    4</td><td>2.771</td><td>   62</td><td>0.2765</td><td>    1</td><td>    2</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>    2</td><td>    1</td><td>   15</td><td>    3</td><td>   26</td><td>    4</td><td>2.635</td><td>   41</td><td>0.09632</td><td>    1</td><td>    4</td></tr></table>
+</section>
+
+<section>
+<h2>What We Learned</h2>
+<p>CSD8 directly tests the hypothesis raised by CSD7.  If the large regret were
+only a sparse-grid problem, the full-grid CV winner would usually be close to
+the truth-facing oracle.  The saved candidate-level surfaces show whether this
+is true task by task.  Large CV-winner truth ratios, high CV ranks for the truth
+winner, or low rank correlations all point toward a selection-score mismatch:
+the inner-CV surface is not reliably identifying the truth-good region.</p>
+<p>The practical next step should be based on these diagnostics.  If most large
+misses have many near-tied CV candidates, repeated CV or one-standard-error
+selection is natural.  If misses concentrate near boundaries, a boundary-aware
+or staged rule is natural.  If CV and truth surfaces are systematically
+misaligned in particular geometry families, then the selector needs a
+geometry-stratified policy rather than a single global rule.</p>
+</section>
+
+<section>
+<h2>Reproducibility</h2>
+<ul>
+<li>CSD8 run command: <code>Rscript dev/methods/lps/ci/csd8_candidate_cv_surface_audit_run.R</code></li>
+<li>CSD8 render command: <code>Rscript dev/methods/lps/ci/csd8_candidate_cv_surface_audit_render.R --report-dir=/Users/pgajer/current_projects/geosmooth/dev/methods/lps/reports/csd8_deg2_candidate_cv_surface_audit_20260709</code></li>
+<li>Candidate inner-CV scores: <a href="tables/csd8_candidate_inner_cv_scores.csv">csd8_candidate_inner_cv_scores.csv</a></li>
+<li>Joined CV/truth surface: <a href="tables/csd8_joined_cv_truth_surface.csv">csd8_joined_cv_truth_surface.csv</a></li>
+<li>Task alignment summary: <a href="tables/csd8_task_cv_truth_alignment.csv">csd8_task_cv_truth_alignment.csv</a></li>
+<li>Family alignment summary: <a href="tables/csd8_family_cv_truth_alignment.csv">csd8_family_cv_truth_alignment.csv</a></li>
+</ul>
+</section>
+
+</main></body></html>

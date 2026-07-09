@@ -508,13 +508,19 @@ result.time <- meta.value("result.generated.at")
 result.bundle <- sub(paste0("^", repo.dir, "/"), "~/current_projects/geosmooth/",
                      report.root)
 render.source <- "~/current_projects/geosmooth/dev/methods/lps/ci/csd6_expanded_relative_regret_render.R"
+degree.value <- meta.value("degree", "1")
+report.title <- if (identical(as.character(degree.value), "2")) {
+    "CSD-deg2 CSD6 Expanded Relative-Regret Evaluation"
+} else {
+    "CSD6 Expanded Relative-Regret Evaluation"
+}
 
 html <- paste0(
 '<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>CSD6 Expanded Relative-Regret Evaluation</title>
+<title>', html.escape(report.title), '</title>
 <script>
 window.MathJax = { tex: { inlineMath: [["\\\\(","\\\\)"], ["$","$"]], displayMath: [["\\\\[","\\\\]"], ["$$","$$"]] } };
 </script>
@@ -542,7 +548,7 @@ a { color: #126d73; }
 <body>
 <main>
 <section>
-<h1>CSD6 Expanded Relative-Regret Evaluation</h1>
+<h1>', html.escape(report.title), '</h1>
 <p class="meta">Report build: ', html.escape(build.time),
 '. Result generation: ', html.escape(result.time),
 '. Bundle: <code>', html.escape(result.bundle), '</code>. Render source:

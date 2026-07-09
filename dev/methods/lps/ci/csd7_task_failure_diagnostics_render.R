@@ -102,6 +102,10 @@ in.tables <- file.path(input.root, "tables")
 scores <- read.csv.required(file.path(in.tables, "csd6_strategy_outer_scores.csv"))
 refs <- read.csv.required(file.path(in.tables, "csd6_full_grid_candidate_scores.csv"))
 metadata <- read.csv.required(file.path(in.tables, "csd6_result_metadata.csv"))
+meta.value <- function(key, default = "not recorded") {
+    hit <- metadata$value[metadata$key == key]
+    if (length(hit)) hit[[1L]] else default
+}
 
 scores$task.id <- paste(scores$dataset.id, scores$repetition, scores$outer.fold,
                         sep = "::")
@@ -155,8 +159,12 @@ diagnostics <- merge(selected.keys, refs.match,
 diagnostics <- merge(diagnostics, oracle, by = "task.id", all.x = TRUE)
 diagnostics <- merge(diagnostics, near.counts, by = "task.id", all.x = TRUE)
 diagnostics$selected.replay.present <- is.finite(diagnostics$matched.truth.rmse)
-diagnostics$selected.on.k.boundary <- diagnostics$selected.support.size.int %in% c(15L, 35L)
-diagnostics$selected.on.d.boundary <- diagnostics$selected.chart.dim.int %in% c(1L, 8L)
+support.range <- range(refs.ok$support.size, na.rm = TRUE)
+chart.dim.range <- range(refs.ok$chart.dim, na.rm = TRUE)
+diagnostics$selected.on.k.boundary <- diagnostics$selected.support.size.int %in%
+    support.range
+diagnostics$selected.on.d.boundary <- diagnostics$selected.chart.dim.int %in%
+    chart.dim.range
 diagnostics$selected.near.115 <- diagnostics$outer.rmse.ratio <= 1.15
 diagnostics$selected.near.125 <- diagnostics$outer.rmse.ratio <= 1.25
 diagnostics$selected.poor.150 <- diagnostics$outer.rmse.ratio > 1.50
@@ -469,6 +477,14 @@ rel.input <- sub(normalizePath(path.expand("~")), "~", input.root, fixed = TRUE)
 rel.report <- sub(normalizePath(path.expand("~")), "~", report.root, fixed = TRUE)
 fig.rel <- function(path) file.path("figures", basename(path))
 tab.rel <- function(path) file.path("tables", basename(path))
+degree.value <- meta.value("degree", "1")
+report.title <- if (identical(as.character(degree.value), "2")) {
+    "CSD-deg2 CSD7 Task-Level Failure Diagnostics"
+} else {
+    "CSD7 Task-Level Failure Diagnostics"
+}
+support.display <- paste0("\\{", paste(support.range, collapse = ",\\ldots,"), "\\}")
+dim.display <- paste0("\\{", paste(chart.dim.range, collapse = ",\\ldots,"), "\\}")
 
 class.html <- small.table.html(class.summary, digits = 0L)
 family.display <- family.summary[order(family.summary$dataset.family,
@@ -480,7 +496,7 @@ html <- paste0('<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CSD7 Task-Level Failure Diagnostics</title>
+<title>', html.escape(report.title), '</title>
 <script>
 window.MathJax = {tex: {inlineMath: [["\\\\(","\\\\)"],["$","$"]],
 displayMath: [["\\\\[","\\\\]"],["$$","$$"]]}};
@@ -511,7 +527,7 @@ a { color: #0f766e; }
 </style>
 </head>
 <body><main>
-<h1>CSD7 Task-Level Failure Diagnostics</h1>
+<h1>', html.escape(report.title), '</h1>
 <div class="meta">
 Report build: ', html.escape(run.timestamp), '<br>
 Source: <code>', html.escape(source.path), '</code><br>
@@ -528,7 +544,7 @@ regret, what kind of miss is it?</em></p>
 <p>For each outer task \\(s\\), let \\(R_{s,m}\\) be the Truth RMSE of method
 \\(m\\), and let</p>
 \\[
-  R_s^\\star = \\min_{k\\in\\{15,\\ldots,35\\},\\ d\\in\\{1,\\ldots,8\\}}
+  R_s^\\star = \\min_{k\\in ', support.display, ',\\ d\\in ', dim.display, '}
   R_s(k,d)
 \\]
 <p>be the best Truth RMSE over the full numeric reference grid.  CSD7 reports

@@ -76,8 +76,8 @@
 }
 
 .coupled.kd.source.rank <- function(source) {
-    match(source, c("numeric", "auto_seed", "guard", "manual",
-                    "local_auto_policy"))
+    match(source, c("numeric", "auto_seed", "plateau_geometry", "guard",
+                    "manual", "local_auto_policy"))
 }
 
 .coupled.kd.stage.rank <- function(stage) {
@@ -506,7 +506,252 @@
 
 .coupled.kd.selection.strategy <- function(selection.strategy = "grid") {
     selection.strategy <- selection.strategy %||% "grid"
-    match.arg(selection.strategy, c("grid", "sparse_kd"))
+    match.arg(selection.strategy, c("grid", "sparse_kd", "plateau_kd"))
+}
+
+.coupled.kd.numeric.chart.dim.range <- function(chart.dim.grid,
+                                                chart.dim.max = NULL,
+                                                ambient.dim) {
+    cleaned <- .local.chart.clean.chart.dim.grid(chart.dim.grid)
+    decoded <- lapply(cleaned$chart.dim, function(x) {
+        tryCatch(.local.chart.decode.chart.dim(x), error = function(e) NULL)
+    })
+    numeric.dim <- sort(unique(unlist(lapply(decoded, function(x) {
+        if (is.numeric(x) && length(x) == 1L && is.finite(x)) {
+            as.integer(x)
+        } else {
+            NA_integer_
+        }
+    }), use.names = FALSE)))
+    numeric.dim <- numeric.dim[is.finite(numeric.dim) & numeric.dim >= 1L]
+    if (!length(numeric.dim)) {
+        stop("'plateau_kd' requires at least one numeric chart dimension in ",
+             "'chart.dim.grid'.", call. = FALSE)
+    }
+    d.max <- min(max(numeric.dim), as.integer(ambient.dim))
+    if (!is.null(chart.dim.max)) {
+        d.max <- min(d.max, as.integer(chart.dim.max))
+    }
+    as.integer(max(1L, d.max))
+}
+
+.coupled.kd.plateau.dimension <- function(X,
+                                          anchor.index,
+                                          ordered.index,
+                                          support.size,
+                                          degree,
+                                          chart.dim.max,
+                                          variance.threshold,
+                                          design.margin) {
+    support.size <- as.integer(min(support.size, length(ordered.index)))
+    if (!is.finite(support.size) || support.size < 2L) {
+        return(1L)
+    }
+    idx <- ordered.index[seq_len(support.size)]
+    centered <- sweep(X[idx, , drop = FALSE], 2L,
+                      X[anchor.index, , drop = TRUE], "-")
+    sv <- tryCatch(svd(centered, nu = 0L, nv = 0L)$d,
+                   error = function(e) numeric(0))
+    sv <- sv[is.finite(sv) & sv > 0]
+    d.cap <- .coupled.kd.max.feasible.chart.dim(
+        support.size = support.size,
+        degree = degree,
+        ambient.dim = min(ncol(X), chart.dim.max),
+        design.margin = design.margin
+    )
+    if (!is.finite(d.cap) || d.cap < 1L || !length(sv)) {
+        return(1L)
+    }
+    max.dim <- min(as.integer(d.cap), as.integer(chart.dim.max), length(sv),
+                   ncol(X), max(1L, support.size - 1L))
+    if (!is.finite(max.dim) || max.dim < 1L) {
+        return(1L)
+    }
+    energy <- sv^2
+    total <- sum(energy)
+    if (!is.finite(total) || total <= 0) {
+        return(1L)
+    }
+    d <- which(cumsum(energy) / total >= variance.threshold)[[1L]]
+    as.integer(max(1L, min(max.dim, d)))
+}
+
+.coupled.kd.plateau.plan <- function(X,
+                                     support.grid,
+                                     degree.grid,
+                                     kernel.grid,
+                                     bandwidth.multiplier.grid,
+                                     chart.dim.grid,
+                                     chart.dim.max = NULL,
+                                     design.margin = 2L,
+                                     variance.threshold = 0.95,
+                                     max.anchors = 60L,
+                                     reuse.type = c("weighted", "chart")) {
+    reuse.type <- match.arg(reuse.type)
+    X <- as.matrix(X)
+    support.grid <- .klp.clean.support.grid(support.grid, nrow(X))
+    degree.grid <- .klp.clean.degree.grid(degree.grid)
+    kernel.grid <- .klp.clean.kernel.grid(kernel.grid)
+    bandwidth.multiplier.grid <- .klp.clean.bandwidth.multiplier.grid(
+        bandwidth.multiplier.grid
+    )
+    d.grid.max <- .coupled.kd.numeric.chart.dim.range(
+        chart.dim.grid = chart.dim.grid,
+        chart.dim.max = chart.dim.max,
+        ambient.dim = ncol(X)
+    )
+    max.anchors <- as.integer(max.anchors)
+    if (!is.finite(max.anchors) || max.anchors < 1L) max.anchors <- 60L
+    anchor.index <- if (nrow(X) <= max.anchors) {
+        seq_len(nrow(X))
+    } else {
+        unique(as.integer(round(seq(1, nrow(X), length.out = max.anchors))))
+    }
+    D <- as.matrix(stats::dist(X))
+    selected.rows <- list()
+    diagnostic.rows <- list()
+    rr <- 0L
+    dd <- 0L
+    for (degree in degree.grid) {
+        anchor.k <- integer(length(anchor.index))
+        anchor.d <- integer(length(anchor.index))
+        for (aa in seq_along(anchor.index)) {
+            ii <- anchor.index[[aa]]
+            ord <- order(D[ii, ], na.last = NA)
+            dims <- vapply(
+                support.grid,
+                function(k) .coupled.kd.plateau.dimension(
+                    X = X,
+                    anchor.index = ii,
+                    ordered.index = ord,
+                    support.size = k,
+                    degree = degree,
+                    chart.dim.max = d.grid.max,
+                    variance.threshold = variance.threshold,
+                    design.margin = design.margin
+                ),
+                integer(1L)
+            )
+            d0 <- dims[[1L]]
+            stable <- dims == d0
+            break.at <- which(!stable)
+            last.idx <- if (length(break.at)) break.at[[1L]] - 1L else length(stable)
+            last.idx <- max(1L, last.idx)
+            anchor.k[[aa]] <- as.integer(support.grid[[last.idx]])
+            anchor.d[[aa]] <- as.integer(d0)
+            dd <- dd + 1L
+            diagnostic.rows[[dd]] <- data.frame(
+                degree = as.integer(degree),
+                anchor.index = as.integer(ii),
+                plateau.support.size = as.integer(anchor.k[[aa]]),
+                plateau.chart.dim = as.integer(anchor.d[[aa]]),
+                min.support.size = as.integer(support.grid[[1L]]),
+                max.support.size = as.integer(support.grid[[length(support.grid)]]),
+                n.support.grid = length(support.grid),
+                dim.path = paste(as.integer(dims), collapse = ","),
+                stringsAsFactors = FALSE
+            )
+        }
+        k.med <- stats::median(anchor.k, na.rm = TRUE)
+        k.selected <- support.grid[which.min(abs(support.grid - k.med))]
+        d.selected <- as.integer(round(stats::median(anchor.d, na.rm = TRUE)))
+        d.cap <- .coupled.kd.max.feasible.chart.dim(
+            support.size = k.selected,
+            degree = degree,
+            ambient.dim = min(ncol(X), d.grid.max),
+            design.margin = design.margin
+        )
+        d.selected <- as.integer(max(1L, min(d.selected, d.grid.max, d.cap)))
+        for (kernel in kernel.grid) {
+            for (bandwidth.multiplier in bandwidth.multiplier.grid) {
+                rr <- rr + 1L
+                selected.rows[[rr]] <- data.frame(
+                    candidate.id = rr,
+                    stage = "skeleton",
+                    support.size = as.integer(k.selected),
+                    chart.dim = as.character(d.selected),
+                    chart.dim.source = "plateau_geometry",
+                    chart.dim.raw = as.integer(d.selected),
+                    chart.dim.clipped = as.integer(d.selected),
+                    chart.dim.seed.clipped = FALSE,
+                    chart.dim.max = as.integer(d.grid.max),
+                    kernel = as.character(kernel),
+                    degree = as.integer(degree),
+                    bandwidth.multiplier = as.numeric(bandwidth.multiplier),
+                    design.ncol = .coupled.kd.design.ncol(d.selected, degree),
+                    design.margin = as.integer(design.margin),
+                    feasible = TRUE,
+                    skip.reason = NA_character_,
+                    reuse.key = NA_character_,
+                    reuse.chart.dim.max = as.integer(d.selected),
+                    score = NA_real_,
+                    elapsed.sec = NA_real_,
+                    stringsAsFactors = FALSE
+                )
+            }
+        }
+    }
+    cand <- do.call(rbind, selected.rows)
+    cand$stage.rank <- .coupled.kd.stage.rank(cand$stage)
+    cand$source.rank <- .coupled.kd.source.rank(cand$chart.dim.source)
+    cand <- cand[order(cand$support.size, cand$degree, cand$kernel,
+                       cand$bandwidth.multiplier), , drop = FALSE]
+    cand$candidate.id <- seq_len(nrow(cand))
+    cand$reuse.key <- mapply(
+        .coupled.kd.reuse.key,
+        support.size = cand$support.size,
+        kernel = cand$kernel,
+        max.chart.dim = cand$reuse.chart.dim.max,
+        MoreArgs = list(reuse.type = reuse.type),
+        USE.NAMES = FALSE
+    )
+    cand$chart.dim.rank <- match(
+        cand$chart.dim,
+        unique(cand$chart.dim[order(cand$chart.dim.clipped)])
+    )
+    diagnostics <- do.call(rbind, diagnostic.rows)
+    rownames(diagnostics) <- NULL
+    plan <- cand[, c(
+        "candidate.id", "stage", "support.size", "chart.dim",
+        "chart.dim.source", "chart.dim.raw", "chart.dim.clipped",
+        "chart.dim.seed.clipped", "chart.dim.max", "kernel", "degree",
+        "bandwidth.multiplier", "design.ncol", "design.margin",
+        "feasible", "skip.reason", "reuse.key", "reuse.chart.dim.max",
+        "score", "elapsed.sec"
+    ), drop = FALSE]
+    reuse.plan <- .coupled.kd.reuse.plan(cand, reuse.type = reuse.type)
+    list(
+        candidates = cand[, c("candidate.id", "support.size", "degree",
+                              "kernel", "bandwidth.multiplier", "chart.dim",
+                              "chart.dim.source", "chart.dim.raw",
+                              "chart.dim.clipped", "chart.dim.seed.clipped",
+                              "chart.dim.max", "design.ncol",
+                              "design.margin", "reuse.key",
+                              "reuse.chart.dim.max", "chart.dim.rank"),
+                          drop = FALSE],
+        coupled.plan = plan,
+        diagnostics = diagnostics,
+        telemetry = list(
+            selection.strategy = "plateau_kd",
+            coupled.chart.dim.search = TRUE,
+            geometry.only = TRUE,
+            planned.candidates = length(support.grid) * length(degree.grid) *
+                length(kernel.grid) * length(bandwidth.multiplier.grid),
+            evaluated.candidates = nrow(cand),
+            skipped.candidates = 0L,
+            reuse.groups = nrow(reuse.plan),
+            reuse.type = reuse.type,
+            support.grid.planned = support.grid,
+            support.grid.evaluated = sort(unique(cand$support.size)),
+            chart.dim.grid.planned = chart.dim.grid,
+            chart.dim.evaluated = sort(unique(cand$chart.dim.clipped)),
+            chart.dim.max = chart.dim.max,
+            plateau.variance.threshold = variance.threshold,
+            plateau.max.anchors = max.anchors,
+            plateau.anchor.diagnostics = diagnostics,
+            design.margin = design.margin
+        )
+    )
 }
 
 .coupled.kd.sparse.support.grid <- function(support.grid) {
@@ -606,6 +851,29 @@
     bandwidth.multiplier.grid <- .klp.clean.bandwidth.multiplier.grid(
         bandwidth.multiplier.grid
     )
+    if (is.null(chart.dim.grid) && identical(selection.strategy, "plateau_kd")) {
+        stop("'plateau_kd' requires 'chart.dim.grid' so the geometry-only ",
+             "selector is bounded by an explicit numeric dimension universe.",
+             call. = FALSE)
+    }
+    if (!identical(coordinate.method, "local.pca") &&
+        identical(selection.strategy, "plateau_kd")) {
+        stop("'plateau_kd' requires coordinate.method = 'local.pca'.",
+             call. = FALSE)
+    }
+    if (identical(selection.strategy, "plateau_kd")) {
+        return(.coupled.kd.plateau.plan(
+            X = X,
+            support.grid = support.grid,
+            degree.grid = degree.grid,
+            kernel.grid = kernel.grid,
+            bandwidth.multiplier.grid = bandwidth.multiplier.grid,
+            chart.dim.grid = chart.dim.grid,
+            chart.dim.max = chart.dim.max,
+            design.margin = design.margin,
+            reuse.type = reuse.type
+        ))
+    }
     chart.dim.grid <- if (is.null(chart.dim.grid)) {
         NULL
     } else if (identical(selection.strategy, "sparse_kd")) {

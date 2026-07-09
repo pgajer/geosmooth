@@ -2,6 +2,20 @@
 
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
 
+parse.args <- function(args) {
+    out <- list()
+    for (arg in args) {
+        if (!startsWith(arg, "--")) next
+        kv <- strsplit(sub("^--", "", arg), "=", fixed = TRUE)[[1L]]
+        out[[kv[[1L]]]] <- if (length(kv) > 1L) {
+            paste(kv[-1L], collapse = "=")
+        } else {
+            TRUE
+        }
+    }
+    out
+}
+
 find.repo.dir <- function() {
     args <- commandArgs(trailingOnly = FALSE)
     file.arg <- "--file="
@@ -26,11 +40,23 @@ setwd(repo.dir)
 
 suppressPackageStartupMessages(pkgload::load_all(repo.dir, quiet = TRUE))
 
+cli <- parse.args(commandArgs(trailingOnly = TRUE))
+experiment.degree <- as.integer(cli$degree %||% 1L)
+if (length(experiment.degree) != 1L || !is.finite(experiment.degree) ||
+    experiment.degree < 0L) {
+    stop("'--degree' must be a nonnegative integer scalar.", call. = FALSE)
+}
+
 date.tag <- format(Sys.Date(), "%Y%m%d")
-report.root <- file.path(
+report.prefix <- cli$`report-prefix` %||% if (experiment.degree == 1L) {
+    "csd5_coupled_kd_evaluation"
+} else {
+    paste0("csd5_deg", experiment.degree, "_coupled_kd_evaluation")
+}
+report.root <- cli$`report-dir` %||% file.path(
     repo.dir,
     "dev/methods/lps/reports",
-    paste0("csd5_coupled_kd_evaluation_", date.tag)
+    paste0(report.prefix, "_", date.tag)
 )
 fig.dir <- file.path(report.root, "figures")
 tab.dir <- file.path(report.root, "tables")
@@ -178,7 +204,7 @@ fit.strategy <- function(X.train, y.train, X.test, y.test, strategy,
         X = X.train,
         y = y.train,
         support.grid = 15:35,
-        degree.grid = 1L,
+        degree.grid = experiment.degree,
         kernel.grid = "gaussian",
         bandwidth.multiplier.grid = 1,
         coordinate.method = "local.pca",
@@ -234,7 +260,7 @@ fit.strategy <- function(X.train, y.train, X.test, y.test, strategy,
 score.full.candidates <- function(X.train, y.train, X.test, y.test,
                                   inner.seed, dataset.id, rep.id,
                                   outer.fold) {
-    grid <- feasible.full.grid()
+    grid <- feasible.full.grid(degree = experiment.degree)
     grid <- grid[grid$feasible, , drop = FALSE]
     rows <- vector("list", nrow(grid))
     for (ii in seq_len(nrow(grid))) {
@@ -244,7 +270,7 @@ score.full.candidates <- function(X.train, y.train, X.test, y.test,
             X = X.train,
             y = y.train,
             support.grid = cand$support.size,
-            degree.grid = 1L,
+            degree.grid = experiment.degree,
             kernel.grid = "gaussian",
             bandwidth.multiplier.grid = 1,
             coordinate.method = "local.pca",
@@ -418,9 +444,10 @@ metadata <- data.frame(
     value = c(
         format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
         "~/current_projects/geosmooth/dev/methods/lps/ci/csd5_coupled_kd_evaluation_run.R",
-        "Rscript dev/methods/lps/ci/csd5_coupled_kd_evaluation_run.R",
+        paste("Rscript dev/methods/lps/ci/csd5_coupled_kd_evaluation_run.R",
+              paste0("--degree=", experiment.degree)),
         "~/current_projects/geosmooth",
-        "3", "2", "15:35", "1:8", "1", "2",
+        "3", "2", "15:35", "1:8", as.character(experiment.degree), "2",
         as.character(nrow(scores)), as.character(nrow(refs))
     ),
     stringsAsFactors = FALSE

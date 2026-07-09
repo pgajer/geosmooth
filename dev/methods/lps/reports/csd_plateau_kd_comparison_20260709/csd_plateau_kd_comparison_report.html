@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CSD Plateau-kd Geometry Selector Comparison</title>
+<script>
+window.MathJax = { tex: { inlineMath: [["\\(","\\)"], ["$","$"]], displayMath: [["\\[","\\]"], ["$$","$$"]] } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7f8; color: #1f2a2e; }
+main { max-width: 1280px; margin: 0 auto; padding: 28px; }
+section { background: white; border: 1px solid #d9e0e3; border-radius: 10px; padding: 22px; margin: 0 0 20px; }
+h1 { font-size: 34px; margin: 0 0 8px; }
+h2 { font-size: 23px; margin-top: 0; }
+h3 { font-size: 18px; margin-bottom: 6px; }
+p { line-height: 1.55; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border-bottom: 1px solid #e5eaed; padding: 7px 8px; text-align: left; vertical-align: top; }
+th { background: #eef3f5; }
+.meta { color: #5a686d; font-size: 14px; }
+.figure { margin: 18px 0 26px; }
+.figure img { width: 100%; max-width: 1120px; display: block; border: 1px solid #dde5e8; border-radius: 8px; background: #fff; }
+.caption { font-size: 14px; color: #344247; margin-top: 8px; }
+.callout { border-left: 4px solid #1f766d; padding: 10px 14px; background: #eef8f6; }
+code { background: #eef2f4; padding: 1px 4px; border-radius: 4px; }
+a { color: #126d73; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+</style>
+</head>
+<body>
+<main>
+<section>
+<h1>CSD Plateau-kd Geometry Selector Comparison</h1>
+<p class="meta">Report build: 2026-07-09 11:18:06 EDT. Result generation: 2026-07-09 11:16:29 EDT. Run bundle: <code>~/current_projects/geosmooth/dev/methods/lps/runs/csd_plateau_kd_comparison_20260709</code>. Report bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd_plateau_kd_comparison_20260709</code>. Run source: <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd_plateau_kd_comparison_run.R</code>. Render source: <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd_plateau_kd_comparison_render.R</code>.</p>
+<p>This report compares four LPS chart-selection policies on the same synthetic
+design family used in the recent coupled support-size and chart-dimension
+experiments. The new method is <code>plateau_kd</code>, a geometry-only rule
+that chooses one support size and one chart dimension from the local PCA
+dimension plateau before looking at the response.</p>
+<p>The main goodness-of-fit score is the truth RMSE</p>
+\[
+R_m = \left\{\frac{1}{n}\sum_{i=1}^n
+\bigl(\widehat f_m(x_i)-f_i\bigr)^2\right\}^{1/2},
+\]
+<p>where \(f_i\) is the known synthetic truth and \(\widehat f_m(x_i)\) is
+the fitted value from method \(m\). Lower values are better. The figures use
+the known synthetic truth field. Some of these CSD examples are signed
+regression truths rather than probability densities, so the phrase “truth
+density” should be read here as “known truth signal” for those examples.</p>
+<div class="callout"><strong>Included dimensions.</strong> The comparison
+explicitly includes the 1D synthetic curve examples and the 2D surface examples.
+The 1D and 2D examples are shown in full in the All Fits section. Higher
+dimensional and non-directly-plottable examples are summarized by tables.</div>
+</section>
+
+<section>
+<h2>Methods Compared</h2>
+<p>All methods use degree-2 local polynomial fits, Gaussian kernels, support
+grid \(k\in\{15,16,\ldots,35\}\), and local PCA coordinates. The numeric
+\((k,d)\) methods use the dimension universe \(d\in\{1,\ldots,8\}\),
+with infeasible polynomial designs removed internally.</p>
+<p><code>auto</code> estimates one global chart dimension from observed
+geometry and then selects support size by the ordinary LPS CV grid.
+<code>local.auto</code> estimates an anchor-specific dimension field but still
+selects support size by ordinary CV. <code>full_kd</code> evaluates the full
+numeric Cartesian grid by inner CV and selects one global \((k,d)\).
+<code>plateau_kd</code> computes local PCA total-variance dimensions over the
+support grid, finds the initial stable dimension plateau, aggregates those
+plateau endpoints across representative anchors, and evaluates the resulting
+single geometry-selected \((k,d)\) candidate.</p>
+</section>
+
+<section>
+<h2>Run Accounting</h2>
+<p>The table lists all datasets used in the run. Each method was attempted once
+per dataset on one fixed noisy response realization, and each fit was scored
+against the known truth on the same design points. The fit-status table makes
+the attempted, successful, and failed counts explicit before any score
+interpretation.</p><table><tr><th>dataset.id</th><th>dataset.family</th><th>display</th><th>n</th><th>ambient.dim</th><th>truth.sd</th><th>noise.sd</th></tr><tr><td>curve_1d_embedded_p8</td><td>homogeneous 1D manifold</td><td>1d</td><td>   63</td><td>    8</td><td>0.7505</td><td>0.03752</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>high-dimensional embedded 1D</td><td>1d</td><td>   63</td><td>   40</td><td>0.5448</td><td>0.02724</td></tr>
+<tr><td>surface_2d_embedded_p8</td><td>homogeneous 2D manifold</td><td>2d</td><td>   64</td><td>    8</td><td>0.2954</td><td>0.01477</td></tr>
+<tr><td>surface_2d_highdim_p24</td><td>high-dimensional embedded 2D</td><td>2d</td><td>   64</td><td>   24</td><td>0.4982</td><td>0.02491</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>homogeneous 3D manifold</td><td>table</td><td>   64</td><td>   12</td><td>0.1465</td><td>0.007327</td></tr>
+<tr><td>surface_line_union_p8</td><td>heterogeneous/non-manifold</td><td>2d</td><td>   72</td><td>    8</td><td>0.5467</td><td>0.02733</td></tr>
+<tr><td>simplex_faces_p8</td><td>OD-style simplex-boundary geometry</td><td>table</td><td>   72</td><td>    8</td><td>0.3704</td><td>0.01852</td></tr>
+<tr><td>rank_blocks_p40</td><td>rank/block heterogeneity</td><td>table</td><td>   72</td><td>   40</td><td>0.733</td><td>0.03665</td></tr></table><h3>Fit status by method</h3><table><tr><th>method.id</th><th>attempted</th><th>ok</th><th>error</th></tr><tr><td>auto</td><td>    8</td><td>    8</td><td>0</td></tr>
+<tr><td>full_kd</td><td>    8</td><td>    8</td><td>0</td></tr>
+<tr><td>local_auto</td><td>    8</td><td>    8</td><td>0</td></tr>
+<tr><td>plateau_kd</td><td>    8</td><td>    8</td><td>0</td></tr></table><h3>Best method by dataset</h3><table><tr><th>dataset.id</th><th>best.method</th><th>best.truth.rmse</th></tr><tr><td>curve_1d_embedded_p8</td><td>plateau_kd</td><td>0.01699</td></tr>
+<tr><td>curve_1d_highdim_p40</td><td>auto</td><td>0.02656</td></tr>
+<tr><td>rank_blocks_p40</td><td>local_auto</td><td>0.02773</td></tr>
+<tr><td>simplex_faces_p8</td><td>full_kd</td><td>0.01193</td></tr>
+<tr><td>surface_2d_embedded_p8</td><td>local_auto</td><td>0.01751</td></tr>
+<tr><td>surface_2d_highdim_p24</td><td>auto</td><td>0.03165</td></tr>
+<tr><td>surface_line_union_p8</td><td>full_kd</td><td>0.02093</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>auto</td><td>0.05436</td></tr></table></section>
+
+<section>
+<h2>Truth RMSE Overview</h2>
+<p>This lollipop-style plot avoids color-only interpretation by labeling each
+row with both dataset and method. It is a compact overview; the 1D and 2D
+fits are shown in detail in the next section.</p><div class="figure"><img src="figures/figure_1_truth_rmse_by_dataset.svg" alt="Figure 1. Truth RMSE for every method on every dataset. Each row is one full-data synthetic fit; lower values are better. The 1D and 2D rows are expanded in the All Fits gallery below, while higher-dimensional rows are summarized in tables."><p class="caption">Figure 1. Truth RMSE for every method on every dataset. Each row is one full-data synthetic fit; lower values are better. The 1D and 2D rows are expanded in the All Fits gallery below, while higher-dimensional rows are summarized in tables.</p></div><p><strong>Interpretation.</strong> This figure should be read as a descriptive
+first comparison, not a final selector verdict. In particular, <code>full_kd</code>
+uses response CV over many candidates, while <code>plateau_kd</code> chooses
+its pair from geometry only. Large gaps between them identify examples where
+response-facing scale choice still matters.</p>
+</section>
+
+<section>
+<h2>All Fits: Every 1D and 2D Example</h2>
+<p>Each panel below is one model-truth comparison for one 1D or 2D dataset. In
+1D, the black line is the known truth, gray points are the noisy observations,
+and the colored line is the fitted estimate. In 2D, the first panel shows the
+truth, the second panel shows the estimate on the same color scale, and the
+third panel shows estimate minus truth.</p><div class="figure"><img src="figures/fit_1d_curve_1d_embedded_p8_auto.svg" alt="Figure 2. curve_1d_embedded_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02212, Truth MAE = 0.01788, selected support size k = 23, and selected chart dimension d = 2."><p class="caption">Figure 2. curve_1d_embedded_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02212, Truth MAE = 0.01788, selected support size k = 23, and selected chart dimension d = 2.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_embedded_p8_local_auto.svg" alt="Figure 3. curve_1d_embedded_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03961, Truth MAE = 0.02712, selected support size k = 23, and selected chart dimension d = 2."><p class="caption">Figure 3. curve_1d_embedded_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03961, Truth MAE = 0.02712, selected support size k = 23, and selected chart dimension d = 2.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_embedded_p8_full_kd.svg" alt="Figure 4. curve_1d_embedded_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02212, Truth MAE = 0.01788, selected support size k = 23, and selected chart dimension d = 2."><p class="caption">Figure 4. curve_1d_embedded_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02212, Truth MAE = 0.01788, selected support size k = 23, and selected chart dimension d = 2.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_embedded_p8_plateau_kd.svg" alt="Figure 5. curve_1d_embedded_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01699, Truth MAE = 0.01425, selected support size k = 35, and selected chart dimension d = 2."><p class="caption">Figure 5. curve_1d_embedded_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01699, Truth MAE = 0.01425, selected support size k = 35, and selected chart dimension d = 2.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_highdim_p40_auto.svg" alt="Figure 6. curve_1d_highdim_p40 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02656, Truth MAE = 0.0214, selected support size k = 34, and selected chart dimension d = 6."><p class="caption">Figure 6. curve_1d_highdim_p40 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02656, Truth MAE = 0.0214, selected support size k = 34, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_highdim_p40_local_auto.svg" alt="Figure 7. curve_1d_highdim_p40 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02656, Truth MAE = 0.0214, selected support size k = 34, and selected chart dimension d = 6."><p class="caption">Figure 7. curve_1d_highdim_p40 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02656, Truth MAE = 0.0214, selected support size k = 34, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_highdim_p40_full_kd.svg" alt="Figure 8. curve_1d_highdim_p40 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03487, Truth MAE = 0.0266, selected support size k = 30, and selected chart dimension d = 4."><p class="caption">Figure 8. curve_1d_highdim_p40 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03487, Truth MAE = 0.0266, selected support size k = 30, and selected chart dimension d = 4.</p></div>
+<div class="figure"><img src="figures/fit_1d_curve_1d_highdim_p40_plateau_kd.svg" alt="Figure 9. curve_1d_highdim_p40 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03121, Truth MAE = 0.02483, selected support size k = 16, and selected chart dimension d = 3."><p class="caption">Figure 9. curve_1d_highdim_p40 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03121, Truth MAE = 0.02483, selected support size k = 16, and selected chart dimension d = 3.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_embedded_p8_auto.svg" alt="Figure 10. surface_2d_embedded_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01759, Truth MAE = 0.01342, selected support size k = 35, and selected chart dimension d = 6."><p class="caption">Figure 10. surface_2d_embedded_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01759, Truth MAE = 0.01342, selected support size k = 35, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_embedded_p8_local_auto.svg" alt="Figure 11. surface_2d_embedded_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01751, Truth MAE = 0.01327, selected support size k = 35, and selected chart dimension d = 6."><p class="caption">Figure 11. surface_2d_embedded_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.01751, Truth MAE = 0.01327, selected support size k = 35, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_embedded_p8_full_kd.svg" alt="Figure 12. surface_2d_embedded_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05184, Truth MAE = 0.03593, selected support size k = 31, and selected chart dimension d = 4."><p class="caption">Figure 12. surface_2d_embedded_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05184, Truth MAE = 0.03593, selected support size k = 31, and selected chart dimension d = 4.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_embedded_p8_plateau_kd.svg" alt="Figure 13. surface_2d_embedded_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.06116, Truth MAE = 0.03997, selected support size k = 16, and selected chart dimension d = 3."><p class="caption">Figure 13. surface_2d_embedded_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.06116, Truth MAE = 0.03997, selected support size k = 16, and selected chart dimension d = 3.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_highdim_p24_auto.svg" alt="Figure 14. surface_2d_highdim_p24 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03165, Truth MAE = 0.0264, selected support size k = 31, and selected chart dimension d = 6."><p class="caption">Figure 14. surface_2d_highdim_p24 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.03165, Truth MAE = 0.0264, selected support size k = 31, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_highdim_p24_local_auto.svg" alt="Figure 15. surface_2d_highdim_p24 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.04789, Truth MAE = 0.03242, selected support size k = 31, and selected chart dimension d = 6."><p class="caption">Figure 15. surface_2d_highdim_p24 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.04789, Truth MAE = 0.03242, selected support size k = 31, and selected chart dimension d = 6.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_highdim_p24_full_kd.svg" alt="Figure 16. surface_2d_highdim_p24 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05918, Truth MAE = 0.04518, selected support size k = 32, and selected chart dimension d = 4."><p class="caption">Figure 16. surface_2d_highdim_p24 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05918, Truth MAE = 0.04518, selected support size k = 32, and selected chart dimension d = 4.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_2d_highdim_p24_plateau_kd.svg" alt="Figure 17. surface_2d_highdim_p24 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05262, Truth MAE = 0.04154, selected support size k = 16, and selected chart dimension d = 3."><p class="caption">Figure 17. surface_2d_highdim_p24 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.05262, Truth MAE = 0.04154, selected support size k = 16, and selected chart dimension d = 3.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_line_union_p8_auto.svg" alt="Figure 18. surface_line_union_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02815, Truth MAE = 0.01974, selected support size k = 20, and selected chart dimension d = 3."><p class="caption">Figure 18. surface_line_union_p8 fitted by auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02815, Truth MAE = 0.01974, selected support size k = 20, and selected chart dimension d = 3.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_line_union_p8_local_auto.svg" alt="Figure 19. surface_line_union_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02592, Truth MAE = 0.0197, selected support size k = 15, and selected chart dimension d = 2."><p class="caption">Figure 19. surface_line_union_p8 fitted by local.auto. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02592, Truth MAE = 0.0197, selected support size k = 15, and selected chart dimension d = 2.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_line_union_p8_full_kd.svg" alt="Figure 20. surface_line_union_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02093, Truth MAE = 0.01641, selected support size k = 22, and selected chart dimension d = 4."><p class="caption">Figure 20. surface_line_union_p8 fitted by full_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.02093, Truth MAE = 0.01641, selected support size k = 22, and selected chart dimension d = 4.</p></div>
+<div class="figure"><img src="figures/fit_2d_surface_line_union_p8_plateau_kd.svg" alt="Figure 21. surface_line_union_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.08277, Truth MAE = 0.05225, selected support size k = 21, and selected chart dimension d = 2."><p class="caption">Figure 21. surface_line_union_p8 fitted by plateau_kd. The figure shows the known synthetic truth and the fitted LPS estimate. The goodness-of-fit statistics for this panel are Truth RMSE = 0.08277, Truth MAE = 0.05225, selected support size k = 21, and selected chart dimension d = 2.</p></div></section>
+
+<section>
+<h2>Higher-Dimensional Summary</h2>
+<p>The remaining examples are not shown as direct surfaces because their
+geometry is three-dimensional, simplex-boundary, or high-dimensional block
+structure. The table retains the same goodness-of-fit and selected-parameter
+columns used for the plotted examples.</p><table><tr><th>dataset.id</th><th>method.id</th><th>status</th><th>truth.rmse</th><th>truth.mae</th><th>truth.correlation</th><th>observed.rmse</th><th>selected.support.size</th><th>selected.chart.dim</th><th>chart.dim.anchor.min</th><th>chart.dim.anchor.median</th><th>chart.dim.anchor.max</th><th>selected.cv.rmse</th><th>elapsed.sec</th><th>evaluated.candidates</th></tr><tr><td>volume_3d_embedded_p12</td><td>auto</td><td>ok</td><td>0.05436</td><td>0.0349</td><td>0.9522</td><td>0.05485</td><td>   15</td><td>3</td><td>    3</td><td>    3</td><td>    3</td><td>0.3888</td><td>1.487</td><td>   21</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>local_auto</td><td>ok</td><td>0.05436</td><td>0.0349</td><td>0.9522</td><td>0.05485</td><td>   15</td><td>3</td><td>    3</td><td>    3</td><td>    3</td><td>0.3888</td><td>1.891</td><td>   21</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>full_kd</td><td>ok</td><td>0.08009</td><td>0.04732</td><td>0.9053</td><td>0.08096</td><td>   21</td><td>1</td><td>    1</td><td>    1</td><td>    1</td><td>0.1485</td><td> 1.86</td><td>  101</td></tr>
+<tr><td>volume_3d_embedded_p12</td><td>plateau_kd</td><td>ok</td><td>0.06439</td><td>0.03561</td><td>0.9281</td><td>0.06492</td><td>   16</td><td>3</td><td>    3</td><td>    3</td><td>    3</td><td>0.325</td><td>0.203</td><td>    1</td></tr>
+<tr><td>simplex_faces_p8</td><td>auto</td><td>ok</td><td>0.01359</td><td>0.009303</td><td>0.9994</td><td>0.01876</td><td>   29</td><td>3</td><td>    3</td><td>    3</td><td>    3</td><td>0.03091</td><td>1.017</td><td>   21</td></tr>
+<tr><td>simplex_faces_p8</td><td>local_auto</td><td>ok</td><td>0.01949</td><td>0.0109</td><td>0.9988</td><td>0.02324</td><td>   34</td><td>3</td><td>    2</td><td>    3</td><td>    4</td><td>0.02785</td><td>1.582</td><td>   21</td></tr>
+<tr><td>simplex_faces_p8</td><td>full_kd</td><td>ok</td><td>0.01193</td><td>0.008487</td><td>0.9995</td><td>0.01339</td><td>   17</td><td>4</td><td>    4</td><td>    4</td><td>    4</td><td>0.02545</td><td>1.481</td><td>  101</td></tr>
+<tr><td>simplex_faces_p8</td><td>plateau_kd</td><td>ok</td><td>0.02248</td><td>0.01464</td><td>0.9984</td><td>0.02611</td><td>   24</td><td>2</td><td>    2</td><td>    2</td><td>    2</td><td>0.113</td><td>0.159</td><td>    1</td></tr>
+<tr><td>rank_blocks_p40</td><td>auto</td><td>ok</td><td>0.03496</td><td>0.02614</td><td>0.9989</td><td>0.03294</td><td>   34</td><td>5</td><td>    5</td><td>    5</td><td>    5</td><td>0.2322</td><td>2.182</td><td>   21</td></tr>
+<tr><td>rank_blocks_p40</td><td>local_auto</td><td>ok</td><td>0.02773</td><td>0.02152</td><td>0.9993</td><td>0.02248</td><td>   35</td><td>5</td><td>    4</td><td>    5</td><td>    6</td><td>0.1201</td><td>2.793</td><td>   21</td></tr>
+<tr><td>rank_blocks_p40</td><td>full_kd</td><td>ok</td><td>0.03088</td><td>0.02465</td><td>0.9991</td><td>0.01792</td><td>   35</td><td>6</td><td>    6</td><td>    6</td><td>    6</td><td>0.1265</td><td>2.668</td><td>  101</td></tr>
+<tr><td>rank_blocks_p40</td><td>plateau_kd</td><td>ok</td><td>0.06366</td><td>0.04726</td><td>0.9968</td><td>0.05729</td><td>   16</td><td>3</td><td>    3</td><td>    3</td><td>    3</td><td>0.4879</td><td>0.223</td><td>    1</td></tr></table></section>
+
+<section>
+<h2>What We Learned</h2>
+<p>The new <code>plateau_kd</code> rule is now implemented as a true
+geometry-only coupled selector. It is much cheaper than <code>full_kd</code>
+because it evaluates one selected candidate rather than the full Cartesian
+grid, but this report should be used to decide whether that economy loses too
+much truth-facing accuracy on particular geometries.</p>
+<p>The most important diagnostic is the per-dataset pattern. If
+<code>plateau_kd</code> is close to <code>full_kd</code> on the 1D and 2D
+examples, that supports the idea that stable local dimension plateaus capture
+useful scale information. If it is far away on a specific geometry, the fitted
+curves and residual panels identify where a response-CV-selected support size
+is still needed.</p>
+</section>
+
+<section>
+<h2>Reproducibility</h2>
+<p>The fit-generation and report-rendering steps are separated. Rerun the fits
+with:</p>
+<pre>Rscript ~/current_projects/geosmooth/dev/methods/lps/ci/csd_plateau_kd_comparison_run.R</pre>
+<p>Then regenerate this HTML report from the cached bundle with:</p>
+<pre>Rscript ~/current_projects/geosmooth/dev/methods/lps/ci/csd_plateau_kd_comparison_render.R</pre>
+<p>Primary linked tables:
+<a href="tables/csd_plateau_kd_scores.csv">fit scores CSV</a> and
+<a href="tables/csd_plateau_kd_datasets.csv">dataset manifest CSV</a>.</p>
+</section>
+</main>
+</body>
+</html>

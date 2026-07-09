@@ -1,0 +1,337 @@
+"task.id","policy","dataset.id","dataset.family","repetition","outer.fold","support.size","chart.dim","cv.scaled","truth.scaled","cv.rank","truth.rank","on.boundary","short.label","cv_min.truth.scaled","delta.vs.cv.min","improved.vs.cv.min"
+"curve_1d_embedded_p8::1::1","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"CV min",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::1","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"1% low-d",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::1","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,19,3,1.01474223979149,2.56093093760226,2,62,FALSE,"3% large-k",1.50280701105942,1.05812392654284,FALSE
+"curve_1d_embedded_p8::1::1","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"5% low-d",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::1","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"low-d penalty",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::1","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"boundary penalty",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::1","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,1,16,2,1,1.50280701105942,1,31,FALSE,"3% low-d",1.50280701105942,0,FALSE
+"curve_1d_embedded_p8::1::2","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,15,2,1,1.14357391381393,1,2,TRUE,"3% large-k",1.14357391381393,0,FALSE
+"curve_1d_embedded_p8::1::2","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,26,3,1.03566190109978,3.99456906722828,2,26,FALSE,"boundary penalty",1.14357391381393,2.85099515341435,FALSE
+"curve_1d_embedded_p8::1::2","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,15,2,1,1.14357391381393,1,2,TRUE,"1% low-d",1.14357391381393,0,FALSE
+"curve_1d_embedded_p8::1::2","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,15,2,1,1.14357391381393,1,2,TRUE,"CV min",1.14357391381393,0,FALSE
+"curve_1d_embedded_p8::1::2","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,26,3,1.03566190109978,3.99456906722828,2,26,FALSE,"5% low-d",1.14357391381393,2.85099515341435,FALSE
+"curve_1d_embedded_p8::1::2","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,15,2,1,1.14357391381393,1,2,TRUE,"low-d penalty",1.14357391381393,0,FALSE
+"curve_1d_embedded_p8::1::2","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,2,15,2,1,1.14357391381393,1,2,TRUE,"3% low-d",1.14357391381393,0,FALSE
+"curve_1d_embedded_p8::1::3","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"3% large-k",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"5% low-d",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"low-d penalty",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"boundary penalty",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"CV min",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"1% low-d",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::1::3","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",1,3,15,2,1,1.23265366522878,1,20,TRUE,"3% low-d",1.23265366522878,0,FALSE
+"curve_1d_embedded_p8::2::1","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,18,2,1.01169015183633,2.54211771864099,2,34,FALSE,"3% low-d",3.42323831688557,-0.88112059824458,TRUE
+"curve_1d_embedded_p8::2::1","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,15,2,1,3.42323831688557,1,74,TRUE,"CV min",3.42323831688557,0,FALSE
+"curve_1d_embedded_p8::2::1","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,18,2,1.01169015183633,2.54211771864099,2,34,FALSE,"boundary penalty",3.42323831688557,-0.88112059824458,TRUE
+"curve_1d_embedded_p8::2::1","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,18,2,1.01169015183633,2.54211771864099,2,34,FALSE,"3% large-k",3.42323831688557,-0.88112059824458,TRUE
+"curve_1d_embedded_p8::2::1","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,15,2,1,3.42323831688557,1,74,TRUE,"1% low-d",3.42323831688557,0,FALSE
+"curve_1d_embedded_p8::2::1","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,18,2,1.01169015183633,2.54211771864099,2,34,FALSE,"5% low-d",3.42323831688557,-0.88112059824458,TRUE
+"curve_1d_embedded_p8::2::1","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,1,18,2,1.01169015183633,2.54211771864099,2,34,FALSE,"low-d penalty",3.42323831688557,-0.88112059824458,TRUE
+"curve_1d_embedded_p8::2::2","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,28,3,1,1.11033281296064,1,12,FALSE,"1% low-d",1.11033281296064,0,FALSE
+"curve_1d_embedded_p8::2::2","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,34,3,1,1.16270343350673,1,18,FALSE,"3% large-k",1.11033281296064,0.0523706205460901,FALSE
+"curve_1d_embedded_p8::2::2","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,16,2,1.02081896262449,1.05741850020256,10,3,FALSE,"5% low-d",1.11033281296064,-0.05291431275808,TRUE
+"curve_1d_embedded_p8::2::2","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,16,2,1.02081896262449,1.05741850020256,10,3,FALSE,"3% low-d",1.11033281296064,-0.05291431275808,TRUE
+"curve_1d_embedded_p8::2::2","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,28,3,1,1.11033281296064,1,12,FALSE,"CV min",1.11033281296064,0,FALSE
+"curve_1d_embedded_p8::2::2","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,28,3,1,1.11033281296064,1,12,FALSE,"boundary penalty",1.11033281296064,0,FALSE
+"curve_1d_embedded_p8::2::2","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,2,28,3,1,1.11033281296064,1,12,FALSE,"low-d penalty",1.11033281296064,0,FALSE
+"curve_1d_embedded_p8::2::3","penalty_boundary_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"boundary penalty",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","eps03_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"3% low-d",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","cv_min","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"CV min",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","eps05_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"5% low-d",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","penalty_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"low-d penalty",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","eps01_low_d_mid_k","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"1% low-d",1.33452317631363,0,FALSE
+"curve_1d_embedded_p8::2::3","eps03_large_k_low_d","curve_1d_embedded_p8","homogeneous 1D manifold",2,3,23,3,1,1.33452317631363,1,44,FALSE,"3% large-k",1.33452317631363,0,FALSE
+"curve_1d_highdim_p40::1::1","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"3% large-k",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"CV min",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"5% low-d",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"low-d penalty",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"boundary penalty",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"3% low-d",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::1","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,1,18,1,1,1.26897670805482,1,4,TRUE,"1% low-d",1.26897670805482,0,FALSE
+"curve_1d_highdim_p40::1::2","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,28,3,1.01646894798688,1.01168929415749,2,2,FALSE,"boundary penalty",5.12188546663891,-4.11019617248142,TRUE
+"curve_1d_highdim_p40::1::2","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,34,3,1.01646894798688,1.94768197173147,2,37,FALSE,"3% large-k",5.12188546663891,-3.17420349490744,TRUE
+"curve_1d_highdim_p40::1::2","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,23,1,1,5.12188546663891,1,89,TRUE,"CV min",5.12188546663891,0,FALSE
+"curve_1d_highdim_p40::1::2","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,28,3,1.01646894798688,1.01168929415749,2,2,FALSE,"low-d penalty",5.12188546663891,-4.11019617248142,TRUE
+"curve_1d_highdim_p40::1::2","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,23,1,1,5.12188546663891,1,89,TRUE,"1% low-d",5.12188546663891,0,FALSE
+"curve_1d_highdim_p40::1::2","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,28,3,1.01646894798688,1.01168929415749,2,2,FALSE,"5% low-d",5.12188546663891,-4.11019617248142,TRUE
+"curve_1d_highdim_p40::1::2","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,2,28,3,1.01646894798688,1.01168929415749,2,2,FALSE,"3% low-d",5.12188546663891,-4.11019617248142,TRUE
+"curve_1d_highdim_p40::1::3","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,28,1,1,2.1794984437875,1,23,TRUE,"low-d penalty",2.1794984437875,0,FALSE
+"curve_1d_highdim_p40::1::3","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,28,1,1,2.1794984437875,1,23,TRUE,"3% low-d",2.1794984437875,0,FALSE
+"curve_1d_highdim_p40::1::3","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,28,1,1,2.1794984437875,1,23,TRUE,"boundary penalty",2.1794984437875,0,FALSE
+"curve_1d_highdim_p40::1::3","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,28,1,1,2.1794984437875,1,23,TRUE,"1% low-d",2.1794984437875,0,FALSE
+"curve_1d_highdim_p40::1::3","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,28,1,1,2.1794984437875,1,23,TRUE,"CV min",2.1794984437875,0,FALSE
+"curve_1d_highdim_p40::1::3","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,35,1,1,2.57882033324635,1,41,TRUE,"3% large-k",2.1794984437875,0.39932188945885,FALSE
+"curve_1d_highdim_p40::1::3","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",1,3,22,2,1.03354867626962,2.56611004584594,9,40,FALSE,"5% low-d",2.1794984437875,0.38661160205844,FALSE
+"curve_1d_highdim_p40::2::1","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"boundary penalty",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::1","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"5% low-d",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::1","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,35,1,1,1.20475192987676,1,8,TRUE,"3% large-k",1.32141734658679,-0.11666541671003,TRUE
+"curve_1d_highdim_p40::2::1","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"CV min",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::1","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"3% low-d",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::1","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"low-d penalty",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::1","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,1,28,1,1,1.32141734658679,1,26,TRUE,"1% low-d",1.32141734658679,0,FALSE
+"curve_1d_highdim_p40::2::2","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"CV min",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::2","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,35,1,1,3.2219572684211,1,33,TRUE,"3% large-k",1.4318596005079,1.7900976679132,FALSE
+"curve_1d_highdim_p40::2::2","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"low-d penalty",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::2","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"5% low-d",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::2","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"3% low-d",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::2","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"boundary penalty",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::2","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,2,28,1,1,1.4318596005079,1,7,TRUE,"1% low-d",1.4318596005079,0,FALSE
+"curve_1d_highdim_p40::2::3","eps05_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"5% low-d",3.35422305861371,0,FALSE
+"curve_1d_highdim_p40::2::3","penalty_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"low-d penalty",3.35422305861371,0,FALSE
+"curve_1d_highdim_p40::2::3","eps03_large_k_low_d","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,35,1,1,2.68863093555514,1,30,TRUE,"3% large-k",3.35422305861371,-0.66559212305857,TRUE
+"curve_1d_highdim_p40::2::3","penalty_boundary_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"boundary penalty",3.35422305861371,0,FALSE
+"curve_1d_highdim_p40::2::3","eps03_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"3% low-d",3.35422305861371,0,FALSE
+"curve_1d_highdim_p40::2::3","eps01_low_d_mid_k","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"1% low-d",3.35422305861371,0,FALSE
+"curve_1d_highdim_p40::2::3","cv_min","curve_1d_highdim_p40","high-dimensional embedded 1D",2,3,28,1,1,3.35422305861371,1,40,TRUE,"CV min",3.35422305861371,0,FALSE
+"rank_blocks_p40::1::1","cv_min","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"CV min",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"5% low-d",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"3% large-k",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"3% low-d",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"1% low-d",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"boundary penalty",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::1","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",1,1,23,4,1,1.8467294306732,1,11,FALSE,"low-d penalty",1.8467294306732,0,FALSE
+"rank_blocks_p40::1::2","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,2,25,4,1.01374881353439,1.95003454879875,5,21,FALSE,"3% low-d",2.13217972152671,-0.18214517272796,TRUE
+"rank_blocks_p40::1::2","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,2,32,4,1,2.13217972152671,1,25,FALSE,"1% low-d",2.13217972152671,0,FALSE
+"rank_blocks_p40::1::2","cv_min","rank_blocks_p40","rank/block heterogeneity",1,2,32,4,1,2.13217972152671,1,25,FALSE,"CV min",2.13217972152671,0,FALSE
+"rank_blocks_p40::1::2","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",1,2,32,4,1,2.13217972152671,1,25,FALSE,"low-d penalty",2.13217972152671,0,FALSE
+"rank_blocks_p40::1::2","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,2,25,4,1.01374881353439,1.95003454879875,5,21,FALSE,"5% low-d",2.13217972152671,-0.18214517272796,TRUE
+"rank_blocks_p40::1::2","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",1,2,34,4,1,2.26743241185948,1,29,FALSE,"3% large-k",2.13217972152671,0.13525269033277,FALSE
+"rank_blocks_p40::1::2","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",1,2,25,4,1.01374881353439,1.95003454879875,5,21,FALSE,"boundary penalty",2.13217972152671,-0.18214517272796,TRUE
+"rank_blocks_p40::1::3","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"5% low-d",3.81999267622348,0,FALSE
+"rank_blocks_p40::1::3","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",1,3,35,6,1,1,1,1,TRUE,"3% large-k",3.81999267622348,-2.81999267622348,TRUE
+"rank_blocks_p40::1::3","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"low-d penalty",3.81999267622348,0,FALSE
+"rank_blocks_p40::1::3","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"boundary penalty",3.81999267622348,0,FALSE
+"rank_blocks_p40::1::3","cv_min","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"CV min",3.81999267622348,0,FALSE
+"rank_blocks_p40::1::3","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"1% low-d",3.81999267622348,0,FALSE
+"rank_blocks_p40::1::3","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",1,3,32,6,1,3.81999267622348,1,36,TRUE,"3% low-d",3.81999267622348,0,FALSE
+"rank_blocks_p40::2::1","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"boundary penalty",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::1","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",2,1,34,5,1,1.35177639794027,1,11,FALSE,"3% large-k",1.44656397748016,-0.09478757953989,TRUE
+"rank_blocks_p40::2::1","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"5% low-d",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::1","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"low-d penalty",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::1","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"1% low-d",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::1","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"3% low-d",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::1","cv_min","rank_blocks_p40","rank/block heterogeneity",2,1,32,5,1,1.44656397748016,1,16,FALSE,"CV min",1.44656397748016,0,FALSE
+"rank_blocks_p40::2::2","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"low-d penalty",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::2","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"1% low-d",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::2","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"5% low-d",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::2","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",2,2,34,5,1,3.53852106793154,1,33,FALSE,"3% large-k",4.25145151074991,-0.71293044281837,TRUE
+"rank_blocks_p40::2::2","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"boundary penalty",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::2","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"3% low-d",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::2","cv_min","rank_blocks_p40","rank/block heterogeneity",2,2,32,5,1,4.25145151074991,1,43,FALSE,"CV min",4.25145151074991,0,FALSE
+"rank_blocks_p40::2::3","eps03_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"3% low-d",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","penalty_boundary_mid_k","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"boundary penalty",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","eps05_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"5% low-d",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","penalty_low_d","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"low-d penalty",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","eps01_low_d_mid_k","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"1% low-d",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","cv_min","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"CV min",2.12469382186498,0,FALSE
+"rank_blocks_p40::2::3","eps03_large_k_low_d","rank_blocks_p40","rank/block heterogeneity",2,3,26,4,1,2.12469382186498,1,27,FALSE,"3% large-k",2.12469382186498,0,FALSE
+"simplex_faces_p8::1::1","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,28,3,1.02493920837228,1,7,1,FALSE,"3% large-k",1.05100456347568,-0.0510045634756799,TRUE
+"simplex_faces_p8::1::1","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,28,3,1.02493920837228,1,7,1,FALSE,"boundary penalty",1.05100456347568,-0.0510045634756799,TRUE
+"simplex_faces_p8::1::1","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,28,3,1.02493920837228,1,7,1,FALSE,"5% low-d",1.05100456347568,-0.0510045634756799,TRUE
+"simplex_faces_p8::1::1","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,28,3,1.02493920837228,1,7,1,FALSE,"3% low-d",1.05100456347568,-0.0510045634756799,TRUE
+"simplex_faces_p8::1::1","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,30,6,1.00460339100568,1.04675771237675,6,6,TRUE,"1% low-d",1.05100456347568,-0.00424685109892997,TRUE
+"simplex_faces_p8::1::1","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,32,6,1,1.05100456347568,1,8,TRUE,"CV min",1.05100456347568,0,FALSE
+"simplex_faces_p8::1::1","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,1,28,3,1.02493920837228,1,7,1,FALSE,"low-d penalty",1.05100456347568,-0.0510045634756799,TRUE
+"simplex_faces_p8::1::2","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"CV min",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"5% low-d",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"3% low-d",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"boundary penalty",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"low-d penalty",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"1% low-d",1.617938580722,0,FALSE
+"simplex_faces_p8::1::2","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,2,24,3,1,1.617938580722,1,44,FALSE,"3% large-k",1.617938580722,0,FALSE
+"simplex_faces_p8::1::3","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"CV min",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"3% large-k",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"3% low-d",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"boundary penalty",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"5% low-d",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"low-d penalty",2.09384904080561,0,FALSE
+"simplex_faces_p8::1::3","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",1,3,27,3,1,2.09384904080561,1,51,FALSE,"1% low-d",2.09384904080561,0,FALSE
+"simplex_faces_p8::2::1","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"low-d penalty",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"3% low-d",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"CV min",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"5% low-d",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"1% low-d",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,32,6,1,1.13827592962497,1,24,TRUE,"boundary penalty",1.13827592962497,0,FALSE
+"simplex_faces_p8::2::1","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,1,35,6,1,1.15927380046423,1,26,TRUE,"3% large-k",1.13827592962497,0.02099787083926,FALSE
+"simplex_faces_p8::2::2","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"CV min",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"3% large-k",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"5% low-d",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"boundary penalty",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"low-d penalty",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"3% low-d",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::2","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,2,28,4,1,2.82318960791192,1,51,FALSE,"1% low-d",2.82318960791192,0,FALSE
+"simplex_faces_p8::2::3","penalty_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,23,5,1,1.50957959960632,1,49,FALSE,"low-d penalty",1.50957959960632,0,FALSE
+"simplex_faces_p8::2::3","eps05_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,23,4,1.01708410897997,1.50958008010497,6,50,FALSE,"5% low-d",1.50957959960632,4.80498649979566e-07,FALSE
+"simplex_faces_p8::2::3","cv_min","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,23,5,1,1.50957959960632,1,49,FALSE,"CV min",1.50957959960632,0,FALSE
+"simplex_faces_p8::2::3","penalty_boundary_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,23,5,1,1.50957959960632,1,49,FALSE,"boundary penalty",1.50957959960632,0,FALSE
+"simplex_faces_p8::2::3","eps01_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,25,5,1.00411940831988,1.3232494423724,3,34,FALSE,"1% low-d",1.50957959960632,-0.18633015723392,TRUE
+"simplex_faces_p8::2::3","eps03_large_k_low_d","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,26,5,1.00425209439122,1.32155956848053,4,30,FALSE,"3% large-k",1.50957959960632,-0.18802003112579,TRUE
+"simplex_faces_p8::2::3","eps03_low_d_mid_k","simplex_faces_p8","OD-style simplex-boundary geometry",2,3,23,4,1.01708410897997,1.50958008010497,6,50,FALSE,"3% low-d",1.50957959960632,4.80498649979566e-07,FALSE
+"surface_2d_embedded_p8::1::1","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,27,2,1.00739379189487,1.45472941949055,10,43,FALSE,"1% low-d",1.06533169582598,0.38939772366457,FALSE
+"surface_2d_embedded_p8::1::1","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,27,2,1.00739379189487,1.45472941949055,10,43,FALSE,"boundary penalty",1.06533169582598,0.38939772366457,FALSE
+"surface_2d_embedded_p8::1::1","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,27,2,1.00739379189487,1.45472941949055,10,43,FALSE,"5% low-d",1.06533169582598,0.38939772366457,FALSE
+"surface_2d_embedded_p8::1::1","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,27,2,1.00739379189487,1.45472941949055,10,43,FALSE,"low-d penalty",1.06533169582598,0.38939772366457,FALSE
+"surface_2d_embedded_p8::1::1","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,34,2,1.01721509112658,1.15443240236933,11,10,FALSE,"3% large-k",1.06533169582598,0.08910070654335,FALSE
+"surface_2d_embedded_p8::1::1","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,27,2,1.00739379189487,1.45472941949055,10,43,FALSE,"3% low-d",1.06533169582598,0.38939772366457,FALSE
+"surface_2d_embedded_p8::1::1","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",1,1,28,1,1,1.06533169582598,1,2,TRUE,"CV min",1.06533169582598,0,FALSE
+"surface_2d_embedded_p8::1::2","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,29,3,1,1.37828036492193,1,9,FALSE,"1% low-d",1.37828036492193,0,FALSE
+"surface_2d_embedded_p8::1::2","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,28,3,1.03777988505863,1.62519404180572,8,27,FALSE,"5% low-d",1.37828036492193,0.24691367688379,FALSE
+"surface_2d_embedded_p8::1::2","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,34,3,1,1.60013515342491,1,24,FALSE,"3% large-k",1.37828036492193,0.22185478850298,FALSE
+"surface_2d_embedded_p8::1::2","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,29,3,1,1.37828036492193,1,9,FALSE,"boundary penalty",1.37828036492193,0,FALSE
+"surface_2d_embedded_p8::1::2","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,29,3,1,1.37828036492193,1,9,FALSE,"low-d penalty",1.37828036492193,0,FALSE
+"surface_2d_embedded_p8::1::2","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,29,3,1,1.37828036492193,1,9,FALSE,"3% low-d",1.37828036492193,0,FALSE
+"surface_2d_embedded_p8::1::2","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",1,2,29,3,1,1.37828036492193,1,9,FALSE,"CV min",1.37828036492193,0,FALSE
+"surface_2d_embedded_p8::1::3","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"3% low-d",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"low-d penalty",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"CV min",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"boundary penalty",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"5% low-d",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"1% low-d",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::1::3","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",1,3,24,3,1,1.6474913549226,1,37,FALSE,"3% large-k",1.6474913549226,0,FALSE
+"surface_2d_embedded_p8::2::1","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,28,4,1,2.56555963358209,1,71,FALSE,"boundary penalty",2.56555963358209,0,FALSE
+"surface_2d_embedded_p8::2::1","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,28,4,1,2.56555963358209,1,71,FALSE,"low-d penalty",2.56555963358209,0,FALSE
+"surface_2d_embedded_p8::2::1","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,28,4,1,2.56555963358209,1,71,FALSE,"1% low-d",2.56555963358209,0,FALSE
+"surface_2d_embedded_p8::2::1","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,27,4,1.0223862112626,2.25820247457471,9,63,FALSE,"3% low-d",2.56555963358209,-0.30735715900738,TRUE
+"surface_2d_embedded_p8::2::1","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,26,4,1.03848958984491,1.94053171018068,10,32,FALSE,"5% low-d",2.56555963358209,-0.62502792340141,TRUE
+"surface_2d_embedded_p8::2::1","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,28,4,1,2.56555963358209,1,71,FALSE,"CV min",2.56555963358209,0,FALSE
+"surface_2d_embedded_p8::2::1","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,1,34,4,1,1.41250048184593,1,9,FALSE,"3% large-k",2.56555963358209,-1.15305915173616,TRUE
+"surface_2d_embedded_p8::2::2","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"3% low-d",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"low-d penalty",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"3% large-k",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"5% low-d",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"boundary penalty",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"1% low-d",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::2","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",2,2,15,1,1,1.47313744908665,1,31,TRUE,"CV min",1.47313744908665,0,FALSE
+"surface_2d_embedded_p8::2::3","cv_min","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"CV min",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","eps01_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"1% low-d",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","eps05_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"5% low-d",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","eps03_low_d_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"3% low-d",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","eps03_large_k_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"3% large-k",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","penalty_low_d","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"low-d penalty",2.3224462312837,0,FALSE
+"surface_2d_embedded_p8::2::3","penalty_boundary_mid_k","surface_2d_embedded_p8","homogeneous 2D manifold",2,3,26,1,1,2.3224462312837,1,74,TRUE,"boundary penalty",2.3224462312837,0,FALSE
+"surface_2d_highdim_p24::1::1","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"low-d penalty",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"3% low-d",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"3% large-k",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"1% low-d",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"5% low-d",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"CV min",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::1","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,1,22,4,1,2.77064435992283,1,73,FALSE,"boundary penalty",2.77064435992283,0,FALSE
+"surface_2d_highdim_p24::1::2","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"3% large-k",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"CV min",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"low-d penalty",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"boundary penalty",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"3% low-d",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,16,3,1,4.13576003230218,1,96,FALSE,"1% low-d",4.13576003230218,0,FALSE
+"surface_2d_highdim_p24::1::2","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,2,17,3,1.03377910711712,6.71711437412686,3,98,FALSE,"5% low-d",4.13576003230218,2.58135434182468,FALSE
+"surface_2d_highdim_p24::1::3","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"low-d penalty",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::1::3","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,25,3,1.02735443387073,1.26425109515003,2,16,FALSE,"3% large-k",2.07642900862821,-0.81217791347818,TRUE
+"surface_2d_highdim_p24::1::3","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"CV min",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::1::3","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"boundary penalty",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::1::3","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"3% low-d",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::1::3","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"1% low-d",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::1::3","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",1,3,23,2,1,2.07642900862821,1,82,FALSE,"5% low-d",2.07642900862821,0,FALSE
+"surface_2d_highdim_p24::2::1","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,17,1,1,1.13408586107454,1,16,TRUE,"1% low-d",1.13408586107454,0,FALSE
+"surface_2d_highdim_p24::2::1","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,18,2,1.01540112025689,1.90206917691865,2,78,FALSE,"low-d penalty",1.13408586107454,0.76798331584411,FALSE
+"surface_2d_highdim_p24::2::1","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,17,1,1,1.13408586107454,1,16,TRUE,"CV min",1.13408586107454,0,FALSE
+"surface_2d_highdim_p24::2::1","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,18,2,1.01540112025689,1.90206917691865,2,78,FALSE,"3% low-d",1.13408586107454,0.76798331584411,FALSE
+"surface_2d_highdim_p24::2::1","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,18,2,1.01540112025689,1.90206917691865,2,78,FALSE,"3% large-k",1.13408586107454,0.76798331584411,FALSE
+"surface_2d_highdim_p24::2::1","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,18,2,1.01540112025689,1.90206917691865,2,78,FALSE,"boundary penalty",1.13408586107454,0.76798331584411,FALSE
+"surface_2d_highdim_p24::2::1","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,1,18,2,1.01540112025689,1.90206917691865,2,78,FALSE,"5% low-d",1.13408586107454,0.76798331584411,FALSE
+"surface_2d_highdim_p24::2::2","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,22,1,1,1.7992038186864,1,69,TRUE,"1% low-d",1.7992038186864,0,FALSE
+"surface_2d_highdim_p24::2::2","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,25,2,1.02627523896415,1.26653506906481,3,15,FALSE,"3% large-k",1.7992038186864,-0.53266874962159,TRUE
+"surface_2d_highdim_p24::2::2","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,25,2,1.02627523896415,1.26653506906481,3,15,FALSE,"5% low-d",1.7992038186864,-0.53266874962159,TRUE
+"surface_2d_highdim_p24::2::2","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,25,2,1.02627523896415,1.26653506906481,3,15,FALSE,"boundary penalty",1.7992038186864,-0.53266874962159,TRUE
+"surface_2d_highdim_p24::2::2","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,25,2,1.02627523896415,1.26653506906481,3,15,FALSE,"3% low-d",1.7992038186864,-0.53266874962159,TRUE
+"surface_2d_highdim_p24::2::2","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,22,1,1,1.7992038186864,1,69,TRUE,"CV min",1.7992038186864,0,FALSE
+"surface_2d_highdim_p24::2::2","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,2,22,1,1,1.7992038186864,1,69,TRUE,"low-d penalty",1.7992038186864,0,FALSE
+"surface_2d_highdim_p24::2::3","penalty_boundary_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"boundary penalty",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","eps05_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"5% low-d",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","eps01_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"1% low-d",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","penalty_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"low-d penalty",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","eps03_low_d_mid_k","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"3% low-d",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","cv_min","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"CV min",4.43593369053378,0,FALSE
+"surface_2d_highdim_p24::2::3","eps03_large_k_low_d","surface_2d_highdim_p24","high-dimensional embedded 2D",2,3,17,2,1,4.43593369053378,1,95,FALSE,"3% large-k",4.43593369053378,0,FALSE
+"surface_line_union_p8::1::1","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"low-d penalty",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::1","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"boundary penalty",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::1","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"1% low-d",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::1","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"3% low-d",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::1","cv_min","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"CV min",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::1","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,1,21,3,1.0372575849983,3.2933954674174,2,10,FALSE,"5% low-d",1.08456571729939,2.20882975011801,FALSE
+"surface_line_union_p8::1::1","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,1,16,3,1,1.08456571729939,1,2,FALSE,"3% large-k",1.08456571729939,0,FALSE
+"surface_line_union_p8::1::2","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,2,15,1,1,7.63654376197138,1,70,TRUE,"low-d penalty",7.63654376197138,0,FALSE
+"surface_line_union_p8::1::2","cv_min","surface_line_union_p8","heterogeneous/non-manifold",1,2,15,1,1,7.63654376197138,1,70,TRUE,"CV min",7.63654376197138,0,FALSE
+"surface_line_union_p8::1::2","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,2,16,1,1.02107442780339,7.79463952557013,2,73,TRUE,"3% large-k",7.63654376197138,0.15809576359875,FALSE
+"surface_line_union_p8::1::2","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,2,15,1,1,7.63654376197138,1,70,TRUE,"1% low-d",7.63654376197138,0,FALSE
+"surface_line_union_p8::1::2","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,2,16,1,1.02107442780339,7.79463952557013,2,73,TRUE,"3% low-d",7.63654376197138,0.15809576359875,FALSE
+"surface_line_union_p8::1::2","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,2,16,1,1.02107442780339,7.79463952557013,2,73,TRUE,"5% low-d",7.63654376197138,0.15809576359875,FALSE
+"surface_line_union_p8::1::2","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,2,15,1,1,7.63654376197138,1,70,TRUE,"boundary penalty",7.63654376197138,0,FALSE
+"surface_line_union_p8::1::3","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"5% low-d",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","cv_min","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"CV min",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"3% low-d",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"boundary penalty",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"low-d penalty",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"3% large-k",2.06027860040593,0,FALSE
+"surface_line_union_p8::1::3","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",1,3,22,3,1,2.06027860040593,1,6,FALSE,"1% low-d",2.06027860040593,0,FALSE
+"surface_line_union_p8::2::1","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"5% low-d",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"3% low-d",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"1% low-d",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"3% large-k",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","cv_min","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"CV min",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"boundary penalty",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::1","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,1,15,3,1,2.63492489836109,1,26,TRUE,"low-d penalty",2.63492489836109,0,FALSE
+"surface_line_union_p8::2::2","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,2,21,3,1.02509806632159,3.74395847437267,2,37,FALSE,"3% large-k",3.15375590128183,0.59020257309084,FALSE
+"surface_line_union_p8::2::2","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,2,20,3,1,3.15375590128183,1,21,FALSE,"boundary penalty",3.15375590128183,0,FALSE
+"surface_line_union_p8::2::2","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,2,20,3,1,3.15375590128183,1,21,FALSE,"low-d penalty",3.15375590128183,0,FALSE
+"surface_line_union_p8::2::2","cv_min","surface_line_union_p8","heterogeneous/non-manifold",2,2,20,3,1,3.15375590128183,1,21,FALSE,"CV min",3.15375590128183,0,FALSE
+"surface_line_union_p8::2::2","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,2,21,3,1.02509806632159,3.74395847437267,2,37,FALSE,"3% low-d",3.15375590128183,0.59020257309084,FALSE
+"surface_line_union_p8::2::2","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,2,21,3,1.02509806632159,3.74395847437267,2,37,FALSE,"5% low-d",3.15375590128183,0.59020257309084,FALSE
+"surface_line_union_p8::2::2","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,2,20,3,1,3.15375590128183,1,21,FALSE,"1% low-d",3.15375590128183,0,FALSE
+"surface_line_union_p8::2::3","eps01_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"1% low-d",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","penalty_boundary_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"boundary penalty",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","penalty_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"low-d penalty",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","eps03_large_k_low_d","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"3% large-k",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","eps05_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"5% low-d",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","eps03_low_d_mid_k","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"3% low-d",1.23586783569881,0,FALSE
+"surface_line_union_p8::2::3","cv_min","surface_line_union_p8","heterogeneous/non-manifold",2,3,15,1,1,1.23586783569881,1,6,TRUE,"CV min",1.23586783569881,0,FALSE
+"volume_3d_embedded_p12::1::1","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,35,1,1.0183101725231,1.19217962718745,2,3,TRUE,"3% large-k",1.62402276796561,-0.43184314077816,TRUE
+"volume_3d_embedded_p12::1::1","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,23,1,1.0194148331946,1,10,1,TRUE,"3% low-d",1.62402276796561,-0.62402276796561,TRUE
+"volume_3d_embedded_p12::1::1","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,21,1,1,1.62402276796561,1,37,TRUE,"1% low-d",1.62402276796561,0,FALSE
+"volume_3d_embedded_p12::1::1","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,21,1,1,1.62402276796561,1,37,TRUE,"low-d penalty",1.62402276796561,0,FALSE
+"volume_3d_embedded_p12::1::1","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,23,1,1.0194148331946,1,10,1,TRUE,"5% low-d",1.62402276796561,-0.62402276796561,TRUE
+"volume_3d_embedded_p12::1::1","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,21,1,1,1.62402276796561,1,37,TRUE,"CV min",1.62402276796561,0,FALSE
+"volume_3d_embedded_p12::1::1","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,1,21,1,1,1.62402276796561,1,37,TRUE,"boundary penalty",1.62402276796561,0,FALSE
+"volume_3d_embedded_p12::1::2","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"5% low-d",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"3% large-k",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"low-d penalty",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"1% low-d",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"3% low-d",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"CV min",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::2","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,2,22,1,1,1.24771018698619,1,24,TRUE,"boundary penalty",1.24771018698619,0,FALSE
+"volume_3d_embedded_p12::1::3","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,28,1,1.00766493647549,1.12696326813529,8,8,TRUE,"3% low-d",1.22118967707364,-0.09422640893835,TRUE
+"volume_3d_embedded_p12::1::3","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,28,1,1.00766493647549,1.12696326813529,8,8,TRUE,"5% low-d",1.22118967707364,-0.09422640893835,TRUE
+"volume_3d_embedded_p12::1::3","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,29,1,1,1.22118967707364,1,10,TRUE,"low-d penalty",1.22118967707364,0,FALSE
+"volume_3d_embedded_p12::1::3","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,35,1,1,1.96557115992222,1,39,TRUE,"3% large-k",1.22118967707364,0.74438148284858,FALSE
+"volume_3d_embedded_p12::1::3","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,28,1,1.00766493647549,1.12696326813529,8,8,TRUE,"1% low-d",1.22118967707364,-0.09422640893835,TRUE
+"volume_3d_embedded_p12::1::3","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,29,1,1,1.22118967707364,1,10,TRUE,"boundary penalty",1.22118967707364,0,FALSE
+"volume_3d_embedded_p12::1::3","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",1,3,29,1,1,1.22118967707364,1,10,TRUE,"CV min",1.22118967707364,0,FALSE
+"volume_3d_embedded_p12::2::1","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,34,3,1,1.8010122930985,1,46,FALSE,"3% large-k",1.96667789716496,-0.16566560406646,TRUE
+"volume_3d_embedded_p12::2::1","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"CV min",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::1","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"1% low-d",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::1","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"5% low-d",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::1","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"3% low-d",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::1","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"low-d penalty",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::1","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,1,28,3,1,1.96667789716496,1,50,FALSE,"boundary penalty",1.96667789716496,0,FALSE
+"volume_3d_embedded_p12::2::2","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,27,1,1,1.27148982082922,1,39,TRUE,"low-d penalty",1.27148982082922,0,FALSE
+"volume_3d_embedded_p12::2::2","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,35,1,1.02121313072332,1.19086554643672,4,18,TRUE,"3% large-k",1.27148982082922,-0.0806242743925001,TRUE
+"volume_3d_embedded_p12::2::2","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,25,1,1.02355544778149,1.25333826746687,11,33,TRUE,"5% low-d",1.27148982082922,-0.01815155336235,TRUE
+"volume_3d_embedded_p12::2::2","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,27,1,1,1.27148982082922,1,39,TRUE,"boundary penalty",1.27148982082922,0,FALSE
+"volume_3d_embedded_p12::2::2","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,25,1,1.02355544778149,1.25333826746687,11,33,TRUE,"3% low-d",1.27148982082922,-0.01815155336235,TRUE
+"volume_3d_embedded_p12::2::2","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,27,1,1,1.27148982082922,1,39,TRUE,"1% low-d",1.27148982082922,0,FALSE
+"volume_3d_embedded_p12::2::2","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",2,2,27,1,1,1.27148982082922,1,39,TRUE,"CV min",1.27148982082922,0,FALSE
+"volume_3d_embedded_p12::2::3","eps05_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,26,3,1.01784388493821,2.10060000037664,2,62,FALSE,"5% low-d",2.07978018602706,0.0208198143495801,FALSE
+"volume_3d_embedded_p12::2::3","cv_min","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,28,3,1,2.07978018602706,1,61,FALSE,"CV min",2.07978018602706,0,FALSE
+"volume_3d_embedded_p12::2::3","penalty_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,28,3,1,2.07978018602706,1,61,FALSE,"low-d penalty",2.07978018602706,0,FALSE
+"volume_3d_embedded_p12::2::3","eps03_large_k_low_d","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,28,3,1,2.07978018602706,1,61,FALSE,"3% large-k",2.07978018602706,0,FALSE
+"volume_3d_embedded_p12::2::3","eps01_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,28,3,1,2.07978018602706,1,61,FALSE,"1% low-d",2.07978018602706,0,FALSE
+"volume_3d_embedded_p12::2::3","penalty_boundary_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,28,3,1,2.07978018602706,1,61,FALSE,"boundary penalty",2.07978018602706,0,FALSE
+"volume_3d_embedded_p12::2::3","eps03_low_d_mid_k","volume_3d_embedded_p12","homogeneous 3D manifold",2,3,26,3,1.01784388493821,2.10060000037664,2,62,FALSE,"3% low-d",2.07978018602706,0.0208198143495801,FALSE

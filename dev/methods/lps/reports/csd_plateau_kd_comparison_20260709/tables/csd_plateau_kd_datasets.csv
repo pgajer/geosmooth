@@ -1,0 +1,9 @@
+"dataset.id","dataset.family","display","n","ambient.dim","truth.sd","noise.sd"
+"curve_1d_embedded_p8","homogeneous 1D manifold","1d",63,8,0.750462820161295,0.0375231410080648
+"curve_1d_highdim_p40","high-dimensional embedded 1D","1d",63,40,0.54477340461863,0.0272386702309315
+"surface_2d_embedded_p8","homogeneous 2D manifold","2d",64,8,0.2953653663331,0.014768268316655
+"surface_2d_highdim_p24","high-dimensional embedded 2D","2d",64,24,0.49818970374453,0.0249094851872265
+"volume_3d_embedded_p12","homogeneous 3D manifold","table",64,12,0.146534321298323,0.00732671606491616
+"surface_line_union_p8","heterogeneous/non-manifold","2d",72,8,0.546676900740115,0.0273338450370057
+"simplex_faces_p8","OD-style simplex-boundary geometry","table",72,8,0.370432260007955,0.0185216130003977
+"rank_blocks_p40","rank/block heterogeneity","table",72,40,0.733016762384259,0.0366508381192129

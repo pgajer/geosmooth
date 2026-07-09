@@ -1,0 +1,7 @@
+"policy","median.delta","lo","hi","n.better","n.total","short.label"
+"eps01_low_d_mid_k",0,0,0,3,48,"1% low-d"
+"eps03_large_k_low_d",0,0,0,15,48,"3% large-k"
+"eps03_low_d_mid_k",0,0,0,10,48,"3% low-d"
+"eps05_low_d_mid_k",0,0,0,10,48,"5% low-d"
+"penalty_boundary_mid_k",0,0,0,5,48,"boundary penalty"
+"penalty_low_d",0,0,0,3,48,"low-d penalty"

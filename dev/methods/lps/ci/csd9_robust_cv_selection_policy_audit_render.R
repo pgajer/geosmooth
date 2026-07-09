@@ -114,13 +114,20 @@ joined <- read.csv.required(file.path(input.root, "tables",
                                       "csd8_joined_cv_truth_surface.csv"))
 metadata <- read.csv.required(file.path(input.root, "tables",
                                         "csd8_result_metadata.csv"))
+meta.value <- function(key, default = "not recorded") {
+    hit <- metadata$value[metadata$key == key]
+    if (length(hit)) hit[[1L]] else default
+}
 joined <- joined[is.finite(joined$cv.scaled) & is.finite(joined$truth.scaled), ,
                  drop = FALSE]
 joined$task.id <- paste(joined$dataset.id, joined$repetition, joined$outer.fold,
                         sep = "::")
-joined$on.boundary <- joined$support.size %in% c(15L, 35L) |
-    joined$chart.dim %in% c(1L, 8L)
-joined$mid.k.distance <- abs(joined$support.size - 25L)
+support.range <- range(joined$support.size, na.rm = TRUE)
+chart.dim.range <- range(joined$chart.dim, na.rm = TRUE)
+support.mid <- stats::median(unique(joined$support.size), na.rm = TRUE)
+joined$on.boundary <- joined$support.size %in% support.range |
+    joined$chart.dim %in% chart.dim.range
+joined$mid.k.distance <- abs(joined$support.size - support.mid)
 
 order.pick <- function(dd, ord.expr) {
     dd[do.call(order, ord.expr(dd)), ][1L, , drop = FALSE]
@@ -459,12 +466,18 @@ names(policy.display) <- c("policy", "median_ratio", "median_delta",
                            "n_better", "n_worse", "n_gt_1.5", "n_gt_2",
                            "boundary_rate", "median_cv_ratio",
                            "median_k", "median_d")
+degree.value <- meta.value("degree", "1")
+report.title <- if (identical(as.character(degree.value), "2")) {
+    "CSD-deg2 CSD9 Robust CV Selection Policy Audit"
+} else {
+    "CSD9 Robust CV Selection Policy Audit"
+}
 
 html <- paste0('<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CSD9 Robust CV Selection Policy Audit</title>
+<title>', html.escape(report.title), '</title>
 <script>
 window.MathJax = {tex: {inlineMath: [["\\\\(","\\\\)"],["$","$"]],
 displayMath: [["\\\\[","\\\\]"],["$$","$$"]]}};
@@ -495,7 +508,7 @@ a { color: #0f766e; }
 </style>
 </head>
 <body><main>
-<h1>CSD9 Robust CV Selection Policy Audit</h1>
+<h1>', html.escape(report.title), '</h1>
 <div class="meta">
 Report build: ', html.escape(run.timestamp), '<br>
 Source: <code>', html.escape(source.path), '</code><br>

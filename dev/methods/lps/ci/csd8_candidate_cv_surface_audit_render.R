@@ -99,6 +99,10 @@ truth <- read.csv.required(file.path(input.csd6, "tables",
 csd6.scores <- read.csv.required(file.path(input.csd6, "tables",
                                            "csd6_strategy_outer_scores.csv"))
 metadata <- read.csv.required(file.path(tab.dir, "csd8_result_metadata.csv"))
+meta.value <- function(key, default = "not recorded") {
+    hit <- metadata$value[metadata$key == key]
+    if (length(hit)) hit[[1L]] else default
+}
 
 cv$task.id <- paste(cv$dataset.id, cv$repetition, cv$outer.fold, sep = "::")
 truth$task.id <- paste(truth$dataset.id, truth$repetition, truth$outer.fold,
@@ -299,12 +303,18 @@ top.display <- head(task.metrics[, c("dataset.id", "dataset.family",
                                      "truth.winner.cv.rank",
                                      "cv.truth.rank.spearman",
                                      "near.cv.05", "near.truth.15")], 12L)
+degree.value <- meta.value("degree", "1")
+report.title <- if (identical(as.character(degree.value), "2")) {
+    "CSD-deg2 CSD8 Candidate-Level CV Surface Audit"
+} else {
+    "CSD8 Candidate-Level CV Surface Audit"
+}
 
 html <- paste0('<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CSD8 Candidate-Level CV Surface Audit</title>
+<title>', html.escape(report.title), '</title>
 <script>
 window.MathJax = {tex: {inlineMath: [["\\\\(","\\\\)"],["$","$"]],
 displayMath: [["\\\\[","\\\\]"],["$$","$$"]]}};
@@ -333,7 +343,7 @@ a { color: #0f766e; }
 </style>
 </head>
 <body><main>
-<h1>CSD8 Candidate-Level CV Surface Audit</h1>
+<h1>', html.escape(report.title), '</h1>
 <div class="meta">
 Report build: ', html.escape(build.time), '<br>
 Source: <code>', html.escape(source.path), '</code><br>

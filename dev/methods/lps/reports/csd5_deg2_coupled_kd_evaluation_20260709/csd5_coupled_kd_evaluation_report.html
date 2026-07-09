@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CSD-deg2 CSD5 Coupled Support-Size and Chart-Dimension Evaluation</title>
+<script>
+window.MathJax = { tex: { inlineMath: [["\\(","\\)"], ["$","$"]], displayMath: [["\\[","\\]"], ["$$","$$"]] } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7f8; color: #1f2a2e; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+section { background: white; border: 1px solid #d9e0e3; border-radius: 10px; padding: 22px; margin: 0 0 20px; }
+h1 { font-size: 34px; margin: 0 0 8px; }
+h2 { font-size: 23px; margin-top: 0; }
+p { line-height: 1.55; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border-bottom: 1px solid #e5eaed; padding: 7px 8px; text-align: left; }
+th { background: #eef3f5; }
+.meta { color: #5a686d; font-size: 14px; }
+.figure { margin: 18px 0; }
+.figure img { width: 100%; max-width: 980px; display: block; border: 1px solid #dde5e8; border-radius: 8px; background: #fff; }
+.caption { font-size: 14px; color: #344247; margin-top: 8px; }
+.callout { border-left: 4px solid #1f766d; padding: 10px 14px; background: #eef8f6; }
+code { background: #eef2f4; padding: 1px 4px; border-radius: 4px; }
+a { color: #126d73; }
+.dict { font-size: 14px; color: #3a494e; }
+</style>
+</head>
+<body>
+<main>
+<section>
+<h1>CSD-deg2 CSD5 Coupled Support-Size and Chart-Dimension Evaluation</h1>
+<p class="meta">Report build: 2026-07-09 10:35:57 EDT. Result generation: 2026-07-09 10:21:22 EDT. Bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd5_deg2_coupled_kd_evaluation_20260709</code>. Render source:
+<code>~/current_projects/geosmooth/dev/methods/lps/ci/csd5_coupled_kd_evaluation_render.R</code>.</p>
+<p>This focused CSD5 report asks whether a sparse coupled selector over support
+size \(k\) and chart dimension \(d\) can approximate a full Cartesian
+reference while reducing candidate count and repeated local-PCA work.  The
+report is truth-facing: each strategy is selected using only inner folds on
+the outer-training set, then scored on an outer fold that no selector saw.</p>
+<p>For an outer task \(s\), the reported error for method \(m\) is</p>
+\[
+R_{s,m}=\left\{\frac{1}{|I_s^{\mathrm{out}}|}
+\sum_{i\in I_s^{\mathrm{out}}}(\hat f_{s,m}(x_i)-f_i)^2\right\}^{1/2},
+\]
+<p>where \(I_s^{\mathrm{out}}\) is the held-out outer fold, \(f_i\) is the
+known synthetic truth, and \(\hat f_{s,m}\) is the fit selected by method
+\(m\).  The full-grid outer reference is</p>
+\[
+R_s^{\star}=\min_{(k,d)\in\mathcal G_{\mathrm{full}}} R_{s,(k,d)},
+\qquad
+\Delta_{s,m}=R_{s,m}-R_s^{\star}.
+\]
+<p>Thus positive regret \(\Delta_{s,m}\) means the selected strategy was worse
+than the full-grid truth-facing reference on that same outer fold.  Because an
+absolute RMSE loss is difficult to interpret without the scale of the task, the
+main figures also report percent relative regret</p>
+\[
+\Delta^{\mathrm{rel}}_{s,m}
+=
+100\,
+\frac{R_{s,m}-R_s^{\star}}{R_s^{\star}+\epsilon},
+\qquad \epsilon=10^{-12}.
+\]
+<p>The report also shows the equivalent RMSE ratio</p>
+\[
+\kappa_{s,m}
+=
+\frac{R_{s,m}}{R_s^{\star}+\epsilon}
+=
+1 + \frac{\Delta^{\mathrm{rel}}_{s,m}}{100}.
+\]
+<p>A value of \(5\) means that the selected strategy had 5% larger outer RMSE
+than the full-grid reference on the same task.  A value of \(100\) means twice
+the reference RMSE, equivalently \(\kappa=2\).  The tiny \(\epsilon\) only
+protects against division by zero and has no visible effect in this result
+bundle.</p>
+<div class="callout"><strong>Scope.</strong> This first report validates the
+LPS implementation path where full Cartesian references are feasible.  PS-LPS
+uses the same sparse candidate machinery after CSD4, but its synchronized
+full-grid solve reference is intentionally left for a larger runtime study.</div>
+</section>
+
+<section>
+<h2>Design And Fit Accounting</h2>
+<p>The full Cartesian reference universe is
+\(\mathcal G_{\mathrm{full}}=\{15,16,\ldots,35\}\times\{1,2,\ldots,8\}\),
+filtered by \(q(d,g)+m\le k\).  Here \(g=1\), \(q(d,1)=d+1\), and the design
+margin is \(m=2\), so every planned candidate is feasible.  The comparison
+uses four synthetic geometry families, two repetitions, three matched outer
+folds, and identical inner-fold rules for all selectors.</p>
+<p class="dict"><strong>Status columns.</strong> <code>attempted</code> is the
+number of outer tasks planned for a strategy; <code>ok</code> is the number
+that returned a finite selected fit and outer score; <code>failed</code>
+combines errors, timeouts, and non-finite fits.  No rows were excluded from the
+summary.</p><table><tr><th>strategy</th><th>attempted</th><th>ok</th><th>failed</th></tr><tr><td>auto</td><td>   24</td><td>   24</td><td>0</td></tr>
+<tr><td>full_kd</td><td>   24</td><td>   24</td><td>0</td></tr>
+<tr><td>local_auto</td><td>   24</td><td>   24</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>   24</td><td>   24</td><td>0</td></tr></table><p>The strategy arms are <code>auto</code> (one global automatic chart
+dimension), <code>local_auto</code> (anchor-specific automatic dimensions),
+<code>sparse_kd</code> (sparse numeric \((k,d)\) skeleton), and
+<code>full_kd</code> (full numeric Cartesian selector using inner CV).</p>
+</section>
+
+<section>
+<h2>Strategy Summary</h2>
+<p>This table summarizes successful outer tasks.  \(R_{\mathrm{med}}\) is the
+median outer RMSE \(R_{s,m}\), \(\Delta_{\mathrm{med}}\) is the median regret
+\(\Delta_{s,m}\), \(\Delta^{\mathrm{rel}}_{\mathrm{pct,med}}\) is the median
+percent relative regret, and \(\kappa_{\mathrm{med}}\) is the median RMSE
+ratio \(R_{s,m}/R_s^\star\).  \(T_{\mathrm{med}}\) is median end-to-end serial
+wall time per outer fit in seconds, <code>cand</code> is the median evaluated
+candidate count, and <code>pca</code> is the median number of unique reusable
+local-PCA support groups.  Values are medians across 24 matched outer tasks per
+strategy.  The absolute regret, percent relative regret, and ratio columns
+should be read together: the first gives the raw RMSE loss, while the other two
+say how large that loss is relative to the task reference error.</p><table><tr><th>strategy</th><th>R_med</th><th>Delta_med</th><th>Delta_rel_pct_med</th><th>R_ratio_med</th><th>T_med</th><th>cand_med</th><th>pca_med</th><th>n_ok</th><th>fail_rate</th></tr><tr><td>full_kd</td><td>0.04277</td><td>0.01839</td><td>50.62</td><td>1.506</td><td>1.037</td><td>  101</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>auto</td><td>0.04277</td><td>0.02501</td><td>116.2</td><td>2.162</td><td>0.779</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>local_auto</td><td>0.08701</td><td>0.04886</td><td>148.5</td><td>2.485</td><td> 1.03</td><td>   21</td><td>   21</td><td>   24</td><td>0</td></tr>
+<tr><td>sparse_kd</td><td>0.1428</td><td>0.05235</td><td>157.8</td><td>2.578</td><td>0.126</td><td>    6</td><td>    3</td><td>   24</td><td>0</td></tr></table><p>Full linked artifacts:
+<a href="tables/csd5_strategy_outer_scores.csv">outer scores</a>,
+<a href="tables/csd5_full_grid_candidate_scores.csv">full-grid candidate scores</a>,
+<a href="tables/csd5_strategy_summary.csv">strategy summary</a>,
+<a href="tables/csd5_family_strategy_summary.csv">family summary</a>,
+and <a href="tables/csd5_result_metadata.csv">metadata</a>.</p>
+</section>
+
+<section>
+<h2>Runtime And Relative Regret</h2>
+<p>This diagnostic asks whether sparse coupled selection reduces time without
+moving far from the full-grid outer reference.  The vertical axis is percent
+relative regret, so a value of 10 means a 10% larger outer RMSE than the
+reference.  The red intervals are median absolute deviations, shown as
+descriptive spread rather than inferential confidence intervals.</p>
+<div class="figure"><img src="figures/figure_1_regret_runtime.svg" alt="Runtime versus regret">
+<p class="caption"><strong>Figure 1.</strong> Runtime versus percent relative
+outer regret.  Each labeled point is a strategy median across matched outer
+tasks.  Lower is better on the vertical axis, and farther left is faster.  Red
+intervals show median absolute deviations across tasks for runtime and percent
+relative regret; lower vertical interval ends are capped at zero because
+relative regret is nonnegative.</p></div>
+<p>The sparse selector evaluates a much smaller candidate set and is visibly
+faster than the full numeric grid in this focused LPS lane.  The median regret
+gap between sparse and full numeric selection remains interpretable on the
+percent scale: the sparse rule pays a modest relative-error cost for a large
+runtime and PCA-build reduction.  The cost is not negligible, however:
+<code>sparse_kd</code> has median absolute regret 0.052, median
+relative regret 157.8%, and median RMSE ratio 2.58.  The <code>full_kd</code> selector has median absolute regret 0.018, median relative regret 50.6%, and median RMSE ratio 1.51.  These numbers mean that CSD5 supports the sparse rule as a promising
+runtime--accuracy compromise, not as a near-oracle rule.</p>
+</section>
+
+<section>
+<h2>Selected Numeric Candidates</h2>
+<p>This section asks whether the sparse selector chooses systematically
+different support sizes or chart dimensions from the full numeric selector.</p>
+<div class="figure"><img src="figures/figure_2_selected_kd.svg" alt="Selected support and chart dimension">
+<p class="caption"><strong>Figure 2.</strong> Selected numeric \((k,d)\) values
+for sparse and full numeric selectors over all matched outer tasks.  Horizontal
+position is selected support size \(k\); vertical position is selected chart
+dimension \(d\).</p></div>
+<p>The plot should be read as a selection-behavior diagnostic, not as a score
+plot.  Different selected \((k,d)\) values are acceptable when the outer score
+surface is flat; they become concerning only when paired regret in Figure 5 is
+large.</p>
+</section>
+
+<section>
+<h2>Reference Surface</h2>
+<p>This example shows the full-grid outer target for one held-out task.  It is
+included to make the phrase "full-grid reference" concrete: every feasible
+numeric pair is scored on the same held-out truth target.</p>
+<div class="figure"><img src="figures/figure_3_example_full_grid_surface.svg" alt="Example full-grid score surface">
+<p class="caption"><strong>Figure 3.</strong> Example full-grid outer score
+surface for the embedded 1D curve, repetition 1, outer fold 1.  Colors encode
+outer truth RMSE; the red cross marks the best feasible \((k,d)\) candidate for
+that outer task.</p></div>
+<p>The score surface is not optimized inner CV.  It is an audit reference
+computed after selection, using the known synthetic truth on the outer fold.</p>
+</section>
+
+<section>
+<h2>PCA-Reuse Accounting</h2>
+<p>This diagnostic asks how much local-PCA work is avoided by reuse.  For
+numeric grid arms, lower-dimensional chart candidates reuse the
+maximum-dimension PCA coordinates within each support/kernel group.</p>
+<div class="figure"><img src="figures/figure_4_reuse_accounting.svg" alt="PCA reuse accounting">
+<p class="caption"><strong>Figure 4.</strong> Candidate count and PCA-reuse
+accounting.  Filled points are median evaluated candidates; open points are
+median unique PCA builds.  The connecting segment is the candidate-build span
+covered by reuse.  The <code>auto</code> and <code>local_auto</code> arms are
+not numeric dimension-grid arms, so they have no avoided-build segment.</p></div>
+<p>The sparse numeric selector uses three reusable PCA support groups in this
+evaluation, compared with 21 groups for the full numeric grid.  This is the
+mechanism behind the runtime reduction seen in Figure 1.</p>
+</section>
+
+<section>
+<h2>Paired Outer-Regret Comparison</h2>
+<p>This paired diagnostic compares every method to the same full-grid outer
+oracle on each matched task.  Points are task-level percent relative regrets
+\(\Delta^{\mathrm{rel}}_{s,m}\).  Red points and intervals are
+Bayesian-bootstrap medians and 95% credible intervals for the median paired
+relative regret.  The label above each method gives the number of tasks tied
+with the oracle and the number worse than the oracle, using tolerance
+\(10^{-8}\) on the absolute regret scale.</p>
+<div class="figure"><img src="figures/figure_5_paired_regret_intervals.svg" alt="Paired regret with Bayesian bootstrap intervals">
+<p class="caption"><strong>Figure 5.</strong> Paired percent relative-regret
+distribution relative to the full-grid truth-facing reference.  The dashed line
+is zero regret; lower values are better, and zero is the best possible value
+under this reference definition.  The vertical axis uses a \(\log_{10}(1+x)\)
+display transform but labels ticks in ordinary percent units, because the
+relative regrets span orders of magnitude.  Percent relative regret makes
+large-looking absolute RMSE losses easier to judge against the error scale of
+the matched task.</p></div>
+<p>The paired view is the main method-comparison evidence.  It shows whether a
+strategy has occasional severe misses even when its median summary looks
+acceptable.  The percent scale is deliberately sobering: even small absolute
+RMSE gaps can become large relative gaps when the full-grid reference RMSE is
+very small.  This is why the report retains both \(\Delta_{s,m}\) and
+\(\kappa_{s,m}\), rather than using relative regret alone.</p>
+</section>
+
+<section>
+<h2>Family-Level Check</h2>
+<p>The linked family summary separates homogeneous manifolds, the heterogeneous
+surface--line union, and the simplex-boundary geometry.  This smoke-sized
+evaluation suggests that sparse coupled selection is especially competitive on
+the heterogeneous and simplex-boundary cells in this run, but this is not yet a
+claim about OD density recovery.  OD subject-visit laws require a separate
+evaluation with density-facing targets.</p>
+</section>
+
+<section>
+<h2>What We Learned</h2>
+<p>The sparse numeric \((k,d)\) selector behaves as intended in this focused
+LPS evaluation: it uses far fewer candidate evaluations and reusable PCA
+groups than the full numeric grid.  The relative-regret scale prevents an
+overly optimistic interpretation: the sparse rule is the best practical
+runtime--accuracy compromise in this report, but its median RMSE is still about
+2.58 times the full-grid oracle reference.  The automatic chart
+dimension rules are farther away, with median RMSE ratios about 2.16 for <code>auto</code> and 2.49 for <code>local_auto</code>.</p>
+<p>One subtle point is that absolute and relative summaries need not rank
+strategies identically.  The <code>full_kd</code> arm has the smaller median
+absolute regret, while <code>sparse_kd</code> has the smaller median relative
+regret in this bundle.  That happens because the denominator \(R_s^\star\)
+varies across outer tasks, so a small raw loss on an easy task can be a large
+percentage loss.  For this reason, CSD5 should be read as evidence that the
+sparse coupled rule is useful and efficient, not as evidence that the
+CV-selected rules have closed the gap to the truth-facing oracle.</p>
+<p>The evidence is not a default-change decision.  It is a validation that the
+CSD sparse-grid machinery is worth carrying into larger PS-LPS and OD-style
+experiments, where the full Cartesian grid is often too expensive to run
+exhaustively.</p>
+</section>
+
+<section>
+<h2>Reproducibility</h2>
+<p>Working directory: <code>~/current_projects/geosmooth</code>.</p>
+<p>Generate result artifacts:</p>
+<pre><code>Rscript dev/methods/lps/ci/csd5_coupled_kd_evaluation_run.R</code></pre>
+<p>Render this report from existing artifacts:</p>
+<pre><code>Rscript dev/methods/lps/ci/csd5_coupled_kd_evaluation_render.R --report-dir=~/current_projects/geosmooth/dev/methods/lps/reports/csd5_deg2_coupled_kd_evaluation_20260709</code></pre>
+<p>The result bundle contains all CSV tables and SVG figures used by this HTML
+file.  The main package development gate after report regeneration was
+<code>make test</code>.</p>
+</section>
+</main>
+</body>
+</html>

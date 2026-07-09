@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CSD-deg2 CSD9 Robust CV Selection Policy Audit</title>
+<script>
+window.MathJax = {tex: {inlineMath: [["\\(","\\)"],["$","$"]],
+displayMath: [["\\[","\\]"],["$$","$$"]]}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       margin: 0; padding: 0; color: #1f2a2e; background: #f6f7f5; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+section { background: #fff; border: 1px solid #d8dfdc; border-radius: 8px;
+          padding: 24px; margin: 18px 0; }
+h1 { font-size: 34px; margin-bottom: 8px; }
+h2 { margin-top: 0; }
+.meta { color: #5d6b66; font-size: 14px; line-height: 1.5; }
+.callout { border-left: 4px solid #0f766e; padding: 10px 14px;
+           background: #eef7f5; margin: 14px 0; }
+.warning { border-left: 4px solid #b45309; padding: 10px 14px;
+           background: #fff7ed; margin: 14px 0; }
+.figure { margin: 20px 0; }
+.figure img { width: 100%; height: auto; border: 1px solid #d8dfdc;
+              border-radius: 4px; background: #fff; }
+.caption { color: #43504b; font-size: 15px; line-height: 1.45; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+th, td { border: 1px solid #d8dfdc; padding: 7px 9px; vertical-align: top; }
+th { background: #edf2f0; text-align: left; }
+code { background: #eef2f0; padding: 1px 4px; border-radius: 3px; }
+a { color: #0f766e; }
+</style>
+</head>
+<body><main>
+<h1>CSD-deg2 CSD9 Robust CV Selection Policy Audit</h1>
+<div class="meta">
+Report build: 2026-07-09 10:35:46 EDT<br>
+Source: <code>~/current_projects/geosmooth/dev/methods/lps/ci/csd9_robust_cv_selection_policy_audit_render.R</code><br>
+Input CSD8 bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd8_deg2_candidate_cv_surface_audit_20260709</code><br>
+Output bundle: <code>~/current_projects/geosmooth/dev/methods/lps/reports/csd9_deg2_robust_cv_selection_policy_audit_20260709</code>
+</div>
+
+<section>
+<h2>Purpose</h2>
+<p>CSD8 showed that the exact inner-CV minimum can select a candidate whose
+truth RMSE is much worse than the full-grid truth-facing oracle.  CSD9 asks
+whether simple robust replay rules would reduce those misses on the saved CSD8
+candidate surfaces, without refitting any models.</p>
+<p>For each task \\(s\\), candidate \\((k,d)\\), and policy \\(p\\),
+let the selected candidate be \\((\hat k_{s,p},\hat d_{s,p})\\).  The
+reported error is the truth ratio</p>
+\\[
+  \kappa_{s,p}
+  =
+  \frac{R_s(\hat k_{s,p},\hat d_{s,p})}
+       {\min_{k,d}R_s(k,d)}.
+\\]
+<p>Lower is better and \\(\kappa=1\\) is the truth-facing full-grid oracle.
+The baseline policy is the exact CV minimum.  Every other policy is an offline
+selector that uses only the saved CV surface and simple deterministic tie
+preferences.</p>
+<div class="warning">
+<strong>Scope.</strong> CSD9 is a policy replay.  It is useful for screening
+ideas, but it is not a prospective validation run.  A policy that looks good
+here should be rerun in a fresh outer-CV or expanded benchmark before becoming
+a default.
+</div>
+</section>
+
+<section>
+<h2>Policies Tested</h2>
+<p>The table lists the deterministic replay rules.  The \\(\epsilon\\)-tie
+rules first restrict to candidates satisfying
+\\(C_s(k,d)\le 1+\epsilon\\), where \\(C_s\\) is the candidate CV score
+divided by the task-best CV score.  If non-boundary candidates exist inside the
+tie set, boundary candidates are removed before applying the stated preference.</p>
+<table><tr><th>policy</th><th>short.label</th><th>description</th></tr><tr><td>cv_min</td><td>CV min</td><td>Exact inner-CV minimum; current full-grid selector.</td></tr>
+<tr><td>eps01_low_d_mid_k</td><td>1% low-d</td><td>Within 1% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25.</td></tr>
+<tr><td>eps03_low_d_mid_k</td><td>3% low-d</td><td>Within 3% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25.</td></tr>
+<tr><td>eps05_low_d_mid_k</td><td>5% low-d</td><td>Within 5% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25.</td></tr>
+<tr><td>eps03_large_k_low_d</td><td>3% large-k</td><td>Within 3% of CV minimum, prefer non-boundary, then larger support size, then smaller d.</td></tr>
+<tr><td>penalty_boundary_mid_k</td><td>boundary penalty</td><td>Minimize CV ratio plus a small boundary and mid-k penalty.</td></tr>
+<tr><td>penalty_low_d</td><td>low-d penalty</td><td>Minimize CV ratio plus a small boundary and chart-dimension penalty.</td></tr></table>
+</section>
+
+<section>
+<h2>Policy Summary</h2>
+<p>The best offline policy in this CSD9 replay is <code>3% low-d</code>, with median truth ratio 1.633.  The exact CV-minimum baseline has
+median truth ratio 1.723.  The most important
+columns are <code>median_ratio</code>, <code>n_gt_1.5</code>, and
+<code>n_gt_2</code>.  The boundary rate records how often the policy selected
+\\(k=15\\), \\(k=35\\), \\(d=1\\), or \\(d=8\\).</p>
+<table><tr><th>policy</th><th>median_ratio</th><th>median_delta</th><th>n_better</th><th>n_worse</th><th>n_gt_1.5</th><th>n_gt_2</th><th>boundary_rate</th><th>median_cv_ratio</th><th>median_k</th><th>median_d</th></tr><tr><td>3% low-d</td><td>1.633</td><td>0</td><td>   10</td><td>    6</td><td>   27</td><td>   19</td><td>0.375</td><td>    1</td><td>   24</td><td>    3</td></tr>
+<tr><td>1% low-d</td><td>1.723</td><td>0</td><td>    3</td><td>    1</td><td>   28</td><td>   21</td><td>0.4792</td><td>    1</td><td>   24</td><td>    3</td></tr>
+<tr><td>low-d penalty</td><td>1.723</td><td>0</td><td>    3</td><td>    2</td><td>   29</td><td>   20</td><td>0.3958</td><td>    1</td><td>   24</td><td>    3</td></tr>
+<tr><td>CV min</td><td>1.723</td><td>0</td><td>0</td><td>0</td><td>   29</td><td>   21</td><td>  0.5</td><td>    1</td><td> 23.5</td><td>    3</td></tr>
+<tr><td>3% large-k</td><td>1.724</td><td>0</td><td>   15</td><td>   12</td><td>   27</td><td>   19</td><td>0.375</td><td>    1</td><td>   26</td><td>    3</td></tr>
+<tr><td>boundary penalty</td><td>1.747</td><td>0</td><td>    5</td><td>    3</td><td>   29</td><td>   20</td><td>0.3542</td><td>    1</td><td>   25</td><td>    3</td></tr>
+<tr><td>5% low-d</td><td>1.874</td><td>0</td><td>   10</td><td>   11</td><td>   30</td><td>   20</td><td>0.3333</td><td>    1</td><td>   24</td><td>    3</td></tr></table>
+</section>
+
+<section>
+<h2>Paired Delta Against Exact CV Minimum</h2>
+<p>The paired delta is
+\\[
+  \Delta_{s,p}=\kappa_{s,p}-\kappa_{s,\mathrm{CVmin}}.
+\\]
+Negative values mean the robust policy improved over exact CV minimum on that
+same task.  The red point and interval are a Bayesian-bootstrap median paired
+delta and 95% credible interval.  Several intervals collapse to zero because
+many replay policies choose the same candidate as the CV-minimum rule on many
+tasks; this is a result of the replay, not a plotting failure.</p>
+<div class="figure"><img src="figures/figure_1_policy_delta_vs_cv_min.svg" alt="Paired policy deltas versus CV minimum">
+<p class="caption"><strong>Figure 1.</strong> Paired truth-ratio deltas versus
+the exact CV-minimum selector.  Gray points are task-level paired deltas.  The
+red point and vertical interval summarize the Bayesian-bootstrap median paired
+delta.  A label such as <code>12/48 better</code> means the policy improved over
+CV minimum on 12 of 48 tasks.</p></div>
+</section>
+
+<section>
+<h2>Accuracy And Severe Misses</h2>
+<p>A useful robust policy should reduce severe misses without merely improving
+the median by sacrificing many easy tasks.  Figure 2 shows the median truth
+ratio and the number of tasks with \\(\kappa>1.5\\).</p>
+<div class="figure"><img src="figures/figure_2_policy_ratio_and_miss_counts.svg" alt="Policy accuracy and severe miss counts">
+<p class="caption"><strong>Figure 2.</strong> Median selected truth ratio and
+severe-miss count by policy.  Blue dots show the median \\(\kappa\\); orange
+triangles show the number of tasks with \\(\kappa>1.5\\).  A promising rule
+should move both quantities downward.</p></div>
+</section>
+
+<section>
+<h2>Geometry-Family Stability</h2>
+<p>A policy can look good globally while damaging a specific geometry family.
+Figure 3 reports median \\(\kappa\\) for every policy and family.</p>
+<div class="figure"><img src="figures/figure_3_family_policy_heatmap.svg" alt="Family by policy heatmap">
+<p class="caption"><strong>Figure 3.</strong> Median truth ratio by geometry
+family and policy.  Each cell is the median \\(\kappa\\).  Values close to
+one are better.  This figure checks whether a robust policy helps only by
+trading one geometry failure mode for another.</p></div>
+</section>
+
+<section>
+<h2>Boundary Use</h2>
+<p>CSD7 suggested that some large gaps involve boundary choices.  Figure 4 asks
+whether policies that select boundaries less often also have fewer severe
+misses.</p>
+<div class="figure"><img src="figures/figure_4_boundary_rate_vs_misses.svg" alt="Boundary selection rate versus severe misses">
+<p class="caption"><strong>Figure 4.</strong> Boundary-selection rate versus
+number of severe misses.  Boundary means \\(k\\) or \\(d\\) lies at the
+edge of the CSD grid.  This is not proof that boundaries cause misses, but it
+shows whether boundary avoidance is a plausible ingredient in the next
+selector.</p></div>
+</section>
+
+<section>
+<h2>What We Learned</h2>
+<p>CSD9 is a screening step.  If none of the robust replay rules beats exact
+CV-minimum selection, then the next work should focus on better scoring, such
+as repeated CV with uncertainty, nested score stabilization, or geometry-aware
+selection.  If one or more replay rules reduce severe misses without damaging
+easy families, the next useful step is a prospective CSD10 rerun using that
+policy inside <code>fit.lps()</code> rather than as an offline replay.</p>
+<p>Here the strongest replay signal is modest.  The 1% low-d rule has the best
+median ratio and one fewer severe miss than exact CV minimum, but most policies
+often agree with CV minimum and the paired median deltas are mostly zero.  That
+argues for a small prospective validation of the 1% low-d rule, not for an
+immediate default change.</p>
+<p>The most important caution is that a replay policy can overfit this saved
+CSD8 bundle.  The result should guide engineering priorities, not settle the
+default policy by itself.</p>
+</section>
+
+<section>
+<h2>Reproducibility</h2>
+<ul>
+<li>Render command: <code>Rscript dev/methods/lps/ci/csd9_robust_cv_selection_policy_audit_render.R --input-dir=/Users/pgajer/current_projects/geosmooth/dev/methods/lps/reports/csd8_deg2_candidate_cv_surface_audit_20260709</code></li>
+<li>Policy selections: <a href="tables/csd9_policy_replay_selections.csv">csd9_policy_replay_selections.csv</a></li>
+<li>Policy summary: <a href="tables/csd9_policy_summary.csv">csd9_policy_summary.csv</a></li>
+<li>Bayesian-bootstrap paired deltas: <a href="tables/csd9_policy_delta_bayes_bootstrap.csv">csd9_policy_delta_bayes_bootstrap.csv</a></li>
+<li>Family summary: <a href="tables/csd9_policy_family_summary.csv">csd9_policy_family_summary.csv</a></li>
+</ul>
+</section>
+
+</main></body></html>

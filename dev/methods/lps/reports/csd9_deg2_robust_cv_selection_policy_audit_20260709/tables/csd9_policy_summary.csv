@@ -1,0 +1,8 @@
+"policy","n.tasks","median.truth.ratio","median.delta.vs.cv.min","n.better.vs.cv.min","n.worse.vs.cv.min","n.ratio.gt.1.15","n.ratio.gt.1.50","n.ratio.gt.2.00","boundary.rate","median.cv.ratio","median.k","median.d","short.label","description"
+"eps03_low_d_mid_k",48,1.6327149678223,0,10,6,40,27,19,0.375,1,24,3,"3% low-d","Within 3% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25."
+"eps01_low_d_mid_k",48,1.7233475868045,0,3,1,41,28,21,0.479166666666667,1,24,3,"1% low-d","Within 1% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25."
+"penalty_low_d",48,1.7233475868045,0,3,2,42,29,20,0.395833333333333,1,24,3,"low-d penalty","Minimize CV ratio plus a small boundary and chart-dimension penalty."
+"cv_min",48,1.7233475868045,0,0,0,41,29,21,0.5,1,23.5,3,"CV min","Exact inner-CV minimum; current full-grid selector."
+"eps03_large_k_low_d",48,1.72425182401055,0,15,12,44,27,19,0.375,1,26,3,"3% large-k","Within 3% of CV minimum, prefer non-boundary, then larger support size, then smaller d."
+"penalty_boundary_mid_k",48,1.7471103927979,0,5,3,43,29,20,0.354166666666667,1,25,3,"boundary penalty","Minimize CV ratio plus a small boundary and mid-k penalty."
+"eps05_low_d_mid_k",48,1.87439930379593,0,10,11,42,30,20,0.333333333333333,1,24,3,"5% low-d","Within 5% of CV minimum, prefer non-boundary, then smaller d, then k closest to 25."

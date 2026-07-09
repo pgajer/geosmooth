@@ -42,7 +42,9 @@
 #' @param selection.strategy Candidate-selection strategy. \code{"grid"}
 #'   evaluates the requested candidate grid. \code{"sparse_kd"} evaluates a
 #'   sparse support-size by chart-dimension skeleton when
-#'   \code{chart.dim.grid} is supplied.
+#'   \code{chart.dim.grid} is supplied. \code{"plateau_kd"} uses the same
+#'   geometry-only support-size and chart-dimension plateau rule as
+#'   \code{\link{fit.lps}}.
 #' @param chart.dim.max Optional explicit maximum chart dimension for the
 #'   sparse coupled candidate family.
 #' @param design.margin Nonnegative integer feasibility margin used to screen
@@ -107,6 +109,16 @@
 #' @param sync.neighbor.size Number of nearby anchor pairs considered for
 #'   synchronization from each anchor support.
 #' @param overlap.weight Overlap weighting rule.
+#' @param chart.activation Optional sparse-response chart activation rule.
+#'   \code{"none"} preserves ordinary PS-LPS. \code{"subject.od"} is intended
+#'   for subject-occupation density workflows and deactivates local charts with
+#'   no subject mass, too few positive subject-visited support points, or only
+#'   fringe occupation.
+#' @param chart.activation.response Optional nonnegative vector used only for
+#'   \code{chart.activation = "subject.od"} to decide whether each chart is
+#'   active. When omitted, \code{y} is used.
+#' @param chart.activation.control List controlling sparse chart activation;
+#'   see \code{\link{fit.lps}}.
 #' @param cv.folds Number of folds when \code{foldid} is absent.
 #' @param cv.seed Fold seed when \code{foldid} is absent.
 #' @return A list with fitted values, selected lambda, CV table, diagnostics,
@@ -125,7 +137,7 @@ fit.ps.lps <- function(
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
     chart.dim.grid = NULL,
-    selection.strategy = c("grid", "sparse_kd"),
+    selection.strategy = c("grid", "sparse_kd", "plateau_kd"),
     chart.dim.max = NULL,
     design.margin = 2L,
     lambda.sync.grid = c(0, 1e-3, 1e-2, 1e-1, 1, 10),
@@ -143,6 +155,9 @@ fit.ps.lps <- function(
     ridge.condition.max = Inf,
     sync.neighbor.size = NULL,
     overlap.weight = c("normalized.product", "product"),
+    chart.activation = c("none", "subject.od"),
+    chart.activation.response = NULL,
+    chart.activation.control = list(),
     ps.lps.geometry.cache = NULL,
     cv.folds = 5L,
     cv.seed = 1L) {
@@ -167,6 +182,14 @@ fit.ps.lps <- function(
     }
     lambda.diagnostics <- match.arg(lambda.diagnostics)
     overlap.weight <- match.arg(overlap.weight)
+    chart.activation <- match.arg(chart.activation)
+    chart.activation.info <- .klp.prepare.chart.activation(
+        chart.activation = chart.activation,
+        chart.activation.response = chart.activation.response,
+        fallback.response = y,
+        n = nrow(X),
+        control = chart.activation.control
+    )
     design.basis <- match.arg(design.basis)
     design.drop.tol <- .klp.validate.nonnegative.scalar(
         design.drop.tol,
@@ -253,6 +276,9 @@ fit.ps.lps <- function(
             overlap.weight = overlap.weight,
             cv.folds = cv.folds,
             cv.seed = cv.seed,
+            chart.activation = chart.activation,
+            chart.activation.response = chart.activation.response,
+            chart.activation.control = chart.activation.control,
             selection.strategy = selection.strategy,
             coupled.kd.selection = local.spec$telemetry,
             coupled.kd.candidate.plan = local.spec$coupled.plan
@@ -290,7 +316,8 @@ fit.ps.lps <- function(
             kernel = kernel,
             chart.dim.by.anchor = chart.dim.by.anchor,
             design.basis = design.basis,
-            design.drop.tol = design.drop.tol
+            design.drop.tol = design.drop.tol,
+            chart.activation.info = chart.activation.info
         )
         phase.frames.sec <- elapsed(t.frames)
         t.sync.rows <- proc.time()
@@ -570,10 +597,18 @@ fit.ps.lps <- function(
                 "independent"
             },
             geometry.cache.used = geometry.cache.used,
+            chart.activation = chart.activation,
+            chart.activation.control = chart.activation.info$control,
+            chart.activation.diagnostics =
+                attr(frames, "chart.activation.diagnostics"),
             ps.lps.timing = timing,
             frame.design.summary = .ps.lps.frame.design.summary(frames)
         ),
         final
+    )
+    out$diagnostics$chart.activation <- .klp.chart.activation.summary(
+        attr(frames, "chart.activation.diagnostics"),
+        chart.activation.info
     )
     out$diagnostics$coupled.kd.selection <- local.spec$telemetry
     out$coupled.kd.candidate.plan <- local.spec$coupled.plan
@@ -945,6 +980,9 @@ fit.ps.lps <- function(
     lambda.sync.search.control, lambda.diagnostics, lambda.ridge, design.basis,
     design.drop.tol, ridge.multiplier.grid, ridge.condition.max,
     sync.neighbor.size, overlap.weight, cv.folds, cv.seed,
+    chart.activation = "none",
+    chart.activation.response = NULL,
+    chart.activation.control = list(),
     selection.strategy = "grid",
     coupled.kd.selection = NULL,
     coupled.kd.candidate.plan = NULL) {
@@ -1049,7 +1087,10 @@ fit.ps.lps <- function(
                 overlap.weight = overlap.weight,
                 design.basis = design.basis,
                 design.drop.tol = design.drop.tol,
-                local.pca.supports = local.pca.supports
+                local.pca.supports = local.pca.supports,
+                chart.activation = chart.activation,
+                chart.activation.response = chart.activation.response,
+                chart.activation.control = chart.activation.control
             )
         }
         fit <- fit.ps.lps(
@@ -1079,6 +1120,9 @@ fit.ps.lps <- function(
             ridge.condition.max = ridge.condition.max,
             sync.neighbor.size = sync.neighbor.size,
             overlap.weight = overlap.weight,
+            chart.activation = chart.activation,
+            chart.activation.response = chart.activation.response,
+            chart.activation.control = chart.activation.control,
             ps.lps.geometry.cache = geometry.cache,
             cv.folds = cv.folds,
             cv.seed = cv.seed
@@ -1630,7 +1674,17 @@ fit.ps.lps <- function(
                                            overlap.weight,
                                            design.basis,
                                            design.drop.tol,
-                                           local.pca.supports = NULL) {
+                                           local.pca.supports = NULL,
+                                           chart.activation = "none",
+                                           chart.activation.response = NULL,
+                                           chart.activation.control = list()) {
+    chart.activation.info <- .klp.prepare.chart.activation(
+        chart.activation = chart.activation,
+        chart.activation.response = chart.activation.response,
+        fallback.response = rep(0, nrow(X)),
+        n = nrow(X),
+        control = chart.activation.control
+    )
     chart.dim.info <- .ps.lps.resolve.chart.dim(
         X = X,
         support.size = support.size,
@@ -1648,7 +1702,8 @@ fit.ps.lps <- function(
         chart.dim.by.anchor = chart.dim.info$chart.dim.by.anchor,
         design.basis = design.basis,
         design.drop.tol = design.drop.tol,
-        local.pca.supports = local.pca.supports
+        local.pca.supports = local.pca.supports,
+        chart.activation.info = chart.activation.info
     )
     sync.rows <- .ps.lps.prepare.sync.rows(
         frames = frames,
@@ -1657,6 +1712,9 @@ fit.ps.lps <- function(
     )
     list(
         chart.dim.info = chart.dim.info,
+        chart.activation.info = chart.activation.info,
+        chart.activation.diagnostics =
+            attr(frames, "chart.activation.diagnostics"),
         frames = frames,
         sync.rows = sync.rows
     )
@@ -1667,9 +1725,11 @@ fit.ps.lps <- function(
                                    design.basis = "monomial",
                                    design.drop.tol =
                                        sqrt(.Machine$double.eps),
-                                   local.pca.supports = NULL) {
+                                   local.pca.supports = NULL,
+                                   chart.activation.info = NULL) {
     n <- nrow(X)
     frames <- vector("list", n)
+    activation.rows <- vector("list", n)
     native.local <- local.pca.supports
     if (!is.null(native.local) && length(native.local) != n) {
         stop("'local.pca.supports' must contain one entry per anchor.",
@@ -1718,6 +1778,37 @@ fit.ps.lps <- function(
                 weights = weights,
                 return.chart = FALSE
             )
+        }
+        activation <- .klp.chart.activation.row(
+            info = chart.activation.info,
+            anchor = ii,
+            support.index = idx,
+            weights = weights
+        )
+        if (!isTRUE(activation$active)) {
+            row.by.point <- seq_along(idx)
+            names(row.by.point) <- as.character(idx)
+            frames[[ii]] <- list(
+                anchor = ii,
+                index = idx,
+                distances = dist,
+                weights = rep(0, length(idx)),
+                design = matrix(0, nrow = length(idx), ncol = 1L),
+                anchor.design = matrix(0, nrow = 1L, ncol = 1L),
+                chart.dim = d,
+                design.basis = design.basis,
+                solver.design.basis = "inactive_zero",
+                design.drop.tol = design.drop.tol,
+                design.columns.original = 1L,
+                design.columns.kept = integer(0),
+                q = 1L,
+                rank = 0L,
+                row.by.point = row.by.point,
+                active = FALSE,
+                inactive.reason = activation$reason
+            )
+            activation.rows[[ii]] <- activation$row
+            next
         }
         raw.design <- .local.polynomial.design.matrix(coords, degree)
         raw.anchor.design <- .local.polynomial.design.matrix(
@@ -1777,13 +1868,20 @@ fit.ps.lps <- function(
             design.columns.kept = keep,
             q = ncol(design),
             rank = as.integer(rank),
-            row.by.point = row.by.point
+            row.by.point = row.by.point,
+            active = TRUE,
+            inactive.reason = "active"
         )
+        activation.rows[[ii]] <- activation$row
     }
     q <- vapply(frames, `[[`, integer(1L), "q")
     offsets <- cumsum(c(0L, head(q, -1L)))
     for (ii in seq_along(frames)) frames[[ii]]$offset <- offsets[[ii]]
     attr(frames, "ncoef") <- sum(q)
+    attr(frames, "chart.activation.diagnostics") <- do.call(
+        rbind,
+        activation.rows
+    )
     frames
 }
 
@@ -1795,20 +1893,34 @@ fit.ps.lps <- function(
             vapply(frames, `[[`, integer(1L), "design.columns.original"),
         design.columns.kept = vapply(frames, `[[`, integer(1L), "q"),
         design.rank = vapply(frames, `[[`, integer(1L), "rank"),
+        active = vapply(frames, function(fr) isTRUE(fr$active %||% TRUE),
+                        logical(1L)),
+        inactive.reason = vapply(frames, function(fr) {
+            as.character(fr$inactive.reason %||% "active")
+        }, character(1L)),
         stringsAsFactors = FALSE
     )
 }
 
 .ps.lps.prepare.sync.rows <- function(frames, sync.neighbor.size,
                                       overlap.weight) {
-    native.rows <- tryCatch(
-        rcpp_ps_lps_prepare_sync_rows(
-            frames = frames,
-            sync_neighbor_size = as.integer(sync.neighbor.size),
-            overlap_weight = as.character(overlap.weight[[1L]])
-        ),
-        error = function(e) NULL
-    )
+    any.inactive <- any(vapply(
+        frames,
+        function(fr) isFALSE(fr$active %||% TRUE),
+        logical(1L)
+    ))
+    native.rows <- if (isTRUE(any.inactive)) {
+        NULL
+    } else {
+        tryCatch(
+            rcpp_ps_lps_prepare_sync_rows(
+                frames = frames,
+                sync_neighbor_size = as.integer(sync.neighbor.size),
+                overlap_weight = as.character(overlap.weight[[1L]])
+            ),
+            error = function(e) NULL
+        )
+    }
     if (!is.null(native.rows)) {
         return(native.rows)
     }
@@ -1829,6 +1941,10 @@ fit.ps.lps <- function(
         pair <- as.integer(strsplit(pair.keys[[pp]], "_", fixed = TRUE)[[1L]])
         ii <- pair[[1L]]
         jj <- pair[[2L]]
+        if (isFALSE(frames[[ii]]$active %||% TRUE) ||
+            isFALSE(frames[[jj]]$active %||% TRUE)) {
+            next
+        }
         overlap <- intersect(frames[[ii]]$index, frames[[jj]]$index)
         if (!length(overlap)) next
         row.i <- frames[[ii]]$row.by.point[as.character(overlap)]
