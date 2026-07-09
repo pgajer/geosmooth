@@ -1,0 +1,5 @@
+"strategy","near_oracle_le_1.05","good_le_1.15","acceptable_le_1.25","watch_le_1.50","concerning_le_2.00","poor_gt_2.00"
+"auto",2,4,11,11,6,14
+"full_kd",7,7,8,10,7,9
+"local_auto",2,4,8,12,5,17
+"sparse_kd",8,4,7,16,7,6
