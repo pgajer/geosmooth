@@ -149,6 +149,10 @@ relative.regret.eps <- 1e-12
 scores$outer.relative.regret <- scores$outer.regret /
     pmax(scores$reference.outer.rmse, relative.regret.eps)
 scores$outer.relative.regret.percent <- 100 * scores$outer.relative.regret
+if (!"outer.rmse.ratio" %in% names(scores)) {
+    scores$outer.rmse.ratio <- scores$outer.rmse /
+        pmax(scores$reference.outer.rmse, relative.regret.eps)
+}
 
 if (!"outer.relative.regret.percent" %in% names(summary)) {
     rel.summary <- aggregate(outer.relative.regret.percent ~ strategy,
@@ -157,6 +161,13 @@ if (!"outer.relative.regret.percent" %in% names(summary)) {
                              FUN = stats::median)
     summary <- merge(summary, rel.summary, by = "strategy", all.x = TRUE)
 }
+if (!"outer.rmse.ratio" %in% names(summary)) {
+    ratio.summary <- aggregate(outer.rmse.ratio ~ strategy,
+                               data = scores[scores$status == "ok", ,
+                                             drop = FALSE],
+                               FUN = stats::median)
+    summary <- merge(summary, ratio.summary, by = "strategy", all.x = TRUE)
+}
 
 summary.display <- summary
 summary.name.map <- c(
@@ -164,6 +175,7 @@ summary.name.map <- c(
     outer.rmse = "R_med",
     outer.regret = "Delta_med",
     outer.relative.regret.percent = "Delta_rel_pct_med",
+    outer.rmse.ratio = "R_ratio_med",
     elapsed.sec = "T_med",
     evaluated.candidates = "cand_med",
     unique.pca.builds = "pca_med",
@@ -172,6 +184,20 @@ summary.name.map <- c(
 )
 names(summary.display) <- unname(summary.name.map[names(summary.display)])
 summary.display <- summary.display[order(summary.display$Delta_med), ]
+
+strategy.metric <- function(strategy, column, digits = 2L) {
+    value <- summary[summary$strategy == strategy, column]
+    if (!length(value) || !is.finite(value[[1L]])) return("NA")
+    formatC(value[[1L]], format = "f", digits = digits)
+}
+sparse.abs <- strategy.metric("sparse_kd", "outer.regret", 3L)
+sparse.rel <- strategy.metric("sparse_kd", "outer.relative.regret.percent", 1L)
+sparse.ratio <- strategy.metric("sparse_kd", "outer.rmse.ratio", 2L)
+full.abs <- strategy.metric("full_kd", "outer.regret", 3L)
+full.rel <- strategy.metric("full_kd", "outer.relative.regret.percent", 1L)
+full.ratio <- strategy.metric("full_kd", "outer.rmse.ratio", 2L)
+auto.ratio <- strategy.metric("auto", "outer.rmse.ratio", 2L)
+local.auto.ratio <- strategy.metric("local_auto", "outer.rmse.ratio", 2L)
 
 make.regret.runtime.plot <- function() {
     path <- file.path(fig.dir, "figure_1_regret_runtime.svg")
@@ -463,10 +489,19 @@ main figures also report percent relative regret</p>
 \\frac{R_{s,m}-R_s^{\\star}}{R_s^{\\star}+\\epsilon},
 \\qquad \\epsilon=10^{-12}.
 \\]
+<p>The report also shows the equivalent RMSE ratio</p>
+\\[
+\\kappa_{s,m}
+=
+\\frac{R_{s,m}}{R_s^{\\star}+\\epsilon}
+=
+1 + \\frac{\\Delta^{\\mathrm{rel}}_{s,m}}{100}.
+\\]
 <p>A value of \\(5\\) means that the selected strategy had 5% larger outer RMSE
 than the full-grid reference on the same task.  A value of \\(100\\) means twice
-the reference RMSE.  The tiny \\(\\epsilon\\) only protects against division by
-zero and has no visible effect in this result bundle.</p>
+the reference RMSE, equivalently \\(\\kappa=2\\).  The tiny \\(\\epsilon\\) only
+protects against division by zero and has no visible effect in this result
+bundle.</p>
 <div class="callout"><strong>Scope.</strong> This first report validates the
 LPS implementation path where full Cartesian references are feasible.  PS-LPS
 uses the same sparse candidate machinery after CSD4, but its synchronized
@@ -498,13 +533,14 @@ dimension), <code>local_auto</code> (anchor-specific automatic dimensions),
 <p>This table summarizes successful outer tasks.  \\(R_{\\mathrm{med}}\\) is the
 median outer RMSE \\(R_{s,m}\\), \\(\\Delta_{\\mathrm{med}}\\) is the median regret
 \\(\\Delta_{s,m}\\), \\(\\Delta^{\\mathrm{rel}}_{\\mathrm{pct,med}}\\) is the median
-percent relative regret, \\(T_{\\mathrm{med}}\\) is median end-to-end serial wall
-time per outer fit in seconds, <code>cand</code> is the median evaluated candidate
-count, and <code>pca</code> is the median number of unique reusable local-PCA
-support groups.  Values are medians across 24 matched outer tasks per
-strategy.  The absolute and relative regret columns should be read together:
-the first gives the raw RMSE loss, and the second says how large that loss is
-relative to the task reference error.</p>',
+percent relative regret, and \\(\\kappa_{\\mathrm{med}}\\) is the median RMSE
+ratio \\(R_{s,m}/R_s^\\star\\).  \\(T_{\\mathrm{med}}\\) is median end-to-end serial
+wall time per outer fit in seconds, <code>cand</code> is the median evaluated
+candidate count, and <code>pca</code> is the median number of unique reusable
+local-PCA support groups.  Values are medians across 24 matched outer tasks per
+strategy.  The absolute regret, percent relative regret, and ratio columns
+should be read together: the first gives the raw RMSE loss, while the other two
+say how large that loss is relative to the task reference error.</p>',
 small.table.html(summary.display, digits = 4L),
 '<p>Full linked artifacts:
 <a href="', tab.rel("csd5_strategy_outer_scores.csv"), '">outer scores</a>,
@@ -532,7 +568,13 @@ relative regret is nonnegative.</p></div>
 faster than the full numeric grid in this focused LPS lane.  The median regret
 gap between sparse and full numeric selection remains interpretable on the
 percent scale: the sparse rule pays a modest relative-error cost for a large
-runtime and PCA-build reduction.</p>
+runtime and PCA-build reduction.  The cost is not negligible, however:
+<code>sparse_kd</code> has median absolute regret ', sparse.abs, ', median
+relative regret ', sparse.rel, '%, and median RMSE ratio ', sparse.ratio,
+'.  The <code>full_kd</code> selector has median absolute regret ', full.abs,
+', median relative regret ', full.rel, '%, and median RMSE ratio ', full.ratio,
+'.  These numbers mean that CSD5 supports the sparse rule as a promising
+runtime--accuracy compromise, not as a near-oracle rule.</p>
 </section>
 
 <section>
@@ -600,7 +642,10 @@ large-looking absolute RMSE losses easier to judge against the error scale of
 the matched task.</p></div>
 <p>The paired view is the main method-comparison evidence.  It shows whether a
 strategy has occasional severe misses even when its median summary looks
-acceptable.</p>
+acceptable.  The percent scale is deliberately sobering: even small absolute
+RMSE gaps can become large relative gaps when the full-grid reference RMSE is
+very small.  This is why the report retains both \\(\\Delta_{s,m}\\) and
+\\(\\kappa_{s,m}\\), rather than using relative regret alone.</p>
 </section>
 
 <section>
@@ -617,10 +662,21 @@ evaluation with density-facing targets.</p>
 <h2>What We Learned</h2>
 <p>The sparse numeric \\((k,d)\\) selector behaves as intended in this focused
 LPS evaluation: it uses far fewer candidate evaluations and reusable PCA
-groups than the full numeric grid, while retaining small paired regret on the
-outer truth target.  The full numeric selector remains the strongest
-truth-facing reference in median regret, but it is slower and evaluates the
-entire Cartesian grid.</p>
+groups than the full numeric grid.  The relative-regret scale prevents an
+overly optimistic interpretation: the sparse rule is the best practical
+runtime--accuracy compromise in this report, but its median RMSE is still about
+', sparse.ratio, ' times the full-grid oracle reference.  The automatic chart
+dimension rules are farther away, with median RMSE ratios about ', auto.ratio,
+' for <code>auto</code> and ', local.auto.ratio,
+' for <code>local_auto</code>.</p>
+<p>One subtle point is that absolute and relative summaries need not rank
+strategies identically.  The <code>full_kd</code> arm has the smaller median
+absolute regret, while <code>sparse_kd</code> has the smaller median relative
+regret in this bundle.  That happens because the denominator \\(R_s^\\star\\)
+varies across outer tasks, so a small raw loss on an easy task can be a large
+percentage loss.  For this reason, CSD5 should be read as evidence that the
+sparse coupled rule is useful and efficient, not as evidence that the
+CV-selected rules have closed the gap to the truth-facing oracle.</p>
 <p>The evidence is not a default-change decision.  It is a validation that the
 CSD sparse-grid machinery is worth carrying into larger PS-LPS and OD-style
 experiments, where the full Cartesian grid is often too expensive to run
