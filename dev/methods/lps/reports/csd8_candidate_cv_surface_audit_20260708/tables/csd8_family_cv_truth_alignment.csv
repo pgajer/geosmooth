@@ -1,0 +1,9 @@
+"dataset.family","cv.winner.truth.ratio","truth.winner.cv.rank","cv.truth.rank.spearman","near.cv.05","near.truth.15"
+"heterogeneous/non-manifold",2.32616005801005,14.5,0.178822177793379,2.5,2
+"high-dimensional embedded 1D",1.70061911612467,68,0.524001576697455,2,26
+"homogeneous 1D manifold",1.6137710984609,44,0.784984524901841,1,10.5
+"rank/block heterogeneity",1.3559684452387,83,0.54092803952857,14,10
+"high-dimensional embedded 2D",1.29293947509621,129.5,-0.0102155926713279,5,9.5
+"homogeneous 3D manifold",1.22242731444145,105,0.384261301537067,44,44.5
+"homogeneous 2D manifold",1.10522279927603,16.5,0.656512119328887,2.5,23.5
+"OD-style simplex-boundary geometry",1.01418446182722,38,0.8520840351703,39,58.5
