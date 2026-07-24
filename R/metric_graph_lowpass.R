@@ -103,6 +103,358 @@ metric.graph.lowpass.operator <- function(
     out
 }
 
+#' Construct a Reusable Metric Graph Low-Pass Spectral Basis
+#'
+#' Builds a metric-conductance graph Laplacian and computes the low-frequency
+#' eigensystem used by graph low-pass filters. The resulting object is
+#' response-independent and can be reused for many responses and filter
+#' parameters.
+#'
+#' @inheritParams metric.graph.lowpass.operator
+#' @param n.eigenpairs Positive integer number of eigenpairs to compute.
+#' @param eigen.solver \code{"auto"}, \code{"sparse"}, or \code{"dense"}.
+#' @param dense.eigen.threshold Exact dense threshold for auto mode.
+#' @param dense.fallback.threshold Maximum graph size for emergency dense
+#'   fallback when sparse decomposition fails and fallback is allowed.
+#' @param dense.fallback \code{"auto"}, \code{"never"}, or \code{"always"}.
+#'
+#' @details
+#' The basis is complete only when it contains one eigenvector per graph
+#' vertex. A truncated basis represents only the retained low-frequency
+#' subspace. The largest retained eigenvalue supplies a conservative proxy for
+#' bounding the contribution of omitted modes because all omitted eigenvalues
+#' are at least as large.
+#'
+#' @return A list of class \code{"metric.graph.lowpass.basis"} containing the
+#'   graph operator, eigenvalues, eigenvectors, solver metadata, and spectral
+#'   completeness diagnostics.
+#' @export
+metric.graph.lowpass.basis <- function(
+    adj.list,
+    weight.list,
+    conductance.rule = c("inverse.length.power", "exp.length",
+                         "exp.length.squared", "self.tuned.gaussian"),
+    conductance.epsilon = 1e-8,
+    conductance.alpha = 1,
+    conductance.sigma = NULL,
+    conductance.sigma.rule = c("edge.quantile", "median", "local.k"),
+    conductance.sigma.quantile = 0.75,
+    conductance.local.k = 5L,
+    laplacian.type = c("unnormalized", "symmetric.normalized"),
+    n.eigenpairs = 50L,
+    eigen.solver = c("auto", "sparse", "dense"),
+    dense.eigen.threshold = 200L,
+    dense.fallback.threshold = 5000L,
+    dense.fallback = c("auto", "never", "always"),
+    verbose = FALSE) {
+
+    graph <- .validate.metric.graph.lowpass.graph(adj.list, weight.list)
+    n <- length(graph$adj.list)
+    args <- .validate.metric.graph.lowpass.operator.args(
+        conductance.rule = conductance.rule,
+        conductance.epsilon = conductance.epsilon,
+        conductance.alpha = conductance.alpha,
+        conductance.sigma = conductance.sigma,
+        conductance.sigma.rule = conductance.sigma.rule,
+        conductance.sigma.quantile = conductance.sigma.quantile,
+        conductance.local.k = conductance.local.k,
+        laplacian.type = laplacian.type,
+        verbose = verbose
+    )
+    solver <- .validate.metric.graph.lowpass.solver.args(
+        n.eigenpairs = n.eigenpairs,
+        n = n,
+        eigen.solver = eigen.solver,
+        dense.eigen.threshold = dense.eigen.threshold,
+        dense.fallback.threshold = dense.fallback.threshold,
+        dense.fallback = dense.fallback
+    )
+
+    raw <- rcpp_metric_graph_lowpass_spectrum(
+        graph$adj.list.0based,
+        graph$weight.list.cpp,
+        args$conductance.rule,
+        args$conductance.epsilon,
+        args$conductance.alpha,
+        args$conductance.sigma,
+        args$conductance.sigma.rule,
+        args$conductance.sigma.quantile,
+        args$conductance.local.k,
+        args$laplacian.type,
+        solver$n.eigenpairs,
+        solver$eigen.solver,
+        solver$dense.eigen.threshold,
+        solver$dense.fallback.threshold,
+        solver$dense.fallback,
+        as.logical(verbose)
+    )
+
+    operator <- raw$operator
+    operator$graph$adj.list <- graph$adj.list
+    operator$graph$weight.list <- graph$weight.list
+    operator <- .attach.metric.graph.lowpass.laplacian(operator, TRUE)
+    class(operator) <- c("metric.graph.lowpass.operator", "list")
+
+    spectral <- raw$spectral
+    spectral$eigenvalues <- as.double(spectral$eigenvalues)
+    spectral$eigenvectors <- as.matrix(spectral$eigenvectors)
+    .require.metric.graph.lowpass.finite(
+        spectral$eigenvalues, "spectral$eigenvalues"
+    )
+    .require.metric.graph.lowpass.finite(
+        spectral$eigenvectors, "spectral$eigenvectors"
+    )
+    spectral$n.vertices <- n
+    spectral$n.eigenpairs <- length(spectral$eigenvalues)
+    spectral$is.complete <- spectral$n.eigenpairs == n
+    spectral$largest.retained.eigenvalue <- max(spectral$eigenvalues)
+    positive <- spectral$eigenvalues[
+        spectral$eigenvalues > .Machine$double.eps
+    ]
+    spectral$smallest.positive.eigenvalue <- if (length(positive)) {
+        min(positive)
+    } else {
+        NA_real_
+    }
+    spectral$omitted.attenuation.bound.type <- if (spectral$is.complete) {
+        "complete_spectrum"
+    } else {
+        "largest_retained_eigenvalue_proxy"
+    }
+
+    out <- list(
+        graph = operator$graph,
+        operator = operator,
+        conductance = operator$conductance,
+        laplacian = operator$laplacian,
+        laplacian.type = operator$laplacian.type,
+        spectral = spectral,
+        parameters = c(args, solver)
+    )
+    class(out) <- c("metric.graph.lowpass.basis", "list")
+    out
+}
+
+#' Construct a Graph Heat-Time Grid
+#'
+#' Creates a positive heat-time grid from a
+#' \code{"metric.graph.lowpass.basis"} object.
+#'
+#' @param basis A \code{"metric.graph.lowpass.basis"} object.
+#' @param rule Grid rule. \code{"w1_inverse_spectrum"} reproduces the W1
+#'   inverse-spectrum grid. \code{"spectral_guarded"} raises the lower endpoint
+#'   for a truncated basis until the conservative omitted-mode attenuation
+#'   bound is no larger than \code{truncation.tol}, and extends the upper
+#'   endpoint until the slowest retained positive mode is attenuated to
+#'   \code{equilibrium.tol}.
+#' @param n.initial Number of positive grid values.
+#' @param include.zero Logical. Include the exact no-smoothing endpoint.
+#' @param truncation.tol Positive tolerance smaller than one for the
+#'   conservative omitted-mode attenuation bound.
+#' @param equilibrium.tol Positive tolerance smaller than one for the slowest
+#'   positive retained mode at the upper endpoint.
+#'
+#' @return A numeric vector with grid-construction metadata stored as
+#'   attributes.
+#' @export
+metric.graph.heat.eta.grid <- function(
+    basis,
+    rule = c("spectral_guarded", "w1_inverse_spectrum"),
+    n.initial = 40L,
+    include.zero = FALSE,
+    truncation.tol = 1e-4,
+    equilibrium.tol = 1e-4) {
+
+    .validate.metric.graph.lowpass.basis(basis)
+    rule <- match.arg(rule)
+    n.initial <- .validate.positive.integer.scalar(n.initial, "n.initial")
+    if (n.initial < 2L) stop("n.initial must be at least 2.", call. = FALSE)
+    include.zero <- .validate.logical.scalar(include.zero, "include.zero")
+    truncation.tol <- .validate.unit.interval.open(
+        truncation.tol, "truncation.tol"
+    )
+    equilibrium.tol <- .validate.unit.interval.open(
+        equilibrium.tol, "equilibrium.tol"
+    )
+
+    positive <- sort(basis$spectral$eigenvalues[
+        basis$spectral$eigenvalues > .Machine$double.eps
+    ])
+    if (!length(positive)) {
+        stop("The basis has no positive retained eigenvalue.", call. = FALSE)
+    }
+    lambda.slow <- min(positive)
+    lambda.cut <- max(positive)
+
+    if (rule == "w1_inverse_spectrum") {
+        eta.min <- 1 / lambda.cut
+        eta.max <- 1 / lambda.slow
+    } else {
+        eta.min <- if (isTRUE(basis$spectral$is.complete)) {
+            1 / lambda.cut
+        } else {
+            log(1 / truncation.tol) / lambda.cut
+        }
+        eta.max <- log(1 / equilibrium.tol) / lambda.slow
+    }
+    if (!is.finite(eta.min) || !is.finite(eta.max) ||
+        eta.min <= 0 || eta.max <= eta.min) {
+        stop(
+            "The requested heat-time rule did not produce ordered positive endpoints.",
+            call. = FALSE
+        )
+    }
+
+    grid <- exp(seq(log(eta.min), log(eta.max), length.out = n.initial))
+    if (include.zero) grid <- c(0, grid)
+    attr(grid, "rule") <- rule
+    attr(grid, "eta.min") <- eta.min
+    attr(grid, "eta.max") <- eta.max
+    attr(grid, "truncation.tol") <- truncation.tol
+    attr(grid, "equilibrium.tol") <- equilibrium.tol
+    attr(grid, "basis.complete") <- isTRUE(basis$spectral$is.complete)
+    attr(grid, "lambda.slow") <- lambda.slow
+    attr(grid, "lambda.cut") <- lambda.cut
+    grid
+}
+
+#' Apply a Metric Graph Low-Pass Filter Path
+#'
+#' Applies every requested low-pass parameter to one response or a matrix of
+#' responses using a reusable spectral basis.
+#'
+#' @param basis A \code{"metric.graph.lowpass.basis"} object.
+#' @param y Numeric response vector or matrix with one row per graph vertex.
+#' @param eta.grid Numeric filter-parameter grid.
+#' @param filter.type Spectral low-pass filter family.
+#' @param block.size Optional number of response columns processed together.
+#' @param truncation.tol Positive tolerance smaller than one used to classify
+#'   truncated-basis candidates as spectrally resolved.
+#' @param unresolved.action Action when a truncated-basis candidate exceeds
+#'   \code{truncation.tol}: \code{"warn"}, \code{"error"}, or \code{"allow"}.
+#' @param exact.zero Logical. For heat filtering, return the input exactly at
+#'   \code{eta = 0}. This avoids treating a truncated spectral projection as
+#'   the identity.
+#'
+#' @return A list of class \code{"metric.graph.lowpass.path"}. For one response,
+#'   \code{fitted.values} is an \eqn{N} by \eqn{J} matrix. For multiple
+#'   responses it is an \eqn{N} by \eqn{J} by \eqn{S} array.
+#' @export
+apply.metric.graph.lowpass.path <- function(
+    basis,
+    y,
+    eta.grid,
+    filter.type = c("heat_kernel", "tikhonov", "cubic_spline",
+                    "gaussian", "exponential", "butterworth"),
+    block.size = NULL,
+    truncation.tol = 1e-4,
+    unresolved.action = c("warn", "error", "allow"),
+    exact.zero = TRUE) {
+
+    .validate.metric.graph.lowpass.basis(basis)
+    filter.type <- match.arg(filter.type)
+    unresolved.action <- match.arg(unresolved.action)
+    exact.zero <- .validate.logical.scalar(exact.zero, "exact.zero")
+    truncation.tol <- .validate.unit.interval.open(
+        truncation.tol, "truncation.tol"
+    )
+    block.size <- .validate.optional.block.size(block.size)
+    y.info <- .prepare.metric.graph.lowpass.response.matrix(
+        y, basis$spectral$n.vertices
+    )
+    Y <- y.info$Y
+    eta.grid <- .prepare.metric.graph.lowpass.eta.grid(
+        eta.grid, basis$spectral$eigenvalues, filter.type, length(eta.grid)
+    )
+
+    V <- basis$spectral$eigenvectors
+    eigenvalues <- basis$spectral$eigenvalues
+    weights <- compute.filter.weights.matrix(
+        eigenvalues, eta.grid, filter.type
+    )
+    Vt.Y <- crossprod(V, Y)
+    .require.metric.graph.lowpass.finite(Vt.Y, "spectral response coefficients")
+
+    lambda.cut <- max(eigenvalues)
+    cutoff.weights <- as.numeric(compute.filter.weights.matrix(
+        lambda.cut, eta.grid, filter.type
+    ))
+    complete <- isTRUE(basis$spectral$is.complete)
+    exact.identity <- filter.type == "heat_kernel" & eta.grid == 0 & exact.zero
+    resolved <- complete |
+        cutoff.weights <= truncation.tol * (1 + 1e-10) |
+        exact.identity
+    unresolved <- which(!resolved)
+    if (length(unresolved) && unresolved.action != "allow") {
+        msg <- paste0(
+            length(unresolved), " candidate(s) exceed the truncated-basis ",
+            "attenuation tolerance; increase n.eigenpairs or use larger eta."
+        )
+        if (unresolved.action == "error") stop(msg, call. = FALSE)
+        warning(msg, call. = FALSE)
+    }
+
+    n <- nrow(Y)
+    n.eta <- length(eta.grid)
+    n.responses <- ncol(Y)
+    fitted <- array(NA_real_, dim = c(n, n.eta, n.responses))
+    response.blocks <- .make.metric.graph.lowpass.block.index(
+        n.responses, block.size
+    )
+    for (j in seq_len(n.eta)) {
+        if (exact.identity[[j]]) {
+            fitted[, j, ] <- Y
+            next
+        }
+        for (cols in response.blocks) {
+            fitted[, j, cols] <- V %*% (
+                weights[, j] * Vt.Y[, cols, drop = FALSE]
+            )
+        }
+    }
+    .require.metric.graph.lowpass.finite(fitted, "path fitted values")
+
+    response.names <- y.info$col.names
+    eta.names <- format(eta.grid, digits = 10, trim = TRUE)
+    if (n.responses == 1L) {
+        fitted.out <- matrix(fitted[, , 1L], nrow = n, ncol = n.eta)
+        colnames(fitted.out) <- eta.names
+    } else {
+        dimnames(fitted) <- list(
+            NULL, eta = eta.names,
+            response = response.names %||% paste0("response", seq_len(n.responses))
+        )
+        fitted.out <- fitted
+    }
+    effective.df <- colSums(weights)
+    effective.df[exact.identity] <- n
+    resolution <- data.frame(
+        eta = eta.grid,
+        retained.cutoff.weight = cutoff.weights,
+        spectrally.resolved = resolved,
+        exact.identity = exact.identity,
+        stringsAsFactors = FALSE
+    )
+    out <- list(
+        fitted.values = fitted.out,
+        eta.grid = eta.grid,
+        filter.type = filter.type,
+        effective.df = effective.df,
+        resolution = resolution,
+        n.responses = n.responses,
+        response.names = response.names,
+        basis = basis,
+        parameters = list(
+            block.size = block.size,
+            truncation.tol = truncation.tol,
+            unresolved.action = unresolved.action,
+            exact.zero = exact.zero
+        )
+    )
+    class(out) <- c("metric.graph.lowpass.path", "list")
+    out
+}
+
 #' Fit Metric-Conductance Graph Low-Pass Regression
 #'
 #' Fits graph-spectral low-pass regression on a supplied graph by transforming
@@ -153,11 +505,9 @@ fit.metric.graph.lowpass <- function(
     dense.fallback = c("auto", "never", "always"),
     verbose = FALSE) {
 
-    graph <- .validate.metric.graph.lowpass.graph(adj.list, weight.list)
-    n <- length(graph$adj.list)
-    y <- .validate.metric.graph.lowpass.response(y, n, "y")
-
-    args <- .validate.metric.graph.lowpass.operator.args(
+    basis <- metric.graph.lowpass.basis(
+        adj.list = adj.list,
+        weight.list = weight.list,
         conductance.rule = conductance.rule,
         conductance.epsilon = conductance.epsilon,
         conductance.alpha = conductance.alpha,
@@ -166,49 +516,22 @@ fit.metric.graph.lowpass <- function(
         conductance.sigma.quantile = conductance.sigma.quantile,
         conductance.local.k = conductance.local.k,
         laplacian.type = laplacian.type,
-        verbose = verbose
-    )
-    solver <- .validate.metric.graph.lowpass.solver.args(
         n.eigenpairs = n.eigenpairs,
-        n = n,
         eigen.solver = eigen.solver,
         dense.eigen.threshold = dense.eigen.threshold,
         dense.fallback.threshold = dense.fallback.threshold,
-        dense.fallback = dense.fallback
+        dense.fallback = dense.fallback,
+        verbose = verbose
     )
+    n <- basis$spectral$n.vertices
+    y <- .validate.metric.graph.lowpass.response(y, n, "y")
     filter.type <- match.arg(filter.type)
     n.candidates <- .validate.positive.integer.scalar(n.candidates, "n.candidates")
 
-    raw <- rcpp_metric_graph_lowpass_spectrum(
-        graph$adj.list.0based,
-        graph$weight.list.cpp,
-        args$conductance.rule,
-        args$conductance.epsilon,
-        args$conductance.alpha,
-        args$conductance.sigma,
-        args$conductance.sigma.rule,
-        args$conductance.sigma.quantile,
-        args$conductance.local.k,
-        args$laplacian.type,
-        solver$n.eigenpairs,
-        solver$eigen.solver,
-        solver$dense.eigen.threshold,
-        solver$dense.fallback.threshold,
-        solver$dense.fallback,
-        as.logical(verbose)
-    )
-
-    operator <- raw$operator
-    operator$graph$adj.list <- graph$adj.list
-    operator$graph$weight.list <- graph$weight.list
-    operator <- .attach.metric.graph.lowpass.laplacian(operator, TRUE)
-    class(operator) <- c("metric.graph.lowpass.operator", "list")
-
-    spectral <- raw$spectral
-    eigenvalues <- as.double(spectral$eigenvalues)
-    V <- as.matrix(spectral$eigenvectors)
-    .require.metric.graph.lowpass.finite(eigenvalues, "spectral$eigenvalues")
-    .require.metric.graph.lowpass.finite(V, "spectral$eigenvectors")
+    operator <- basis$operator
+    spectral <- basis$spectral
+    eigenvalues <- spectral$eigenvalues
+    V <- spectral$eigenvectors
 
     eta.grid <- .prepare.metric.graph.lowpass.eta.grid(
         eta.grid = eta.grid,
@@ -264,7 +587,7 @@ fit.metric.graph.lowpass <- function(
             effective.df = gcv.result$effective.df,
             best.idx = best.idx
         ),
-        parameters = c(args, solver, list(filter.type = filter.type)),
+        parameters = c(basis$parameters, list(filter.type = filter.type)),
         timing = NULL
     )
     attr(result, "call") <- match.call()
@@ -563,6 +886,44 @@ refit.metric.graph.lowpass <- function(fitted.model,
         stop(sprintf("%s must be a positive integer scalar.", name))
     }
     as.integer(x)
+}
+
+.validate.logical.scalar <- function(x, name) {
+    if (!is.logical(x) || length(x) != 1L || is.na(x)) {
+        stop(sprintf("%s must be TRUE or FALSE.", name), call. = FALSE)
+    }
+    x
+}
+
+.validate.unit.interval.open <- function(x, name) {
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) ||
+        !is.finite(x) || x <= 0 || x >= 1) {
+        stop(
+            sprintf("%s must be a finite numeric scalar strictly between 0 and 1.", name),
+            call. = FALSE
+        )
+    }
+    as.double(x)
+}
+
+.validate.metric.graph.lowpass.basis <- function(basis) {
+    if (!inherits(basis, "metric.graph.lowpass.basis")) {
+        stop("basis must be a 'metric.graph.lowpass.basis' object.", call. = FALSE)
+    }
+    spectral <- basis$spectral
+    if (is.null(spectral$eigenvalues) || !is.numeric(spectral$eigenvalues) ||
+        is.null(spectral$eigenvectors) || !is.matrix(spectral$eigenvectors) ||
+        ncol(spectral$eigenvectors) != length(spectral$eigenvalues) ||
+        nrow(spectral$eigenvectors) != spectral$n.vertices) {
+        stop("basis contains an invalid eigensystem.", call. = FALSE)
+    }
+    .require.metric.graph.lowpass.finite(
+        spectral$eigenvalues, "basis$spectral$eigenvalues"
+    )
+    .require.metric.graph.lowpass.finite(
+        spectral$eigenvectors, "basis$spectral$eigenvectors"
+    )
+    invisible(TRUE)
 }
 
 .validate.metric.graph.lowpass.response <- function(y, n, name) {

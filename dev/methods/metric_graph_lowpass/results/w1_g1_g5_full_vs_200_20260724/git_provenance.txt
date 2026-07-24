@@ -1,0 +1,11 @@
+repository: /Users/pgajer/current_projects/geosmooth
+git_head: b412496401aa39c60b7eb709053f5aac1e7bf181
+git_status:
+ M NAMESPACE
+ M R/metric_graph_lowpass.R
+ M src/Makevars
+ M src/Makevars.win
+ M tests/testthat/test-metric-graph-lowpass.R
+?? dev/archive/split_handoffs_retained/selected_files/k12_lps_backend_policy_auto_dimension_contract_audit_response_reaudit_2026-06-04.pdf
+?? dev/methods/metric_graph_lowpass/
+?? dev/papers/

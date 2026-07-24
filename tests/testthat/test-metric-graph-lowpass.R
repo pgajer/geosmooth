@@ -357,3 +357,197 @@ test_that("per-column GCV refit matches independent fits", {
   expect_metric_refit_finite(refit)
   expect_metric_refit_finite(fixed.refit)
 })
+
+test_that("reusable basis preserves the established fit eigensystem", {
+  graph <- make_path_graph_lengths(c(0.4, 0.7, 1.1, 1.6, 2.2))
+  y <- sin(seq_len(6) / 3)
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    conductance.rule = "self.tuned.gaussian",
+    conductance.local.k = 2L,
+    n.eigenpairs = 6L,
+    eigen.solver = "dense"
+  )
+  fit <- fit.metric.graph.lowpass(
+    graph$adj.list, graph$weight.list, y,
+    conductance.rule = "self.tuned.gaussian",
+    conductance.local.k = 2L,
+    n.eigenpairs = 6L,
+    eigen.solver = "dense",
+    eta.grid = c(0.1, 1, 10)
+  )
+
+  expect_s3_class(basis, "metric.graph.lowpass.basis")
+  expect_true(basis$spectral$is.complete)
+  expect_equal(basis$spectral$eigenvalues, fit$spectral$eigenvalues,
+               tolerance = 1e-12)
+  expect_equal(
+    abs(crossprod(basis$spectral$eigenvectors,
+                  fit$spectral$eigenvectors)),
+    diag(6),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.matrix(basis$laplacian$matrix),
+    as.matrix(fit$laplacian$matrix),
+    tolerance = 1e-12
+  )
+})
+
+test_that("low-pass path reproduces the W1 spectral heat formula", {
+  graph <- make_path_graph_lengths(c(0.3, 0.5, 0.8, 1.3, 2.1, 3.4))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    conductance.rule = "self.tuned.gaussian",
+    conductance.local.k = 2L,
+    n.eigenpairs = 7L,
+    eigen.solver = "dense"
+  )
+  y <- seq_len(7) / sum(seq_len(7))
+  eta <- c(0, 0.05, 0.5, 5)
+  path <- apply.metric.graph.lowpass.path(
+    basis, y, eta,
+    filter.type = "heat_kernel",
+    unresolved.action = "error"
+  )
+  V <- basis$spectral$eigenvectors
+  lambda <- basis$spectral$eigenvalues
+  expected <- vapply(eta, function(value) {
+    if (value == 0) return(y)
+    as.numeric(V %*% (exp(-value * lambda) * crossprod(V, y)))
+  }, numeric(length(y)))
+
+  expect_s3_class(path, "metric.graph.lowpass.path")
+  expect_equal(
+    unname(path$fitted.values), unname(expected), tolerance = 1e-11
+  )
+  expect_true(all(path$resolution$spectrally.resolved))
+  expect_true(path$resolution$exact.identity[[1L]])
+  expect_equal(path$effective.df[[1L]], length(y))
+})
+
+test_that("low-pass path batches multiple responses without changing results", {
+  graph <- make_path_graph_lengths(rep(1, 11))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 12L,
+    eigen.solver = "dense"
+  )
+  Y <- cbind(
+    increasing = seq_len(12),
+    oscillating = sin(seq_len(12)),
+    decreasing = rev(seq_len(12))
+  )
+  eta <- c(0.01, 0.1, 1)
+  batched <- apply.metric.graph.lowpass.path(
+    basis, Y, eta, block.size = 2L
+  )
+  separate <- lapply(seq_len(ncol(Y)), function(j) {
+    apply.metric.graph.lowpass.path(basis, Y[, j], eta)$fitted.values
+  })
+
+  expect_equal(dim(batched$fitted.values), c(12L, 3L, 3L))
+  for (j in seq_along(separate)) {
+    expect_equal(
+      unname(batched$fitted.values[, , j]),
+      unname(separate[[j]]),
+      tolerance = 1e-11
+    )
+  }
+})
+
+test_that("heat-time grids distinguish W1 and guarded truncated rules", {
+  graph <- make_path_graph_lengths(rep(1, 29))
+  complete <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 30L,
+    eigen.solver = "dense"
+  )
+  truncated <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 10L,
+    eigen.solver = "dense"
+  )
+  w1 <- metric.graph.heat.eta.grid(
+    complete, rule = "w1_inverse_spectrum", n.initial = 8L
+  )
+  guarded <- metric.graph.heat.eta.grid(
+    truncated, rule = "spectral_guarded", n.initial = 8L,
+    truncation.tol = 1e-6, equilibrium.tol = 1e-5
+  )
+
+  positive <- complete$spectral$eigenvalues[
+    complete$spectral$eigenvalues > .Machine$double.eps
+  ]
+  expect_equal(unname(w1[[1L]]), 1 / max(positive), tolerance = 1e-12)
+  expect_equal(unname(tail(w1, 1L)), 1 / min(positive), tolerance = 1e-10)
+  expect_equal(attr(guarded, "rule"), "spectral_guarded")
+  expect_false(attr(guarded, "basis.complete"))
+  expect_lte(
+    exp(-guarded[[1L]] * attr(guarded, "lambda.cut")),
+    1e-6 * (1 + 1e-10)
+  )
+})
+
+test_that("truncated paths guard weak smoothing and preserve exact eta zero", {
+  graph <- make_path_graph_lengths(rep(1, 39))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 12L,
+    eigen.solver = "dense"
+  )
+  y <- sin(seq_len(40) / 3)
+
+  expect_warning(
+    path <- apply.metric.graph.lowpass.path(
+      basis, y, c(0, 1e-8, 100),
+      truncation.tol = 1e-4,
+      unresolved.action = "warn"
+    ),
+    "exceed the truncated-basis attenuation tolerance"
+  )
+  expect_equal(path$fitted.values[, 1L], y, tolerance = 0)
+  expect_true(path$resolution$exact.identity[[1L]])
+  expect_false(path$resolution$spectrally.resolved[[2L]])
+  expect_error(
+    apply.metric.graph.lowpass.path(
+      basis, y, 1e-8,
+      truncation.tol = 1e-4,
+      unresolved.action = "error"
+    ),
+    "increase n.eigenpairs"
+  )
+})
+
+test_that("guarded first-200-mode heat agrees with the complete heat path", {
+  graph <- make_path_graph_lengths(rep(1, 239))
+  full <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 240L,
+    eigen.solver = "dense"
+  )
+  truncated <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 200L,
+    eigen.solver = "dense"
+  )
+  set.seed(20260724)
+  y <- stats::rbinom(240L, 1L, 0.15)
+  eta <- metric.graph.heat.eta.grid(
+    truncated,
+    rule = "spectral_guarded",
+    n.initial = 6L,
+    truncation.tol = 1e-6,
+    equilibrium.tol = 1e-5
+  )
+  full.path <- apply.metric.graph.lowpass.path(full, y, eta)
+  truncated.path <- apply.metric.graph.lowpass.path(
+    truncated, y, eta,
+    truncation.tol = 1e-6,
+    unresolved.action = "error"
+  )
+  difference <- full.path$fitted.values - truncated.path$fitted.values
+
+  expect_lt(sqrt(mean(difference^2)), 1e-7)
+  expect_lt(max(abs(difference)), 2e-6)
+})

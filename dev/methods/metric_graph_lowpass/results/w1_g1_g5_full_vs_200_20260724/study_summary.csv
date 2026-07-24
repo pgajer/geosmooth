@@ -1,0 +1,11 @@
+"quantity","value"
+"phases",5
+"graphs",41
+"candidates",1672
+"maximum_full_api_vs_saved_w1_absolute_error",6.49480469405717e-15
+"maximum_selected_density_tv_full_vs_200",5.83319775718663e-05
+"maximum_selected_density_rmse_full_vs_200",0.000272853728633312
+"maximum_selected_density_hellinger_full_vs_200",0.00291936512089415
+"oracle_candidate_agreements",13
+"oracle_candidate_comparisons",15
+"candidates_spectrally_unresolved_at_1e-4",467
