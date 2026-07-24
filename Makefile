@@ -49,6 +49,7 @@ test-migration:
 	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/migration")'
 
 build: clean
+	$(MAKE) document
 	R CMD build .
 
 check: build
