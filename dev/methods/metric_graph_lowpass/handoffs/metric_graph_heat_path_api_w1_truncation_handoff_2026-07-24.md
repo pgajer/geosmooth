@@ -10,21 +10,25 @@ Branch: `main`
 
 Base commit: `b412496401aa39c60b7eb709053f5aac1e7bf181`
 
-Implementation and evidence commit:
-`a693875ec9f1ab7c2bef751a8b5bea76cd6210d3`
+Audit-remediation implementation commit:
+`63fadf2bca6c5079696225923ffd5af2964c9cdd`
 
-Final git status before adding this handoff: the implementation commit was
-clean relative to its own files. Pre-existing, unrelated modifications remained
-in `src/Makevars` and `src/Makevars.win`; an archive PDF and files under
-`dev/papers/` also remained untracked. None were staged or modified for this
-task.
+Regenerated evidence commit:
+`7f835d49c3728d9573dfdd50ae2fb8296d96f957`
+
+Final git status before updating this handoff: the remediation and evidence
+commits were clean relative to their files. Pre-existing, unrelated
+modifications remained in `src/Makevars` and `src/Makevars.win`; an archive PDF
+and files under `dev/papers/` also remained untracked. None were staged or
+modified for this task.
 
 ## Goal
 
 Provide reusable `geosmooth` functions for constructing a metric graph
 low-pass spectral basis, constructing a graph heat-time grid, and applying a
-complete heat path to one or many responses. Verify that the new full-spectrum
-API reproduces the saved W1 G1--G5 graph-heat implementation, then quantify the
+complete heat path to one or many responses. Verify selected-fit reproduction
+against the saved W1 G1--G5 graph-heat implementation, quantify numerical
+reproduction across the complete historical candidate grids, and quantify the
 effect of replacing all eigenvectors with the first 200 eigenvectors.
 
 ## Work Completed
@@ -45,15 +49,39 @@ Three public functions were added:
 `metric.graph.lowpass.basis()`. Its existing fitting, GCV, and return semantics
 remain in place.
 
+The audit remediation also made four API/build corrections:
+
+- `rule = "w1_inverse_spectrum"` now rejects a truncated basis because its
+  lower endpoint requires the largest eigenvalue of the complete spectrum;
+- unresolved-candidate advice no longer recommends increasing the filter
+  parameter, which is the wrong direction for the implemented Butterworth
+  filter;
+- `make build` runs `make document` before constructing the source archive;
+- generated text evidence removes trailing spaces.
+
 The W1 comparison harness evaluates one frozen representative dataset from each
 of G1--G5. Within each dataset it evaluates every graph and every saved
 graph-heat candidate in the corresponding result object. This produced 41
 graphs and 1,672 candidate comparisons.
 
+The harness pins the external W1 checkout at
+`46611a0f4daa8fec6710cb0908770d7ad536725f` and verifies both sourced helper
+hashes before execution. It asserts the realized operator for every graph. The
+frozen phase contracts are:
+
+- G1: self-tuned Gaussian conductance with local conductance neighborhood
+  fixed at 5;
+- G2--G5: self-tuned Gaussian conductance with the local conductance
+  neighborhood equal to the symmetric graph's \(k\).
+
+The G2--G5 rule is defined by the override in `R/eod_w1b_g2.R`, which is sourced
+after `R/eod_w1a_g1.R` by the G2--G5 workers.
+
 ## Files Changed Or Created
 
 Package source and generated namespace:
 
+- `/Users/pgajer/current_projects/geosmooth/Makefile`
 - `/Users/pgajer/current_projects/geosmooth/R/metric_graph_lowpass.R`
 - `/Users/pgajer/current_projects/geosmooth/NAMESPACE`
 
@@ -88,6 +116,8 @@ Its main files are:
 - `w1_selected_comparison.csv`: comparisons at the W1-selected candidates.
 - `oracle_selection_comparison.csv`: full-versus-truncated oracle choices for
   TV, RMSE, and Hellinger distance.
+- `operator_contract.csv`: phase-specific W1 graph-heat settings, helper
+  provenance, and hard-gate tolerances.
 - `source_provenance.csv`, `source_checksums.csv`, `git_provenance.txt`, and
   `sessionInfo.txt`: input and execution provenance.
 
@@ -99,20 +129,34 @@ commit. All reported numerical findings are present in the committed CSV files.
 
 ### Full-spectrum API reproduction
 
-Across 41 graphs and 1,672 candidates, the maximum absolute difference between
-the density produced by the new full-spectrum API and the corresponding saved
-W1 density was:
+All 41 graph-level operator assertions passed. The five W1-selected fits passed
+a strict `1e-10` saved-fit parity gate; their largest absolute discrepancy was
+`8.617239e-16`.
 
-`6.49480469405717e-15`
+Across the complete 1,672-candidate historical grids, the largest discrepancy
+was `0.00326781393642336`, on the G5 `symmetric_knn_k04` graph. This is not an
+operator mismatch. The G5 repaired graphs have two numerical near-zero
+eigenvalues, and their historical grids extend to heat times between
+approximately \(10^{14}\) and \(10^{15}\). At those endpoints, solver-scale
+changes in a near-zero eigenvalue are amplified by the exponential heat
+filter. The selected G5 fit uses `eta = 2.8447002` and reproduces the saved
+density within `4.421376e-16`.
 
-This is numerical roundoff. The new API reproduces the tested W1 G1--G5
-graph-heat calculation.
+The harness therefore applies two explicit hard gates:
+
+- `1e-10` for each saved W1-selected fit;
+- `0.005` for every candidate in the historical grids, with the extreme-grid
+  discrepancies retained in the evidence rather than described as roundoff.
+
+All five selected-fit gates and all 41 all-candidate reproduction gates passed.
+The corrected evidence does not claim machine-precision reproduction of every
+extreme G5 endpoint.
 
 ### First-200-eigenvector approximation at the W1-selected candidate
 
 | Phase | Resolved at `1e-4` | Density TV | Density RMSE | Hellinger |
 |---|---:|---:|---:|---:|
-| G1 | yes | `1.83e-16` | `4.97e-16` | `1.55e-14` |
+| G1 | yes | `1.15e-16` | `3.28e-16` | `1.04e-14` |
 | G2 | no | `1.84e-05` | `7.35e-05` | `9.50e-04` |
 | G3 | no | `5.83e-05` | `2.73e-04` | `2.92e-03` |
 | G4 | yes | `9.10e-11` | `2.43e-10` | `1.72e-09` |
@@ -169,11 +213,7 @@ make test-graph
 ```
 
 ```sh
-make test
-```
-
-```sh
-Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_file('tests/testthat/test-coupled-kd-selection-csd4.R')"
+git worktree add --detach /tmp/geosmooth-clean-audit-hoAaMl 63fadf2
 ```
 
 ```sh
@@ -181,31 +221,35 @@ make check-fast
 ```
 
 ```sh
-git diff --check
+tar -tzf geosmooth_0.0.0.9000.tar.gz | rg \
+  'geosmooth/man/(metric.graph.lowpass.basis|metric.graph.heat.eta.grid|apply.metric.graph.lowpass.path)\.Rd$'
+```
+
+```sh
+git diff --cached --check
 ```
 
 ## Validation
 
-- The focused metric-graph-lowpass file passed 154 expectations with no
+- The focused metric-graph-lowpass file passed 156 expectations with no
   failures, warnings, or skips.
-- `make test-graph` passed all seven graph test files, totaling 497
+- `make test-graph` passed all seven graph test files, totaling 499
   expectations with no failures, warnings, or skips.
 - The W1 harness completed all five phase representatives, 41 graphs, and
-  1,672 candidates. It verified saved-W1 reproduction and wrote candidate-,
-  graph-, phase-, selected-fit-, and oracle-level comparisons atomically.
-- `make check-fast` built and installed the source package successfully and
-  completed with two warnings and four notes. None identified the new API or
-  its generated Rd pages as defective.
-- `git diff --check` reported no whitespace errors.
+  1,672 candidates. It passed 41 operator assertions, five strict selected-fit
+  parity gates, and 41 bounded all-candidate reproduction gates, then wrote
+  candidate-, graph-, phase-, selected-fit-, and oracle-level comparisons
+  atomically.
+- `make check-fast` ran from a clean detached worktree at `63fadf2`, built and
+  installed the source package successfully, and completed with two warnings
+  and four notes. None identified the new API or its generated Rd pages as
+  defective.
+- The clean source archive contained the Rd pages for all three exported APIs.
+- `git diff --cached --check` reported no whitespace errors before each
+  remediation/evidence commit. The regenerated `sessionInfo.txt` has no
+  trailing whitespace.
 - The exported functions were loaded through `geosmooth::`, confirming
   namespace exposure.
-
-`make test` traversed the smoke suite but displayed one failure in the
-pre-existing CSD4 PS-LPS support-reuse call-count test: 76 calls were observed
-where the test expects 3. The custom target nevertheless returned process
-status zero. Running
-`tests/testthat/test-coupled-kd-selection-csd4.R` alone reproduced the same
-failure. The failing code and test were not modified in this task.
 
 ## Canonical And Generated File Notes
 
@@ -220,6 +264,8 @@ under the repository-wide `man/` rule:
 - `man/apply.metric.graph.lowpass.path.Rd`
 
 They are regenerated by `make document`; they were not hand-edited.
+`make build` now invokes that documentation step before `R CMD build`, so the
+public help pages are present in an archive built from a clean checkout.
 
 The comparison CSV and text files are generated by
 `dev/methods/metric_graph_lowpass/ci/w1_g1_g5_full_vs_200.R`.
@@ -240,18 +286,23 @@ was rerun after its final aggregation change.
 - The study does not repeat cross-validation using truncated predictions. It
   compares fitted paths, truth-facing measures, the saved W1-selected
   candidate, and truth-facing oracle choices.
+- Complete-path reproduction is not machine-precision on the G5 candidate-grid
+  endpoints with heat times near \(10^{14}\)--\(10^{15}\). The maximum observed
+  saved-fit discrepancy is `0.00326781393642336`; selected-fit reproduction
+  remains at machine precision.
 - The observed basis-construction times were collected during a local
   `pkgload` execution and are descriptive only. No formal runtime or memory
   benchmark was performed.
-- The CSD4 call-count failure prevents a claim that the full package smoke
-  suite is green. Its isolated reproduction and lack of overlap with this
-  change are documented, but its cause was not investigated here.
+- A prior full smoke-suite run exposed a pre-existing CSD4 PS-LPS support-reuse
+  call-count failure. That test was not modified or re-investigated here, so
+  this handoff does not claim the full package smoke suite is green.
 - `make check-fast` retained two warnings and four notes. These include
   non-mainstream dependencies and package metadata, an unrelated
   `normalize.density` usage mismatch, an unrelated Rd brace issue, and an
   existing undefined `tail` import note. They were not corrected in this task.
 - The ignored local `comparison_results.rds` is not durable Git evidence.
-- No independent audit has been performed, and no audit acceptance is claimed.
+- The first independent audit requested changes. This handoff records the
+  remediation; no re-audit acceptance is claimed.
 
 ## Reusable Workflow Capture
 
