@@ -241,12 +241,12 @@ metric.graph.lowpass.basis <- function(
 #' \code{"metric.graph.lowpass.basis"} object.
 #'
 #' @param basis A \code{"metric.graph.lowpass.basis"} object.
-#' @param rule Grid rule. \code{"w1_inverse_spectrum"} reproduces the W1
-#'   inverse-spectrum grid. \code{"spectral_guarded"} raises the lower endpoint
-#'   for a truncated basis until the conservative omitted-mode attenuation
-#'   bound is no larger than \code{truncation.tol}, and extends the upper
-#'   endpoint until the slowest retained positive mode is attenuated to
-#'   \code{equilibrium.tol}.
+#' @param rule Grid rule. \code{"w1_inverse_spectrum"} requires a complete
+#'   basis and reproduces the W1 inverse-spectrum grid.
+#'   \code{"spectral_guarded"} raises the lower endpoint for a truncated basis
+#'   until the conservative omitted-mode attenuation bound is no larger than
+#'   \code{truncation.tol}, and extends the upper endpoint until the slowest
+#'   retained positive mode is attenuated to \code{equilibrium.tol}.
 #' @param n.initial Number of positive grid values.
 #' @param include.zero Logical. Include the exact no-smoothing endpoint.
 #' @param truncation.tol Positive tolerance smaller than one for the
@@ -267,6 +267,13 @@ metric.graph.heat.eta.grid <- function(
 
     .validate.metric.graph.lowpass.basis(basis)
     rule <- match.arg(rule)
+    if (rule == "w1_inverse_spectrum" &&
+        !isTRUE(basis$spectral$is.complete)) {
+        stop(
+            "rule = 'w1_inverse_spectrum' requires a complete spectral basis.",
+            call. = FALSE
+        )
+    }
     n.initial <- .validate.positive.integer.scalar(n.initial, "n.initial")
     if (n.initial < 2L) stop("n.initial must be at least 2.", call. = FALSE)
     include.zero <- .validate.logical.scalar(include.zero, "include.zero")
@@ -388,7 +395,8 @@ apply.metric.graph.lowpass.path <- function(
     if (length(unresolved) && unresolved.action != "allow") {
         msg <- paste0(
             length(unresolved), " candidate(s) exceed the truncated-basis ",
-            "attenuation tolerance; increase n.eigenpairs or use larger eta."
+            "attenuation tolerance; increase n.eigenpairs or choose a filter ",
+            "parameter that more strongly attenuates omitted modes."
         )
         if (unresolved.action == "error") stop(msg, call. = FALSE)
         warning(msg, call. = FALSE)

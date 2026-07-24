@@ -35,10 +35,42 @@ output.dir <- normalizePath(
 )
 dir.create(output.dir, recursive = TRUE, showWarnings = FALSE)
 
-suppressPackageStartupMessages(pkgload::load_all(repo.root, quiet = TRUE))
-source(file.path(project.root, "R", "eod_w1a_g1.R"), local = .GlobalEnv)
-
 sha256 <- function(path) unname(tools::sha256sum(path))
+w1.expected.commit <- "46611a0f4daa8fec6710cb0908770d7ad536725f"
+w1.helper.paths <- c(
+    G1 = file.path(project.root, "R", "eod_w1a_g1.R"),
+    G2_G5 = file.path(project.root, "R", "eod_w1b_g2.R")
+)
+w1.expected.helper.sha256 <- c(
+    G1 = "9d4d4380dc50f80a08fc3294ee5d8fe4913bc2e8ff539ba5d04a1f85a8e9b514",
+    G2_G5 =
+        "a08751686e7d476302793caf8f87b2f2c860a8392f385a450a34352256725c0d"
+)
+w1.actual.commit <- system2(
+    "git", c("-C", project.root, "rev-parse", "HEAD"), stdout = TRUE
+)
+w1.actual.helper.sha256 <- vapply(
+    w1.helper.paths, sha256, character(1)
+)
+if (!identical(w1.actual.commit, w1.expected.commit)) {
+    stop(
+        "W1 project commit mismatch: expected ", w1.expected.commit,
+        ", observed ", w1.actual.commit, call. = FALSE
+    )
+}
+if (!identical(
+    unname(w1.actual.helper.sha256),
+    unname(w1.expected.helper.sha256)
+)) {
+    stop(
+        "W1 helper checksum mismatch.", call. = FALSE
+    )
+}
+
+suppressPackageStartupMessages(pkgload::load_all(repo.root, quiet = TRUE))
+source(w1.helper.paths[["G1"]], local = .GlobalEnv)
+source(w1.helper.paths[["G2_G5"]], local = .GlobalEnv)
+
 atomic.csv <- function(x, path) {
     tmp <- paste0(path, ".tmp-", Sys.getpid())
     utils::write.csv(x, tmp, row.names = FALSE, na = "")
@@ -51,8 +83,69 @@ atomic.rds <- function(x, path) {
 }
 atomic.lines <- function(x, path) {
     tmp <- paste0(path, ".tmp-", Sys.getpid())
-    writeLines(x, tmp)
+    writeLines(sub("[ \t]+$", "", as.character(x)), tmp)
     if (!file.rename(tmp, path)) stop("Could not publish ", path, call. = FALSE)
+}
+
+w1.operator.contract <- data.frame(
+    phase = paste0("G", 1:5),
+    contract.id = c(
+        "W1_G1_GRAPH_HEAT_FIXED_LOCAL_K5",
+        rep("W1_G2_G5_GRAPH_HEAT_LOCAL_K_EQUALS_GRAPH_K", 4L)
+    ),
+    w1.project.commit = w1.expected.commit,
+    w1.helper.path = c(
+        normalizePath(w1.helper.paths[["G1"]]),
+        rep(normalizePath(w1.helper.paths[["G2_G5"]]), 4L)
+    ),
+    w1.helper.sha256 = c(
+        w1.expected.helper.sha256[["G1"]],
+        rep(w1.expected.helper.sha256[["G2_G5"]], 4L)
+    ),
+    conductance.rule = "self.tuned.gaussian",
+    conductance.local.k.rule = c("fixed_5", rep("graph_k", 4L)),
+    laplacian.type = "unnormalized",
+    full.eigen.solver = "dense",
+    full.n.eigenpairs.rule = "n_vertices",
+    eta.grid.rule = "complete_inverse_spectrum",
+    selected.fit.parity.tolerance = 1e-10,
+    all.candidate.reproduction.tolerance = 5e-3,
+    reproduction.tolerance.rationale = paste(
+        "Bounds solver-level variation at extreme eta on nearly disconnected",
+        "repaired graphs; selected fits retain the strict parity gate."
+    ),
+    stringsAsFactors = FALSE
+)
+
+assert.operator.contract <- function(basis, expected.n.eigenpairs,
+                                     expect.complete, expected.local.k) {
+    checks <- c(
+        identical(
+            basis$parameters$conductance.rule,
+            "self.tuned.gaussian"
+        ),
+        identical(
+            as.integer(basis$parameters$conductance.local.k),
+            as.integer(expected.local.k)
+        ),
+        identical(
+            basis$parameters$laplacian.type,
+            "unnormalized"
+        ),
+        identical(
+            as.integer(basis$parameters$n.eigenpairs),
+            as.integer(expected.n.eigenpairs)
+        ),
+        identical(
+            isTRUE(basis$spectral$is.complete),
+            isTRUE(expect.complete)
+        )
+    )
+    if (!all(checks)) {
+        stop("Realized basis violates the pinned W1 operator contract.",
+             call. = FALSE)
+    }
+    invisible(TRUE)
 }
 
 case.spec <- data.frame(
@@ -228,9 +321,25 @@ for (case.index in seq_len(nrow(case.spec))) {
         graph.k <- suppressWarnings(as.integer(sub(
             "^symmetric_knn_k0*", "", graph.id
         )))
-        conductance.k <- if (phase == "G1") 5L else graph.k
-        if (is.na(conductance.k)) {
-            stop("Could not resolve conductance.local.k for ", graph.id)
+        if (is.na(graph.k)) {
+            stop("Could not resolve graph k for ", graph.id)
+        }
+        phase.contract <- w1.operator.contract[
+            w1.operator.contract$phase == phase, , drop = FALSE
+        ]
+        if (nrow(phase.contract) != 1L) {
+            stop("Could not resolve the operator contract for ", phase,
+                 call. = FALSE)
+        }
+        conductance.k <- if (
+            identical(
+                phase.contract$conductance.local.k.rule[[1L]],
+                "fixed_5"
+            )
+        ) {
+            5L
+        } else {
+            graph.k
         }
 
         full.seconds <- system.time({
@@ -258,6 +367,29 @@ for (case.index in seq_len(nrow(case.spec))) {
                 dense.fallback = "never"
             )
         })[["elapsed"]]
+        assert.operator.contract(
+            full.basis,
+            expected.n.eigenpairs = n,
+            expect.complete = TRUE,
+            expected.local.k = conductance.k
+        )
+        assert.operator.contract(
+            truncated.basis,
+            expected.n.eigenpairs = retained,
+            expect.complete = retained == n,
+            expected.local.k = conductance.k
+        )
+        laplacian.max.abs.error <- max(abs(
+            full.basis$laplacian$matrix -
+                truncated.basis$laplacian$matrix
+        ))
+        if (!is.finite(laplacian.max.abs.error) ||
+            laplacian.max.abs.error > 1e-12) {
+            stop(
+                "Full and truncated bases use different graph operators for ",
+                phase, " / ", graph.id, call. = FALSE
+            )
+        }
         full.path <- geosmooth::apply.metric.graph.lowpass.path(
             full.basis,
             mass,
@@ -289,6 +421,45 @@ for (case.index in seq_len(nrow(case.spec))) {
                 stop("Saved W1 path is incomplete for ", phase, call. = FALSE)
             }
             saved.max[[j]] <- max(abs(full.rho[, j] - observed$rho.hat))
+        }
+        graph.reproduction.error <- max(saved.max)
+        graph.reproduction.passed <-
+            is.finite(graph.reproduction.error) &&
+            graph.reproduction.error <=
+                phase.contract$all.candidate.reproduction.tolerance[[1L]]
+        if (!graph.reproduction.passed) {
+            stop(
+                "Full API versus saved W1 all-candidate reproduction gate ",
+                "failed for ",
+                phase, " / ", graph.id, ": max absolute error = ",
+                format(graph.reproduction.error, digits = 17),
+                ", tolerance = ",
+                phase.contract$all.candidate.reproduction.tolerance[[1L]],
+                call. = FALSE
+            )
+        }
+        selected.in.graph <- candidate$candidate.id == selected.id
+        selected.parity.error <- if (any(selected.in.graph)) {
+            max(saved.max[selected.in.graph])
+        } else {
+            NA_real_
+        }
+        selected.parity.passed <- if (any(selected.in.graph)) {
+            is.finite(selected.parity.error) &&
+                selected.parity.error <=
+                    phase.contract$selected.fit.parity.tolerance[[1L]]
+        } else {
+            NA
+        }
+        if (any(selected.in.graph) && !selected.parity.passed) {
+            stop(
+                "Full API versus saved W1 selected-fit parity gate failed for ",
+                phase, " / ", graph.id, ": max absolute error = ",
+                format(selected.parity.error, digits = 17),
+                ", tolerance = ",
+                phase.contract$selected.fit.parity.tolerance[[1L]],
+                call. = FALSE
+            )
         }
 
         graph.candidate.rows <- vector("list", nrow(candidate))
@@ -326,16 +497,44 @@ for (case.index in seq_len(nrow(case.spec))) {
             )
         }
         graph.candidate <- do.call(rbind, graph.candidate.rows)
+        near.zero.threshold <- sqrt(.Machine$double.eps) *
+            max(1, max(abs(full.basis$spectral$eigenvalues)))
         phase.candidate.rows[[graph.index]] <- graph.candidate
         phase.graph.rows[[graph.index]] <- data.frame(
             phase = phase,
             dataset.id = result$dataset.id,
             graph.id = graph.id,
             graph.k = graph.k,
+            operator.contract.id = phase.contract$contract.id[[1L]],
             n.edges = sum(lengths(graph$adj.list)) / 2,
             n.candidates = nrow(candidate),
             full.backend = full.basis$spectral$backend,
             truncated.backend = truncated.basis$spectral$backend,
+            conductance.rule =
+                full.basis$parameters$conductance.rule,
+            conductance.local.k =
+                full.basis$parameters$conductance.local.k,
+            laplacian.type =
+                full.basis$parameters$laplacian.type,
+            operator.contract.asserted = TRUE,
+            full.truncated.laplacian.max.abs.error =
+                laplacian.max.abs.error,
+            full.minimum.abs.eigenvalue =
+                min(abs(full.basis$spectral$eigenvalues)),
+            full.near.zero.eigenvalue.threshold =
+                near.zero.threshold,
+            full.near.zero.eigenvalue.count = sum(
+                abs(full.basis$spectral$eigenvalues) <= near.zero.threshold
+            ),
+            maximum.eta = max(candidate$eta),
+            selected.fit.parity.tolerance =
+                phase.contract$selected.fit.parity.tolerance[[1L]],
+            selected.fit.parity.error = selected.parity.error,
+            selected.fit.parity.passed = selected.parity.passed,
+            all.candidate.reproduction.tolerance =
+                phase.contract$all.candidate.reproduction.tolerance[[1L]],
+            all.candidate.reproduction.passed =
+                graph.reproduction.passed,
             full.basis.elapsed.sec = unname(full.seconds),
             truncated.basis.elapsed.sec = unname(truncated.seconds),
             max.w1.saved.max.abs.error = max(saved.max),
@@ -410,8 +609,19 @@ for (case.index in seq_len(nrow(case.spec))) {
         phase = phase,
         result.path = normalizePath(result.path),
         result.sha256 = sha256(result.path),
+        result.source.commit = if (is.null(result$source.commit)) {
+            NA_character_
+        } else {
+            result$source.commit
+        },
         bundle.path = normalizePath(result$bundle.path),
         bundle.sha256 = sha256(result$bundle.path),
+        w1.project.commit = w1.actual.commit,
+        w1.helper.path = phase.contract$w1.helper.path[[1L]],
+        w1.helper.sha256 = phase.contract$w1.helper.sha256[[1L]],
+        operator.contract.id = phase.contract$contract.id[[1L]],
+        conductance.local.k.rule =
+            phase.contract$conductance.local.k.rule[[1L]],
         geometry.asset.path = if (is.null(attr(
             bundle,
             "geometry.asset.path"
@@ -445,7 +655,13 @@ study.summary <- data.frame(
         "maximum_selected_density_hellinger_full_vs_200",
         "oracle_candidate_agreements",
         "oracle_candidate_comparisons",
-        "candidates_spectrally_unresolved_at_1e-4"
+        "candidates_spectrally_unresolved_at_1e-4",
+        "operator_contract_assertions",
+        "operator_contract_failures",
+        "selected_fit_parity_gates",
+        "selected_fit_parity_failures",
+        "all_candidate_reproduction_gates",
+        "all_candidate_reproduction_failures"
     ),
     value = c(
         length(unique(candidate.table$phase)),
@@ -457,7 +673,13 @@ study.summary <- data.frame(
         max(selected.table$density.hellinger),
         sum(oracle.table$oracle.candidate.agreement),
         nrow(oracle.table),
-        sum(!candidate.table$spectrally.resolved.at.1e4)
+        sum(!candidate.table$spectrally.resolved.at.1e4),
+        nrow(graph.table),
+        sum(!graph.table$operator.contract.asserted),
+        sum(!is.na(graph.table$selected.fit.parity.passed)),
+        sum(graph.table$selected.fit.parity.passed %in% FALSE),
+        nrow(graph.table),
+        sum(!graph.table$all.candidate.reproduction.passed)
     ),
     stringsAsFactors = FALSE
 )
@@ -469,6 +691,10 @@ atomic.csv(selected.table, file.path(output.dir, "w1_selected_comparison.csv"))
 atomic.csv(oracle.table, file.path(output.dir, "oracle_selection_comparison.csv"))
 atomic.csv(provenance.table, file.path(output.dir, "source_provenance.csv"))
 atomic.csv(study.summary, file.path(output.dir, "study_summary.csv"))
+atomic.csv(
+    w1.operator.contract,
+    file.path(output.dir, "operator_contract.csv")
+)
 atomic.rds(
     list(
         case.spec = case.spec,
@@ -478,7 +704,8 @@ atomic.rds(
         selected.comparison = selected.table,
         oracle.selection = oracle.table,
         provenance = provenance.table,
-        study.summary = study.summary
+        study.summary = study.summary,
+        operator.contract = w1.operator.contract
     ),
     file.path(output.dir, "comparison_results.rds")
 )
@@ -489,7 +716,8 @@ atomic.lines(
 source.paths <- c(
     file.path(repo.root, "R", "metric_graph_lowpass.R"),
     file.path(repo.root, "tests", "testthat", "test-metric-graph-lowpass.R"),
-    normalizePath(script.path)
+    normalizePath(script.path),
+    unname(normalizePath(w1.helper.paths))
 )
 atomic.csv(
     data.frame(
@@ -510,6 +738,16 @@ atomic.lines(
         system2(
             "git", c("-C", repo.root, "status", "--short"),
             stdout = TRUE
+        ),
+        paste("w1_repository:", project.root),
+        paste("w1_git_head:", w1.actual.commit),
+        paste0(
+            "w1_helper_", names(w1.helper.paths), "_path: ",
+            unname(normalizePath(w1.helper.paths))
+        ),
+        paste0(
+            "w1_helper_", names(w1.actual.helper.sha256), "_sha256: ",
+            unname(w1.actual.helper.sha256)
         )
     ),
     file.path(output.dir, "git_provenance.txt")

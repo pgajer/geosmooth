@@ -483,6 +483,12 @@ test_that("heat-time grids distinguish W1 and guarded truncated rules", {
   expect_equal(unname(tail(w1, 1L)), 1 / min(positive), tolerance = 1e-10)
   expect_equal(attr(guarded, "rule"), "spectral_guarded")
   expect_false(attr(guarded, "basis.complete"))
+  expect_error(
+    metric.graph.heat.eta.grid(
+      truncated, rule = "w1_inverse_spectrum", n.initial = 8L
+    ),
+    "requires a complete spectral basis"
+  )
   expect_lte(
     exp(-guarded[[1L]] * attr(guarded, "lambda.cut")),
     1e-6 * (1 + 1e-10)
@@ -516,6 +522,26 @@ test_that("truncated paths guard weak smoothing and preserve exact eta zero", {
       unresolved.action = "error"
     ),
     "increase n.eigenpairs"
+  )
+})
+
+test_that("Butterworth unresolved advice does not reverse eta direction", {
+  graph <- make_path_graph_lengths(rep(1, 39))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 12L,
+    eigen.solver = "dense"
+  )
+  y <- sin(seq_len(40) / 3)
+
+  expect_warning(
+    apply.metric.graph.lowpass.path(
+      basis, y, eta.grid = 100,
+      filter.type = "butterworth",
+      truncation.tol = 1e-4,
+      unresolved.action = "warn"
+    ),
+    "choose a filter parameter that more strongly attenuates omitted modes"
   )
 })
 
