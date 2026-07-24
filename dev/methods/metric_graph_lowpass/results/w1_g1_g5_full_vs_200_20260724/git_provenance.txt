@@ -1,11 +1,23 @@
 repository: /Users/pgajer/current_projects/geosmooth
-git_head: b412496401aa39c60b7eb709053f5aac1e7bf181
+git_head: 63fadf2bca6c5079696225923ffd5af2964c9cdd
 git_status:
- M NAMESPACE
- M R/metric_graph_lowpass.R
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/candidate_comparison.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/case_summary.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/graph_summary.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/oracle_selection_comparison.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/sessionInfo.txt
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/source_checksums.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/source_provenance.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/study_summary.csv
+ M dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/w1_selected_comparison.csv
  M src/Makevars
  M src/Makevars.win
- M tests/testthat/test-metric-graph-lowpass.R
 ?? dev/archive/split_handoffs_retained/selected_files/k12_lps_backend_policy_auto_dimension_contract_audit_response_reaudit_2026-06-04.pdf
-?? dev/methods/metric_graph_lowpass/
+?? dev/methods/metric_graph_lowpass/results/w1_g1_g5_full_vs_200_20260724/operator_contract.csv
 ?? dev/papers/
+w1_repository: /Users/pgajer/current_projects/vaginal_community_trajectory_types
+w1_git_head: 46611a0f4daa8fec6710cb0908770d7ad536725f
+w1_helper_G1_path: /Users/pgajer/current_projects/vaginal_community_trajectory_types/R/eod_w1a_g1.R
+w1_helper_G2_G5_path: /Users/pgajer/current_projects/vaginal_community_trajectory_types/R/eod_w1b_g2.R
+w1_helper_G1_sha256: 9d4d4380dc50f80a08fc3294ee5d8fe4913bc2e8ff539ba5d04a1f85a8e9b514
+w1_helper_G2_G5_sha256: a08751686e7d476302793caf8f87b2f2c860a8392f385a450a34352256725c0d
