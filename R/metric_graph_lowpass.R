@@ -645,6 +645,167 @@ apply.metric.graph.lowpass.path <- function(
     out
 }
 
+.fit.metric.graph.lowpass.eta.search <- function(
+    basis,
+    y,
+    y.spectral,
+    V,
+    filter.type,
+    eta.grid,
+    eta.search,
+    eta.expansion.factor,
+    eta.max.expansions,
+    eta.identity.departure,
+    eta.truncation.tol) {
+
+    if (!is.numeric(eta.expansion.factor) ||
+        length(eta.expansion.factor) != 1L ||
+        is.na(eta.expansion.factor) ||
+        !is.finite(eta.expansion.factor) ||
+        eta.expansion.factor <= 1) {
+        stop(
+            "eta.expansion.factor must be a finite numeric scalar greater than one.",
+            call. = FALSE
+        )
+    }
+    eta.max.expansions <- .validate.nonnegative.integer.scalar(
+        eta.max.expansions, "eta.max.expansions"
+    )
+    eta.identity.departure <- .validate.unit.interval.open(
+        eta.identity.departure, "eta.identity.departure"
+    )
+    eta.truncation.tol <- .validate.unit.interval.open(
+        eta.truncation.tol, "eta.truncation.tol"
+    )
+    settings <- list(
+        expansion.factor = as.double(eta.expansion.factor),
+        max.expansions = eta.max.expansions,
+        identity.departure = eta.identity.departure,
+        truncation.tol = eta.truncation.tol
+    )
+    evaluate <- function(grid) {
+        weights <- compute.filter.weights.matrix(
+            basis$spectral$eigenvalues, grid, filter.type
+        )
+        .require.metric.graph.lowpass.finite(weights, "filter weights")
+        gcv <- .select.eta.gcv.single(
+            y, y.spectral, V, weights, grid
+        )
+        .validate.metric.graph.lowpass.gcv.result(
+            gcv.result = gcv,
+            n = length(y),
+            n.eta = length(grid),
+            context = "fit.metric.graph.lowpass() eta search"
+        )
+        list(filter.weights.matrix = weights, gcv.result = gcv)
+    }
+
+    if (eta.search == "fixed") {
+        selected <- evaluate(eta.grid)
+        lower.idx <- which.min(eta.grid)
+        rounds <- data.frame(
+            round = 0L,
+            eta.min = min(eta.grid),
+            eta.max = max(eta.grid),
+            n.candidates = length(eta.grid),
+            best.idx = selected$gcv.result$best.idx,
+            eta.optimal = selected$gcv.result$eta.optimal,
+            gcv.optimal = selected$gcv.result$gcv.min,
+            lower.endpoint.selected =
+                selected$gcv.result$best.idx == lower.idx,
+            extension.status = "not_requested",
+            stringsAsFactors = FALSE
+        )
+        return(list(
+            eta.grid = eta.grid,
+            filter.weights.matrix = selected$filter.weights.matrix,
+            gcv.result = selected$gcv.result,
+            search = list(
+                mode = eta.search,
+                status = "fixed_grid",
+                expansions.completed = 0L,
+                settings = settings,
+                rounds = rounds
+            )
+        ))
+    }
+
+    if (filter.type != "heat_kernel") {
+        stop(
+            "eta.search = 'guarded.gcv' requires filter.type = 'heat_kernel'.",
+            call. = FALSE
+        )
+    }
+    if (any(eta.grid <= 0)) {
+        stop(
+            paste0(
+                "eta.search = 'guarded.gcv' requires positive competitive ",
+                "times; eta = 0 may be evaluated separately as an identity ",
+                "diagnostic."
+            ),
+            call. = FALSE
+        )
+    }
+
+    eta.grid <- sort(unique(as.double(eta.grid)))
+    expansions.completed <- 0L
+    round.rows <- list()
+    repeat {
+        selected <- evaluate(eta.grid)
+        lower.selected <- selected$gcv.result$best.idx == 1L
+        extension.status <- if (lower.selected) "pending" else "not_requested"
+        if (lower.selected) {
+            extension <- metric.graph.heat.extend.lower(
+                basis = basis,
+                eta.grid = eta.grid,
+                endpoint.status = "active",
+                expansion.factor = eta.expansion.factor,
+                max.expansions = eta.max.expansions,
+                expansions.completed = expansions.completed,
+                identity.departure = eta.identity.departure,
+                truncation.tol = eta.truncation.tol,
+                unresolved.action = "error"
+            )
+            extension.status <- extension$status
+        }
+        round.rows[[length(round.rows) + 1L]] <- data.frame(
+            round = expansions.completed,
+            eta.min = min(eta.grid),
+            eta.max = max(eta.grid),
+            n.candidates = length(eta.grid),
+            best.idx = selected$gcv.result$best.idx,
+            eta.optimal = selected$gcv.result$eta.optimal,
+            gcv.optimal = selected$gcv.result$gcv.min,
+            lower.endpoint.selected = lower.selected,
+            extension.status = extension.status,
+            stringsAsFactors = FALSE
+        )
+        if (!lower.selected) {
+            search.status <- "interior_optimum"
+            break
+        }
+        if (!extension$admitted) {
+            search.status <- extension$status
+            break
+        }
+        eta.grid <- extension$eta.grid
+        expansions.completed <- expansions.completed + 1L
+    }
+
+    list(
+        eta.grid = eta.grid,
+        filter.weights.matrix = selected$filter.weights.matrix,
+        gcv.result = selected$gcv.result,
+        search = list(
+            mode = eta.search,
+            status = search.status,
+            expansions.completed = expansions.completed,
+            settings = settings,
+            rounds = do.call(rbind, round.rows)
+        )
+    )
+}
+
 #' Fit Metric-Conductance Graph Low-Pass Regression
 #'
 #' Fits graph-spectral low-pass regression on a supplied graph by transforming
@@ -660,6 +821,18 @@ apply.metric.graph.lowpass.path <- function(
 #'   and gives the identity/no-smoothing limit. If \code{NULL}, the existing
 #'   package helper \code{generate.eta.grid()} is used.
 #' @param n.candidates Number of eta candidates when \code{eta.grid = NULL}.
+#' @param eta.search Heat-time search controller. \code{"fixed"} evaluates the
+#'   supplied or generated grid once. \code{"guarded.gcv"} is available only
+#'   for \code{filter.type = "heat_kernel"} and proposes one lower positive
+#'   time whenever GCV selects the current lower endpoint.
+#' @param eta.expansion.factor Geometric divisor used by guarded GCV lower-time
+#'   expansion.
+#' @param eta.max.expansions Maximum number of guarded GCV lower-time
+#'   extensions.
+#' @param eta.identity.departure Smallest allowed departure from the identity
+#'   at the largest retained graph-Laplacian eigenvalue.
+#' @param eta.truncation.tol Omitted-mode attenuation tolerance used to certify
+#'   guarded proposals for a truncated basis.
 #' @param eigen.solver \code{"auto"}, \code{"sparse"}, or \code{"dense"}.
 #'   \code{"auto"} uses dense decomposition only for
 #'   \code{n <= dense.eigen.threshold}, then sparse-first.
@@ -693,7 +866,12 @@ fit.metric.graph.lowpass <- function(
     dense.eigen.threshold = 200L,
     dense.fallback.threshold = 5000L,
     dense.fallback = c("auto", "never", "always"),
-    verbose = FALSE) {
+    verbose = FALSE,
+    eta.search = c("fixed", "guarded.gcv"),
+    eta.expansion.factor = 3,
+    eta.max.expansions = 3L,
+    eta.identity.departure = 0.01,
+    eta.truncation.tol = 1e-4) {
 
     basis <- metric.graph.lowpass.basis(
         adj.list = adj.list,
@@ -717,6 +895,7 @@ fit.metric.graph.lowpass <- function(
     y <- .validate.metric.graph.lowpass.response(y, n, "y")
     filter.type <- match.arg(filter.type)
     n.candidates <- .validate.positive.integer.scalar(n.candidates, "n.candidates")
+    eta.search <- match.arg(eta.search)
 
     operator <- basis$operator
     spectral <- basis$spectral
@@ -729,11 +908,24 @@ fit.metric.graph.lowpass <- function(
         filter.type = filter.type,
         n.candidates = n.candidates
     )
-    filter.weights.matrix <- compute.filter.weights.matrix(eigenvalues, eta.grid, filter.type)
-    .require.metric.graph.lowpass.finite(filter.weights.matrix, "filter weights")
     y.spectral <- as.vector(crossprod(V, y))
     .require.metric.graph.lowpass.finite(y.spectral, "spectral response coefficients")
-    gcv.result <- .select.eta.gcv.single(y, y.spectral, V, filter.weights.matrix, eta.grid)
+    eta.selection <- .fit.metric.graph.lowpass.eta.search(
+        basis = basis,
+        y = y,
+        y.spectral = y.spectral,
+        V = V,
+        filter.type = filter.type,
+        eta.grid = eta.grid,
+        eta.search = eta.search,
+        eta.expansion.factor = eta.expansion.factor,
+        eta.max.expansions = eta.max.expansions,
+        eta.identity.departure = eta.identity.departure,
+        eta.truncation.tol = eta.truncation.tol
+    )
+    eta.grid <- eta.selection$eta.grid
+    filter.weights.matrix <- eta.selection$filter.weights.matrix
+    gcv.result <- eta.selection$gcv.result
     .validate.metric.graph.lowpass.gcv.result(
         gcv.result = gcv.result,
         n = length(y),
@@ -775,9 +967,24 @@ fit.metric.graph.lowpass <- function(
             eta.optimal = gcv.result$eta.optimal,
             gcv.optimal = gcv.result$gcv.min,
             effective.df = gcv.result$effective.df,
-            best.idx = best.idx
+            best.idx = best.idx,
+            search = eta.selection$search
         ),
-        parameters = c(basis$parameters, list(filter.type = filter.type)),
+        parameters = c(
+            basis$parameters,
+            list(
+                filter.type = filter.type,
+                eta.search = eta.search,
+                eta.expansion.factor =
+                    eta.selection$search$settings$expansion.factor,
+                eta.max.expansions =
+                    eta.selection$search$settings$max.expansions,
+                eta.identity.departure =
+                    eta.selection$search$settings$identity.departure,
+                eta.truncation.tol =
+                    eta.selection$search$settings$truncation.tol
+            )
+        ),
         timing = NULL
     )
     attr(result, "call") <- match.call()
