@@ -495,6 +495,100 @@ test_that("heat-time grids distinguish W1 and guarded truncated rules", {
   )
 })
 
+test_that("guarded lower heat-time proposals are geometric and bounded", {
+  graph <- make_path_graph_lengths(rep(1, 19))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 20L,
+    eigen.solver = "dense"
+  )
+  eta <- metric.graph.heat.eta.grid(
+    basis, rule = "spectral_guarded", n.initial = 8L
+  )
+  extension <- metric.graph.heat.extend.lower(
+    basis, eta,
+    endpoint.status = "active",
+    expansion.factor = 3,
+    expansions.completed = 1L,
+    identity.departure = 0.01
+  )
+
+  expect_s3_class(extension, "metric.graph.heat.lower.extension")
+  expect_true(extension$admitted)
+  expect_equal(extension$status, "admitted")
+  expect_equal(extension$expansion.round, 2L)
+  expect_equal(
+    extension$proposed.eta,
+    min(eta) / 3,
+    tolerance = 1e-14
+  )
+  expect_equal(min(extension$eta.grid), extension$proposed.eta)
+  expect_false(any(extension$eta.grid == 0))
+  expect_true(extension$basis.complete)
+})
+
+test_that("guarded lower heat-time proposals respect stop states and identity floor", {
+  graph <- make_path_graph_lengths(rep(1, 19))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 20L,
+    eigen.solver = "dense"
+  )
+  eta <- c(0.1, 0.3, 1)
+
+  inactive <- metric.graph.heat.extend.lower(
+    basis, eta, endpoint.status = "inactive"
+  )
+  capped <- metric.graph.heat.extend.lower(
+    basis, eta, endpoint.status = "active",
+    max.expansions = 2L, expansions.completed = 2L
+  )
+  floor.stop <- metric.graph.heat.extend.lower(
+    basis, eta, endpoint.status = "active",
+    identity.departure = 0.9
+  )
+
+  expect_false(inactive$admitted)
+  expect_equal(inactive$status, "inactive_endpoint")
+  expect_false(capped$admitted)
+  expect_equal(capped$status, "expansion_cap_reached")
+  expect_false(floor.stop$admitted)
+  expect_equal(floor.stop$status, "identity_floor_reached")
+  expect_equal(floor.stop$eta.grid, sort(eta))
+})
+
+test_that("guarded lower heat-time proposals reject unresolved truncation", {
+  graph <- make_path_graph_lengths(rep(1, 39))
+  basis <- metric.graph.lowpass.basis(
+    graph$adj.list, graph$weight.list,
+    n.eigenpairs = 12L,
+    eigen.solver = "dense"
+  )
+  eta <- c(1e-4, 1e-3, 1e-2)
+
+  marked <- metric.graph.heat.extend.lower(
+    basis, eta,
+    endpoint.status = "active",
+    identity.departure = 1e-6,
+    truncation.tol = 1e-4,
+    unresolved.action = "mark"
+  )
+  expect_false(marked$admitted)
+  expect_equal(marked$status, "unresolved_truncated_basis")
+  expect_false(marked$basis.complete)
+  expect_gt(marked$omitted.attenuation.bound, marked$truncation.tol)
+  expect_error(
+    metric.graph.heat.extend.lower(
+      basis, eta,
+      endpoint.status = "active",
+      identity.departure = 1e-6,
+      truncation.tol = 1e-4,
+      unresolved.action = "error"
+    ),
+    "not resolved by the truncated basis"
+  )
+})
+
 test_that("truncated paths guard weak smoothing and preserve exact eta zero", {
   graph <- make_path_graph_lengths(rep(1, 39))
   basis <- metric.graph.lowpass.basis(
