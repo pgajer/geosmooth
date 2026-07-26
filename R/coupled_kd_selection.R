@@ -982,7 +982,6 @@
 
 .coupled.kd.chart.candidate.spec <- function(X,
                                              support.grid,
-                                             degree.grid,
                                              kernel.grid,
                                              bandwidth.multiplier.grid,
                                              chart.dim = NULL,
@@ -992,11 +991,17 @@
                                              auto.chart.selection.metric,
                                              selection.strategy = "grid",
                                              chart.dim.max = NULL,
-                                             design.margin = 2L) {
-    .coupled.kd.lps.candidate.spec(
+                                             geometry.margin = 0L) {
+    geometry.margin <- as.integer(geometry.margin)
+    if (length(geometry.margin) != 1L || !is.finite(geometry.margin) ||
+        geometry.margin < 0L) {
+        stop("'geometry.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
+    out <- .coupled.kd.lps.candidate.spec(
         X = X,
         support.grid = support.grid,
-        degree.grid = degree.grid,
+        degree.grid = 0L,
         kernel.grid = kernel.grid,
         bandwidth.multiplier.grid = bandwidth.multiplier.grid,
         chart.dim = chart.dim,
@@ -1006,7 +1011,64 @@
         auto.chart.selection.metric = auto.chart.selection.metric,
         selection.strategy = selection.strategy,
         chart.dim.max = chart.dim.max,
-        design.margin = design.margin,
+        design.margin = 0L,
         reuse.type = "chart"
     )
+    apply.contract <- function(tab) {
+        if (is.null(tab)) return(NULL)
+        tab$geometry.rank.cap <- pmax(
+            0L,
+            pmin(ncol(X), as.integer(tab$support.size) - 1L -
+                     geometry.margin)
+        )
+        tab$geometry.margin <- geometry.margin
+        tab$feasibility.contract <- "chart_kernel"
+        if ("chart.dim.clipped" %in% names(tab)) {
+            finite <- is.finite(tab$chart.dim.clipped)
+            tab$chart.dim.clipped[finite] <- pmin(
+                tab$chart.dim.clipped[finite],
+                tab$geometry.rank.cap[finite]
+            )
+            tab$chart.dim[finite] <- as.character(
+                as.integer(tab$chart.dim.clipped[finite])
+            )
+            bad <- !is.finite(tab$geometry.rank.cap) |
+                tab$geometry.rank.cap < 1L |
+                !is.finite(tab$chart.dim.clipped) |
+                tab$chart.dim.clipped < 1L
+            if ("feasible" %in% names(tab)) {
+                tab$feasible[bad] <- FALSE
+            }
+            if ("skip.reason" %in% names(tab)) {
+                tab$skip.reason[bad] <- "chart_geometry_rank_infeasible"
+            }
+            if ("reuse.chart.dim.max" %in% names(tab)) {
+                tab$reuse.chart.dim.max[finite] <- pmin(
+                    tab$reuse.chart.dim.max[finite],
+                    tab$geometry.rank.cap[finite]
+                )
+            }
+            if ("reuse.key" %in% names(tab)) {
+                usable <- finite & tab$chart.dim.clipped >= 1L
+                tab$reuse.key[usable] <- mapply(
+                    .coupled.kd.reuse.key,
+                    support.size = tab$support.size[usable],
+                    kernel = tab$kernel[usable],
+                    max.chart.dim = tab$reuse.chart.dim.max[usable],
+                    MoreArgs = list(reuse.type = "chart"),
+                    USE.NAMES = FALSE
+                )
+            }
+        }
+        tab$degree <- NULL
+        tab$design.ncol <- NULL
+        tab$design.margin <- NULL
+        tab
+    }
+    out$candidates <- apply.contract(out$candidates)
+    out$coupled.plan <- apply.contract(out$coupled.plan)
+    out$telemetry$feasibility.contract <- "chart_kernel"
+    out$telemetry$geometry.margin <- geometry.margin
+    out$telemetry$design.margin <- NULL
+    out
 }

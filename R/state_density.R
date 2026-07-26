@@ -1030,7 +1030,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                   "lambda.sync.search", "lambda.sync.selection",
                   "local.candidate.search",
                   "chart.dim", "chart.dim.grid", "selection.strategy",
-                  "chart.dim.max", "design.margin", "cv.folds", "cv.seed")
+                  "chart.dim.max", "geometry.margin", "cv.folds", "cv.seed")
             ),
             coupled.kd.selection = list(
                 selection.strategy = "grid",
@@ -1194,7 +1194,6 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     candidate.spec <- .coupled.kd.chart.candidate.spec(
         X = X,
         support.grid = support.grid,
-        degree.grid = 1L,
         kernel.grid = kernel.grid,
         bandwidth.multiplier.grid = bandwidth.multiplier.grid,
         chart.dim = dots$chart.dim,
@@ -1204,7 +1203,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         auto.chart.selection.metric = auto.chart.selection.metric,
         selection.strategy = selection.strategy,
         chart.dim.max = dots$chart.dim.max %||% NULL,
-        design.margin = dots$design.margin %||% 2L
+        geometry.margin = dots$geometry.margin %||% 0L
     )
     candidates <- candidate.spec$candidates
     drop.names <- c("support.size", "support.grid", "kernel", "kernel.grid",
@@ -1212,7 +1211,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
                     "degree", "degree.grid", "lambda.ridge",
                     "lambda.ridge.grid",
                     "chart.dim.grid", "selection.strategy",
-                    "chart.dim.max", "design.margin", "cv.folds",
+                    "chart.dim.max", "geometry.margin", "cv.folds",
                     "cv.seed")
     if ("chart.dim" %in% names(candidates)) {
         drop.names <- c(drop.names, "chart.dim")
@@ -1222,8 +1221,10 @@ density.dependency.precheck <- function(check.gflow = TRUE,
             c("candidate.id", "support.size", "kernel",
               "bandwidth.multiplier", "chart.dim", "chart.dim.rank",
               "chart.dim.source", "chart.dim.raw", "chart.dim.clipped",
-              "chart.dim.seed.clipped", "chart.dim.max", "design.ncol",
-              "design.margin", "reuse.key", "reuse.chart.dim.max"),
+              "chart.dim.seed.clipped", "chart.dim.max",
+              "geometry.rank.cap", "geometry.margin",
+              "feasibility.contract", "reuse.key",
+              "reuse.chart.dim.max"),
             names(candidates)
         )],
         base.dots = .state.density.drop.dots(
@@ -1329,7 +1330,7 @@ density.dependency.precheck <- function(check.gflow = TRUE,
         dots$auto.chart.selection.metric %||% "coordinates",
         c("coordinates", "operator")
     )
-    candidate.spec <- .coupled.kd.chart.candidate.spec(
+    candidate.spec <- .coupled.kd.lps.candidate.spec(
         X = X,
         support.grid = support.grid,
         degree.grid = degree.grid,

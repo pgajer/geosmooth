@@ -179,9 +179,12 @@
     degree,
     coordinate.method,
     chart.dim,
+    feasibility.contract = c("local_polynomial", "chart_kernel"),
+    geometry.margin = 0L,
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator")) {
 
+    feasibility.contract <- match.arg(feasibility.contract)
     auto.chart.support.metric <- match.arg(auto.chart.support.metric)
     auto.chart.selection.metric <- match.arg(auto.chart.selection.metric)
     p <- ncol(X)
@@ -223,6 +226,8 @@
             X = X,
             support.size = support.size,
             degree = degree,
+            feasibility.contract = feasibility.contract,
+            geometry.margin = geometry.margin,
             max.anchors = if (identical(chart.dim, "local.auto")) {
                 nrow(X)
             } else {
@@ -232,7 +237,17 @@
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric
         )
-        dim <- max(1L, min(p, support.size, diagnostics$chart.dim))
+        dim <- max(1L, min(
+            p,
+            .local.pca.chart.dim.support.cap(
+                n.support = support.size,
+                degree = degree,
+                ambient.dim = p,
+                feasibility.contract = feasibility.contract,
+                geometry.margin = geometry.margin
+            ),
+            diagnostics$chart.dim
+        ))
         return(list(
             chart.dim = as.integer(dim),
             requested.chart.dim = chart.dim,
@@ -256,7 +271,16 @@
     if (dim < 1L) {
         stop("chart.dim must be at least 1.", call. = FALSE)
     }
-    dim <- min(dim, p, support.size)
+    dim <- min(
+        dim,
+        .local.pca.chart.dim.support.cap(
+            n.support = support.size,
+            degree = degree,
+            ambient.dim = p,
+            feasibility.contract = feasibility.contract,
+            geometry.margin = geometry.margin
+        )
+    )
     list(
         chart.dim = as.integer(dim),
         requested.chart.dim = chart.dim,
@@ -276,8 +300,11 @@
     degree,
     coordinate.method,
     chart.dim,
-    summary.dim) {
+    summary.dim,
+    feasibility.contract = c("local_polynomial", "chart_kernel"),
+    geometry.margin = 0L) {
 
+    feasibility.contract <- match.arg(feasibility.contract)
     if (!identical(coordinate.method, "local.pca") ||
         !identical(chart.dim, "local.auto")) {
         return(as.integer(summary.dim))
@@ -294,10 +321,79 @@
         support.size = support.size,
         degree = degree
     )
+    if (identical(feasibility.contract, "chart_kernel")) {
+        support <- .local.chart.support(X, x0, support.size)
+        sv <- tryCatch(
+            svd(support$centered, nu = 0L, nv = 0L)$d,
+            error = function(e) numeric(0)
+        )
+        row <- .local.pca.auto.chart.dim.from.singular.values(
+            sv = sv,
+            n.support = nrow(support$centered),
+            degree = 0L,
+            ambient.dim = ncol(X),
+            feasibility.contract = "chart_kernel",
+            geometry.margin = geometry.margin
+        )
+        dim <- row$selected.local.dim[[1L]]
+    }
     if (!is.finite(dim) || dim < 1L) {
         dim <- as.integer(summary.dim)
     }
-    as.integer(max(1L, min(ncol(X), support.size, dim)))
+    as.integer(max(1L, min(
+        .local.pca.chart.dim.support.cap(
+            n.support = support.size,
+            degree = degree,
+            ambient.dim = ncol(X),
+            feasibility.contract = feasibility.contract,
+            geometry.margin = geometry.margin
+        ),
+        dim
+    )))
+}
+
+.chart.kernel.resolve.chart.dim <- function(
+    X,
+    support.size,
+    coordinate.method,
+    chart.dim,
+    geometry.margin = 0L,
+    auto.chart.support.metric = c("coordinates", "operator", "both"),
+    auto.chart.selection.metric = c("coordinates", "operator")) {
+
+    .local.chart.resolve.chart.dim(
+        X = X,
+        support.size = support.size,
+        degree = 0L,
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim,
+        feasibility.contract = "chart_kernel",
+        geometry.margin = geometry.margin,
+        auto.chart.support.metric = auto.chart.support.metric,
+        auto.chart.selection.metric = auto.chart.selection.metric
+    )
+}
+
+.chart.kernel.resolve.eval.chart.dim <- function(
+    X,
+    x0,
+    support.size,
+    coordinate.method,
+    chart.dim,
+    summary.dim,
+    geometry.margin = 0L) {
+
+    .local.chart.resolve.eval.chart.dim(
+        X = X,
+        x0 = x0,
+        support.size = support.size,
+        degree = 0L,
+        coordinate.method = coordinate.method,
+        chart.dim = chart.dim,
+        summary.dim = summary.dim,
+        feasibility.contract = "chart_kernel",
+        geometry.margin = geometry.margin
+    )
 }
 
 .local.chart.support <- function(X, x0, support.size) {

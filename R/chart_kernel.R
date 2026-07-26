@@ -58,8 +58,10 @@
 #'   \code{\link{fit.lps}}.
 #' @param chart.dim.max Optional explicit maximum chart dimension for the
 #'   sparse coupled candidate family.
-#' @param design.margin Nonnegative integer feasibility margin used to screen
-#'   local polynomial design size before candidate evaluation.
+#' @param geometry.margin Nonnegative integer subtracted from the local-PCA
+#'   rank cap \code{min(ncol(X), support.size - 1)}. The default zero applies
+#'   only the Nadaraya--Watson chart-geometry requirement; this is not a local
+#'   polynomial design margin.
 #' @param auto.chart.support.metric Support system used by \code{chart.dim =
 #'   "auto"} or \code{"local.auto"}.  Chart-kernel smoothers currently use
 #'   coordinate supports for both coordinate and operator diagnostics.
@@ -94,7 +96,7 @@ fit.chart.kernel <- function(
     chart.dim.grid = NULL,
     selection.strategy = c("grid", "sparse_kd", "plateau_kd"),
     chart.dim.max = NULL,
-    design.margin = 2L,
+    geometry.margin = 0L,
     auto.chart.support.metric = c("coordinates", "operator", "both"),
     auto.chart.selection.metric = c("coordinates", "operator"),
     quadrature.weights = NULL,
@@ -146,19 +148,19 @@ fit.chart.kernel <- function(
     denominator.floor <- .local.chart.validate.positive.scalar(
         denominator.floor, "denominator.floor"
     )
-    design.margin <- as.integer(design.margin)
-    if (length(design.margin) != 1L || !is.finite(design.margin) ||
-        design.margin < 0L) {
-        stop("'design.margin' must be a nonnegative integer scalar.",
+    geometry.margin <- as.integer(geometry.margin)
+    if (length(geometry.margin) != 1L || !is.finite(geometry.margin) ||
+        geometry.margin < 0L) {
+        stop("'geometry.margin' must be a nonnegative integer scalar.",
              call. = FALSE)
     }
     requested.chart.dim <- chart.dim
-    chart.dim.info <- .local.chart.resolve.chart.dim(
+    chart.dim.info <- .chart.kernel.resolve.chart.dim(
         X = X,
         support.size = support.size,
-        degree = 1L,
         chart.dim = chart.dim,
         coordinate.method = coordinate.method,
+        geometry.margin = geometry.margin,
         auto.chart.support.metric = auto.chart.support.metric,
         auto.chart.selection.metric = auto.chart.selection.metric
     )
@@ -173,7 +175,6 @@ fit.chart.kernel <- function(
         candidate.spec <- .coupled.kd.chart.candidate.spec(
             X = X,
             support.grid = support.grid,
-            degree.grid = 1L,
             kernel.grid = kernel.grid,
             bandwidth.multiplier.grid = bandwidth.multiplier.grid,
             chart.dim = requested.chart.dim,
@@ -183,7 +184,7 @@ fit.chart.kernel <- function(
             auto.chart.selection.metric = auto.chart.selection.metric,
             selection.strategy = selection.strategy,
             chart.dim.max = chart.dim.max,
-            design.margin = design.margin
+            geometry.margin = geometry.margin
         )
         cand <- candidate.spec$candidates
         coupled.plan <- candidate.spec$coupled.plan
@@ -197,6 +198,7 @@ fit.chart.kernel <- function(
             chart.dim = requested.chart.dim,
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric,
+            geometry.margin = geometry.margin,
             quadrature.weights = quadrature.weights,
             denominator.floor = denominator.floor
         )
@@ -213,12 +215,12 @@ fit.chart.kernel <- function(
         } else {
             requested.chart.dim
         }
-        chart.dim.info <- .local.chart.resolve.chart.dim(
+        chart.dim.info <- .chart.kernel.resolve.chart.dim(
             X = X,
             support.size = support.size,
-            degree = 1L,
             coordinate.method = coordinate.method,
             chart.dim = requested.chart.dim,
+            geometry.margin = geometry.margin,
             auto.chart.support.metric = auto.chart.support.metric,
             auto.chart.selection.metric = auto.chart.selection.metric
         )
@@ -236,14 +238,14 @@ fit.chart.kernel <- function(
     resolved.chart.dim <- integer(ne)
 
     for (ii in seq_len(ne)) {
-        local.chart.dim <- .local.chart.resolve.eval.chart.dim(
+        local.chart.dim <- .chart.kernel.resolve.eval.chart.dim(
             X = X,
             x0 = X.eval[ii, ],
             support.size = support.size,
-            degree = 1L,
             coordinate.method = coordinate.method,
             chart.dim = requested.chart.dim,
-            summary.dim = chart.dim
+            summary.dim = chart.dim,
+            geometry.margin = geometry.margin
         )
         local <- .chart.kernel.local.fit(
             X = X,
@@ -307,6 +309,7 @@ fit.chart.kernel <- function(
             coordinate.method = coordinate.method,
             requested.chart.dim = requested.chart.dim,
             chart.dim = chart.dim,
+            geometry.margin = geometry.margin,
             auto.chart.dim = chart.dim.info$auto.chart.dim,
             auto.chart.dim.local = chart.dim.info$auto.chart.dim.local,
             chart.dim.mode = chart.dim.info$chart.dim.mode,
@@ -346,6 +349,7 @@ fit.chart.kernel <- function(
                                    chart.dim,
                                    auto.chart.support.metric,
                                    auto.chart.selection.metric,
+                                   geometry.margin,
                                    quadrature.weights,
                                    denominator.floor) {
     pred <- matrix(NA_real_, nrow = length(y), ncol = nrow(cand))
@@ -378,6 +382,7 @@ fit.chart.kernel <- function(
                 chart.dim = chart.dim.fold,
                 auto.chart.support.metric = auto.chart.support.metric,
                 auto.chart.selection.metric = auto.chart.selection.metric,
+                geometry.margin = geometry.margin,
                 quadrature.weights = q.train,
                 denominator.floor = denominator.floor,
                 return.details = FALSE
