@@ -589,6 +589,101 @@ test_that("guarded lower heat-time proposals reject unresolved truncation", {
   )
 })
 
+test_that("main graph low-pass fit keeps fixed eta search as the default", {
+  graph <- make_path_graph_lengths(rep(1, 19))
+  y <- c(rep(0, 10), rep(1, 10))
+  default <- fit.metric.graph.lowpass(
+    graph$adj.list, graph$weight.list, y,
+    n.eigenpairs = 20L,
+    eigen.solver = "dense",
+    eta.grid = c(0.01, 1, 10)
+  )
+  explicit <- fit.metric.graph.lowpass(
+    graph$adj.list, graph$weight.list, y,
+    n.eigenpairs = 20L,
+    eigen.solver = "dense",
+    eta.grid = c(0.01, 1, 10),
+    eta.search = "fixed"
+  )
+
+  expect_equal(default$fitted.values, explicit$fitted.values, tolerance = 0)
+  expect_equal(default$gcv$eta.grid, c(0.01, 1, 10))
+  expect_equal(default$gcv$search$mode, "fixed")
+  expect_equal(default$gcv$search$status, "fixed_grid")
+  expect_equal(default$gcv$search$expansions.completed, 0L)
+})
+
+test_that("main heat fit exposes guarded lower-time GCV search", {
+  graph <- make_path_graph_lengths(rep(1, 19))
+  y <- c(rep(0, 10), rep(1, 10))
+  fit <- fit.metric.graph.lowpass(
+    graph$adj.list, graph$weight.list, y,
+    n.eigenpairs = 20L,
+    eigen.solver = "dense",
+    eta.grid = c(0.01, 1, 10),
+    eta.search = "guarded.gcv",
+    eta.max.expansions = 3L
+  )
+
+  expect_equal(fit$gcv$search$mode, "guarded.gcv")
+  expect_equal(fit$gcv$search$status, "interior_optimum")
+  expect_equal(fit$gcv$search$expansions.completed, 1L)
+  expect_equal(min(fit$gcv$eta.grid), 0.01 / 3, tolerance = 1e-14)
+  expect_equal(nrow(fit$gcv$search$rounds), 2L)
+  expect_true(fit$gcv$search$rounds$lower.endpoint.selected[[1L]])
+  expect_false(fit$gcv$search$rounds$lower.endpoint.selected[[2L]])
+  expect_equal(fit$gcv$search$rounds$extension.status[[1L]], "admitted")
+  expect_equal(fit$parameters$eta.search, "guarded.gcv")
+})
+
+test_that("main guarded heat fit reports the identity floor and round cap", {
+  graph <- make_path_graph_lengths(rep(1, 19))
+  fit <- fit.metric.graph.lowpass(
+    graph$adj.list, graph$weight.list, seq_len(20),
+    n.eigenpairs = 20L,
+    eigen.solver = "dense",
+    eta.grid = c(0.01, 1, 10),
+    eta.search = "guarded.gcv",
+    eta.max.expansions = 2L,
+    eta.identity.departure = 0.01
+  )
+
+  expect_equal(fit$gcv$search$status, "expansion_cap_reached")
+  expect_equal(fit$gcv$search$expansions.completed, 2L)
+  expect_equal(
+    fit$gcv$search$rounds$extension.status,
+    c("admitted", "admitted_at_identity_floor", "expansion_cap_reached")
+  )
+  expect_equal(nrow(fit$gcv$search$rounds), 3L)
+})
+
+test_that("main guarded eta search is heat-only and excludes identity", {
+  graph <- make_path_graph_lengths(rep(1, 9))
+  y <- seq_len(10)
+
+  expect_error(
+    fit.metric.graph.lowpass(
+      graph$adj.list, graph$weight.list, y,
+      n.eigenpairs = 10L,
+      eigen.solver = "dense",
+      filter.type = "tikhonov",
+      eta.grid = c(0.1, 1),
+      eta.search = "guarded.gcv"
+    ),
+    "requires filter.type = 'heat_kernel'"
+  )
+  expect_error(
+    fit.metric.graph.lowpass(
+      graph$adj.list, graph$weight.list, y,
+      n.eigenpairs = 10L,
+      eigen.solver = "dense",
+      eta.grid = c(0, 0.1, 1),
+      eta.search = "guarded.gcv"
+    ),
+    "positive competitive times"
+  )
+})
+
 test_that("truncated paths guard weak smoothing and preserve exact eta zero", {
   graph <- make_path_graph_lengths(rep(1, 39))
   basis <- metric.graph.lowpass.basis(
