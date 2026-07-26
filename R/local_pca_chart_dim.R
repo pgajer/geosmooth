@@ -3,6 +3,11 @@
 .local.pca.auto.chart.dim <- function(X, support.size = NULL,
                                       min.support = NULL,
                                       degree = 2L,
+                                      feasibility.contract = c(
+                                          "local_polynomial",
+                                          "chart_kernel"
+                                      ),
+                                      geometry.margin = 0L,
                                       variance.threshold = 0.95,
                                       eigengap.threshold = 4,
                                       max.anchors = 60L,
@@ -15,6 +20,8 @@
         support.size = support.size,
         min.support = min.support,
         degree = degree,
+        feasibility.contract = feasibility.contract,
+        geometry.margin = geometry.margin,
         variance.threshold = variance.threshold,
         eigengap.threshold = eigengap.threshold,
         max.anchors = max.anchors,
@@ -30,6 +37,8 @@
     X, support.size = NULL,
     min.support = NULL,
     degree = 2L,
+    feasibility.contract = c("local_polynomial", "chart_kernel"),
+    geometry.margin = 0L,
     variance.threshold = 0.95,
     eigengap.threshold = 4,
     max.anchors = 60L,
@@ -61,6 +70,8 @@
             support.size = support.size,
             min.support = min.support,
             degree = degree,
+            feasibility.contract = feasibility.contract,
+            geometry.margin = geometry.margin,
             variance.threshold = variance.threshold,
             eigengap.threshold = eigengap.threshold,
             max.anchors = max.anchors,
@@ -77,6 +88,8 @@
                     support.size = support.size,
                     min.support = min.support,
                     degree = degree,
+                    feasibility.contract = feasibility.contract,
+                    geometry.margin = geometry.margin,
                     variance.threshold = variance.threshold,
                     eigengap.threshold = eigengap.threshold,
                     max.anchors = max.anchors,
@@ -93,6 +106,8 @@
                 support.size = support.size,
                 min.support = min.support,
                 degree = degree,
+                feasibility.contract = feasibility.contract,
+                geometry.margin = geometry.margin,
                 variance.threshold = variance.threshold,
                 eigengap.threshold = eigengap.threshold,
                 max.anchors = max.anchors,
@@ -128,6 +143,11 @@
 .local.pca.auto.chart.dim.result <- function(X, support.size = NULL,
                                              min.support = NULL,
                                              degree = 2L,
+                                             feasibility.contract = c(
+                                                 "local_polynomial",
+                                                 "chart_kernel"
+                                             ),
+                                             geometry.margin = 0L,
                                              variance.threshold = 0.95,
                                              eigengap.threshold = 4,
                                              max.anchors = 60L,
@@ -135,6 +155,13 @@
                                              support.index = NULL,
                                              support.metric = "coordinates") {
     X <- as.matrix(X)
+    feasibility.contract <- match.arg(feasibility.contract)
+    geometry.margin <- as.integer(geometry.margin)
+    if (length(geometry.margin) != 1L || !is.finite(geometry.margin) ||
+        geometry.margin < 0L) {
+        stop("'geometry.margin' must be a nonnegative integer scalar.",
+             call. = FALSE)
+    }
     n <- nrow(X)
     m <- ncol(X)
     if (is.null(support.metric) || !length(support.metric) ||
@@ -271,10 +298,12 @@
             )
             next
         }
-        support.cap <- .local.pca.max.chart.dim.for.support(
-            n.support = max(1L, length(cand) - 1L),
+        support.cap <- .local.pca.chart.dim.support.cap(
+            n.support = length(cand),
             degree = degree,
-            ambient.dim = m
+            ambient.dim = m,
+            feasibility.contract = feasibility.contract,
+            geometry.margin = geometry.margin
         )
         max.dim <- min(m, support.cap, length(sv), max(1L, length(cand) - 1L))
         var.dim <- which(cumsum(energy) / total >= variance.threshold)[1L]
@@ -311,10 +340,12 @@
     rownames(diagnostics) <- NULL
     ok <- diagnostics$status == "ok" &
         is.finite(diagnostics$selected.local.dim)
-    fallback.cap <- .local.pca.max.chart.dim.for.support(
-        n.support = max(1L, k - 1L),
+    fallback.cap <- .local.pca.chart.dim.support.cap(
+        n.support = k,
         degree = degree,
-        ambient.dim = m
+        ambient.dim = m,
+        feasibility.contract = feasibility.contract,
+        geometry.margin = geometry.margin
     )
     if (!any(ok)) {
         return(make.result(as.integer(max(1L, min(fallback.cap, degree))),
@@ -355,8 +386,11 @@
 .local.pca.auto.chart.dim.from.singular.values <- function(
     sv, n.support, degree, ambient.dim, support.metric = "coordinates",
     anchor = NA_integer_, variance.threshold = 0.95,
-    eigengap.threshold = 4) {
+    eigengap.threshold = 4,
+    feasibility.contract = c("local_polynomial", "chart_kernel"),
+    geometry.margin = 0L) {
 
+    feasibility.contract <- match.arg(feasibility.contract)
     sv <- as.numeric(sv)
     sv <- sv[is.finite(sv) & sv > 0]
     n.support <- as.integer(max(0L, n.support))
@@ -379,10 +413,12 @@
             status = "bad_spectrum"
         ))
     }
-    support.cap <- .local.pca.max.chart.dim.for.support(
-        n.support = max(1L, n.support - 1L),
+    support.cap <- .local.pca.chart.dim.support.cap(
+        n.support = n.support,
         degree = degree,
-        ambient.dim = ambient.dim
+        ambient.dim = ambient.dim,
+        feasibility.contract = feasibility.contract,
+        geometry.margin = geometry.margin
     )
     max.dim <- min(
         ambient.dim,
@@ -430,4 +466,28 @@
     }, logical(1))
     if (!any(ok)) return(1L)
     as.integer(max(which(ok)))
+}
+
+.local.pca.chart.dim.support.cap <- function(
+    n.support,
+    degree,
+    ambient.dim,
+    feasibility.contract = c("local_polynomial", "chart_kernel"),
+    geometry.margin = 0L) {
+
+    feasibility.contract <- match.arg(feasibility.contract)
+    n.support <- as.integer(max(1L, n.support))
+    ambient.dim <- as.integer(max(1L, ambient.dim))
+    geometry.margin <- as.integer(max(0L, geometry.margin))
+    if (identical(feasibility.contract, "chart_kernel")) {
+        return(as.integer(max(
+            1L,
+            min(ambient.dim, n.support - 1L - geometry.margin)
+        )))
+    }
+    .local.pca.max.chart.dim.for.support(
+        n.support = max(1L, n.support - 1L),
+        degree = degree,
+        ambient.dim = ambient.dim
+    )
 }

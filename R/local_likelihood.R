@@ -228,7 +228,7 @@ fit.local.likelihood <- function(
     coupled.telemetry <- NULL
     if (isTRUE(cv.requested)) {
         foldid <- .klp.prepare.foldid(n, foldid, cv.folds, cv.seed)
-        candidate.spec <- .coupled.kd.chart.candidate.spec(
+        candidate.spec <- .coupled.kd.lps.candidate.spec(
             X = X,
             support.grid = support.grid,
             degree.grid = degree.grid,
