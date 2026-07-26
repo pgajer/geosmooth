@@ -325,6 +325,188 @@ metric.graph.heat.eta.grid <- function(
     grid
 }
 
+#' Propose a Guarded Lower Graph Heat Time
+#'
+#' Proposes one lower positive heat time after an external search controller
+#' has classified the current lower endpoint. The helper enforces a geometric
+#' expansion step, an identity-departure floor, a maximum number of expansion
+#' rounds, and the truncated-basis resolution certificate. It does not decide
+#' whether an endpoint is competitive; fold-level or cohort-level search logic
+#' remains the caller's responsibility.
+#'
+#' @param basis A \code{"metric.graph.lowpass.basis"} object.
+#' @param eta.grid Current finite positive heat-time grid. The exact identity
+#'   time \code{eta = 0} is intentionally excluded from competitive search.
+#' @param endpoint.status External lower-endpoint classification:
+#'   \code{"active"} proposes one extension, while \code{"inactive"} and
+#'   \code{"unresolved"} return the grid unchanged.
+#' @param expansion.factor Finite numeric factor greater than one. An active
+#'   proposal is \code{min(eta.grid) / expansion.factor} before applying the
+#'   identity floor.
+#' @param max.expansions Nonnegative integer maximum number of lower-extension
+#'   rounds.
+#' @param expansions.completed Nonnegative integer number of extension rounds
+#'   already admitted under the same search contract.
+#' @param identity.departure Positive number smaller than one. The proposed
+#'   time cannot be smaller than
+#'   \code{-log(1 - identity.departure) / lambda.max}, where
+#'   \code{lambda.max} is the largest retained eigenvalue. For a complete
+#'   basis this is the exact largest graph-Laplacian eigenvalue.
+#' @param truncation.tol Positive tolerance smaller than one for the
+#'   conservative omitted-mode attenuation bound.
+#' @param unresolved.action Action when an active proposal is not certified by
+#'   a truncated basis: \code{"error"} or \code{"mark"}.
+#'
+#' @return A list of class \code{"metric.graph.heat.lower.extension"} with the
+#'   augmented or unchanged grid and proposal telemetry. A proposal is added
+#'   only when \code{admitted} is \code{TRUE}.
+#' @export
+metric.graph.heat.extend.lower <- function(
+    basis,
+    eta.grid,
+    endpoint.status = c("active", "inactive", "unresolved"),
+    expansion.factor = 3,
+    max.expansions = 3L,
+    expansions.completed = 0L,
+    identity.departure = 0.01,
+    truncation.tol = 1e-4,
+    unresolved.action = c("error", "mark")) {
+
+    .validate.metric.graph.lowpass.basis(basis)
+    endpoint.status <- match.arg(endpoint.status)
+    unresolved.action <- match.arg(unresolved.action)
+    if (!is.numeric(eta.grid) || length(eta.grid) < 1L ||
+        any(!is.finite(eta.grid)) || any(eta.grid <= 0)) {
+        stop("eta.grid must be a finite positive numeric vector.", call. = FALSE)
+    }
+    eta.grid <- sort(unique(as.double(eta.grid)))
+    if (!is.numeric(expansion.factor) || length(expansion.factor) != 1L ||
+        is.na(expansion.factor) || !is.finite(expansion.factor) ||
+        expansion.factor <= 1) {
+        stop(
+            "expansion.factor must be a finite numeric scalar greater than one.",
+            call. = FALSE
+        )
+    }
+    max.expansions <- .validate.nonnegative.integer.scalar(
+        max.expansions, "max.expansions"
+    )
+    expansions.completed <- .validate.nonnegative.integer.scalar(
+        expansions.completed, "expansions.completed"
+    )
+    identity.departure <- .validate.unit.interval.open(
+        identity.departure, "identity.departure"
+    )
+    truncation.tol <- .validate.unit.interval.open(
+        truncation.tol, "truncation.tol"
+    )
+
+    positive <- basis$spectral$eigenvalues[
+        basis$spectral$eigenvalues > .Machine$double.eps
+    ]
+    if (!length(positive)) {
+        stop("The basis has no positive retained eigenvalue.", call. = FALSE)
+    }
+    lambda.max <- max(positive)
+    identity.floor <- -log1p(-identity.departure) / lambda.max
+    complete <- isTRUE(basis$spectral$is.complete)
+
+    result <- list(
+        eta.grid = eta.grid,
+        previous.eta.min = min(eta.grid),
+        proposed.eta.raw = NA_real_,
+        proposed.eta = NA_real_,
+        identity.floor = identity.floor,
+        identity.departure = identity.departure,
+        lambda.max = lambda.max,
+        lambda.max.type = if (complete) {
+            "complete_spectrum"
+        } else {
+            "largest_retained_eigenvalue_proxy"
+        },
+        omitted.attenuation.bound = NA_real_,
+        truncation.tol = truncation.tol,
+        basis.complete = complete,
+        endpoint.status = endpoint.status,
+        expansion.factor = as.double(expansion.factor),
+        max.expansions = max.expansions,
+        expansions.completed = expansions.completed,
+        expansion.round = NA_integer_,
+        admitted = FALSE,
+        status = switch(
+            endpoint.status,
+            inactive = "inactive_endpoint",
+            unresolved = "unresolved_endpoint",
+            active = "pending"
+        )
+    )
+
+    if (endpoint.status != "active") {
+        class(result) <- c("metric.graph.heat.lower.extension", "list")
+        return(result)
+    }
+    if (expansions.completed >= max.expansions) {
+        result$status <- "expansion_cap_reached"
+        class(result) <- c("metric.graph.heat.lower.extension", "list")
+        return(result)
+    }
+
+    proposed.raw <- min(eta.grid) / expansion.factor
+    proposed <- max(proposed.raw, identity.floor)
+    attenuation <- exp(-proposed * lambda.max)
+    resolved <- complete ||
+        attenuation <= truncation.tol * (1 + 1e-10)
+    result$proposed.eta.raw <- proposed.raw
+    result$proposed.eta <- proposed
+    result$omitted.attenuation.bound <- attenuation
+    result$expansion.round <- expansions.completed + 1L
+
+    lower.endpoint.tol <- 16 * .Machine$double.eps *
+        max(.Machine$double.xmin, abs(min(eta.grid)), abs(proposed))
+    if (proposed >= min(eta.grid) - lower.endpoint.tol) {
+        result$status <- "identity_floor_reached"
+        class(result) <- c("metric.graph.heat.lower.extension", "list")
+        return(result)
+    }
+
+    if (!resolved) {
+        result$status <- "unresolved_truncated_basis"
+        if (unresolved.action == "error") {
+            stop(
+                paste0(
+                    "The lower heat-time proposal is not resolved by the ",
+                    "truncated basis; compute more eigenpairs or use a complete ",
+                    "basis before expanding."
+                ),
+                call. = FALSE
+            )
+        }
+        class(result) <- c("metric.graph.heat.lower.extension", "list")
+        return(result)
+    }
+
+    duplicate <- any(
+        abs(eta.grid - proposed) <=
+            16 * .Machine$double.eps *
+                pmax(.Machine$double.xmin, abs(eta.grid), abs(proposed))
+    )
+    if (duplicate) {
+        result$status <- "identity_floor_reached"
+        class(result) <- c("metric.graph.heat.lower.extension", "list")
+        return(result)
+    }
+
+    result$eta.grid <- sort(c(eta.grid, proposed))
+    result$admitted <- TRUE
+    result$status <- if (proposed > proposed.raw) {
+        "admitted_at_identity_floor"
+    } else {
+        "admitted"
+    }
+    class(result) <- c("metric.graph.heat.lower.extension", "list")
+    result
+}
+
 #' Apply a Metric Graph Low-Pass Filter Path
 #'
 #' Applies every requested low-pass parameter to one response or a matrix of
@@ -892,6 +1074,14 @@ refit.metric.graph.lowpass <- function(fitted.model,
     if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) ||
         x < 1 || x != floor(x)) {
         stop(sprintf("%s must be a positive integer scalar.", name))
+    }
+    as.integer(x)
+}
+
+.validate.nonnegative.integer.scalar <- function(x, name) {
+    if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x) ||
+        x < 0 || x != floor(x)) {
+        stop(sprintf("%s must be a nonnegative integer scalar.", name))
     }
     as.integer(x)
 }
