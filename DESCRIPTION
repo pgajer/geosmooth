@@ -1,6 +1,6 @@
 Package: geosmooth
 Title: Geometric Smoothing and Conditional Expectation Methods
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person(given = "Pawel",
            family = "Gajer",
