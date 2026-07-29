@@ -47,7 +47,7 @@
   FALSE
 }
 
-.synthetic.canonicalize <- function(x) {
+.synthetic.canonicalize <- function(x, field = NULL) {
   if (.synthetic.prohibited(x)) {
     stop("Synthetic specifications cannot contain functions, environments, ",
          "language objects, or external pointers.", call. = FALSE)
@@ -62,12 +62,24 @@
     if (!is.null(names(x))) {
       Encoding(names(x)) <- "UTF-8"
       x <- x[order(names(x), method = "radix")]
+      return(stats::setNames(
+        Map(
+          function(value, name) .synthetic.canonicalize(value, name),
+          x, names(x)),
+        names(x)))
     }
-    return(lapply(x, .synthetic.canonicalize))
+    return(lapply(x, .synthetic.canonicalize, field = NULL))
   }
   if (is.character(x)) {
     Encoding(x) <- "UTF-8"
-    return(x)
+  }
+  if (is.atomic(x) && !is.null(names(x))) {
+    Encoding(names(x)) <- "UTF-8"
+    contractual.fields <- c(
+      "intrinsic.dim.by.region", "codimension.by.region")
+    if (is.null(field) || !field %in% contractual.fields) {
+      x <- x[order(names(x), method = "radix")]
+    }
   }
   x
 }
