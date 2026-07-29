@@ -16,6 +16,8 @@ dev/methods/*/audit_artifacts/*
 man/
 *.rds
 *.RDS
+!inst/synthetic_registry/fixtures/
+!inst/synthetic_registry/fixtures/*.rds
 *.o
 *.so
 *.dll

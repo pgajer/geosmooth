@@ -6,6 +6,187 @@
   system.file("synthetic_registry", file, package = "geosmooth")
 }
 
+.synthetic.registry.row <- function(file, key, value) {
+  path <- .synthetic.registry.asset(file)
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("Synthetic registry table is unavailable: ", file, call. = FALSE)
+  }
+  table <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!key %in% names(table)) {
+    stop("Synthetic registry table ", file, " lacks key ", key, ".",
+         call. = FALSE)
+  }
+  row <- table[table[[key]] == value, , drop = FALSE]
+  if (nrow(row) != 1L) {
+    stop(
+      "Synthetic registry key must resolve exactly once: ",
+      file, "$", key, " = ", value, call. = FALSE)
+  }
+  row
+}
+
+.synthetic.raw.to.hex <- function(value) {
+  paste(sprintf("%02x", as.integer(value)), collapse = "")
+}
+
+.synthetic.hex.to.raw <- function(value) {
+  value <- .synthetic.scalar.character(value, "serialized registry payload")
+  if (nchar(value) %% 2L != 0L ||
+      grepl("[^0-9a-f]", value, perl = TRUE)) {
+    stop("Serialized registry payload is not lowercase hexadecimal.",
+         call. = FALSE)
+  }
+  pairs <- substring(
+    value, seq.int(1L, nchar(value), by = 2L),
+    seq.int(2L, nchar(value), by = 2L))
+  as.raw(strtoi(pairs, base = 16L))
+}
+
+.synthetic.registry.payload.hex <- function(value) {
+  .synthetic.raw.to.hex(
+    serialize(value, NULL, ascii = FALSE, xdr = TRUE, version = 3))
+}
+
+.synthetic.registry.payload.value <- function(value) {
+  unserialize(.synthetic.hex.to.raw(value))
+}
+
+.synthetic.registry.component <- function(component.id, expected.kind) {
+  file <- paste0(
+    switch(
+      expected.kind,
+      geometry = "geometries", sampling = "samplings",
+      truth = "truths", response = "responses"),
+    ".csv")
+  row <- .synthetic.registry.row(file, "component.id", component.id)
+  if (!identical(row$kind, expected.kind) ||
+      !identical(row$payload.serialization, "R-xdr-v3")) {
+    stop("Registry component kind or serialization is inconsistent for ",
+         component.id, ".", call. = FALSE)
+  }
+  component <- .synthetic.registry.payload.value(row$component.payload.hex)
+  if (!.is.synthetic.component(component, expected.kind) ||
+      !identical(component$family, row$family) ||
+      !identical(component$version, as.integer(row$version)) ||
+      !identical(.synthetic.sha256(component), row$component.sha256)) {
+    stop("Registry component payload failed identity validation for ",
+         component.id, ".", call. = FALSE)
+  }
+  component
+}
+
+.synthetic.registry.resolve <- function(recipe.id) {
+  row <- .synthetic.registry.row("recipes.csv", "recipe.id", recipe.id)
+  if (!identical(row$status, "active") ||
+      !identical(as.integer(row$version), 1L) ||
+      !identical(row$payload.serialization, "R-xdr-v3")) {
+    stop("Registry recipe status, version, or serialization is unsupported.",
+         call. = FALSE)
+  }
+  spec <- synthetic.spec(
+    geometry = .synthetic.registry.component(row$geometry.id, "geometry"),
+    sampling = .synthetic.registry.component(row$sampling.id, "sampling"),
+    truth = .synthetic.registry.component(row$truth.id, "truth"),
+    response = .synthetic.registry.component(row$response.id, "response"),
+    recipe.id = if (is.na(row$spec.recipe.id) ||
+                       !nzchar(row$spec.recipe.id)) NULL else row$spec.recipe.id,
+    registry.tag = if (is.na(row$registry.tag) ||
+                         !nzchar(row$registry.tag)) NULL else row$registry.tag,
+    compatibility = .synthetic.registry.payload.value(
+      row$compatibility.payload.hex),
+    metadata = .synthetic.registry.payload.value(row$metadata.payload.hex))
+  if (!identical(spec$specification.sha256, row$specification.sha256)) {
+    stop("Synthetic recipe registry hash mismatch for ", recipe.id, ".",
+         call. = FALSE)
+  }
+  spec
+}
+
+.synthetic.environment.fingerprint <- function(rng.policy = "legacy") {
+  soft <- extSoftVersion()
+  compiler.command <- tryCatch(
+    trimws(system2(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "config", "CXX17"),
+      stdout = TRUE, stderr = FALSE))[1L],
+    error = function(e) "")
+  compiler.version <- if (nzchar(compiler.command)) {
+    tryCatch(
+      trimws(system2(
+        compiler.command, "--version",
+        stdout = TRUE, stderr = FALSE))[1L],
+      error = function(e) "")
+  } else {
+    ""
+  }
+  compiler <- paste(
+    c(compiler.command, compiler.version)[
+      nzchar(c(compiler.command, compiler.version))],
+    collapse = " | ")
+  if (!nzchar(compiler)) {
+    compiler <- "unavailable"
+  }
+  lapack <- paste0(La_library(), ";version=", La_version())
+  dependencies <- c("dgraphs", "digest", "MASS", "Matrix")
+  dependency.versions <- paste(
+    paste0(
+      dependencies, "=",
+      vapply(dependencies, function(package) {
+        tryCatch(
+          as.character(utils::packageVersion(package)),
+          error = function(e) "unavailable")
+      }, character(1))),
+    collapse = ";")
+  list(
+    r.version = R.version.string,
+    platform = R.version$platform,
+    architecture = R.version$arch,
+    compiler = compiler,
+    operating.system = paste(
+      Sys.info()[c("sysname", "release", "version")], collapse = " | "),
+    endianness = .Platform$endian,
+    rng.kind = if (rng.policy == "legacy") {
+      "Mersenne-Twister/Inversion/Rejection"
+    } else {
+      "L'Ecuyer-CMRG/Inversion/Rejection"
+    },
+    blas = unname(soft["BLAS"]),
+    lapack = lapack,
+    math.runtime = paste0(
+      "long.double=", capabilities("long.double"),
+      ";sizeof.longdouble=", .Machine$sizeof.longdouble),
+    registry.version = 1L,
+    evaluator.version = 1L,
+    dependency.versions = dependency.versions,
+    scientific.abs.tolerance = 1e-12,
+    scientific.rel.tolerance = 1e-10
+  )
+}
+
+.synthetic.checksum.scope.matches <- function(row) {
+  current <- .synthetic.environment.fingerprint(row$rng.policy)
+  fields <- names(current)
+  all(vapply(fields, function(field) {
+    expected <- row[[field]]
+    actual <- current[[field]]
+    if (is.numeric(actual)) {
+      identical(as.numeric(expected), as.numeric(actual))
+    } else {
+      identical(as.character(expected), as.character(actual))
+    }
+  }, logical(1)))
+}
+
+.synthetic.registry.fixture.path <- function(relative.path) {
+  relative.path <- .synthetic.scalar.character(
+    relative.path, "fixture.path")
+  dev <- file.path(relative.path)
+  if (file.exists(dev)) return(dev)
+  installed.relative <- sub("^inst/", "", relative.path)
+  system.file(installed.relative, package = "geosmooth")
+}
+
 .synthetic.numeric.fields <- function(x) {
   as.double(strsplit(x, ";", fixed = TRUE)[[1L]])
 }
@@ -25,23 +206,6 @@
          call. = FALSE)
   }
   utils::read.csv(path, stringsAsFactors = FALSE)
-}
-
-.verify.synthetic.registry.spec <- function(spec, registry.id = spec$recipe.id) {
-  if (identical(getOption("geosmooth.registry.verify"), FALSE)) return(spec)
-  path <- .synthetic.registry.asset("recipes.csv")
-  if (!nzchar(path) || !file.exists(path)) {
-    stop("The normalized synthetic recipe registry is unavailable.",
-         call. = FALSE)
-  }
-  registry <- utils::read.csv(path, stringsAsFactors = FALSE)
-  row <- registry[registry$recipe.id == registry.id, , drop = FALSE]
-  if (nrow(row) != 1L ||
-      !identical(row$specification.sha256, spec$specification.sha256)) {
-    stop("Synthetic recipe registry hash mismatch for ", registry.id,
-         "; regenerate the registry ledgers.", call. = FALSE)
-  }
-  spec
 }
 
 .synthetic.ssrhe.recipe.ids <- function() {
@@ -335,21 +499,17 @@ synthetic.registry.ids <- function() {
   c(names(.synthetic.recipe.defaults()), .synthetic.ssrhe.recipe.ids())
 }
 
-#' Resolve a maintained synthetic recipe
-#'
-#' @param recipe.id One of `synthetic.registry.ids()`.
-#' @param parameters Optional named parameter overrides.
-#' @return A validated `synthetic_spec`.
-#' @export
-synthetic.registry.spec <- function(recipe.id, parameters = list()) {
+# Build registry rows without consulting generated ledgers. This function is
+# private to registry regeneration and parameterized G-family compatibility.
+.synthetic.registry.spec.from.code <- function(
+    recipe.id, parameters = list()) {
   recipe.id <- .synthetic.scalar.character(recipe.id, "recipe.id")
   if (grepl("^S[0-9]{2}\\.V[1-3]$", recipe.id)) {
     if (length(parameters)) {
       stop("One-dimensional registry recipes do not accept overrides.",
            call. = FALSE)
     }
-    return(.verify.synthetic.registry.spec(
-      .synthetic.one.d.recipe.spec(recipe.id), recipe.id))
+    return(.synthetic.one.d.recipe.spec(recipe.id))
   }
   if (grepl("^ssrhe\\.(flat|quadform)\\.", recipe.id)) {
     if (length(parameters)) {
@@ -360,7 +520,7 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
     if (is.null(spec)) {
       stop("Unknown synthetic recipe ID: ", recipe.id, call. = FALSE)
     }
-    return(.verify.synthetic.registry.spec(spec, recipe.id))
+    return(spec)
   }
   defaults <- .synthetic.recipe.defaults()[[recipe.id]]
   if (is.null(defaults)) {
@@ -376,8 +536,32 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
   }
   args <- utils::modifyList(defaults, parameters, keep.null = TRUE)
   spec <- .synthetic.recipe.spec(recipe.id, args)
-  if (length(parameters)) spec else
-    .verify.synthetic.registry.spec(spec, recipe.id)
+  spec
+}
+
+#' Resolve a maintained synthetic recipe
+#'
+#' Default recipes are reconstructed from normalized component foreign keys.
+#' Parameter overrides are accepted only for the legacy G-family compatibility
+#' surface and remain content-bound, non-frozen specifications.
+#'
+#' @param recipe.id One of `synthetic.registry.ids()`.
+#' @param parameters Optional named parameter overrides.
+#' @return A validated `synthetic_spec`.
+#' @export
+synthetic.registry.spec <- function(recipe.id, parameters = list()) {
+  recipe.id <- .synthetic.scalar.character(recipe.id, "recipe.id")
+  if (!is.list(parameters) || is.null(names(parameters)) && length(parameters)) {
+    stop("parameters must be a named list.", call. = FALSE)
+  }
+  if (!length(parameters)) {
+    return(.synthetic.registry.resolve(recipe.id))
+  }
+  if (!recipe.id %in% names(.synthetic.recipe.defaults())) {
+    stop("Registry parameter overrides are supported only for G1--G7.",
+         call. = FALSE)
+  }
+  .synthetic.registry.spec.from.code(recipe.id, parameters)
 }
 
 #' Resolve the legacy seed for an SSRHE registry recipe
@@ -432,10 +616,17 @@ materialize.synthetic.instance <- function(instance.id, validate = TRUE) {
   if (!nzchar(path) || !file.exists(path)) {
     stop("Synthetic instance registry is not installed.", call. = FALSE)
   }
-  registry <- utils::read.csv(path, stringsAsFactors = FALSE)
-  row <- registry[registry$instance.id == instance.id, , drop = FALSE]
-  if (nrow(row) != 1L) {
-    stop("Unknown or duplicated synthetic instance ID: ", instance.id,
+  row <- .synthetic.registry.row("instances.csv", "instance.id", instance.id)
+  checksum.row <- .synthetic.registry.row(
+    "checksums.csv", "checksum.id", row$checksum.id)
+  if (!identical(checksum.row$instance.id, instance.id) ||
+      !identical(checksum.row$content.sha256, row$content.sha256)) {
+    stop("Frozen instance checksum foreign key is inconsistent.",
+         call. = FALSE)
+  }
+  fixture.path <- .synthetic.registry.fixture.path(row$fixture.path)
+  if (!nzchar(fixture.path) || !file.exists(fixture.path)) {
+    stop("Frozen instance fixture is unavailable: ", row$fixture.path,
          call. = FALSE)
   }
   spec <- synthetic.registry.spec(row$recipe.id)
@@ -443,14 +634,30 @@ materialize.synthetic.instance <- function(instance.id, validate = TRUE) {
     spec, n = row$n, seed = row$seed, rng.policy = row$rng.policy,
     validate = FALSE)
   object$dataset.id <- instance.id
-  attr(object, "frozen.instance") <- TRUE
+  attr(object, "frozen.instance.id") <- instance.id
   if (validate) {
     validate.synthetic.dataset(object)
     checksum <- synthetic.dataset.checksum(object)
-    if (!identical(checksum, row$content.sha256)) {
-      stop("Frozen instance checksum mismatch for ", instance.id,
-           ": expected ", row$content.sha256, ", obtained ", checksum,
-           call. = FALSE)
+    if (.synthetic.checksum.scope.matches(checksum.row)) {
+      if (!identical(checksum, row$content.sha256)) {
+        stop("Frozen instance checksum mismatch for ", instance.id,
+             ": expected ", row$content.sha256, ", obtained ", checksum,
+             call. = FALSE)
+      }
+      attr(object, "verification.scope") <- "exact-environment"
+    } else {
+      fixture <- readRDS(fixture.path)
+      comparison <- compare.synthetic.dataset(
+        object, fixture,
+        tolerance = c(
+          checksum.row$scientific.abs.tolerance,
+          checksum.row$scientific.rel.tolerance))
+      if (!comparison$equal) {
+        stop(
+          "Frozen instance failed cross-environment scientific parity: ",
+          paste(comparison$mismatches, collapse = ", "), call. = FALSE)
+      }
+      attr(object, "verification.scope") <- "scientific-parity"
     }
   }
   object

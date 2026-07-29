@@ -46,9 +46,12 @@ test_that("materialized datasets enforce identity and dimension contracts", {
   altered <- ds
   altered$predictors[1, 1] <- altered$predictors[1, 1] + 1e-3
   altered$X <- altered$predictors
-  comparison <- compare.synthetic.dataset(ds, altered)
-  expect_false(comparison$equal)
-  expect_true("predictors" %in% comparison$mismatches)
+  expect_error(
+    compare.synthetic.dataset(ds, altered),
+    "do not reconstruct predictors")
+  expect_error(
+    synthetic.dataset.checksum(altered),
+    "do not reconstruct predictors")
 })
 
 test_that("nullable stratified latent coordinates compare safely", {
