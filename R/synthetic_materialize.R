@@ -1,7 +1,8 @@
 # Canonical synthetic-data materialization and RNG policy implementation.
 
 .synthetic.named.streams <- function(seed) {
-  RNGkind("L'Ecuyer-CMRG")
+  RNGversion(.synthetic.rng.version())
+  RNGkind("L'Ecuyer-CMRG", "Inversion", "Rejection")
   set.seed(seed)
   names <- c("sampling", "geometry.frame", "truth",
              "response", "response.auxiliary")
@@ -193,8 +194,11 @@ materialize.synthetic <- function(
       !identical(seed.policy, "ssrhe.1d.v1"))
   seed <- seed.plan$seed
   result <- .with.synthetic.rng.preserved({
+    RNGversion(.synthetic.rng.version())
     if (rng.policy == "legacy") {
       RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+    } else {
+      RNGkind("L'Ecuyer-CMRG", "Inversion", "Rejection")
     }
     streams <- if (rng.policy == "named.stream.v1") {
       .synthetic.named.streams(seed)

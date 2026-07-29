@@ -73,5 +73,8 @@ cat("\n")
 
 pkgload::load_all(".", quiet = TRUE)
 for (file in files) {
-    testthat::test_file(file.path(test.dir, file))
+    testthat::test_file(
+        file.path(test.dir, file),
+        stop_on_failure = TRUE
+    )
 }

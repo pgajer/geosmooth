@@ -22,10 +22,9 @@ component.id <- function(component) {
     kind = component$kind,
     family = component$family,
     version = component$version,
+    parameters = geosmooth:::.synthetic.registry.json.text(
+      component$parameters),
     component.sha256 = hash,
-    payload.serialization = "R-xdr-v3",
-    component.payload.hex =
-      geosmooth:::.synthetic.registry.payload.hex(component),
     stringsAsFactors = FALSE)
   id
 }
@@ -40,11 +39,9 @@ for (recipe.id in synthetic.registry.ids()) {
     sampling.id = component.id(spec$sampling.spec),
     truth.id = component.id(spec$truth.spec),
     response.id = component.id(spec$response.spec),
-    payload.serialization = "R-xdr-v3",
-    compatibility.payload.hex =
-      geosmooth:::.synthetic.registry.payload.hex(spec$compatibility),
-    metadata.payload.hex =
-      geosmooth:::.synthetic.registry.payload.hex(spec$metadata),
+    compatibility.recipe =
+      geosmooth:::.synthetic.registry.json.text(spec$compatibility),
+    metadata = geosmooth:::.synthetic.registry.json.text(spec$metadata),
     specification.sha256 = spec$specification.sha256,
     status = "active",
     version = 1L,
@@ -109,22 +106,51 @@ utils::write.csv(
   instances, file.path(registry.dir, "instances.csv"),
   row.names = FALSE, quote = TRUE)
 
+environment.rows <- list()
 checksum.rows <- lapply(seq_len(nrow(instances)), function(i) {
   fingerprint <- geosmooth:::.synthetic.environment.fingerprint(
     instances$rng.policy[i])
+  fingerprint.values <- vapply(
+    fingerprint, as.character, character(1))
+  if (any(!nzchar(fingerprint.values)) ||
+      any(grepl("unknown|unavailable", fingerprint.values,
+                ignore.case = TRUE))) {
+    stop(
+      "Registry generation requires a complete environment fingerprint.",
+      call. = FALSE)
+  }
+  fingerprint.id <-
+    geosmooth:::.synthetic.environment.fingerprint.id(fingerprint)
+  environment.rows[[fingerprint.id]] <<- data.frame(
+    environment.fingerprint.id = fingerprint.id,
+    as.data.frame(fingerprint, stringsAsFactors = FALSE),
+    fingerprint.sha256 = geosmooth:::.synthetic.sha256(fingerprint),
+    status = "active",
+    stringsAsFactors = FALSE,
+    check.names = FALSE)
   data.frame(
     checksum.id = instances$checksum.id[i],
     instance.id = instances$instance.id[i],
     content.sha256 = instances$content.sha256[i],
     payload.contract = "synthetic-content-v1",
     serialization = "R-xdr-v3",
-    rng.policy = instances$rng.policy[i],
-    as.data.frame(fingerprint, stringsAsFactors = FALSE),
+    environment.fingerprint.id = fingerprint.id,
+    scientific.abs.tolerance = 1e-12,
+    scientific.rel.tolerance = 1e-10,
     status = instances$status[i],
     stringsAsFactors = FALSE,
     check.names = FALSE)
 })
 checksums <- do.call(rbind, checksum.rows)
+environments <- do.call(rbind, environment.rows)
+row.names(environments) <- NULL
+environments <- environments[
+  order(environments$environment.fingerprint.id, method = "radix"),
+  , drop = FALSE]
+utils::write.csv(
+  environments,
+  file.path(registry.dir, "environment_fingerprints.csv"),
+  row.names = FALSE, quote = TRUE)
 utils::write.csv(
   checksums, file.path(registry.dir, "checksums.csv"),
   row.names = FALSE, quote = TRUE)
