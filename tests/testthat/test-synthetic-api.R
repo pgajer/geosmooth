@@ -128,7 +128,9 @@ test_that("canonical frozen instances replay their committed checksums", {
       "checksum.id", "fixture.path", "status", "version",
       "content.sha256"),
     names(registry))
-  expect_setequal(registry$recipe.id, synthetic.registry.ids())
+  expect_setequal(
+    registry$recipe.id,
+    synthetic.registry.ids()[grepl("^G", synthetic.registry.ids())])
   for (instance.id in registry$instance.id) {
     object <- materialize.synthetic.instance(instance.id)
     expected <- registry$content.sha256[

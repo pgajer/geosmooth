@@ -46,8 +46,9 @@
       scope = "population", coordinates = "predictors",
       estimand = "E[Y|X=x] = sin(pi*x1) + 0.5*x2"),
     "ssrhe.shared.smooth.v1" = list(
-      scope = "population", coordinates = "latent",
-      estimand = "Shared SSRHE smooth benchmark truth")
+      scope = "finite.design", coordinates = "latent",
+      estimand = paste0(
+        "Shared SSRHE benchmark signal centered over the realized design"))
   )
 }
 
@@ -235,7 +236,21 @@ synthetic.truth.logit <- function(
   }
   if (id == "ssrhe.shared.smooth.v1") {
     d <- ncol(latent)
-    value <- rowSums(sin(pi * latent)) / sqrt(d)
+    value <- sin(pi * latent[, 1])
+    if (d >= 2L) {
+      value <- value + 0.7 * cos(pi * latent[, 2]) +
+        0.45 * latent[, 1]^2 -
+        0.25 * latent[, 1] * latent[, 2]
+    }
+    if (d >= 3L) {
+      value <- value + 0.35 * sin(pi * latent[, 3] / 2) +
+        0.15 * latent[, 2] * latent[, 3]
+    }
+    if (d >= 4L) {
+      value <- value + 0.20 * cos(pi * latent[, 4] / 2) -
+        0.10 * latent[, 1] * latent[, 4]
+    }
+    value <- as.numeric(scale(value, center = TRUE, scale = FALSE))
     return(list(value = value, parameters = list()))
   }
   stop("No evaluator implementation for named truth: ", id, call. = FALSE)
@@ -243,6 +258,9 @@ synthetic.truth.logit <- function(
 
 .gaussian.density.matrix <- function(X, center, scale) {
   d <- ncol(X)
+  if (d == 1L && length(scale) == 1L) {
+    return(stats::dnorm(X[, 1], mean = center[1], sd = scale))
+  }
   delta <- sweep(X, 2L, center, "-")
   if (length(scale) == 1L) {
     return(exp(-rowSums(delta^2) / (2 * scale^2)) /

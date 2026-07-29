@@ -1,5 +1,152 @@
 # Maintained synthetic recipe and frozen-instance registries.
 
+.synthetic.registry.asset <- function(file) {
+  dev <- file.path("inst", "synthetic_registry", file)
+  if (file.exists(dev)) return(dev)
+  system.file("synthetic_registry", file, package = "geosmooth")
+}
+
+.synthetic.numeric.fields <- function(x) {
+  as.double(strsplit(x, ";", fixed = TRUE)[[1L]])
+}
+
+.synthetic.gaussian.mixture.catalog <- function() {
+  path <- .synthetic.registry.asset("gaussian_mixture_1d_shapes.csv")
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("The one-dimensional shape registry is unavailable.", call. = FALSE)
+  }
+  utils::read.csv(path, stringsAsFactors = FALSE)
+}
+
+.synthetic.gaussian.variant.catalog <- function() {
+  path <- .synthetic.registry.asset("gaussian_mixture_1d_variants.csv")
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("The one-dimensional variant registry is unavailable.",
+         call. = FALSE)
+  }
+  utils::read.csv(path, stringsAsFactors = FALSE)
+}
+
+.synthetic.ssrhe.recipe.ids <- function() {
+  one.d <- as.vector(outer(
+    sprintf("S%02d", 1:16), paste0("V", 1:3), paste, sep = "."))
+  flat <- paste0("ssrhe.flat.d", 2:4, ".v1")
+  curvature <- c(35L, 85L, 125L, 150L, 200L)
+  quad <- unlist(lapply(2:4, function(d) {
+    unlist(lapply(seq_len(d), function(k) {
+      sprintf(
+        "ssrhe.quadform.d%d.k%d.c%03d.v1", d, k, curvature)
+    }), use.names = FALSE)
+  }), use.names = FALSE)
+  c(one.d, flat, quad)
+}
+
+.synthetic.one.d.recipe.spec <- function(recipe.id) {
+  pieces <- strsplit(recipe.id, ".", fixed = TRUE)[[1L]]
+  shapes <- .synthetic.gaussian.mixture.catalog()
+  variants <- .synthetic.gaussian.variant.catalog()
+  shape <- shapes[shapes$shape.id == pieces[1L], , drop = FALSE]
+  variant <- variants[variants$variant.id == pieces[2L], , drop = FALSE]
+  if (nrow(shape) != 1L || nrow(variant) != 1L) {
+    stop("Unknown one-dimensional SSRHE recipe: ", recipe.id,
+         call. = FALSE)
+  }
+  sampling <- switch(
+    variant$variant.id,
+    V1 = synthetic.sampling.uniform.interval(0, 1, order = "ascending"),
+    V2 = synthetic.sampling.truncated.normal(
+      mean = 0.5, sd = 0.2, lower = 0, upper = 1,
+      order = "ascending", algorithm = "inverse.cdf.v1"),
+    V3 = synthetic.sampling.gapped.uniform(
+      intervals = rbind(c(0.02, 0.42), c(0.58, 0.98)),
+      allocation = "fixed.proportion",
+      probabilities = c(0.42, 0.58),
+      rounding = "floor.first.remainder.last",
+      order = "ascending",
+      algorithm = "sequential.interval.runif.v1"))
+  response <- switch(
+    variant$variant.id,
+    V1 = synthetic.response.gaussian(0.08),
+    V2 = synthetic.response.heteroskedastic.gaussian(0.045, 0.14),
+    V3 = synthetic.response.laplace.outlier(
+      laplace.scale = 0.055, outlier.fraction = 0.04,
+      outlier.sd = 0.45, minimum.outliers = 1L,
+      count.rounding = "round",
+      laplace.algorithm = "uniform.inverse.v1"))
+  synthetic.spec(
+    synthetic.quadform(1L, 1L, frame = "canonical"),
+    sampling,
+    synthetic.truth.gaussian.mixture(
+      centers = matrix(.synthetic.numeric.fields(shape$means), ncol = 1L),
+      scales = .synthetic.numeric.fields(shape$sds),
+      weights = .synthetic.numeric.fields(shape$weights),
+      normalize = "sample.max"),
+    response,
+    recipe.id = recipe.id,
+    registry.tag = paste0(pieces[1L], "_", pieces[2L]),
+    compatibility = list(
+      seed.policy = "ssrhe.1d.v1",
+      source = "ssrhe_order3_l1_validation_helpers.R"),
+    metadata = list(
+      shape.id = shape$shape.id,
+      shape.name = shape$shape.name,
+      variant.id = variant$variant.id,
+      variant.name = variant$variant.name))
+}
+
+.synthetic.ssrhe.surface.recipe.spec <- function(recipe.id) {
+  is.flat <- grepl("^ssrhe\\.flat\\.", recipe.id)
+  if (is.flat) {
+    match <- regexec("^ssrhe\\.flat\\.d([234])\\.v1$", recipe.id)
+    pieces <- regmatches(recipe.id, match)[[1L]]
+    if (!length(pieces)) return(NULL)
+    d <- as.integer(pieces[2L])
+    forms <- list()
+    ambient.dim <- d
+    metadata <- list(family = "flat", intrinsic.dim = d)
+    seed.policy <- "ssrhe.flat.v1"
+  } else {
+    match <- regexec(
+      "^ssrhe\\.quadform\\.d([234])\\.k([1-4])\\.c([0-9]{3})\\.v1$",
+      recipe.id)
+    pieces <- regmatches(recipe.id, match)[[1L]]
+    if (!length(pieces)) return(NULL)
+    d <- as.integer(pieces[2L])
+    index.k <- as.integer(pieces[3L])
+    curvature <- as.integer(pieces[4L]) / 100
+    if (index.k > d ||
+        !as.integer(pieces[4L]) %in% c(35L, 85L, 125L, 150L, 200L)) {
+      return(NULL)
+    }
+    coefficient.base <- switch(
+      as.character(d),
+      "2" = c(1, 1),
+      "3" = c(1, 1, 1.5),
+      "4" = c(1, 1, 2, 4))
+    signs <- c(rep(1, index.k), rep(-1, d - index.k))
+    coefficients <- curvature * coefficient.base
+    forms <- list(diag(signs * coefficients, d))
+    ambient.dim <- d + 1L
+    metadata <- list(
+      family = "quadform", intrinsic.dim = d,
+      index.k = index.k, curvature = curvature,
+      coefficients = coefficients)
+    seed.policy <- "ssrhe.quadform.v1"
+  }
+  synthetic.spec(
+    synthetic.quadform(
+      d, ambient.dim, forms = forms, frame = "canonical"),
+    synthetic.sampling.uniform.box(-1, 1, order = "draw"),
+    synthetic.truth.named("ssrhe.shared.smooth.v1"),
+    synthetic.response.gaussian(0.08),
+    recipe.id = recipe.id,
+    registry.tag = recipe.id,
+    compatibility = list(
+      seed.policy = seed.policy,
+      source = "ssrhe_order3_l1_validation_helpers.R"),
+    metadata = metadata)
+}
+
 .synthetic.poly2.plan <- c(
   b0 = 0.5, b1 = 1.0, b2 = -0.7,
   b11 = 0.4, b12 = 0.3, b22 = -0.6)
@@ -167,7 +314,9 @@
 #' List maintained synthetic recipe IDs
 #' @return Character recipe IDs.
 #' @export
-synthetic.registry.ids <- function() names(.synthetic.recipe.defaults())
+synthetic.registry.ids <- function() {
+  c(names(.synthetic.recipe.defaults()), .synthetic.ssrhe.recipe.ids())
+}
 
 #' Resolve a maintained synthetic recipe
 #'
@@ -177,6 +326,24 @@ synthetic.registry.ids <- function() names(.synthetic.recipe.defaults())
 #' @export
 synthetic.registry.spec <- function(recipe.id, parameters = list()) {
   recipe.id <- .synthetic.scalar.character(recipe.id, "recipe.id")
+  if (grepl("^S[0-9]{2}\\.V[1-3]$", recipe.id)) {
+    if (length(parameters)) {
+      stop("One-dimensional registry recipes do not accept overrides.",
+           call. = FALSE)
+    }
+    return(.synthetic.one.d.recipe.spec(recipe.id))
+  }
+  if (grepl("^ssrhe\\.(flat|quadform)\\.", recipe.id)) {
+    if (length(parameters)) {
+      stop("SSRHE surface registry recipes do not accept overrides.",
+           call. = FALSE)
+    }
+    spec <- .synthetic.ssrhe.surface.recipe.spec(recipe.id)
+    if (is.null(spec)) {
+      stop("Unknown synthetic recipe ID: ", recipe.id, call. = FALSE)
+    }
+    return(spec)
+  }
   defaults <- .synthetic.recipe.defaults()[[recipe.id]]
   if (is.null(defaults)) {
     stop("Unknown synthetic recipe ID: ", recipe.id, call. = FALSE)
@@ -191,6 +358,41 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
   }
   args <- utils::modifyList(defaults, parameters, keep.null = TRUE)
   .synthetic.recipe.spec(recipe.id, args)
+}
+
+#' Resolve the legacy seed for an SSRHE registry recipe
+#'
+#' @param recipe.id A one-dimensional, flat, or quadform SSRHE recipe ID.
+#' @param replicate Positive replicate number.
+#' @param n Sample size. Required for flat and quadform recipes.
+#' @param base.seed One-dimensional suite base seed.
+#' @return A validated integer seed.
+#' @export
+synthetic.registry.seed <- function(
+    recipe.id, replicate = 1L, n = NULL, base.seed = 273001L) {
+  recipe.id <- .synthetic.scalar.character(recipe.id, "recipe.id")
+  replicate <- .synthetic.scalar.integer(replicate, "replicate", 1L)
+  if (grepl("^S[0-9]{2}\\.V[1-3]$", recipe.id)) {
+    pieces <- strsplit(recipe.id, ".", fixed = TRUE)[[1L]]
+    shape <- as.integer(sub("^S", "", pieces[1L]))
+    variant <- as.integer(sub("^V", "", pieces[2L]))
+    return(.validate.synthetic.seed(
+      as.double(base.seed) + shape * 1000 + variant * 100 + replicate))
+  }
+  n <- .synthetic.scalar.integer(n, "n", 1L)
+  spec <- .synthetic.ssrhe.surface.recipe.spec(recipe.id)
+  if (is.null(spec)) {
+    stop("recipe.id is not an SSRHE registry recipe.", call. = FALSE)
+  }
+  metadata <- spec$metadata
+  if (metadata$family == "flat") {
+    seed <- 283000 + 1000 * metadata$intrinsic.dim + 10 * n + replicate
+  } else {
+    seed <- 291000 + 1000 * metadata$intrinsic.dim +
+      100 * metadata$index.k + round(100 * metadata$curvature) +
+      10 * n + replicate
+  }
+  .validate.synthetic.seed(seed)
 }
 
 .synthetic.instance.path <- function() {

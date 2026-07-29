@@ -42,6 +42,44 @@
   .synthetic.scalar.integer(n, "n", 1L)
 }
 
+.decorate.ssrhe.dataset <- function(object, spec) {
+  metadata <- spec$metadata
+  recipe.id <- spec$recipe.id %||% ""
+  if (grepl("^S[0-9]{2}\\.V[1-3]$", recipe.id)) {
+    object$domain <- "1D mixture"
+    object$family <- metadata$shape.name
+    object$variant <- metadata$variant.name
+    object$dim <- 1L
+    object$x <- object$predictors[, 1L]
+    object$index.k <- NA_integer_
+    object$curvature <- NA_real_
+    object$coefficients <- NA_real_
+  } else if (grepl("^ssrhe\\.(flat|quadform)\\.", recipe.id)) {
+    object$domain <- if (metadata$family == "flat") {
+      sprintf("%dD flat", metadata$intrinsic.dim)
+    } else {
+      sprintf("%dD quadform", metadata$intrinsic.dim)
+    }
+    object$family <- if (metadata$family == "flat") {
+      "flat"
+    } else {
+      sprintf("quadform index %d", metadata$index.k)
+    }
+    object$variant <- if (metadata$family == "flat") {
+      "uniform ambient sample"
+    } else {
+      sprintf("curvature %.2f", metadata$curvature)
+    }
+    object$dim <- as.integer(metadata$intrinsic.dim)
+    object$x <- NA_real_
+    object$index.k <- metadata$index.k %||% NA_integer_
+    object$curvature <- metadata$curvature %||% NA_real_
+    object$coefficients <- metadata$coefficients %||%
+      rep(NA_real_, metadata$intrinsic.dim)
+  }
+  object
+}
+
 .materialize.synthetic.once <- function(
     spec, n, seed.plan, rng.policy, streams = NULL, attempt = 1L) {
   geometry <- spec$geometry.spec
@@ -98,7 +136,9 @@
     spec$truth.spec, sample.out$latent, predictors)
   if (.synthetic.response.uses.rng(response)) {
     if (rng.policy == "legacy") {
-      set.seed(seed.plan$response.seed)
+      if (!is.null(seed.plan$response.seed)) {
+        set.seed(seed.plan$response.seed)
+      }
       response.out <- .draw.synthetic.response(
         response, truth.out$value, sample.out$region)
     } else {
@@ -139,15 +179,18 @@ materialize.synthetic <- function(
     spec$geometry.spec$parameters$frame, "random.orthonormal")
   response.random <- .synthetic.response.uses.rng(spec$response.spec)
   frame.seed <- NULL
+  seed.policy <- "named.stream.v1"
   if (!is.null(spec$compatibility)) {
     frame.seed <- spec$compatibility$frame.seed
+    seed.policy <- spec$compatibility$seed.policy %||% seed.policy
   }
   # This resolves and validates every policy-derived seed before RNG state
   # changes or any draw is consumed.
   seed.plan <- .validate.synthetic.seed.plan(
     seed, frame.seed = frame.seed,
     need.frame = rng.policy == "legacy" && random.frame,
-    need.response = rng.policy == "legacy" && response.random)
+    need.response = rng.policy == "legacy" && response.random &&
+      !identical(seed.policy, "ssrhe.1d.v1"))
   seed <- seed.plan$seed
   result <- .with.synthetic.rng.preserved({
     if (rng.policy == "legacy") {
@@ -192,6 +235,7 @@ materialize.synthetic <- function(
       geosmooth.version = tryCatch(
         as.character(utils::packageVersion("geosmooth")),
         error = function(e) NA_character_)))
+  object <- .decorate.ssrhe.dataset(object, spec)
   if (validate) validate.synthetic.dataset(object)
   object
 }
