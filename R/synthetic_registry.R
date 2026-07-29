@@ -27,6 +27,23 @@
   utils::read.csv(path, stringsAsFactors = FALSE)
 }
 
+.verify.synthetic.registry.spec <- function(spec, registry.id = spec$recipe.id) {
+  if (identical(getOption("geosmooth.registry.verify"), FALSE)) return(spec)
+  path <- .synthetic.registry.asset("recipes.csv")
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("The normalized synthetic recipe registry is unavailable.",
+         call. = FALSE)
+  }
+  registry <- utils::read.csv(path, stringsAsFactors = FALSE)
+  row <- registry[registry$recipe.id == registry.id, , drop = FALSE]
+  if (nrow(row) != 1L ||
+      !identical(row$specification.sha256, spec$specification.sha256)) {
+    stop("Synthetic recipe registry hash mismatch for ", registry.id,
+         "; regenerate the registry ledgers.", call. = FALSE)
+  }
+  spec
+}
+
 .synthetic.ssrhe.recipe.ids <- function() {
   one.d <- as.vector(outer(
     sprintf("S%02d", 1:16), paste0("V", 1:3), paste, sep = "."))
@@ -331,7 +348,8 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
       stop("One-dimensional registry recipes do not accept overrides.",
            call. = FALSE)
     }
-    return(.synthetic.one.d.recipe.spec(recipe.id))
+    return(.verify.synthetic.registry.spec(
+      .synthetic.one.d.recipe.spec(recipe.id), recipe.id))
   }
   if (grepl("^ssrhe\\.(flat|quadform)\\.", recipe.id)) {
     if (length(parameters)) {
@@ -342,7 +360,7 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
     if (is.null(spec)) {
       stop("Unknown synthetic recipe ID: ", recipe.id, call. = FALSE)
     }
-    return(spec)
+    return(.verify.synthetic.registry.spec(spec, recipe.id))
   }
   defaults <- .synthetic.recipe.defaults()[[recipe.id]]
   if (is.null(defaults)) {
@@ -357,7 +375,9 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
          paste(unknown, collapse = ", "), call. = FALSE)
   }
   args <- utils::modifyList(defaults, parameters, keep.null = TRUE)
-  .synthetic.recipe.spec(recipe.id, args)
+  spec <- .synthetic.recipe.spec(recipe.id, args)
+  if (length(parameters)) spec else
+    .verify.synthetic.registry.spec(spec, recipe.id)
 }
 
 #' Resolve the legacy seed for an SSRHE registry recipe
