@@ -26,30 +26,142 @@
   row
 }
 
-.synthetic.raw.to.hex <- function(value) {
-  paste(sprintf("%02x", as.integer(value)), collapse = "")
-}
-
-.synthetic.hex.to.raw <- function(value) {
-  value <- .synthetic.scalar.character(value, "serialized registry payload")
-  if (nchar(value) %% 2L != 0L ||
-      grepl("[^0-9a-f]", value, perl = TRUE)) {
-    stop("Serialized registry payload is not lowercase hexadecimal.",
+.synthetic.registry.json.node <- function(value) {
+  if (is.null(value)) return(list(type = "null"))
+  if (is.factor(value)) value <- as.character(value)
+  if (is.matrix(value)) {
+    type <- typeof(value)
+    if (!type %in% c("integer", "double", "logical", "character")) {
+      stop("Registry JSON does not support this matrix type.", call. = FALSE)
+    }
+    rows <- lapply(seq_len(nrow(value)), function(i) {
+      structure(unname(value[i, , drop = TRUE]), class = "AsIs")
+    })
+    dim.labels <- dimnames(value)
+    return(list(
+      type = paste0(type, ".matrix"),
+      nrow = as.integer(nrow(value)),
+      ncol = as.integer(ncol(value)),
+      values = rows,
+      row.names = if (is.null(dim.labels[[1L]])) NULL else
+        structure(enc2utf8(dim.labels[[1L]]), class = "AsIs"),
+      column.names = if (is.null(dim.labels[[2L]])) NULL else
+        structure(enc2utf8(dim.labels[[2L]]), class = "AsIs")
+    ))
+  }
+  if (is.array(value)) {
+    stop("Registry JSON supports matrices but not higher-order arrays.",
          call. = FALSE)
   }
-  pairs <- substring(
-    value, seq.int(1L, nchar(value), by = 2L),
-    seq.int(2L, nchar(value), by = 2L))
-  as.raw(strtoi(pairs, base = 16L))
+  if (is.list(value)) {
+    return(list(
+      type = "list",
+      names = if (is.null(names(value))) NULL else
+        structure(enc2utf8(names(value)), class = "AsIs"),
+      values = lapply(value, .synthetic.registry.json.node)
+    ))
+  }
+  type <- typeof(value)
+  if (!type %in% c("integer", "double", "logical", "character")) {
+    stop("Registry JSON does not support this atomic type.", call. = FALSE)
+  }
+  if (type == "character") value <- enc2utf8(value)
+  list(
+    type = type,
+    names = if (is.null(names(value))) NULL else
+      structure(enc2utf8(names(value)), class = "AsIs"),
+    values = structure(unname(value), class = "AsIs")
+  )
 }
 
-.synthetic.registry.payload.hex <- function(value) {
-  .synthetic.raw.to.hex(
-    serialize(value, NULL, ascii = FALSE, xdr = TRUE, version = 3))
+.synthetic.registry.json.text <- function(value) {
+  as.character(jsonlite::toJSON(
+    .synthetic.registry.json.node(value),
+    auto_unbox = TRUE, null = "null", na = "null", digits = 17L,
+    pretty = FALSE))
 }
 
-.synthetic.registry.payload.value <- function(value) {
-  unserialize(.synthetic.hex.to.raw(value))
+.synthetic.registry.json.atomic <- function(values, type) {
+  convert <- switch(
+    type,
+    integer = function(value) {
+      if (is.null(value)) NA_integer_ else as.integer(value)
+    },
+    double = function(value) {
+      if (is.null(value)) NA_real_ else as.double(value)
+    },
+    logical = function(value) {
+      if (is.null(value)) NA else as.logical(value)
+    },
+    character = function(value) {
+      if (is.null(value)) NA_character_ else enc2utf8(as.character(value))
+    },
+    stop("Unknown registry JSON atomic type: ", type, call. = FALSE))
+  prototype <- switch(
+    type, integer = integer(1L), double = double(1L),
+    logical = logical(1L), character = character(1L))
+  vapply(values, convert, prototype)
+}
+
+.synthetic.registry.json.decode.node <- function(node) {
+  if (!is.list(node) || !is.character(node$type) ||
+      length(node$type) != 1L) {
+    stop("Registry JSON node is malformed.", call. = FALSE)
+  }
+  type <- node$type
+  if (identical(type, "null")) return(NULL)
+  if (identical(type, "list")) {
+    value <- lapply(node$values, .synthetic.registry.json.decode.node)
+    if (!is.null(node$names)) {
+      names(value) <- enc2utf8(unlist(node$names, use.names = FALSE))
+    }
+    return(value)
+  }
+  if (grepl("\\.matrix$", type)) {
+    atomic.type <- sub("\\.matrix$", "", type)
+    rows <- lapply(node$values, .synthetic.registry.json.atomic,
+                   type = atomic.type)
+    flat <- if (length(rows)) unlist(rows, use.names = FALSE) else
+      switch(
+        atomic.type, integer = integer(), double = double(),
+        logical = logical(), character = character())
+    value <- matrix(
+      flat, nrow = as.integer(node$nrow), ncol = as.integer(node$ncol),
+      byrow = TRUE)
+    row.names <- if (is.null(node$row.names)) NULL else
+      enc2utf8(unlist(node$row.names, use.names = FALSE))
+    column.names <- if (is.null(node$column.names)) NULL else
+      enc2utf8(unlist(node$column.names, use.names = FALSE))
+    if (!is.null(row.names) || !is.null(column.names)) {
+      dimnames(value) <- list(row.names, column.names)
+    }
+    return(value)
+  }
+  value <- .synthetic.registry.json.atomic(node$values, type)
+  if (!is.null(node$names)) {
+    names(value) <- enc2utf8(unlist(node$names, use.names = FALSE))
+  }
+  value
+}
+
+.synthetic.registry.json.value <- function(value) {
+  value <- .synthetic.scalar.character(value, "registry JSON")
+  node <- tryCatch(
+    jsonlite::fromJSON(value, simplifyVector = FALSE),
+    error = function(error) {
+      stop("Registry JSON is malformed: ", conditionMessage(error),
+           call. = FALSE)
+    })
+  .synthetic.registry.json.decode.node(node)
+}
+
+.synthetic.registry.component.subclass <- function(kind, family) {
+  if (identical(kind, "geometry") &&
+      identical(family, "g4.segment.rectangle")) {
+    return("synthetic_stratified_geometry")
+  }
+  paste0(
+    "synthetic_", gsub(".", "_", family, fixed = TRUE), "_", kind)
 }
 
 .synthetic.registry.component <- function(component.id, expected.kind) {
@@ -60,12 +172,17 @@
       truth = "truths", response = "responses"),
     ".csv")
   row <- .synthetic.registry.row(file, "component.id", component.id)
-  if (!identical(row$kind, expected.kind) ||
-      !identical(row$payload.serialization, "R-xdr-v3")) {
-    stop("Registry component kind or serialization is inconsistent for ",
+  if (!identical(row$kind, expected.kind)) {
+    stop("Registry component kind is inconsistent for ",
          component.id, ".", call. = FALSE)
   }
-  component <- .synthetic.registry.payload.value(row$component.payload.hex)
+  component <- .new.synthetic.component(
+    kind = expected.kind,
+    family = row$family,
+    version = as.integer(row$version),
+    parameters = .synthetic.registry.json.value(row$parameters),
+    subclass = .synthetic.registry.component.subclass(
+      expected.kind, row$family))
   if (!.is.synthetic.component(component, expected.kind) ||
       !identical(component$family, row$family) ||
       !identical(component$version, as.integer(row$version)) ||
@@ -79,9 +196,8 @@
 .synthetic.registry.resolve <- function(recipe.id) {
   row <- .synthetic.registry.row("recipes.csv", "recipe.id", recipe.id)
   if (!identical(row$status, "active") ||
-      !identical(as.integer(row$version), 1L) ||
-      !identical(row$payload.serialization, "R-xdr-v3")) {
-    stop("Registry recipe status, version, or serialization is unsupported.",
+      !identical(as.integer(row$version), 1L)) {
+    stop("Registry recipe status or version is unsupported.",
          call. = FALSE)
   }
   spec <- synthetic.spec(
@@ -93,9 +209,9 @@
                        !nzchar(row$spec.recipe.id)) NULL else row$spec.recipe.id,
     registry.tag = if (is.na(row$registry.tag) ||
                          !nzchar(row$registry.tag)) NULL else row$registry.tag,
-    compatibility = .synthetic.registry.payload.value(
-      row$compatibility.payload.hex),
-    metadata = .synthetic.registry.payload.value(row$metadata.payload.hex))
+    compatibility = .synthetic.registry.json.value(
+      row$compatibility.recipe),
+    metadata = .synthetic.registry.json.value(row$metadata))
   if (!identical(spec$specification.sha256, row$specification.sha256)) {
     stop("Synthetic recipe registry hash mismatch for ", recipe.id, ".",
          call. = FALSE)
@@ -103,7 +219,73 @@
   spec
 }
 
+.synthetic.environment.schema <- function() {
+  path <- .synthetic.registry.asset("environment_fingerprint_schema.csv")
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("Environment fingerprint schema is unavailable.", call. = FALSE)
+  }
+  schema <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE)
+  required <- c("field", "type", "required", "description")
+  if (!identical(names(schema), required) ||
+      anyDuplicated(schema$field) ||
+      !all(schema$type %in% c("character", "integer", "double")) ||
+      !all(schema$required)) {
+    stop("Environment fingerprint schema is malformed.", call. = FALSE)
+  }
+  schema
+}
+
+.synthetic.file.identity <- function(path) {
+  if (is.na(path) || !nzchar(path) || !file.exists(path)) {
+    return(list(path = "unavailable", sha256 = "unavailable"))
+  }
+  path <- normalizePath(path, mustWork = TRUE)
+  list(
+    path = path,
+    sha256 = digest::digest(
+      file = path, algo = "sha256", serialize = FALSE))
+}
+
+.synthetic.math.runtime.identity <- function() {
+  candidates <- c(
+    file.path(R.home("lib"), "libR.dylib"),
+    file.path(R.home("lib"), "libR.so"),
+    file.path(R.home("bin"), "x64", "R.dll"),
+    file.path(R.home("bin"), "R.dll"))
+  lib.r <- candidates[file.exists(candidates)][1L]
+  if (is.na(lib.r)) return("unavailable")
+  lib.r <- normalizePath(lib.r, mustWork = TRUE)
+  linked <- character()
+  if (identical(Sys.info()[["sysname"]], "Darwin") &&
+      nzchar(Sys.which("otool"))) {
+    output <- tryCatch(
+      system2("otool", c("-L", lib.r), stdout = TRUE, stderr = FALSE),
+      error = function(error) character())
+    linked <- trimws(grep("libSystem|libm", output, value = TRUE))
+  } else if (nzchar(Sys.which("ldd"))) {
+    output <- tryCatch(
+      system2("ldd", lib.r, stdout = TRUE, stderr = FALSE),
+      error = function(error) character())
+    linked <- trimws(grep("libm", output, value = TRUE))
+  }
+  paste0(
+    "libR.path=", lib.r,
+    ";libR.sha256=",
+    digest::digest(file = lib.r, algo = "sha256", serialize = FALSE),
+    ";linked.math=", if (length(linked)) {
+      paste(linked, collapse = " | ")
+    } else {
+      "none-reported"
+    })
+}
+
+.synthetic.rng.version <- function() {
+  as.character(getRversion())
+}
+
 .synthetic.environment.fingerprint <- function(rng.policy = "legacy") {
+  rng.policy <- match.arg(rng.policy, c("legacy", "named.stream.v1"))
   soft <- extSoftVersion()
   compiler.command <- tryCatch(
     trimws(system2(
@@ -127,8 +309,9 @@
   if (!nzchar(compiler)) {
     compiler <- "unavailable"
   }
-  lapack <- paste0(La_library(), ";version=", La_version())
-  dependencies <- c("dgraphs", "digest", "MASS", "Matrix")
+  blas <- .synthetic.file.identity(unname(soft["BLAS"]))
+  lapack <- .synthetic.file.identity(La_library())
+  dependencies <- c("dgraphs", "digest", "jsonlite", "MASS", "Matrix")
   dependency.versions <- paste(
     paste0(
       dependencies, "=",
@@ -138,42 +321,88 @@
           error = function(e) "unavailable")
       }, character(1))),
     collapse = ";")
-  list(
+  info <- Sys.info()
+  fingerprint <- list(
     r.version = R.version.string,
     platform = R.version$platform,
     architecture = R.version$arch,
     compiler = compiler,
-    operating.system = paste(
-      Sys.info()[c("sysname", "release", "version")], collapse = " | "),
+    os.name = unname(info["sysname"]),
+    os.release = unname(info["release"]),
+    os.version = unname(info["version"]),
+    os.machine = unname(info["machine"]),
     endianness = .Platform$endian,
+    rng.policy = rng.policy,
     rng.kind = if (rng.policy == "legacy") {
-      "Mersenne-Twister/Inversion/Rejection"
-    } else {
-      "L'Ecuyer-CMRG/Inversion/Rejection"
-    },
-    blas = unname(soft["BLAS"]),
-    lapack = lapack,
-    math.runtime = paste0(
-      "long.double=", capabilities("long.double"),
-      ";sizeof.longdouble=", .Machine$sizeof.longdouble),
-    registry.version = 1L,
-    evaluator.version = 1L,
-    dependency.versions = dependency.versions,
-    scientific.abs.tolerance = 1e-12,
-    scientific.rel.tolerance = 1e-10
+      "Mersenne-Twister"
+    } else "L'Ecuyer-CMRG",
+    normal.kind = "Inversion",
+    sample.kind = "Rejection",
+    rng.version = .synthetic.rng.version(),
+    blas.path = blas$path,
+    blas.sha256 = blas$sha256,
+    lapack.path = lapack$path,
+    lapack.sha256 = lapack$sha256,
+    lapack.version = as.character(La_version()),
+    math.runtime = .synthetic.math.runtime.identity(),
+    geosmooth.version = as.character(utils::packageVersion("geosmooth")),
+    registry.schema.version = 1L,
+    evaluator.registry.version = 1L,
+    dependency.versions = dependency.versions
   )
+  schema <- .synthetic.environment.schema()
+  if (!identical(names(fingerprint), schema$field)) {
+    stop("Environment fingerprint implementation and schema disagree.",
+         call. = FALSE)
+  }
+  fingerprint
 }
 
-.synthetic.checksum.scope.matches <- function(row) {
-  current <- .synthetic.environment.fingerprint(row$rng.policy)
-  fields <- names(current)
-  all(vapply(fields, function(field) {
-    expected <- row[[field]]
+.synthetic.environment.fingerprint.id <- function(fingerprint) {
+  paste0("synthetic-env-v1.", .synthetic.sha256(fingerprint))
+}
+
+.synthetic.environment.fingerprint.from.row <- function(row) {
+  schema <- .synthetic.environment.schema()
+  stats::setNames(lapply(seq_len(nrow(schema)), function(i) {
+    value <- row[[schema$field[i]]]
+    switch(
+      schema$type[i],
+      character = as.character(value),
+      integer = as.integer(value),
+      double = as.double(value))
+  }), schema$field)
+}
+
+.synthetic.environment.fingerprint.row <- function(fingerprint.id) {
+  row <- .synthetic.registry.row(
+    "environment_fingerprints.csv",
+    "environment.fingerprint.id", fingerprint.id)
+  fingerprint <- .synthetic.environment.fingerprint.from.row(row)
+  expected.id <- .synthetic.environment.fingerprint.id(fingerprint)
+  if (!identical(row$fingerprint.sha256, .synthetic.sha256(fingerprint)) ||
+      !identical(fingerprint.id, expected.id)) {
+    stop("Environment fingerprint identity is inconsistent.", call. = FALSE)
+  }
+  row
+}
+
+.synthetic.checksum.scope.matches <- function(row, current = NULL) {
+  environment.row <- .synthetic.environment.fingerprint.row(
+    row$environment.fingerprint.id)
+  expected <- .synthetic.environment.fingerprint.from.row(environment.row)
+  if (is.null(current)) {
+    current <- .synthetic.environment.fingerprint(expected$rng.policy)
+  }
+  schema <- .synthetic.environment.schema()
+  if (!identical(names(current), schema$field)) return(FALSE)
+  all(vapply(schema$field, function(field) {
+    expected.value <- expected[[field]]
     actual <- current[[field]]
     if (is.numeric(actual)) {
-      identical(as.numeric(expected), as.numeric(actual))
+      identical(as.numeric(expected.value), as.numeric(actual))
     } else {
-      identical(as.character(expected), as.character(actual))
+      identical(as.character(expected.value), as.character(actual))
     }
   }, logical(1)))
 }
@@ -637,28 +866,40 @@ materialize.synthetic.instance <- function(instance.id, validate = TRUE) {
   attr(object, "frozen.instance.id") <- instance.id
   if (validate) {
     validate.synthetic.dataset(object)
-    checksum <- synthetic.dataset.checksum(object)
-    if (.synthetic.checksum.scope.matches(checksum.row)) {
-      if (!identical(checksum, row$content.sha256)) {
-        stop("Frozen instance checksum mismatch for ", instance.id,
-             ": expected ", row$content.sha256, ", obtained ", checksum,
-             call. = FALSE)
-      }
-      attr(object, "verification.scope") <- "exact-environment"
-    } else {
-      fixture <- readRDS(fixture.path)
-      comparison <- compare.synthetic.dataset(
-        object, fixture,
-        tolerance = c(
-          checksum.row$scientific.abs.tolerance,
-          checksum.row$scientific.rel.tolerance))
-      if (!comparison$equal) {
-        stop(
-          "Frozen instance failed cross-environment scientific parity: ",
-          paste(comparison$mismatches, collapse = ", "), call. = FALSE)
-      }
-      attr(object, "verification.scope") <- "scientific-parity"
-    }
+    object <- .synthetic.verify.frozen.instance(
+      object = object,
+      fixture = readRDS(fixture.path),
+      instance.row = row,
+      checksum.row = checksum.row)
   }
+  object
+}
+
+.synthetic.verify.frozen.instance <- function(
+    object, fixture, instance.row, checksum.row,
+    current.fingerprint = NULL) {
+  checksum <- synthetic.dataset.checksum(object)
+  if (.synthetic.checksum.scope.matches(
+      checksum.row, current = current.fingerprint)) {
+    if (!identical(checksum, instance.row$content.sha256)) {
+      stop(
+        "Frozen instance checksum mismatch for ", instance.row$instance.id,
+        ": expected ", instance.row$content.sha256,
+        ", obtained ", checksum, call. = FALSE)
+    }
+    attr(object, "verification.scope") <- "exact-environment"
+    return(object)
+  }
+  comparison <- compare.synthetic.dataset(
+    object, fixture,
+    tolerance = c(
+      checksum.row$scientific.abs.tolerance,
+      checksum.row$scientific.rel.tolerance))
+  if (!comparison$equal) {
+    stop(
+      "Frozen instance failed cross-environment scientific parity: ",
+      paste(comparison$mismatches, collapse = ", "), call. = FALSE)
+  }
+  attr(object, "verification.scope") <- "scientific-parity"
   object
 }

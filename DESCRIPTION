@@ -26,6 +26,7 @@ Depends:
 Imports:
     dgraphs,
     digest,
+    jsonlite,
     MASS,
     Matrix,
     methods,

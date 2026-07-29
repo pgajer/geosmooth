@@ -20,7 +20,8 @@ test_that("normalized component foreign keys resolve exactly once", {
   expect_identical(anyDuplicated(recipes$recipe.id), 0L)
   expect_true(all(recipes$status == "active"))
   expect_true(all(recipes$version == 1L))
-  expect_true(all(recipes$payload.serialization == "R-xdr-v3"))
+  expect_true(all(nzchar(recipes$compatibility.recipe)))
+  expect_true(all(nzchar(recipes$metadata)))
 
   all.component.ids <- character()
   for (field in names(table.by.field)) {
@@ -28,9 +29,7 @@ test_that("normalized component foreign keys resolve exactly once", {
     expect_identical(anyDuplicated(components$component.id), 0L, info = field)
     expect_true(all(components$kind == kind.by.field[[field]]), info = field)
     expect_true(all(components$version >= 1L), info = field)
-    expect_true(all(components$payload.serialization == "R-xdr-v3"),
-                info = field)
-    expect_true(all(nzchar(components$component.payload.hex)), info = field)
+    expect_true(all(nzchar(components$parameters)), info = field)
     for (id in recipes[[field]]) {
       expect_identical(sum(components$component.id == id), 1L, info = id)
       component <- geosmooth:::.synthetic.registry.component(
@@ -39,6 +38,10 @@ test_that("normalized component foreign keys resolve exactly once", {
       expect_identical(
         geosmooth:::.synthetic.sha256(component),
         row$component.sha256,
+        info = id)
+      expect_identical(
+        geosmooth:::.synthetic.registry.json.text(component$parameters),
+        row$parameters,
         info = id)
     }
     all.component.ids <- c(all.component.ids, components$component.id)
@@ -64,20 +67,34 @@ test_that("instance, checksum, and fixture foreign keys are complete", {
   recipes <- .read.synthetic.registry.table("recipes.csv")
   instances <- .read.synthetic.registry.table("instances.csv")
   checksums <- .read.synthetic.registry.table("checksums.csv")
+  environments <- .read.synthetic.registry.table(
+    "environment_fingerprints.csv")
+  schema <- .read.synthetic.registry.table(
+    "environment_fingerprint_schema.csv")
   required.scope <- c(
     "r.version", "platform", "architecture", "compiler",
-    "operating.system", "endianness", "rng.kind", "blas", "lapack",
-    "math.runtime", "registry.version", "evaluator.version",
-    "dependency.versions", "scientific.abs.tolerance",
-    "scientific.rel.tolerance")
+    "os.name", "os.release", "os.version", "os.machine", "endianness",
+    "rng.policy", "rng.kind", "normal.kind", "sample.kind", "rng.version",
+    "blas.path", "blas.sha256", "lapack.path", "lapack.sha256",
+    "lapack.version", "math.runtime", "geosmooth.version",
+    "registry.schema.version", "evaluator.registry.version",
+    "dependency.versions")
 
   expect_identical(anyDuplicated(instances$instance.id), 0L)
   expect_identical(anyDuplicated(instances$checksum.id), 0L)
   expect_identical(anyDuplicated(checksums$checksum.id), 0L)
+  expect_identical(
+    anyDuplicated(environments$environment.fingerprint.id), 0L)
   expect_true(all(instances$recipe.id %in% recipes$recipe.id))
   expect_true(all(instances$status == "active"))
   expect_true(all(instances$version == 1L))
-  expect_true(all(required.scope %in% names(checksums)))
+  expect_identical(schema$field, required.scope)
+  expect_true(all(schema$required))
+  expect_true(all(required.scope %in% names(environments)))
+  expect_false(any(required.scope %in% names(checksums)))
+  expect_true(all(
+    checksums$environment.fingerprint.id %in%
+      environments$environment.fingerprint.id))
   expect_true(all(checksums$payload.contract == "synthetic-content-v1"))
   expect_true(all(checksums$serialization == "R-xdr-v3"))
 
@@ -91,6 +108,12 @@ test_that("instance, checksum, and fixture foreign keys are complete", {
       info = instance$instance.id)
     expect_identical(
       checksum$content.sha256, instance$content.sha256,
+      info = instance$instance.id)
+    expect_identical(
+      sum(
+        environments$environment.fingerprint.id ==
+          checksum$environment.fingerprint.id),
+      1L,
       info = instance$instance.id)
     fixture.path <- geosmooth:::.synthetic.registry.fixture.path(
       instance$fixture.path)
@@ -125,12 +148,69 @@ test_that("instance, checksum, and fixture foreign keys are complete", {
   }
 
   for (field in required.scope) {
-    value <- as.character(checksums[[field]])
+    value <- as.character(environments[[field]])
     expect_true(all(nzchar(value)), info = field)
     expect_false(any(grepl(
       "unknown|unavailable", value, ignore.case = TRUE)),
       info = field)
   }
+  for (i in seq_len(nrow(environments))) {
+    row <- environments[i, , drop = FALSE]
+    fingerprint <-
+      geosmooth:::.synthetic.environment.fingerprint.from.row(row)
+    expect_identical(
+      row$environment.fingerprint.id,
+      geosmooth:::.synthetic.environment.fingerprint.id(fingerprint))
+    expect_identical(
+      row$fingerprint.sha256,
+      geosmooth:::.synthetic.sha256(fingerprint))
+  }
+})
+
+test_that("registry JSON is typed and matrix values are row-major", {
+  value <- list(
+    count = 2L,
+    coefficients = c(b0 = 1, b1 = 2),
+    frame = matrix(as.double(1:6), nrow = 2L, byrow = TRUE),
+    missing = NA_integer_,
+    absent = NULL)
+  json <- geosmooth:::.synthetic.registry.json.text(value)
+  expect_match(
+    json,
+    '"nrow":2,"ncol":3,"values":\\[\\[1,2,3\\],\\[4,5,6\\]\\]',
+    perl = TRUE)
+  expect_identical(
+    geosmooth:::.synthetic.registry.json.value(json), value)
+})
+
+test_that("exact and scientific fallback verification are deterministic", {
+  instances <- .read.synthetic.registry.table("instances.csv")
+  checksums <- .read.synthetic.registry.table("checksums.csv")
+  instance <- instances[1L, , drop = FALSE]
+  checksum <- checksums[
+    checksums$checksum.id == instance$checksum.id, , drop = FALSE]
+  fixture.path <- geosmooth:::.synthetic.registry.fixture.path(
+    instance$fixture.path)
+  fixture <- readRDS(fixture.path)
+  object <- materialize.synthetic.instance(instance$instance.id)
+  current <- geosmooth:::.synthetic.environment.fingerprint(
+    fixture$rng.policy)
+
+  exact <- geosmooth:::.synthetic.verify.frozen.instance(
+    object, fixture, instance, checksum, current.fingerprint = current)
+  expect_identical(
+    attr(exact, "verification.scope", exact = TRUE),
+    "exact-environment")
+
+  mismatched <- current
+  mismatched$blas.sha256 <- paste0("mismatch-", mismatched$blas.sha256)
+  expect_false(geosmooth:::.synthetic.checksum.scope.matches(
+    checksum, current = mismatched))
+  fallback <- geosmooth:::.synthetic.verify.frozen.instance(
+    object, fixture, instance, checksum, current.fingerprint = mismatched)
+  expect_identical(
+    attr(fallback, "verification.scope", exact = TRUE),
+    "scientific-parity")
 })
 
 test_that("ordinary API behavior has no process-wide verification bypass", {
