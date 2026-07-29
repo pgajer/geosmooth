@@ -176,6 +176,59 @@ synthetic.helix <- function(
     "synthetic_helix_geometry")
 }
 
+#' Specify a circle geometry
+#'
+#' @param radius Circle radius.
+#' @param angle.range Admissible angular interval.
+#' @inheritParams synthetic.sphere.cap
+#' @return A synthetic geometry component.
+#' @export
+synthetic.circle <- function(
+    radius = 1, angle.range = c(0, 2 * pi), ambient.dim = 2L,
+    frame = c("canonical", "random.orthonormal", "supplied"),
+    frame.algorithm = NULL, frame.matrix = NULL, offset = NULL) {
+  radius <- .synthetic.scalar.double(radius, "radius", 0, strict = TRUE)
+  angle.range <- as.double(angle.range)
+  if (length(angle.range) != 2L || any(!is.finite(angle.range)) ||
+      angle.range[1] >= angle.range[2]) {
+    stop("angle.range must be a finite increasing pair.", call. = FALSE)
+  }
+  .synthetic.parametric.geometry(
+    "circle", 1L, 2L, ambient.dim,
+    list(radius = radius, angle.range = angle.range),
+    match.arg(frame), frame.algorithm, frame.matrix, offset,
+    "synthetic_circle_geometry")
+}
+
+#' Specify a trefoil-knot geometry
+#'
+#' This preserves the legacy `gflow` parameterization:
+#' `x = scale * sin(t) + 2 * sin(2*t)`,
+#' `y = scale * cos(t) - 2 * cos(2*t)`, and
+#' `z = -scale * sin(3*t)`.
+#'
+#' @param scale Scale applied to the first harmonic and third coordinate.
+#' @param t.range Admissible parameter interval.
+#' @inheritParams synthetic.sphere.cap
+#' @return A synthetic geometry component.
+#' @export
+synthetic.trefoil <- function(
+    scale = 1, t.range = c(0, 2 * pi), ambient.dim = 3L,
+    frame = c("canonical", "random.orthonormal", "supplied"),
+    frame.algorithm = NULL, frame.matrix = NULL, offset = NULL) {
+  scale <- .synthetic.scalar.double(scale, "scale", 0, strict = TRUE)
+  t.range <- as.double(t.range)
+  if (length(t.range) != 2L || any(!is.finite(t.range)) ||
+      t.range[1] >= t.range[2]) {
+    stop("t.range must be a finite increasing pair.", call. = FALSE)
+  }
+  .synthetic.parametric.geometry(
+    "trefoil", 1L, 3L, ambient.dim,
+    list(scale = scale, t.range = t.range),
+    match.arg(frame), frame.algorithm, frame.matrix, offset,
+    "synthetic_trefoil_geometry")
+}
+
 #' Specify a torus-patch geometry
 #' @param major.radius,minor.radius Torus radii.
 #' @param u.range,v.range Admissible angular intervals.
@@ -420,6 +473,15 @@ synthetic.point.line.junction <- function(
   } else if (family == "helix") {
     tt <- U[, 1]
     z <- cbind(cos(tt), sin(tt), p$pitch * tt)
+  } else if (family == "circle") {
+    tt <- U[, 1]
+    z <- p$radius * cbind(cos(tt), sin(tt))
+  } else if (family == "trefoil") {
+    tt <- U[, 1]
+    z <- cbind(
+      p$scale * sin(tt) + 2 * sin(2 * tt),
+      p$scale * cos(tt) - 2 * cos(2 * tt),
+      -p$scale * sin(3 * tt))
   } else if (family == "torus.patch") {
     u <- U[, 1]
     v <- U[, 2]
@@ -467,6 +529,17 @@ synthetic.point.line.junction <- function(
   if (family == "helix" &&
       any(latent[, 1] < p$t.range[1] | latent[, 1] > p$t.range[2])) {
     stop("latent points lie outside the helix parameter range.",
+         call. = FALSE)
+  }
+  if (family == "circle" &&
+      any(latent[, 1] < p$angle.range[1] |
+          latent[, 1] > p$angle.range[2])) {
+    stop("latent points lie outside the circle angle range.",
+         call. = FALSE)
+  }
+  if (family == "trefoil" &&
+      any(latent[, 1] < p$t.range[1] | latent[, 1] > p$t.range[2])) {
+    stop("latent points lie outside the trefoil parameter range.",
          call. = FALSE)
   }
   if (family == "torus.patch" &&

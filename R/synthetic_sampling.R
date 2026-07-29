@@ -61,6 +61,29 @@ synthetic.sampling.uniform.interval <- function(
          algorithm = algorithm))
 }
 
+#' Deterministic interval-grid sampling specification
+#'
+#' @param lower,upper Interval bounds.
+#' @param endpoints Endpoint convention. `"exclude.lower"` reproduces the
+#'   historical circle grid; `"include.both"` reproduces the historical
+#'   uniform trefoil grid.
+#' @return A deterministic synthetic sampling component.
+#' @export
+synthetic.sampling.grid.interval <- function(
+    lower, upper,
+    endpoints = c("exclude.lower", "exclude.upper", "include.both")) {
+  lower <- .synthetic.scalar.double(lower, "lower")
+  upper <- .synthetic.scalar.double(upper, "upper")
+  if (lower >= upper) stop("lower must be smaller than upper.", call. = FALSE)
+  .new.synthetic.sampling(
+    "grid.interval",
+    list(
+      lower = lower,
+      upper = upper,
+      endpoints = match.arg(endpoints),
+      algorithm = "base.seq.length.out.v1"))
+}
+
 #' Uniform-rectangle sampling specification
 #' @param lower,upper Length-two coordinate bounds.
 #' @param algorithm Versioned draw algorithm.
@@ -311,6 +334,15 @@ synthetic.sampling.dirichlet.zeros <- function(
     x <- stats::runif(n, p$lower, p$upper)
     if (p$order == "ascending") x <- sort(x)
     out$latent <- matrix(x, ncol = 1L)
+  } else if (family == "grid.interval") {
+    x <- if (p$endpoints == "exclude.lower") {
+      seq(p$lower, p$upper, length.out = n + 1L)[-1L]
+    } else if (p$endpoints == "exclude.upper") {
+      seq(p$lower, p$upper, length.out = n + 1L)[-(n + 1L)]
+    } else {
+      seq(p$lower, p$upper, length.out = n)
+    }
+    out$latent <- matrix(x, ncol = 1L)
   } else if (family == "uniform.rectangle") {
     x1 <- stats::runif(n, p$lower[1], p$upper[1])
     x2 <- stats::runif(n, p$lower[2], p$upper[2])
@@ -405,9 +437,17 @@ synthetic.sampling.dirichlet.zeros <- function(
       sp$radius > gp$footprint.radius) {
     stop("Disk support exceeds the sphere-cap footprint.", call. = FALSE)
   }
-  if (gf == "helix" && sf == "uniform.interval" &&
+  if (gf == "helix" && sf %in% c("uniform.interval", "grid.interval") &&
       (sp$lower < gp$t.range[1] || sp$upper > gp$t.range[2])) {
     stop("Interval support lies outside the helix domain.", call. = FALSE)
+  }
+  if (gf == "circle" && sf %in% c("uniform.interval", "grid.interval") &&
+      (sp$lower < gp$angle.range[1] || sp$upper > gp$angle.range[2])) {
+    stop("Interval support lies outside the circle domain.", call. = FALSE)
+  }
+  if (gf == "trefoil" && sf %in% c("uniform.interval", "grid.interval") &&
+      (sp$lower < gp$t.range[1] || sp$upper > gp$t.range[2])) {
+    stop("Interval support lies outside the trefoil domain.", call. = FALSE)
   }
   if (gf == "torus.patch" && sf == "uniform.rectangle" &&
       (any(sp$lower < c(gp$u.range[1], gp$v.range[1])) ||

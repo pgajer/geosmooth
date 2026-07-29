@@ -331,3 +331,56 @@ as.data.frame.synthetic_dataset <- function(
     checksum = synthetic.dataset.checksum(x),
     stringsAsFactors = FALSE)
 }
+
+#' Plot a canonical synthetic dataset
+#'
+#' One-dimensional datasets show response and truth against the first latent
+#' coordinate. Higher-dimensional datasets show the first two predictor
+#' coordinates, colored by response or region.
+#'
+#' @param x A `synthetic_dataset`.
+#' @param color Color mapping: response, truth, or region.
+#' @param ... Additional arguments passed to [graphics::plot()].
+#' @return `x`, invisibly.
+#' @method plot synthetic_dataset
+#' @export
+plot.synthetic_dataset <- function(
+    x, color = c("response", "truth", "region"), ...) {
+  validate.synthetic.dataset(x)
+  color <- match.arg(color)
+  if (!is.null(x$latent) && ncol(x$latent) == 1L) {
+    graphics::plot(
+      x$latent[, 1L], x$response,
+      xlab = "latent coordinate", ylab = "response", ...)
+    ord <- order(x$latent[, 1L], method = "radix")
+    graphics::lines(
+      x$latent[ord, 1L], x$truth[ord], col = "#D55E00", lwd = 2)
+    return(invisible(x))
+  }
+  if (ncol(x$predictors) < 2L) {
+    graphics::plot(
+      seq_len(x$n), x$response,
+      xlab = "observation", ylab = "response", ...)
+    return(invisible(x))
+  }
+  group <- if (color == "region" && !is.null(x$region)) {
+    as.integer(factor(x$region, levels = x$declared.regions))
+  } else if (color == "truth") {
+    x$truth
+  } else {
+    x$response
+  }
+  palette <- grDevices::hcl.colors(64L, "Viridis")
+  if (color == "region" && !is.null(x$region)) {
+    index <- pmax(1L, as.integer(group))
+  } else {
+    span <- range(group, finite = TRUE)
+    index <- if (diff(span) == 0) rep.int(32L, length(group)) else
+      1L + floor(63 * (group - span[1L]) / diff(span))
+  }
+  graphics::plot(
+    x$predictors[, 1L], x$predictors[, 2L],
+    col = palette[index], pch = 19,
+    xlab = "predictor 1", ylab = "predictor 2", ...)
+  invisible(x)
+}

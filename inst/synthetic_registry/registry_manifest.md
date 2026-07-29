@@ -18,6 +18,9 @@ datasets. It separates reusable recipes from frozen dataset instances.
   shape definitions.
 - `gaussian_mixture_1d_variants.csv` contains the maintained V1--V3
   sampling/noise mechanisms.
+- `legacy_family_disposition.csv` records implementation, follow-up, and
+  retirement decisions for legacy families considered during the `gflow`
+  split. A pending row is not evidence that its legacy code is safe to delete.
 
 ## Identity and regeneration
 
