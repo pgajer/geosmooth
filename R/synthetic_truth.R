@@ -150,6 +150,53 @@ synthetic.truth.gaussian.mixture <- function(
     evaluation.coordinates)
 }
 
+#' Specify a finite-design occupation-mixture truth
+#'
+#' The analytic Gaussian-mixture density is transformed to Bernoulli
+#' occupation probabilities by
+#' `probability.maximum * density^gamma / max(density^gamma)`.
+#'
+#' @param centers Component centers, one per row.
+#' @param covariances Positive-definite covariance matrices.
+#' @param weights Nonnegative mixture weights.
+#' @param gamma Positive density-shape exponent.
+#' @param probability.maximum Maximum realized occupation probability.
+#' @param normalization Currently `"design.maximum"`.
+#' @return A finite-design synthetic truth component.
+#' @export
+synthetic.truth.occupation.mixture <- function(
+    centers, covariances, weights, gamma = 1,
+    probability.maximum = 0.65,
+    normalization = "design.maximum") {
+  mixture <- synthetic.truth.gaussian.mixture(
+    centers = centers, scales = covariances, weights = weights,
+    normalize = "none", evaluation.coordinates = "predictors")
+  gamma <- .synthetic.scalar.double(gamma, "gamma", 0, strict = TRUE)
+  probability.maximum <- .synthetic.scalar.double(
+    probability.maximum, "probability.maximum", 0, strict = TRUE)
+  if (probability.maximum > 1) {
+    stop("probability.maximum must not exceed one.", call. = FALSE)
+  }
+  normalization <- .synthetic.scalar.character(
+    normalization, "normalization")
+  if (normalization != "design.maximum") {
+    stop("Only design.maximum normalization is implemented.", call. = FALSE)
+  }
+  .new.synthetic.truth(
+    "occupation.mixture",
+    c(
+      mixture$parameters$parameters,
+      list(
+        gamma = gamma,
+        probability.maximum = probability.maximum,
+        normalization = normalization)),
+    "finite.design",
+    paste0(
+      "Bernoulli occupation probability obtained by design-maximum ",
+      "normalization of a Gaussian-mixture density"),
+    "predictors")
+}
+
 #' Specify a sinusoidal finite-design logit truth
 #' @param amplitude Sinusoidal log-odds amplitude.
 #' @param target.prevalence Target mean pre-clipping probability.
@@ -299,6 +346,26 @@ synthetic.truth.logit <- function(
       extra$truth.normalizer <- normalizer
     }
     out <- list(value = value, parameters = extra)
+  } else if (truth$family == "occupation.mixture") {
+    pars <- p$parameters
+    dens <- vapply(seq_len(nrow(pars$centers)), function(k) {
+      .gaussian.density.matrix(
+        coordinates, pars$centers[k, ], pars$scales[[k]])
+    }, numeric(nrow(coordinates)))
+    density.value <- as.numeric(dens %*% pars$weights)
+    shaped <- density.value^pars$gamma
+    normalizer <- max(shaped)
+    if (!is.finite(normalizer) || normalizer <= 0) {
+      stop("Occupation mixture has a nonpositive design maximum.",
+           call. = FALSE)
+    }
+    value <- pars$probability.maximum * shaped / normalizer
+    out <- list(
+      value = value,
+      parameters = list(
+        analytic.density = density.value,
+        design.maximum = normalizer,
+        probability.maximum = pars$probability.maximum))
   } else {
     stop("Unsupported truth family: ", truth$family, call. = FALSE)
   }
