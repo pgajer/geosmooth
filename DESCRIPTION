@@ -18,7 +18,6 @@ License: GPL (>= 3)
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 SystemRequirements: C++17, GNU make
 LinkingTo:
     Rcpp
@@ -26,6 +25,7 @@ Depends:
     R (>= 3.5.0)
 Imports:
     dgraphs,
+    digest,
     MASS,
     Matrix,
     methods,
@@ -39,6 +39,6 @@ Suggests:
     genlasso,
     grip,
     gflow,
-    igraph,
-    digest
+    igraph
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
