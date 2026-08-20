@@ -26,7 +26,7 @@ connections to the upload service timed out before a job could be created.
 The exact source tarball was checked locally with `R CMD check --as-cran`:
 
 * 0 errors | 0 warnings | 0 notes (`Status: OK`)
-* 11,139 tests passed, one source-tree-only runner test was intentionally
+* 11,140 tests passed, one source-tree-only runner test was intentionally
   skipped, and no tests failed or warned
 
 The acceptance and scientific-validation suites are intentionally excluded
