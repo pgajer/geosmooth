@@ -5,8 +5,8 @@
 #' model, not an occupation-density wrapper: density workflows should call
 #' \code{\link{normalize.density}} on the returned fit.
 #'
-#' For an evaluation point \(x_u\), the prototype chooses a local support
-#' \(U_u\), builds either centered ambient coordinates or a local PCA chart, and
+#' For an evaluation point \eqn{x_u}, the method chooses a local support
+#' \eqn{U_u}, builds either centered ambient coordinates or a local PCA chart, and
 #' computes
 #' \deqn{
 #'   \widehat f(x_u)
@@ -14,8 +14,9 @@
 #'   \frac{\sum_{i\in U_u} y_i K_h(z_{ui})}
 #'        {\sum_{i\in U_u} q_i K_h(z_{ui})}.
 #' }
-#' Here \(z_{ui}\) is the local chart coordinate of \(x_i-x_u\), \(q_i\) is an
-#' optional quadrature weight, and \(K_h\) is the selected kernel.
+#' Here \eqn{z_{ui}} is the local chart coordinate of \eqn{x_i-x_u},
+#' \eqn{q_i} is an optional quadrature weight, and \eqn{K_h} is the selected
+#' kernel.
 #'
 #' @param X Numeric matrix with one row per source/support point.
 #' @param y Numeric response or mass vector of length \code{nrow(X)}.

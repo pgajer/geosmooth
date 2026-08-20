@@ -7,6 +7,8 @@ test_that("OD-CV5 all-method smoke runner produces uniform report artifacts", {
     }
     script <- file.path(pkg.root, "scripts",
                         "run_od_cv5_all_method_smoke.R")
+    skip_if_not(file.exists(script),
+                "source-tree report runner is not included in the package tarball")
     res <- system2(
         file.path(R.home("bin"), "Rscript"),
         c(script, paste0("--out-dir=", out.dir)),

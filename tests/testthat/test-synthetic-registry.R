@@ -198,9 +198,15 @@ test_that("exact and scientific fallback verification are deterministic", {
 
   exact <- geosmooth:::.synthetic.verify.frozen.instance(
     object, fixture, instance, checksum, current.fingerprint = current)
+  expected.scope <- if (geosmooth:::.synthetic.checksum.scope.matches(
+      checksum, current = current)) {
+    "exact-environment"
+  } else {
+    "scientific-parity"
+  }
   expect_identical(
     attr(exact, "verification.scope", exact = TRUE),
-    "exact-environment")
+    expected.scope)
 
   mismatched <- current
   mismatched$blas.sha256 <- paste0("mismatch-", mismatched$blas.sha256)

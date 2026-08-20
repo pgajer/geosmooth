@@ -1,7 +1,7 @@
+#include <Rcpp.h>
+
 #include "ssrhe_hessian_energy_r.h"
 #include <geosmooth/local_pca_charts.h>
-
-#include <Rcpp.h>
 #include <Eigen/Dense>
 
 #include <algorithm>

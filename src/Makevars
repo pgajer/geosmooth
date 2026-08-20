@@ -17,3 +17,6 @@ OBJECTS = $(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o) $(ANN_SOURCES:.cpp=.o)
 override OBJECTS := $(filter-out RcppExports.o,$(OBJECTS)) RcppExports.o
 
 $(SHLIB): $(OBJECTS)
+
+clean:
+	$(RM) $(OBJECTS)

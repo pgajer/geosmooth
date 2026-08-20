@@ -1,8 +1,10 @@
 #' geosmooth package
 #'
-#' Geometric smoothing and conditional expectation methods split from gflow.
+#' Geometric smoothing and conditional expectation methods for coordinate data,
+#' point clouds, and weighted graphs. The package provides local polynomial,
+#' model-averaged, trend-filtering, graph low-pass, occupation-density, and
+#' Hessian-energy methods.
 #'
-#' @keywords internal
 #' @useDynLib geosmooth, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils head modifyList

@@ -119,11 +119,16 @@
 #'   active. When omitted, \code{y} is used.
 #' @param chart.activation.control List controlling sparse chart activation;
 #'   see \code{\link{fit.lps}}.
+#' @param ps.lps.geometry.cache Optional precomputed geometry cache used by
+#'   occupation-density cross-validation. This is an implementation detail;
+#'   ordinary callers should leave it as \code{NULL}.
+#' @param ps.lps.local.pca.supports Optional precomputed local-PCA supports used
+#'   when activation-specific frames must be rebuilt. This is an implementation
+#'   detail; ordinary callers should leave it as \code{NULL}.
 #' @param cv.folds Number of folds when \code{foldid} is absent.
 #' @param cv.seed Fold seed when \code{foldid} is absent.
 #' @return A list with fitted values, selected lambda, CV table, diagnostics,
 #'   and fitted chart coefficients.
-#' @keywords internal
 #' @export
 fit.ps.lps <- function(
     X, y, foldid = NULL,
@@ -159,6 +164,7 @@ fit.ps.lps <- function(
     chart.activation.response = NULL,
     chart.activation.control = list(),
     ps.lps.geometry.cache = NULL,
+    ps.lps.local.pca.supports = NULL,
     cv.folds = 5L,
     cv.seed = 1L) {
 
@@ -317,6 +323,7 @@ fit.ps.lps <- function(
             chart.dim.by.anchor = chart.dim.by.anchor,
             design.basis = design.basis,
             design.drop.tol = design.drop.tol,
+            local.pca.supports = ps.lps.local.pca.supports,
             chart.activation.info = chart.activation.info
         )
         phase.frames.sec <- elapsed(t.frames)
@@ -1712,6 +1719,7 @@ fit.ps.lps <- function(
     )
     list(
         chart.dim.info = chart.dim.info,
+        local.pca.supports = local.pca.supports,
         chart.activation.info = chart.activation.info,
         chart.activation.diagnostics =
             attr(frames, "chart.activation.diagnostics"),
@@ -2299,7 +2307,7 @@ fit.ps.lps <- function(
             ))
         }
     }
-    rho <- tail(ridge.multiplier.grid, 1L)
+    rho <- utils::tail(ridge.multiplier.grid, 1L)
     ridge <- rho * scale
     normal <- if (isTRUE(sparse)) {
         cross + Matrix::Diagonal(ncoef, x = ridge)

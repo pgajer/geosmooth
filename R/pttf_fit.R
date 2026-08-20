@@ -102,12 +102,6 @@ fit.pttf.trend.filtering <- function(
     n.lambda <- .validate.ssrhe.positive.integer(n.lambda, "n.lambda")
     nfolds <- .validate.ssrhe.positive.integer(nfolds, "nfolds")
 
-    if (identical(penalty, "l1") && !identical(solver, "admm") &&
-        !requireNamespace("genlasso", quietly = TRUE)) {
-        stop("Package 'genlasso' is required for the selected PTTF L1 solver.",
-             call. = FALSE)
-    }
-
     operator <- .pttf.fit.prepare.operator(
         geometry = geometry,
         operator = operator,
@@ -135,6 +129,12 @@ fit.pttf.trend.filtering <- function(
     fit.operator <- row.policy$operator
     lambda.grid <- .validate.ssrhe.hessian.l1.lambda.grid(lambda.grid,
                                                           lambda.selection)
+
+    if (identical(penalty, "l1") && !identical(solver, "admm") &&
+        !requireNamespace("genlasso", quietly = TRUE)) {
+        stop("Package 'genlasso' is required for the selected PTTF L1 solver.",
+             call. = FALSE)
+    }
 
     fold.source <- if (is.null(foldid)) "generated" else "supplied"
     if (identical(penalty, "l1")) {
