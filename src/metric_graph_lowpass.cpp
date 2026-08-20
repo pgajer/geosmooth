@@ -1,11 +1,7 @@
+#include <Rcpp.h>
+
 #include "metric_graph_lowpass_r.h"
 #include "omp_compat.h"
-
-#include <R.h>
-#include <Rinternals.h>
-#include <R_ext/Error.h>
-
-#include <Rcpp.h>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

@@ -9,22 +9,25 @@ Authors@R:
 Author: Pawel Gajer [aut, cre]
 Maintainer: Pawel Gajer <pgajer@gmail.com>
 Description: Provides geometric smoothing and conditional expectation
-    estimation methods split from the gflow package. The initial development
-    focus is local polynomial smoothing, model-averaged local polynomial
+    estimation methods for coordinate data, point clouds, and weighted graphs.
+    Methods include local polynomial smoothing, model-averaged local polynomial
     smoothing, local polynomial lifting trend filtering, synchronized local
-    polynomial lifting trend filtering, and SSRHE.
+    polynomial lifting trend filtering, graph low-pass filtering, and
+    Hessian-energy regression.
 Copyright: file inst/COPYRIGHTS
 License: GPL (>= 3)
+URL: https://github.com/pgajer/geosmooth
+BugReports: https://github.com/pgajer/geosmooth/issues
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
-SystemRequirements: C++17, GNU make
+SystemRequirements: GNU make
 LinkingTo:
     Rcpp
 Depends:
     R (>= 3.5.0)
 Imports:
-    dgraphs,
+    dgraphs (>= 0.1.0),
     digest,
     jsonlite,
     MASS,
@@ -34,15 +37,12 @@ Imports:
     stats,
     utils
 Suggests:
-    knitr,
-    rmarkdown,
-    roxygen2,
-    pkgload,
-    testthat (>= 3.0.0),
     genlasso,
     grip,
-    gflow,
-    igraph
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    waldo
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

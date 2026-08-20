@@ -10,6 +10,13 @@
 # These are deterministic GATEs (spec sec:rng); no Monte-Carlo tolerances.
 # =============================================================================
 
+# This file deliberately exercises the deprecated G-tag compatibility API.
+# Suppress only base deprecation warnings; all other warnings remain visible.
+testthat::local_mocked_bindings(
+  .deprecated.dgp = function(...) invisible(NULL),
+  .package = "geosmooth"
+)
+
 # ---- shared helper: standard-object structural contract --------------------
 
 expect_standard_dataset <- function(ds, gtag, n, p, has_region = FALSE) {

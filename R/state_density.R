@@ -156,6 +156,8 @@ fit.density.graph.random.walk <- function(
 #'   diagnostics for object methods.
 #' @param adj.list Optional adjacency list used to compute graph-local
 #'   smoothness diagnostics for the normalized density.
+#' @param empirical.rho Optional empirical probability mass vector used for
+#'   accounting diagnostics.
 #' @param return.details Logical; if \code{TRUE}, keep diagnostic details in
 #'   the result.
 #' @param ... Additional arguments passed to methods.
@@ -166,6 +168,7 @@ normalize.density <- function(x, ...) {
     UseMethod("normalize.density")
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.numeric <- function(x,
                                       X = NULL,
@@ -190,6 +193,7 @@ normalize.density.numeric <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.default <- function(x,
                                       X = NULL,
@@ -216,6 +220,7 @@ normalize.density.default <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.lps <- function(x,
                                   X = NULL,
@@ -238,6 +243,7 @@ normalize.density.lps <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.ps_lps <- function(x,
                                      X = NULL,
@@ -260,6 +266,7 @@ normalize.density.ps_lps <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.metric.graph.lowpass.fit <- function(
     x,
@@ -283,6 +290,7 @@ normalize.density.metric.graph.lowpass.fit <- function(
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.metric.graph.lowpass.refit <- function(
     x,
@@ -424,18 +432,15 @@ fit.subject.od <- function(
 
 #' Precheck Density Dependencies
 #'
-#' Checks that the package-level functions needed by the OD0 contract are
-#' available.  Optional benchmark dependencies, such as \pkg{gflow}, are reported
-#' rather than loaded as hard package dependencies.
+#' Checks that the package-level functions needed by the occupation-density
+#' contract are available.
 #'
-#' @param check.gflow Logical; if \code{TRUE}, check the optional gflow basin
-#'   utilities needed by OD4b.
 #' @param fail Logical; if \code{TRUE}, stop when required functions are missing.
 #'
 #' @return A data frame with dependency check rows.
+#' @usage density.dependency.precheck(fail = FALSE)
 #' @export density.dependency.precheck
-density.dependency.precheck <- function(check.gflow = TRUE,
-                                              fail = FALSE) {
+density.dependency.precheck <- function(fail = FALSE) {
     rows <- list()
     add <- function(package, symbol, required, available, note = "") {
         rows[[length(rows) + 1L]] <<- data.frame(
@@ -457,29 +462,6 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     for (sym in geosmooth.symbols) {
         add("geosmooth", sym, TRUE, exists(sym, mode = "function"),
             "package contract")
-    }
-
-    if (isTRUE(check.gflow)) {
-        gflow.available <- suppressPackageStartupMessages(suppressWarnings(
-            requireNamespace("gflow", quietly = TRUE)
-        ))
-        gflow.namespace <- if (isTRUE(gflow.available)) {
-            suppressPackageStartupMessages(suppressWarnings(asNamespace("gflow")))
-        } else {
-            NULL
-        }
-        gflow.symbols <- c(
-            "compute.basins.of.attraction", "compute.gfc",
-            "expand.basins.to.cover", "create.basin.cx"
-        )
-        for (sym in gflow.symbols) {
-            add(
-                "gflow", sym, FALSE,
-                gflow.available && exists(sym, envir = gflow.namespace,
-                                          mode = "function", inherits = FALSE),
-                "optional OD4b benchmark dependency"
-            )
-        }
     }
 
     out <- do.call(rbind, rows)
@@ -3300,6 +3282,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     dots <- .state.density.add.default.chart.activation(dots, empirical)
     if (!is.null(dots$ps.lps.geometry.cache) &&
         identical(dots$chart.activation %||% "none", "subject.od")) {
+        dots$ps.lps.local.pca.supports <-
+            dots$ps.lps.geometry.cache$local.pca.supports
         dots$ps.lps.geometry.cache <- NULL
     }
     fit <- do.call(fit.ps.lps, c(list(X = X, y = response), dots))

@@ -206,17 +206,16 @@ test_that("OD0 normalize.density exposes chart dimensions in a uniform diagnosti
     }
 })
 
-test_that("OD0 dependency precheck reports required and optional dependencies", {
-    deps <- density.dependency.precheck(check.gflow = TRUE)
+test_that("OD0 dependency precheck reports required package functions", {
+    deps <- density.dependency.precheck()
     expect_true(all(c("package", "symbol", "required", "available", "note") %in%
                         names(deps)))
     geosmooth.rows <- deps[deps$package == "geosmooth", , drop = FALSE]
     expect_true(all(geosmooth.rows$required))
     expect_true(all(geosmooth.rows$available))
-    expect_true(any(deps$package == "gflow"))
+    expect_identical(unique(deps$package), "geosmooth")
 
-    expect_silent(density.dependency.precheck(check.gflow = TRUE,
-                                                    fail = TRUE))
+    expect_silent(density.dependency.precheck(fail = TRUE))
 })
 
 test_that("OD0 private smoothness helpers have deterministic placeholder behavior", {
