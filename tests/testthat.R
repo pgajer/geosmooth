@@ -17,15 +17,11 @@ validation.contexts <- gsub(
   )
 )
 
-if (identical(tolower(Sys.getenv("NOT_CRAN")), "true")) {
-  test_check("geosmooth")
-} else {
-  # These acceptance and scientific-validation studies remain available via
-  # `make test-validation` and `make test-all`, but are too CPU-intensive for
-  # CRAN's shared check farm.
-  test_check(
-    "geosmooth",
-    filter = paste(validation.contexts, collapse = "|"),
-    invert = TRUE
-  )
-}
+# These acceptance and scientific-validation studies remain available via
+# `make test-validation` and `make test-all`, but are too CPU-intensive for
+# package checks on shared local and external check farms.
+test_check(
+  "geosmooth",
+  filter = paste(validation.contexts, collapse = "|"),
+  invert = TRUE
+)
