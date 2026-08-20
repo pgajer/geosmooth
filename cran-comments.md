@@ -13,9 +13,9 @@ checks below also resolved the dependency from their standard repositories.
 * local: macOS 26.6.1, aarch64-apple-darwin23, R-devel (2026-06-24 r90190)
 * GitHub Actions: Ubuntu with R-release, R-devel, and R-oldrel; macOS Intel
   with R-release; Windows with R-release
-  (https://github.com/pgajer/geosmooth/actions/runs/32420680826)
+  (https://github.com/pgajer/geosmooth/actions/runs/32424082905)
 * R-hub: Linux with R-devel and Windows with R-devel
-  (https://github.com/r-hub2/useful-whitefish-geosmooth/actions/runs/32421036487)
+  (https://github.com/r-hub2/useful-whitefish-geosmooth/actions/runs/32424539662)
 
 The GitHub Actions matrix and both R-hub jobs reported `Status: OK`.
 Win-builder was unavailable when checked on 2026-08-20: repeated HTTPS
