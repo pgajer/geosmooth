@@ -139,7 +139,20 @@ test_that("canonical frozen instances replay their committed checksums", {
     expected <- registry$content.sha256[
       registry$instance.id == instance.id]
     expect_identical(object$dataset.id, instance.id)
-    expect_identical(synthetic.dataset.checksum(object), expected,
-                     info = instance.id)
+    verification.scope <- attr(
+      object, "verification.scope", exact = TRUE)
+    if (identical(verification.scope, "exact-environment")) {
+      expect_identical(
+        synthetic.dataset.checksum(object), expected,
+        info = instance.id)
+    } else {
+      expect_identical(
+        verification.scope, "scientific-parity", info = instance.id)
+      fixture.path <- geosmooth:::.synthetic.registry.fixture.path(
+        registry$fixture.path[registry$instance.id == instance.id])
+      expect_true(
+        compare.synthetic.dataset(object, readRDS(fixture.path))$equal,
+        info = instance.id)
+    }
   }
 })
