@@ -22,14 +22,18 @@ submit a tarball built before the final commit.
 
 ## External release gate
 
-- [ ] GitHub Actions R CMD check matrix is green on Linux, macOS, and Windows.
+- [x] GitHub Actions R CMD check matrix is green on Linux, macOS, and Windows.
 - [ ] win-builder R-devel result is 0 errors, 0 warnings, and 0 notes.
-- [ ] R-hub checks include Linux and a non-Linux platform and have no
+- [x] R-hub checks include Linux and a non-Linux platform and have no
       unexplained failures.
-- [ ] Reverse dependency checks are reviewed (none are expected for the first
+- [x] Reverse dependency checks are reviewed (none are expected for the first
       release).
-- [ ] CRAN package-name availability and the current CRAN Repository Policy are
+- [x] CRAN package-name availability and the current CRAN Repository Policy are
       rechecked on submission day.
+
+Win-builder remained unreachable on 2026-08-20: HTTPS connections to its
+upload service timed out, so no job could be created. Do not mark that gate
+complete without a result from the service.
 
 ## Submission
 
