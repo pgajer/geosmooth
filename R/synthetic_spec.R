@@ -84,14 +84,33 @@
   x
 }
 
-.synthetic.sha256 <- function(x) {
+.synthetic.normalize.xdr.v3.header <- function(raw) {
+  if (!is.raw(raw) || length(raw) < 10L ||
+      !identical(raw[1:6], as.raw(c(0x58, 0x0a, 0, 0, 0, 3)))) {
+    stop("Synthetic checksum payload is not XDR serialization version 3.",
+         call. = FALSE)
+  }
+  # XDR serialization records the producing R version in bytes 7--10 even
+  # when the serialized payload is otherwise byte-for-byte identical.  Fix
+  # those non-payload bytes to the historical registry writer (R 4.7.0) so
+  # existing identities remain valid and can be verified by older R releases.
+  raw[7:10] <- as.raw(c(0, 4, 7, 0))
+  raw
+}
+
+.synthetic.xdr.v3 <- function(x) {
   payload <- .synthetic.canonicalize(x)
   # A round trip removes incidental reference-sharing differences between
   # otherwise identical R objects before the contractual XDR serialization.
   normalized <- unserialize(
     serialize(payload, NULL, ascii = FALSE, xdr = TRUE, version = 3))
-  raw <- serialize(normalized, NULL, ascii = FALSE, xdr = TRUE, version = 3)
-  digest::digest(raw, algo = "sha256", serialize = FALSE)
+  .synthetic.normalize.xdr.v3.header(
+    serialize(normalized, NULL, ascii = FALSE, xdr = TRUE, version = 3))
+}
+
+.synthetic.sha256 <- function(x) {
+  digest::digest(
+    .synthetic.xdr.v3(x), algo = "sha256", serialize = FALSE)
 }
 
 .new.synthetic.component <- function(kind, family, parameters,

@@ -8,3 +8,6 @@
   compiled backends.
 * Provides reproducible synthetic geometry and response generators for method
   evaluation.
+* Makes synthetic-registry identity verification stable across supported R
+  versions by excluding the serializer's producer-version header from the
+  checksum contract.

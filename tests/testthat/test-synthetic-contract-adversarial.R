@@ -149,3 +149,24 @@ test_that("named atomic vectors have a literal canonical checksum", {
     geosmooth:::.synthetic.sha256(contractual.a),
     geosmooth:::.synthetic.sha256(contractual.b)))
 })
+
+test_that("canonical checksums ignore the producing R version header", {
+  payload <- list(
+    intrinsic.dim = 1L,
+    ambient.dim = 1L,
+    forms = list(),
+    offset = 0)
+  raw <- serialize(
+    geosmooth:::.synthetic.canonicalize(payload), NULL,
+    ascii = FALSE, xdr = TRUE, version = 3)
+  oldrel.raw <- release.raw <- raw
+  oldrel.raw[7:10] <- as.raw(c(0, 4, 5, 2))
+  release.raw[7:10] <- as.raw(c(0, 4, 6, 1))
+
+  expect_identical(
+    geosmooth:::.synthetic.normalize.xdr.v3.header(oldrel.raw),
+    geosmooth:::.synthetic.normalize.xdr.v3.header(release.raw))
+  expect_identical(
+    geosmooth:::.synthetic.xdr.v3(payload)[7:10],
+    as.raw(c(0, 4, 7, 0)))
+})
