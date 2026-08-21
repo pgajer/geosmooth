@@ -56,6 +56,8 @@
 #' @param id Evaluator ID.
 #' @param parameters Serializable evaluator parameters.
 #' @return A synthetic truth component.
+#' @examples
+#' synthetic.truth.named("intrinsic.linear.first.v1")
 #' @export
 synthetic.truth.named <- function(id, parameters = list()) {
   id <- .synthetic.scalar.character(id, "id")
@@ -74,6 +76,8 @@ synthetic.truth.named <- function(id, parameters = list()) {
 #' @param coefficients Named polynomial coefficients.
 #' @param evaluation.coordinates Coordinates on which to evaluate.
 #' @return A synthetic truth component.
+#' @examples
+#' synthetic.truth.polynomial(c(b0 = 1, b1 = 2, b11 = -0.5))
 #' @export
 synthetic.truth.polynomial <- function(
     coefficients, evaluation.coordinates = "latent") {
@@ -97,6 +101,10 @@ synthetic.truth.polynomial <- function(
 #' @param normalize Normalization scope.
 #' @param evaluation.coordinates Coordinates on which to evaluate.
 #' @return A synthetic truth component.
+#' @examples
+#' synthetic.truth.gaussian.mixture(
+#'   centers = rbind(-1, 1), scales = c(0.5, 0.5), weights = c(1, 1)
+#' )
 #' @export
 synthetic.truth.gaussian.mixture <- function(
     centers, scales, weights,
@@ -163,6 +171,11 @@ synthetic.truth.gaussian.mixture <- function(
 #' @param probability.maximum Maximum realized occupation probability.
 #' @param normalization Currently `"design.maximum"`.
 #' @return A finite-design synthetic truth component.
+#' @examples
+#' synthetic.truth.occupation.mixture(
+#'   centers = rbind(c(-1, 0), c(1, 0)),
+#'   covariances = list(diag(2), diag(2)), weights = c(1, 1)
+#' )
 #' @export
 synthetic.truth.occupation.mixture <- function(
     centers, covariances, weights, gamma = 1,
@@ -202,6 +215,8 @@ synthetic.truth.occupation.mixture <- function(
 #' @param target.prevalence Target mean pre-clipping probability.
 #' @param clip Probability bounds.
 #' @return A synthetic truth component.
+#' @examples
+#' synthetic.truth.logit(amplitude = 1, target.prevalence = 0.4)
 #' @export
 synthetic.truth.logit <- function(
     amplitude = 1.5, target.prevalence = 0.5,

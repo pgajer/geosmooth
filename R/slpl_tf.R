@@ -15,6 +15,10 @@
 #' @return A list of class \code{"slpl_tf_operator"} containing
 #'   \code{A_LPL}, \code{C_sync}, row metadata, diagnostics, settings, and the
 #'   embedded \code{"lpl_tf_operator"}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#' slpl.tf.operator(X, degree = 1L, support.type = "knn",
+#'                  support.size = 7L, kernel = "gaussian")
 #' @export
 slpl.tf.operator <- function(
     X,
@@ -183,7 +187,6 @@ print.slpl_tf_operator <- function(x, ...) {
 #'   \code{lambda2.grid} when \code{lambda.selection = "cv"}.
 #' @param lambda1.grid Optional nonnegative \eqn{\lambda_1} grid for CV.
 #' @param lambda2.grid Optional nonnegative \eqn{\lambda_2} grid for CV.
-#' @param sync.lambda.grid Deprecated alias for \code{lambda2.grid}.
 #' @param lambda.selection \code{"fixed"} or \code{"cv"}. CV uses materialized
 #'   folds and a deterministic Cartesian grid over \code{lambda1.grid} and
 #'   \code{lambda2.grid}.
@@ -205,6 +208,13 @@ print.slpl_tf_operator <- function(x, ...) {
 #'   the operator is built internally.
 #'
 #' @return A list of class \code{"slpl_tf"}.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit.slpl.tf(X, sin(2 * pi * X[, 1]), degree = 1L,
+#'               support.type = "knn", support.size = 7L,
+#'               lambda1 = 0.1, lambda2 = 0, lambda.selection = "fixed")
+#' }
 #' @export
 fit.slpl.tf <- function(
     X = NULL,
@@ -214,7 +224,6 @@ fit.slpl.tf <- function(
     lambda2 = 0,
     lambda1.grid = NULL,
     lambda2.grid = NULL,
-    sync.lambda.grid = NULL,
     lambda.selection = c("fixed", "cv"),
     operator.grid = NULL,
     foldid = NULL,
@@ -245,13 +254,6 @@ fit.slpl.tf <- function(
     if (cv.repeats != 1L) {
         stop("Phase S3 fit.slpl.tf() supports cv.repeats = 1 only.",
              call. = FALSE)
-    }
-    if (!is.null(sync.lambda.grid)) {
-        if (!is.null(lambda2.grid)) {
-            stop("Specify only one of 'lambda2.grid' or 'sync.lambda.grid'.",
-                 call. = FALSE)
-        }
-        lambda2.grid <- sync.lambda.grid
     }
     if (identical(lambda.selection, "fixed")) {
         if (!is.null(lambda1.grid)) {
@@ -470,6 +472,15 @@ fit.slpl.tf <- function(
 #' @param ... Reserved.
 #'
 #' @return A refitted \code{"slpl_tf"} object.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit <- fit.slpl.tf(X, X[, 1]^2, degree = 1L,
+#'                      support.type = "knn", support.size = 7L,
+#'                      lambda1 = 0.1, lambda2 = 0,
+#'                      lambda.selection = "fixed")
+#'   refit.slpl.tf(fit, y = X[, 1]^3)
+#' }
 #' @export
 refit.slpl.tf <- function(object, y, lambda1 = NULL, lambda2 = NULL,
                           reuse.lambda = TRUE, verbose = FALSE, ...) {

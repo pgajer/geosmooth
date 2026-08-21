@@ -51,6 +51,12 @@
 #' \eqn{\|Z_j O_{ij}^\top - Z_i\|_F / \max(\|Z_i\|_F,\epsilon)}.
 #'
 #' @return A list of class \code{"pttf_geometry"}.
+#' @examples
+#' n <- 10L
+#' X <- matrix(seq(0, 1, length.out = n), ncol = 1)
+#' adj <- lapply(seq_len(n), function(i) intersect(c(i - 1L, i + 1L), 1:n))
+#' lengths <- Map(function(i, j) abs(X[j, 1] - X[i, 1]), seq_len(n), adj)
+#' pttf.geometry(X, adj, lengths, graph = "supplied", tangent.dim = 1L)
 #' @export
 pttf.geometry <- function(
     X,

@@ -54,6 +54,10 @@
 #' @return A list of class \code{"metric.graph.lowpass.operator"} containing
 #'   the edge table, conductances, degree vector, Laplacian triplets, summaries,
 #'   and optionally a sparse Laplacian matrix.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' metric.graph.lowpass.operator(adj, lengths)
 #' @export
 metric.graph.lowpass.operator <- function(
     adj.list,
@@ -128,6 +132,11 @@ metric.graph.lowpass.operator <- function(
 #' @return A list of class \code{"metric.graph.lowpass.basis"} containing the
 #'   graph operator, eigenvalues, eigenvectors, solver metadata, and spectral
 #'   completeness diagnostics.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+#'                            eigen.solver = "dense")
 #' @export
 metric.graph.lowpass.basis <- function(
     adj.list,
@@ -256,6 +265,12 @@ metric.graph.lowpass.basis <- function(
 #'
 #' @return A numeric vector with grid-construction metadata stored as
 #'   attributes.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+#'                                     eigen.solver = "dense")
+#' metric.graph.heat.eta.grid(basis, n.initial = 6L)
 #' @export
 metric.graph.heat.eta.grid <- function(
     basis,
@@ -360,6 +375,13 @@ metric.graph.heat.eta.grid <- function(
 #' @return A list of class \code{"metric.graph.heat.lower.extension"} with the
 #'   augmented or unchanged grid and proposal telemetry. A proposal is added
 #'   only when \code{admitted} is \code{TRUE}.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+#'                                     eigen.solver = "dense")
+#' eta <- metric.graph.heat.eta.grid(basis, n.initial = 6L)
+#' metric.graph.heat.extend.lower(basis, eta, endpoint.status = "active")
 #' @export
 metric.graph.heat.extend.lower <- function(
     basis,
@@ -528,6 +550,12 @@ metric.graph.heat.extend.lower <- function(
 #' @return A list of class \code{"metric.graph.lowpass.path"}. For one response,
 #'   \code{fitted.values} is an \eqn{N} by \eqn{J} matrix. For multiple
 #'   responses it is an \eqn{N} by \eqn{J} by \eqn{S} array.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+#'                                     eigen.solver = "dense")
+#' apply.metric.graph.lowpass.path(basis, 1:4, eta.grid = c(0, 0.1, 1))
 #' @export
 apply.metric.graph.lowpass.path <- function(
     basis,
@@ -843,6 +871,13 @@ apply.metric.graph.lowpass.path <- function(
 #' @param dense.fallback \code{"auto"}, \code{"never"}, or \code{"always"}.
 #'
 #' @return A list of class \code{"metric.graph.lowpass.fit"}.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' fit.metric.graph.lowpass(
+#'   adj, lengths, y = c(0, 0.2, 1.8, 2), n.eigenpairs = 4L,
+#'   eta.grid = c(0.1, 1), eigen.solver = "dense"
+#' )
 #' @export
 fit.metric.graph.lowpass <- function(
     adj.list,
@@ -1008,6 +1043,14 @@ fit.metric.graph.lowpass <- function(
 #' @param verbose Logical progress flag.
 #'
 #' @return A list of class \code{"metric.graph.lowpass.refit"}.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' lengths <- list(1, c(1, 1), c(1, 1), 1)
+#' fit <- fit.metric.graph.lowpass(
+#'   adj, lengths, y = 1:4, n.eigenpairs = 4L,
+#'   eta.grid = c(0.1, 1), eigen.solver = "dense"
+#' )
+#' refit.metric.graph.lowpass(fit, y.new = 4:1)
 #' @export
 refit.metric.graph.lowpass <- function(fitted.model,
                                        y.new,

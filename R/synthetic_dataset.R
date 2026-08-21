@@ -54,11 +54,6 @@
   response.spec <- spec$response.spec
   truth.scope <- truth.spec$parameters$scope
   truth.estimand <- truth.spec$parameters$estimand
-  response.sd <- switch(
-    response.spec$family,
-    gaussian = response.spec$parameters$parameters$sd,
-    clustered.gaussian = response.spec$parameters$parameters$residual.sd,
-    NA_real_)
   object <- list(
     dataset.id = dataset.id,
     specification.sha256 = spec$specification.sha256,
@@ -95,20 +90,9 @@
         response = response.out$parameters
       ),
       parameters),
-    provenance = provenance,
-    # Transitional compatibility aliases.
-    U = latent,
-    Z = latent,
-    X = X,
-    y = as.numeric(response.out$value),
-    d = as.integer(intrinsic.dim),
-    p = as.integer(ncol(X)),
-    sigma = as.numeric(response.sd),
-    gtag = spec$registry.tag,
-    params = NULL
+    provenance = provenance
   )
-  object$params <- object$parameters
-  class(object) <- c("synthetic_dataset", "dgp_dataset", "list")
+  class(object) <- c("synthetic_dataset", "list")
   attr(object, "compatibility") <- spec$compatibility
   attr(object, "metadata") <- spec$metadata
   validate.synthetic.dataset(object)
@@ -280,6 +264,9 @@
 #' Validate a canonical synthetic dataset
 #' @param x A `synthetic_dataset`.
 #' @return `x`, invisibly.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' validate.synthetic.dataset(x)
 #' @export
 validate.synthetic.dataset <- function(x) {
   required <- c(
@@ -442,26 +429,6 @@ validate.synthetic.dataset <- function(x) {
   } else if (!is.null(x$latent.mask)) {
     stop("latent.mask must be NULL when latent is NULL.", call. = FALSE)
   }
-  expected.sigma <- switch(
-    x$response.spec$family,
-    gaussian = x$response.spec$parameters$parameters$sd,
-    clustered.gaussian =
-      x$response.spec$parameters$parameters$residual.sd,
-    NA_real_)
-  aliases.valid <-
-    identical(x$U, x$latent) &&
-    identical(x$Z, x$latent) &&
-    identical(x$X, x$predictors) &&
-    identical(x$y, x$response) &&
-    identical(x$d, x$intrinsic.dim) &&
-    identical(x$p, x$ambient.dim) &&
-    identical(x$sigma, as.numeric(expected.sigma)) &&
-    identical(x$gtag, x$registry.tag) &&
-    identical(x$params, x$parameters)
-  if (!aliases.valid) {
-    stop("Transitional compatibility aliases are inconsistent.",
-         call. = FALSE)
-  }
   .validate.synthetic.rng.metadata(x)
   .validate.synthetic.realized.support(x)
   invisible(x)
@@ -504,6 +471,9 @@ validate.synthetic.dataset <- function(x) {
 #' Compute the canonical content checksum of a synthetic dataset
 #' @param x A `synthetic_dataset`.
 #' @return A lowercase SHA-256 string.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' synthetic.dataset.checksum(x)
 #' @export
 synthetic.dataset.checksum <- function(x) {
   validate.synthetic.dataset(x)
@@ -514,6 +484,11 @@ synthetic.dataset.checksum <- function(x) {
 #' @param x,y Synthetic datasets.
 #' @param tolerance Absolute-plus-relative comparison tolerance.
 #' @return A list with equality and mismatch details.
+#' @examples
+#' spec <- synthetic.registry.spec("G1")
+#' x <- materialize.synthetic(spec, n = 20L, seed = 1L)
+#' y <- materialize.synthetic(spec, n = 20L, seed = 1L)
+#' compare.synthetic.dataset(x, y)
 #' @export
 compare.synthetic.dataset <- function(x, y, tolerance = c(1e-12, 1e-10)) {
   validate.synthetic.dataset(x)

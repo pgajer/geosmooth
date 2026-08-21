@@ -166,6 +166,9 @@
 #' @param rng.policy Versioned RNG policy.
 #' @param validate Whether to validate the returned dataset.
 #' @return A `synthetic_dataset`.
+#' @examples
+#' spec <- synthetic.registry.spec("G1")
+#' materialize.synthetic(spec, n = 20L, seed = 1L)
 #' @export
 materialize.synthetic <- function(
     spec, n = NULL, seed,

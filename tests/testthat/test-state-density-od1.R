@@ -21,9 +21,10 @@ test_that("OD1 graph random walk preserves mass and handles zero and one step", 
     graph <- make.state.density.path.graph(c(1, 1, 1))
     weights <- c(1, 0, 0, 0)
 
-    zero <- fit.density.graph.random.walk(
+    zero <- fit.density(
         X = X,
         weights = weights,
+        method = "graph_random_walk",
         graph = graph,
         graph.control = list(walk.steps = 0L)
     )
@@ -31,9 +32,10 @@ test_that("OD1 graph random walk preserves mass and handles zero and one step", 
     expect_equal(zero$rho, weights, tolerance = 1e-12)
     expect_equal(zero$accounting$mass, 1, tolerance = 1e-12)
 
-    one <- fit.density.graph.random.walk(
+    one <- fit.density(
         X = X,
         weights = weights,
+        method = "graph_random_walk",
         graph = graph,
         graph.control = list(walk.step = 1L)
     )
@@ -72,9 +74,10 @@ test_that("OD1 graph random walk matches a frozen community-typing prototype fix
         0.0866119850838968
     )
 
-    fit <- fit.density.graph.random.walk(
+    fit <- fit.density(
         X = X,
         weights = weights,
+        method = "graph_random_walk",
         graph = graph.ref,
         graph.control = list(
             walk.steps = c(0L, 2L),
@@ -158,18 +161,25 @@ test_that("OD1 graph methods validate graph inputs", {
                 weight.list = list(1, numeric(), 1))
 
     expect_error(
-        fit.density.graph.random.walk(X, weights, graph = bad),
+        fit.density(
+            X, weights, method = "graph_random_walk", graph = bad
+        ),
         "no isolated vertices"
     )
 
     zero.length <- make.state.density.path.graph(c(0, 1))
     expect_silent(
-        fit.density.graph.random.walk(X, weights, graph = zero.length)
+        fit.density(
+            X, weights, method = "graph_random_walk", graph = zero.length
+        )
     )
     graph.with.isolate <- list(adj.list = list(2L, integer(), integer()),
                                weight.list = list(1, numeric(), numeric()))
     expect_error(
-        fit.density.graph.random.walk(X, weights, graph = graph.with.isolate),
+        fit.density(
+            X, weights, method = "graph_random_walk",
+            graph = graph.with.isolate
+        ),
         "no isolated vertices"
     )
 })

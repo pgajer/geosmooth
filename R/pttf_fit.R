@@ -48,6 +48,19 @@
 #'   \code{\link{pttf.operator}} when those objects are built internally.
 #'
 #' @return A list of class \code{"pttf.trend.filtering.fit"}.
+#' @examples
+#' n <- 10L
+#' X <- matrix(seq(0, 1, length.out = n), ncol = 1)
+#' adj <- lapply(seq_len(n), function(i) intersect(c(i - 1L, i + 1L), 1:n))
+#' lengths <- Map(function(i, j) abs(X[j, 1] - X[i, 1]), seq_len(n), adj)
+#' geometry <- pttf.geometry(
+#'   X, adj, lengths, graph = "supplied", tangent.dim = 1L
+#' )
+#' operator <- pttf.operator(geometry, derivative.order = 2L)
+#' fit.pttf.trend.filtering(
+#'   operator = operator, y = sin(2 * pi * X[, 1]), penalty = "l2",
+#'   lambda.grid = 0.1, lambda.selection = "fixed"
+#' )
 #' @export
 fit.pttf.trend.filtering <- function(
     geometry = NULL,
@@ -102,12 +115,6 @@ fit.pttf.trend.filtering <- function(
     n.lambda <- .validate.ssrhe.positive.integer(n.lambda, "n.lambda")
     nfolds <- .validate.ssrhe.positive.integer(nfolds, "nfolds")
 
-    if (identical(penalty, "l1") && !identical(solver, "admm") &&
-        !requireNamespace("genlasso", quietly = TRUE)) {
-        stop("Package 'genlasso' is required for the selected PTTF L1 solver.",
-             call. = FALSE)
-    }
-
     operator <- .pttf.fit.prepare.operator(
         geometry = geometry,
         operator = operator,
@@ -135,6 +142,12 @@ fit.pttf.trend.filtering <- function(
     fit.operator <- row.policy$operator
     lambda.grid <- .validate.ssrhe.hessian.l1.lambda.grid(lambda.grid,
                                                           lambda.selection)
+
+    if (identical(penalty, "l1") && !identical(solver, "admm") &&
+        !requireNamespace("genlasso", quietly = TRUE)) {
+        stop("Package 'genlasso' is required for the selected PTTF L1 solver.",
+             call. = FALSE)
+    }
 
     fold.source <- if (is.null(foldid)) "generated" else "supplied"
     if (identical(penalty, "l1")) {
