@@ -13,7 +13,6 @@ audit_artifacts/
 !dev/methods/*/audit_artifacts/
 dev/methods/*/audit_artifacts/*
 !dev/methods/*/audit_artifacts/.gitkeep
-man/
 *.rds
 *.RDS
 !inst/synthetic_registry/fixtures/

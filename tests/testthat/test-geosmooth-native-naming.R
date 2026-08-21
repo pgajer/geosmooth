@@ -1,17 +1,7 @@
-geosmooth.test.package.root <- function() {
-    root <- normalizePath(getwd(), mustWork = TRUE)
-    while (!file.exists(file.path(root, "DESCRIPTION"))) {
-        parent <- dirname(root)
-        if (identical(parent, root)) {
-            stop("Could not find package root")
-        }
-        root <- parent
-    }
-    root
-}
-
 test_that("native symbols use the geosmooth package prefix", {
-    root <- geosmooth.test.package.root()
+    root <- geosmooth.test.source.root()
+    skip_if(is.null(root),
+            "package source tree is unavailable in installed-package tests")
     rcpp <- readLines(file.path(root, "src", "RcppExports.cpp"), warn = FALSE)
     namespace <- readLines(file.path(root, "NAMESPACE"), warn = FALSE)
     omp.compat <- readLines(file.path(root, "src", "omp_compat.h"), warn = FALSE)

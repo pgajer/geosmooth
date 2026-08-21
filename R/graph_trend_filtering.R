@@ -45,6 +45,9 @@
 #' @return A list of class \code{"graph.trend.filtering.operator"} containing
 #'   the canonical graph, edge table, trend-filtering weights, incidence,
 #'   weighted Laplacian, selected penalty operator, and nullity estimate.
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' graph.trend.filtering.operator(adj, order = 1L, weight.rule = "unit")
 #' @export
 graph.trend.filtering.operator <- function(adj.list,
                                            weight.list = NULL,
@@ -196,6 +199,14 @@ graph.trend.filtering.operator <- function(adj.list,
 #' Wang, Y.-X., Sharpnack, J., Smola, A., and Tibshirani, R. J. (2016).
 #' Trend Filtering on Graphs. \emph{Journal of Machine Learning Research}.
 #'
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#'   fit.graph.trend.filtering(
+#'     adj, y = c(0, 0.2, 1.8, 2), lambda.grid = 0.3,
+#'     lambda.selection = "fixed", weight.rule = "unit"
+#'   )
+#' }
 #' @export
 fit.graph.trend.filtering <- function(adj.list,
                                       weight.list = NULL,

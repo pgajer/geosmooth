@@ -1,13 +1,10 @@
 # geosmooth
 
-`geosmooth` is the geometric smoothing and conditional expectation package
-split from `gflow`.  It collects local-polynomial and geometry-aware smoothers
-that can be used on ordinary coordinate data, point-cloud embeddings, and, when
-`gflow` graph objects are supplied, graph-geodesic supports.
-
-The package is still in early development, but the current public surface is
-usable for local experiments and for the S-LPL-TF / SLPLiFT synthetic benchmark
-workflows.
+`geosmooth` provides geometric smoothing and conditional expectation methods
+for ordinary coordinate data, point-cloud embeddings, and weighted graphs. It
+includes local polynomial smoothers, graph-aware trend filtering, graph
+low-pass filtering, occupation-density estimators, and Hessian-energy
+regression.
 
 ## Quick Start
 
@@ -162,15 +159,15 @@ The same runnable code is available in
 ## Graph Dependency Boundary
 
 `geosmooth` owns smoother APIs and package-local coordinate/fixed-k paths.
-Graph construction remains owned by `gflow`.
+Graph construction and shortest-path operations are supplied by `dgraphs`.
 
 That means:
 
 - Coordinate LPS, coordinate MALPS, coordinate LPL-TF/SLPLiFT, fixed-k SSRHE,
   and supplied-neighborhood SSRHE are package-local `geosmooth` paths.
 - Graph-dependent paths, including graph-geodesic MALPS/LPL-TF/SLPLiFT
-  supports and SSRHE adaptive-radius neighborhoods, deliberately bridge to a
-  compatible `gflow` installation.
+  supports and SSRHE adaptive-radius neighborhoods, use compatible `dgraphs`
+  graph objects.
 - `geosmooth` does not currently export graph construction functions such as
   rKNN graph builders.
 
@@ -180,22 +177,11 @@ Native support currently includes:
 - C++ shared local-PCA chart backend
 - C++ SSRHE Hessian-energy operator backend
 
-## Split Status
+## Native Backends
 
-- GE0 created the package skeleton and native support scaffold.
-- GE1 moved the R-level LPS, MALPS, LPL-TF, and SLPLiFT APIs.
-- GE2 moved the C++ LPS and local-PCA chart backends.
-- GE3 added source-level parity and smoke coverage against split-era `gflow`.
-- GE4 moved the SSRHE public/native backend.
-- GE5 formalized the graph dependency boundary: graph construction and
-  graph-geodesic helper utilities remain owned by `gflow`.
-- GE6 started private helper cleanup by giving the shared local-polynomial
-  design helper a MALPS-independent name while retaining compatibility shims.
-- GE7 introduced the public LPS naming layer: `fit.lps()` returns `"lps"`
-  objects.
-- GE8 removed the short-lived `kernel.local.polynomial.cv()` compatibility
-  alias so downstream scripts migrate to the new LPS name immediately.
-- GE9 added user-facing docs and runnable quick-start examples.
+The package includes compiled backends for LPS cross-validation and
+prediction, shared local-PCA chart construction, metric-graph low-pass
+filtering, and SSRHE Hessian-energy operators.
 
 ## Validation
 

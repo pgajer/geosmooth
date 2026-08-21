@@ -22,6 +22,9 @@
 #'   \code{fitted.raw}, \code{theta}, \code{accounting},
 #'   \code{smoothness}, \code{timing}, \code{diagnostics}, and
 #'   \code{warnings}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+#' fit.density(X, weights = c(1, 0, 2, 0, 0, 1), method = "empirical")
 #' @export
 fit.density <- function(
     X,
@@ -39,14 +42,14 @@ fit.density <- function(
 
     switch(
         method,
-        empirical = fit.density.empirical(
+        empirical = .fit.density.empirical(
             X = X,
             weights = weights,
             density.control = ctrl,
             return.details = return.details,
             ...
         ),
-        graph_random_walk = fit.density.graph.random.walk(
+        graph_random_walk = .fit.density.graph.random.walk(
             X = X,
             weights = weights,
             graph = graph,
@@ -58,13 +61,8 @@ fit.density <- function(
     )
 }
 
-#' Fit Empirical Density
-#'
-#' Normalizes a nonnegative mass/count vector over a fixed support set.
-#'
-#' @inheritParams fit.density
-#' @export
-fit.density.empirical <- function(
+# Normalize a nonnegative mass/count vector over a fixed support set.
+.fit.density.empirical <- function(
     X,
     weights,
     density.control = list(),
@@ -72,7 +70,8 @@ fit.density.empirical <- function(
     ...) {
 
     dots <- .state.density.named.dots(...)
-    .state.density.reject.chart.dots(dots, "fit.density.empirical()")
+    .state.density.reject.chart.dots(
+        dots, "fit.density(method = \"empirical\")")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -90,14 +89,8 @@ fit.density.empirical <- function(
     )
 }
 
-#' Fit Graph Random-Walk Density
-#'
-#' Smooths a nonnegative mass vector by propagating it through a row-stochastic
-#' graph random walk.
-#'
-#' @inheritParams fit.density
-#' @export
-fit.density.graph.random.walk <- function(
+# Smooth a nonnegative mass vector through a row-stochastic graph random walk.
+.fit.density.graph.random.walk <- function(
     X,
     weights,
     graph = NULL,
@@ -107,7 +100,8 @@ fit.density.graph.random.walk <- function(
     ...) {
 
     dots <- .state.density.named.dots(...)
-    .state.density.reject.chart.dots(dots, "fit.density.graph.random.walk()")
+    .state.density.reject.chart.dots(
+        dots, "fit.density(method = \"graph_random_walk\")")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -156,16 +150,21 @@ fit.density.graph.random.walk <- function(
 #'   diagnostics for object methods.
 #' @param adj.list Optional adjacency list used to compute graph-local
 #'   smoothness diagnostics for the normalized density.
+#' @param empirical.rho Optional empirical probability mass vector used for
+#'   accounting diagnostics.
 #' @param return.details Logical; if \code{TRUE}, keep diagnostic details in
 #'   the result.
 #' @param ... Additional arguments passed to methods.
 #'
 #' @return A list of class \code{"density_fit"}.
+#' @examples
+#' normalize.density(c(0.5, -0.1, 0.6, 0), X = matrix(1:4, ncol = 1))
 #' @export
 normalize.density <- function(x, ...) {
     UseMethod("normalize.density")
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.numeric <- function(x,
                                       X = NULL,
@@ -190,6 +189,7 @@ normalize.density.numeric <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.default <- function(x,
                                       X = NULL,
@@ -216,6 +216,7 @@ normalize.density.default <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.lps <- function(x,
                                   X = NULL,
@@ -238,6 +239,7 @@ normalize.density.lps <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.ps_lps <- function(x,
                                      X = NULL,
@@ -260,6 +262,7 @@ normalize.density.ps_lps <- function(x,
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.metric.graph.lowpass.fit <- function(
     x,
@@ -283,6 +286,7 @@ normalize.density.metric.graph.lowpass.fit <- function(
     )
 }
 
+#' @rdname normalize.density
 #' @export
 normalize.density.metric.graph.lowpass.refit <- function(
     x,
@@ -354,6 +358,10 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' @param visit.cv.epsilon Positive floor used in held-out
 #'   \code{-log(rho[visit])} scoring.
 #'
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+#' fit.subject.od(X, subject.index = c(1L, 3L, 3L, 6L),
+#'                method = "empirical")
 #' @export
 fit.subject.od <- function(
     X,
@@ -420,79 +428,6 @@ fit.subject.od <- function(
         )
     }
     .state.density.attach.subject(out, subject.index, weights)
-}
-
-#' Precheck Density Dependencies
-#'
-#' Checks that the package-level functions needed by the OD0 contract are
-#' available.  Optional benchmark dependencies, such as \pkg{gflow}, are reported
-#' rather than loaded as hard package dependencies.
-#'
-#' @param check.gflow Logical; if \code{TRUE}, check the optional gflow basin
-#'   utilities needed by OD4b.
-#' @param fail Logical; if \code{TRUE}, stop when required functions are missing.
-#'
-#' @return A data frame with dependency check rows.
-#' @export density.dependency.precheck
-density.dependency.precheck <- function(check.gflow = TRUE,
-                                              fail = FALSE) {
-    rows <- list()
-    add <- function(package, symbol, required, available, note = "") {
-        rows[[length(rows) + 1L]] <<- data.frame(
-            package = package,
-            symbol = symbol,
-            required = required,
-            available = available,
-            note = note,
-            stringsAsFactors = FALSE
-        )
-    }
-
-    geosmooth.symbols <- c(
-        "fit.lps", "fit.ps.lps", "fit.metric.graph.lowpass",
-        "fit.chart.kernel", "fit.local.likelihood",
-        "lps.grouped.foldid", "lps.nested.cv",
-        "dgp.materialize", "dgp.content.sha256"
-    )
-    for (sym in geosmooth.symbols) {
-        add("geosmooth", sym, TRUE, exists(sym, mode = "function"),
-            "package contract")
-    }
-
-    if (isTRUE(check.gflow)) {
-        gflow.available <- suppressPackageStartupMessages(suppressWarnings(
-            requireNamespace("gflow", quietly = TRUE)
-        ))
-        gflow.namespace <- if (isTRUE(gflow.available)) {
-            suppressPackageStartupMessages(suppressWarnings(asNamespace("gflow")))
-        } else {
-            NULL
-        }
-        gflow.symbols <- c(
-            "compute.basins.of.attraction", "compute.gfc",
-            "expand.basins.to.cover", "create.basin.cx"
-        )
-        for (sym in gflow.symbols) {
-            add(
-                "gflow", sym, FALSE,
-                gflow.available && exists(sym, envir = gflow.namespace,
-                                          mode = "function", inherits = FALSE),
-                "optional OD4b benchmark dependency"
-            )
-        }
-    }
-
-    out <- do.call(rbind, rows)
-    rownames(out) <- NULL
-    if (isTRUE(fail)) {
-        missing.required <- out$required & !out$available
-        if (any(missing.required)) {
-            stop("Missing required density dependencies: ",
-                 paste(out$symbol[missing.required], collapse = ", "),
-                 call. = FALSE)
-        }
-    }
-    out
 }
 
 .state.density.fit.subject.od.visit.cv <- function(X,
@@ -3300,6 +3235,8 @@ density.dependency.precheck <- function(check.gflow = TRUE,
     dots <- .state.density.add.default.chart.activation(dots, empirical)
     if (!is.null(dots$ps.lps.geometry.cache) &&
         identical(dots$chart.activation %||% "none", "subject.od")) {
+        dots$ps.lps.local.pca.supports <-
+            dots$ps.lps.geometry.cache$local.pca.supports
         dots$ps.lps.geometry.cache <- NULL
     }
     fit <- do.call(fit.ps.lps, c(list(X = X, y = response), dots))

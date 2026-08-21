@@ -723,6 +723,8 @@
 
 #' List maintained synthetic recipe IDs
 #' @return Character recipe IDs.
+#' @examples
+#' head(synthetic.registry.ids())
 #' @export
 synthetic.registry.ids <- function() {
   c(names(.synthetic.recipe.defaults()), .synthetic.ssrhe.recipe.ids())
@@ -777,6 +779,8 @@ synthetic.registry.ids <- function() {
 #' @param recipe.id One of `synthetic.registry.ids()`.
 #' @param parameters Optional named parameter overrides.
 #' @return A validated `synthetic_spec`.
+#' @examples
+#' synthetic.registry.spec("G1")
 #' @export
 synthetic.registry.spec <- function(recipe.id, parameters = list()) {
   recipe.id <- .synthetic.scalar.character(recipe.id, "recipe.id")
@@ -800,6 +804,8 @@ synthetic.registry.spec <- function(recipe.id, parameters = list()) {
 #' @param n Sample size. Required for flat and quadform recipes.
 #' @param base.seed One-dimensional suite base seed.
 #' @return A validated integer seed.
+#' @examples
+#' synthetic.registry.seed("S16.V1", replicate = 2L)
 #' @export
 synthetic.registry.seed <- function(
     recipe.id, replicate = 1L, n = NULL, base.seed = 273001L) {
@@ -838,6 +844,8 @@ synthetic.registry.seed <- function(
 #' @param instance.id Frozen instance ID.
 #' @param validate Whether to validate and checksum the result.
 #' @return A `synthetic_dataset` whose `dataset.id` is `instance.id`.
+#' @examples
+#' materialize.synthetic.instance("geosmooth.g1.default.v1")
 #' @export
 materialize.synthetic.instance <- function(instance.id, validate = TRUE) {
   instance.id <- .synthetic.scalar.character(instance.id, "instance.id")

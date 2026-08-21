@@ -27,6 +27,9 @@
 #'   exactly one fold.
 #' @seealso [lps.nested.cv()] for nested cross-validation that can consume
 #'   grouped folds at both the outer and inner level.
+#' @examples
+#' cluster <- rep(letters[1:6], each = 2)
+#' lps.grouped.foldid(cluster, v = 3L)
 #' @export
 lps.grouped.foldid <- function(cluster.id, v = 5L, shuffle.seed = NULL) {
     if (!length(cluster.id) || anyNA(cluster.id)) {
@@ -137,6 +140,15 @@ lps.grouped.foldid <- function(cluster.id, v = 5L, shuffle.seed = NULL) {
 #'       recorded configuration.}
 #'   }
 #' @seealso [lps.grouped.foldid()] for the grouped fold constructor.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#' y <- sin(2 * pi * X[, 1])
+#' nested <- lps.nested.cv(
+#'   X, y, outer.foldid = rep(1:3, length.out = 18), inner.folds = 2L,
+#'   fit.args = list(support.grid = 6L, degree.grid = 1L,
+#'                   kernel.grid = "gaussian", backend = "R")
+#' )
+#' nested$rmse
 #' @export
 lps.nested.cv <- function(X, y, outer.foldid,
                           fit.args = list(),

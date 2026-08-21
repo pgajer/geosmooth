@@ -33,20 +33,31 @@ test_that("legacy family disposition ledger is normalized and explicit", {
       "pending-decision", "out-of-scope")))
 })
 
-test_that("deprecated DGP wrappers do not contain legacy generators", {
-  wrappers <- c(
+test_that("retired compatibility APIs stay out of the package namespace", {
+  retired <- c(
     "dgp.g1", "dgp.g2", "dgp.g3a", "dgp.g3b", "dgp.g3c", "dgp.g3d",
-    "dgp.g4", "dgp.g5", "dgp.g6", "dgp.g7")
-  for (name in wrappers) {
-    body.text <- paste(
-      deparse(body(get(name, asNamespace("geosmooth")))), collapse = "\n")
-    expect_match(body.text, ".materialize.g.recipe", fixed = TRUE, info = name)
-    expect_false(grepl("runif|rnorm|rbinom|rgamma", body.text), info = name)
-  }
-  helper.text <- paste(
-    deparse(body(get(".materialize.g.recipe", asNamespace("geosmooth")))),
-    collapse = "\n")
-  expect_match(helper.text, "synthetic.registry.spec", fixed = TRUE)
-  expect_match(helper.text, "materialize.synthetic", fixed = TRUE)
-  expect_false(grepl("runif|rnorm|rbinom|rgamma", helper.text))
+    "dgp.g4", "dgp.g5", "dgp.g6", "dgp.g7", "dgp.materialize",
+    "dgp.content.sha256", "density.dependency.precheck",
+    "fit.density.empirical", "fit.density.graph.random.walk",
+    "graph.low.pass.filter", "print.dgp_dataset")
+  namespace <- asNamespace("geosmooth")
+  expect_false(any(retired %in% getNamespaceExports("geosmooth")))
+  expect_false(any(vapply(
+    retired, exists, logical(1), envir = namespace, inherits = FALSE)))
+
+  expect_true(exists(
+    ".fit.density.empirical", envir = namespace, inherits = FALSE))
+  expect_true(exists(
+    ".fit.density.graph.random.walk", envir = namespace, inherits = FALSE))
+})
+
+test_that("canonical APIs do not expose deprecated arguments or fields", {
+  expect_false("sync.lambda.grid" %in% names(formals(fit.slpl.tf)))
+
+  object <- materialize.synthetic(
+    synthetic.registry.spec("G1"),
+    n = 10L, seed = 1L, rng.policy = "named.stream.v1")
+  aliases <- c("U", "Z", "X", "y", "d", "p", "sigma", "gtag", "params")
+  expect_false(any(aliases %in% names(object)))
+  expect_false(inherits(object, "dgp_dataset"))
 })

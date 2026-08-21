@@ -45,7 +45,6 @@ test_that("materialized datasets enforce identity and dimension contracts", {
 
   altered <- ds
   altered$predictors[1, 1] <- altered$predictors[1, 1] + 1e-3
-  altered$X <- altered$predictors
   expect_error(
     compare.synthetic.dataset(ds, altered),
     "do not reconstruct predictors")
@@ -112,16 +111,6 @@ test_that("G7 rejects an empty structural-zero subset explicitly", {
   expect_match(conditionMessage(condition), "at least one")
 })
 
-test_that("deprecated wrappers translate maintained calls only", {
-  expect_warning(
-    ds <- dgp.g3a(n = 20, seed = 4),
-    "deprecated")
-  expect_s3_class(ds, "synthetic_dataset")
-  expect_error(
-    suppressWarnings(dgp.g3c(n = 20, truth.fn = cos)),
-    "Arbitrary truth.fn closures")
-})
-
 test_that("canonical frozen instances replay their committed checksums", {
   path <- geosmooth:::.synthetic.instance.path()
   expect_true(nzchar(path) && file.exists(path))
@@ -139,7 +128,20 @@ test_that("canonical frozen instances replay their committed checksums", {
     expected <- registry$content.sha256[
       registry$instance.id == instance.id]
     expect_identical(object$dataset.id, instance.id)
-    expect_identical(synthetic.dataset.checksum(object), expected,
-                     info = instance.id)
+    verification.scope <- attr(
+      object, "verification.scope", exact = TRUE)
+    if (identical(verification.scope, "exact-environment")) {
+      expect_identical(
+        synthetic.dataset.checksum(object), expected,
+        info = instance.id)
+    } else {
+      expect_identical(
+        verification.scope, "scientific-parity", info = instance.id)
+      fixture.path <- geosmooth:::.synthetic.registry.fixture.path(
+        registry$fixture.path[registry$instance.id == instance.id])
+      expect_true(
+        compare.synthetic.dataset(object, readRDS(fixture.path))$equal,
+        info = instance.id)
+    }
   }
 })

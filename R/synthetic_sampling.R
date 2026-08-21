@@ -13,6 +13,8 @@
 #' @param order Row ordering policy.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.uniform.box(lower = c(-1, 0), upper = c(1, 2))
 #' @export
 synthetic.sampling.uniform.box <- function(
     lower, upper, order = c("draw", "ascending.first.coordinate"),
@@ -35,6 +37,8 @@ synthetic.sampling.uniform.box <- function(
 #' @param radius Disk radius.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.uniform.disk(radius = 2)
 #' @export
 synthetic.sampling.uniform.disk <- function(
     radius = 1, algorithm = "radial.sqrt.v1") {
@@ -48,6 +52,8 @@ synthetic.sampling.uniform.disk <- function(
 #' @param order Ordering policy.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.uniform.interval(0, 1, order = "ascending")
 #' @export
 synthetic.sampling.uniform.interval <- function(
     lower, upper, order = c("draw", "ascending"),
@@ -68,6 +74,8 @@ synthetic.sampling.uniform.interval <- function(
 #'   historical circle grid; `"include.both"` reproduces the historical
 #'   uniform trefoil grid.
 #' @return A deterministic synthetic sampling component.
+#' @examples
+#' synthetic.sampling.grid.interval(0, 2 * pi, endpoints = "exclude.lower")
 #' @export
 synthetic.sampling.grid.interval <- function(
     lower, upper,
@@ -88,6 +96,8 @@ synthetic.sampling.grid.interval <- function(
 #' @param lower,upper Length-two coordinate bounds.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.uniform.rectangle(c(-1, -2), c(1, 2))
 #' @export
 synthetic.sampling.uniform.rectangle <- function(
     lower, upper, algorithm = "coordinate.sequential.runif.v1") {
@@ -109,6 +119,8 @@ synthetic.sampling.uniform.rectangle <- function(
 #' @param order Ordering policy.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.truncated.normal(0, 1, -2, 2)
 #' @export
 synthetic.sampling.truncated.normal <- function(
     mean, sd, lower, upper, order = c("draw", "ascending"),
@@ -133,6 +145,9 @@ synthetic.sampling.truncated.normal <- function(
 #' @param order Ordering policy.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' intervals <- rbind(c(-1, -0.25), c(0.25, 1))
+#' synthetic.sampling.gapped.uniform(intervals, probabilities = c(0.5, 0.5))
 #' @export
 synthetic.sampling.gapped.uniform <- function(
     intervals,
@@ -179,6 +194,8 @@ synthetic.sampling.gapped.uniform <- function(
 #' @param within.sd Within-cluster standard deviation.
 #' @param algorithm Versioned draw algorithm.
 #' @return A fixed-size synthetic sampling component.
+#' @examples
+#' synthetic.sampling.clustered(3L, 5L, within.sd = 0.1)
 #' @export
 synthetic.sampling.clustered <- function(
     cluster.count, observations.per.cluster,
@@ -207,6 +224,8 @@ synthetic.sampling.clustered <- function(
 #' @param fraction.a Fraction allocated to stratum A.
 #' @param algorithm Versioned traversal algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.stratified(fraction.a = 0.6)
 #' @export
 synthetic.sampling.stratified <- function(
     fraction.a = 0.5,
@@ -238,6 +257,10 @@ synthetic.sampling.stratified <- function(
 #' @param count.rounding Count rule.
 #' @param algorithm Versioned draw algorithm.
 #' @return A synthetic sampling component.
+#' @examples
+#' synthetic.sampling.dirichlet.zeros(
+#'   concentration = rep(1, 3), zero.fraction = 0.2, zero.parts = 1L
+#' )
 #' @export
 synthetic.sampling.dirichlet.zeros <- function(
     concentration, zero.fraction, zero.parts,

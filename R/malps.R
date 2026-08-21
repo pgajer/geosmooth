@@ -164,6 +164,11 @@
 #' @return A list of class \code{"malps"} with fitted values, local model
 #'   coefficients, supports, averaging weights, diagnostics, and selection
 #'   metadata.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit <- fit.malps(X, sin(2 * pi * X[, 1]), degree = 1L,
+#'                  support.type = "knn", support.size = 8L)
+#' head(fit$fitted.values)
 #' @export
 fit.malps <- function(
     X,
@@ -566,6 +571,11 @@ predict.malps <- function(object, newdata = NULL, type = c("response"),
 #'
 #' @return A \code{"malps"} object with the same support profile and new fitted
 #'   values.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+#'                  support.type = "knn", support.size = 8L)
+#' refit.malps(fit, y = X[, 1]^3)
 #' @export
 refit.malps <- function(
     object,
@@ -652,6 +662,12 @@ refit.malps <- function(
 #' @return A dense numeric \eqn{n \times n} matrix with attributes describing
 #'   whether the matrix is conditional on support selection and whether it used
 #'   a robust fixed-weight linearization.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+#'                  support.type = "knn", support.size = 8L)
+#' S <- malps.smoother.matrix(fit)
+#' max(abs(S %*% fit$y - fit$fitted.values))
 #' @export
 malps.smoother.matrix <- function(object, max.n = 1000L,
                                   allow.robust = FALSE, ...) {
@@ -771,6 +787,11 @@ malps.smoother.matrix <- function(object, max.n = 1000L,
 #'
 #' @return A list with residual, fitted-value, EDF, GCV, and optional LOOCV
 #'   diagnostics.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+#'                  support.type = "knn", support.size = 8L)
+#' malps.gcv(fit)$gcv
 #' @export
 malps.gcv <- function(object, y = NULL, smoother.matrix = NULL,
                       include.loocv = TRUE, max.n = 1000L,
@@ -888,7 +909,6 @@ malps.gcv <- function(object, y = NULL, smoother.matrix = NULL,
 #'     successful replicate fitted values;
 #'   \item \code{replicate.weights}: an optional \eqn{n \times B} matrix of
 #'     bootstrap weights when \code{keep.weights = TRUE};
-#'   \item \code{weights}: a compatibility alias for \code{replicate.weights};
 #'   \item \code{failures}: a data frame with columns \code{attempt},
 #'     \code{failure}, and \code{message};
 #'   \item \code{summary}: pointwise fitted values, bootstrap summaries, and
@@ -896,6 +916,11 @@ malps.gcv <- function(object, y = NULL, smoother.matrix = NULL,
 #'   \item bootstrap metadata such as \code{B.completed}, \code{n.failures},
 #'     \code{conf.level}, and \code{weight.type}.
 #' }
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+#'                  support.type = "knn", support.size = 8L)
+#' bootstrap.malps(fit, B = 5L, seed = 1L)
 #' @export
 bootstrap.malps <- function(object, B = 200L,
                             weight.type = c("bayesian", "multinomial"),
@@ -1017,7 +1042,6 @@ bootstrap.malps <- function(object, B = 200L,
         replicate.fitted.values = fitted.reps,
         summary = summary,
         replicate.weights = weights.reps,
-        weights = weights.reps,
         weight.type = weight.type,
         B.requested = B,
         B.completed = completed,

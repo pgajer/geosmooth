@@ -202,6 +202,14 @@
 #'   \code{coordinates}, the embedding diagnostics also include synthetic
 #'   chart-quality checks against those ambient coordinates.
 #'
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' weights <- list(1, c(1, 1), c(1, 1), 1)
+#' x <- 0:3
+#' transported.graph.hessian.operator(
+#'   adj, weights, coordinates = matrix(x, ncol = 1),
+#'   polynomial.probes = cbind(1, x, x^2)
+#' )
 #' @export
 transported.graph.hessian.operator <- function(adj.list,
                                                weight.list = NULL,
@@ -3096,15 +3104,20 @@ transported.graph.hessian.operator <- function(adj.list,
             fallback.reason = "weighted GRIP initializer unavailable"
         ))
     }
-    init <- try(weighted.layout$fun(adj_list = subgraph$adj.list,
-                                    weight_list = subgraph$weight.list,
-                                    dim = edge.dim,
-                                    rounds = 20L,
-                                    final_rounds = 20L,
-                                    num_init = 4L,
-                                    seed = 1L,
-                                    disconnected = "error"),
-                silent = TRUE)
+    layout.args <- list(
+        adj_list = subgraph$adj.list,
+        weight_list = subgraph$weight.list,
+        dim = edge.dim,
+        rounds = 20L,
+        final_rounds = 20L,
+        num_init = 4L,
+        seed = 1L,
+        disconnected = "error"
+    )
+    if (identical(weighted.layout$name, "grip")) {
+        layout.args$metric <- "edge_length"
+    }
+    init <- try(do.call(weighted.layout$fun, layout.args), silent = TRUE)
     if (!inherits(init, "try-error")) {
         opt <- .transported.graph.hessian.run.edge.kk(
             edge.kk = edge.kk,
@@ -3193,11 +3206,16 @@ transported.graph.hessian.operator <- function(adj.list,
 .transported.graph.hessian.weighted.layout.function <- function() {
     if (!requireNamespace("grip", quietly = TRUE)) return(NULL)
     ns <- getNamespace("grip")
-    for (nm in c("weighted.grip", "grip.layout.weighted")) {
+    for (nm in c("grip", "weighted.grip", "grip.layout.weighted")) {
         if (exists(nm, envir = ns, inherits = FALSE)) {
+            fun <- get(nm, envir = ns, inherits = FALSE)
+            if (identical(nm, "grip") &&
+                !"metric" %in% names(formals(fun))) {
+                next
+            }
             return(list(
                 name = nm,
-                fun = get(nm, envir = ns, inherits = FALSE)
+                fun = fun
             ))
         }
     }
