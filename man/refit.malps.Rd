@@ -51,3 +51,9 @@ even when the global weight vector is not all zero.  If the original fit used
 robust local residual reweighting, robust weights are recomputed for the new
 response because they are response-dependent.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+                 support.type = "knn", support.size = 8L)
+refit.malps(fit, y = X[, 1]^3)
+}

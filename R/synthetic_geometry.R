@@ -67,6 +67,8 @@
 #' @param frame.matrix Supplied orthonormal frame or `NULL`.
 #' @param offset Ambient offset or `NULL`.
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.quadform(1L, 2L, forms = list(matrix(0.5)))
 #' @export
 synthetic.quadform <- function(
     intrinsic.dim, ambient.dim, forms = list(),
@@ -135,6 +137,8 @@ synthetic.quadform <- function(
 #' @param ambient.dim Ambient dimension.
 #' @param frame,frame.algorithm,frame.matrix,offset Frame parameters.
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.sphere.cap(radius = 2, footprint.radius = 1)
 #' @export
 synthetic.sphere.cap <- function(
     radius = 2, footprint.radius = 1, ambient.dim = 3L,
@@ -158,6 +162,8 @@ synthetic.sphere.cap <- function(
 #' @param t.range Admissible parameter interval.
 #' @inheritParams synthetic.sphere.cap
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.helix(pitch = 0.25, t.range = c(0, pi))
 #' @export
 synthetic.helix <- function(
     pitch = 0.2, t.range = c(0, 2 * pi), ambient.dim = 3L,
@@ -182,6 +188,8 @@ synthetic.helix <- function(
 #' @param angle.range Admissible angular interval.
 #' @inheritParams synthetic.sphere.cap
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.circle(radius = 2, angle.range = c(0, pi))
 #' @export
 synthetic.circle <- function(
     radius = 1, angle.range = c(0, 2 * pi), ambient.dim = 2L,
@@ -211,6 +219,8 @@ synthetic.circle <- function(
 #' @param t.range Admissible parameter interval.
 #' @inheritParams synthetic.sphere.cap
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.trefoil(scale = 0.5, t.range = c(0, pi))
 #' @export
 synthetic.trefoil <- function(
     scale = 1, t.range = c(0, 2 * pi), ambient.dim = 3L,
@@ -234,6 +244,8 @@ synthetic.trefoil <- function(
 #' @param u.range,v.range Admissible angular intervals.
 #' @inheritParams synthetic.sphere.cap
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.torus.patch(major.radius = 2, minor.radius = 0.5)
 #' @export
 synthetic.torus.patch <- function(
     major.radius = 1, minor.radius = 0.35,
@@ -267,6 +279,8 @@ synthetic.torus.patch <- function(
 #' Specify a simplex geometry
 #' @param parts Number of compositional parts.
 #' @return A synthetic geometry component.
+#' @examples
+#' synthetic.simplex(parts = 3L)
 #' @export
 synthetic.simplex <- function(parts) {
   parts <- .synthetic.scalar.integer(parts, "parts", 2L)
@@ -291,6 +305,8 @@ synthetic.simplex <- function(parts) {
 #' @param id Stable stratum identifier.
 #' @param location Finite ambient location.
 #' @return A draw-free `synthetic_stratum`.
+#' @examples
+#' synthetic.stratum.point("origin", c(0, 0))
 #' @export
 synthetic.stratum.point <- function(id, location) {
   location <- as.double(location)
@@ -307,6 +323,8 @@ synthetic.stratum.point <- function(id, location) {
 #' @param origin Finite ambient origin.
 #' @param direction Unit ambient direction.
 #' @return A draw-free `synthetic_stratum`.
+#' @examples
+#' synthetic.stratum.segment("line", c(-1, 1), c(0, 0), c(1, 0))
 #' @export
 synthetic.stratum.segment <- function(
     id, coordinate.range, origin, direction) {
@@ -338,6 +356,10 @@ synthetic.stratum.segment <- function(
 #' @param origin Finite ambient origin.
 #' @param basis Orthonormal ambient-by-two basis.
 #' @return A draw-free `synthetic_stratum`.
+#' @examples
+#' synthetic.stratum.rectangle(
+#'   "square", rbind(c(-1, 1), c(-1, 1)), c(0, 0), diag(2)
+#' )
 #' @export
 synthetic.stratum.rectangle <- function(
     id, coordinate.ranges, origin, basis) {
@@ -372,6 +394,10 @@ synthetic.stratum.rectangle <- function(
 #' @param strata Nonempty list of compatible `synthetic_stratum` objects.
 #' @param junctions Optional data frame describing stratum boundary junctions.
 #' @return A draw-free synthetic geometry component.
+#' @examples
+#' point <- synthetic.stratum.point("point", c(0, 0))
+#' line <- synthetic.stratum.segment("line", c(0, 1), c(0, 0), c(1, 0))
+#' synthetic.stratified(list(point, line))
 #' @export
 synthetic.stratified <- function(strata, junctions = NULL) {
   if (!is.list(strata) || !length(strata) ||
@@ -413,6 +439,8 @@ synthetic.stratified <- function(strata, junctions = NULL) {
 #' @param point.location Point location.
 #' @param line.origin,line.direction,line.range Segment parameters.
 #' @return A two-stratum `synthetic_stratified_geometry`.
+#' @examples
+#' synthetic.point.line.junction(c(0, 0), c(0, 0), c(1, 0), c(0, 1))
 #' @export
 synthetic.point.line.junction <- function(
     point.location, line.origin, line.direction, line.range) {
@@ -566,6 +594,9 @@ synthetic.point.line.junction <- function(
 #' @param latent Latent coordinates in rows.
 #' @param frame.matrix Optional realized orthonormal frame.
 #' @return A numeric matrix of observed coordinates.
+#' @examples
+#' geometry <- synthetic.circle()
+#' embed.synthetic.geometry(geometry, matrix(c(0, pi / 2), ncol = 1))
 #' @export
 embed.synthetic.geometry <- function(
     geometry, latent, frame.matrix = NULL) {
@@ -579,6 +610,9 @@ embed.synthetic.geometry <- function(
 #' @param latent Finite latent coordinates in rows.
 #' @return For one form, an `n` by `d` matrix. For multiple forms, an
 #'   `n` by `r` by `d` array. With no forms, an `n` by zero by `d` array.
+#' @examples
+#' geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+#' quadform.gradient(geometry, matrix(c(-1, 0, 1), ncol = 1))
 #' @export
 quadform.gradient <- function(geometry, latent) {
   if (!inherits(geometry, "synthetic_quadform_geometry")) {
@@ -603,6 +637,9 @@ quadform.gradient <- function(geometry, latent) {
 #' @param latent Finite latent coordinates in rows.
 #' @return For one row, a `d` by `d` matrix; otherwise an
 #'   `n` by `d` by `d` array.
+#' @examples
+#' geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+#' quadform.metric(geometry, matrix(c(0, 1), ncol = 1))
 #' @export
 quadform.metric <- function(geometry, latent) {
   if (!inherits(geometry, "synthetic_quadform_geometry")) {
@@ -658,6 +695,9 @@ quadform.metric <- function(geometry, latent) {
 #' @param from,to Matching endpoint matrices with one segment per row.
 #' @param tolerance Positive integration tolerance.
 #' @return A numeric vector of segment lengths.
+#' @examples
+#' geometry <- synthetic.quadform(1L, 1L)
+#' edge.lengths.synthetic.geometry(geometry, matrix(0), matrix(2))
 #' @export
 edge.lengths.synthetic.geometry <- function(
     geometry, from, to, tolerance = 1e-10) {

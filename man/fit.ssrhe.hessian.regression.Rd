@@ -187,6 +187,12 @@ fixed-intercept local quadratic fit, doubled diagonal Hessian components,
 and optional supplemental stabilizer. The package exposes both \eqn{A} and
 \eqn{B=A^\top A}; the fitted \eqn{\ell_2} estimator uses \eqn{B}.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit.ssrhe.hessian.regression(
+  X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L, lambda1 = 0.1
+)
+}
 \references{
 Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
 using Hessian energy with an application to semi-supervised dimensionality

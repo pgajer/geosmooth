@@ -202,6 +202,14 @@
 #'   \code{coordinates}, the embedding diagnostics also include synthetic
 #'   chart-quality checks against those ambient coordinates.
 #'
+#' @examples
+#' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' weights <- list(1, c(1, 1), c(1, 1), 1)
+#' x <- 0:3
+#' transported.graph.hessian.operator(
+#'   adj, weights, coordinates = matrix(x, ncol = 1),
+#'   polynomial.probes = cbind(1, x, x^2)
+#' )
 #' @export
 transported.graph.hessian.operator <- function(adj.list,
                                                weight.list = NULL,

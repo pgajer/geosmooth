@@ -17,3 +17,6 @@ A synthetic sampling component.
 \description{
 Uniform-disk sampling specification
 }
+\examples{
+synthetic.sampling.uniform.disk(radius = 2)
+}

@@ -58,3 +58,9 @@ The analytic leave-one-out residuals are computed as
   \frac{y_i - \hat y_i}{1 - S_{ii}}.
 }
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+                 support.type = "knn", support.size = 8L)
+malps.gcv(fit)$gcv
+}

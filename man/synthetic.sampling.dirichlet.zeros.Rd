@@ -32,3 +32,8 @@ A synthetic sampling component.
 \description{
 Dirichlet sampling with structural zeros
 }
+\examples{
+synthetic.sampling.dirichlet.zeros(
+  concentration = rep(1, 3), zero.fraction = 0.2, zero.parts = 1L
+)
+}

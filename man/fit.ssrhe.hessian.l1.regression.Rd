@@ -246,3 +246,10 @@ assignments. The selected fit is the candidate with the smallest selected CV
 error. This is useful when the default support-size rule is too rigid, but it
 can be much slower than tuning lambda for one fixed operator.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit.ssrhe.hessian.l1.regression(
+  X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+  lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
+)
+}

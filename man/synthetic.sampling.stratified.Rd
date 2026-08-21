@@ -20,3 +20,6 @@ A synthetic sampling component.
 \description{
 Legacy G4 stratified sampling specification
 }
+\examples{
+synthetic.sampling.stratified(fraction.a = 0.6)
+}

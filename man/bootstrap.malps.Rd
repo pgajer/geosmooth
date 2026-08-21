@@ -79,3 +79,9 @@ nonparametric bootstrap counts with total count \code{nrow(object$X)}; this
 can fail when a replicate assigns zero weight to all observations in a local
 support, and such failures are recorded.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+                 support.type = "knn", support.size = 8L)
+bootstrap.malps(fit, B = 5L, seed = 1L)
+}

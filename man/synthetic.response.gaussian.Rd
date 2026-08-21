@@ -15,3 +15,6 @@ A synthetic response component.
 \description{
 Gaussian response specification
 }
+\examples{
+synthetic.response.gaussian(sd = 0.2)
+}

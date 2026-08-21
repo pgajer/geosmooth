@@ -21,3 +21,6 @@ A synthetic sampling component.
 \description{
 Uniform-rectangle sampling specification
 }
+\examples{
+synthetic.sampling.uniform.rectangle(c(-1, -2), c(1, 2))
+}

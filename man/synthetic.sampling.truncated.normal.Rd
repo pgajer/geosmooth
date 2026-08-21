@@ -28,3 +28,6 @@ A synthetic sampling component.
 \description{
 Truncated-normal sampling specification
 }
+\examples{
+synthetic.sampling.truncated.normal(0, 1, -2, 2)
+}

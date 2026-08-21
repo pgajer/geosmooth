@@ -129,6 +129,13 @@
 #' @param cv.seed Fold seed when \code{foldid} is absent.
 #' @return A list with fitted values, selected lambda, CV table, diagnostics,
 #'   and fitted chart coefficients.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' fit.ps.lps(
+#'   X, sin(2 * pi * X[, 1]), support.size = 7L, degree = 1L,
+#'   chart.dim = 1L, lambda.sync.grid = 0,
+#'   lambda.sync.selection = "fixed", cv.folds = 2L
+#' )
 #' @export
 fit.ps.lps <- function(
     X, y, foldid = NULL,

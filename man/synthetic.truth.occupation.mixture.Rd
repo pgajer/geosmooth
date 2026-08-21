@@ -34,3 +34,9 @@ The analytic Gaussian-mixture density is transformed to Bernoulli
 occupation probabilities by
 \code{probability.maximum * density^gamma / max(density^gamma)}.
 }
+\examples{
+synthetic.truth.occupation.mixture(
+  centers = rbind(c(-1, 0), c(1, 0)),
+  covariances = list(diag(2), diag(2)), weights = c(1, 1)
+)
+}

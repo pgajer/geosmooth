@@ -39,6 +39,10 @@ immediately via \code{set.seed}), giving a reproducible randomized
 variant; callers following the LPS evidence conventions should record the
 seed they pass.
 }
+\examples{
+cluster <- rep(letters[1:6], each = 2)
+lps.grouped.foldid(cluster, v = 3L)
+}
 \seealso{
 \code{\link[=lps.nested.cv]{lps.nested.cv()}} for nested cross-validation that can consume
 grouped folds at both the outer and inner level.

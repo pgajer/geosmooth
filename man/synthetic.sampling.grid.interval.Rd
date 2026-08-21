@@ -23,3 +23,6 @@ A deterministic synthetic sampling component.
 \description{
 Deterministic interval-grid sampling specification
 }
+\examples{
+synthetic.sampling.grid.interval(0, 2 * pi, endpoints = "exclude.lower")
+}

@@ -235,3 +235,10 @@ adaptive-radius support-profile loop. Each support candidate constructs a
 fresh SSRHE operator, runs the same exact GCV grid search, and the candidate
 with the smallest selected GCV is refit and returned.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit.ssrhe.hessian.regression.gcv(
+  X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+  lambda1.grid = c(0.01, 0.1)
+)
+}

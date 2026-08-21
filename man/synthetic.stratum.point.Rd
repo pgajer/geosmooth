@@ -17,3 +17,6 @@ A draw-free \code{synthetic_stratum}.
 \description{
 Specify a point stratum
 }
+\examples{
+synthetic.stratum.point("origin", c(0, 0))
+}

@@ -89,3 +89,8 @@ proportional to \eqn{\sqrt{d}}, not the constant vector, so this mode does
 not preserve constant responses in the same way as the unnormalized
 Laplacian.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+metric.graph.lowpass.operator(adj, lengths)
+}

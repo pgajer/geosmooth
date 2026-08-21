@@ -29,3 +29,8 @@ A synthetic truth component.
 \description{
 Specify a Gaussian-mixture truth
 }
+\examples{
+synthetic.truth.gaussian.mixture(
+  centers = rbind(-1, 1), scales = c(0.5, 0.5), weights = c(1, 1)
+)
+}

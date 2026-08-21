@@ -135,3 +135,8 @@ Here \eqn{z_{ui}} is the local chart coordinate of \eqn{x_i-x_u},
 \eqn{q_i} is an optional quadrature weight, and \eqn{K_h} is the selected
 kernel.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 21), ncol = 1)
+y <- exp(-20 * (X[, 1] - 0.5)^2)
+fit.chart.kernel(X, y, support.size = 7L, kernel = "gaussian")
+}

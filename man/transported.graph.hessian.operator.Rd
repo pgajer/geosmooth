@@ -316,3 +316,12 @@ least-squares gradients and compares gradient components across graph darts.
 Those gradients can be computed either from supplied coordinates or from a
 graph-derived local embedding built in a shared disk around each base dart.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+weights <- list(1, c(1, 1), c(1, 1), 1)
+x <- 0:3
+transported.graph.hessian.operator(
+  adj, weights, coordinates = matrix(x, ncol = 1),
+  polynomial.probes = cbind(1, x, x^2)
+)
+}

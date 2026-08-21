@@ -15,3 +15,7 @@ validate.synthetic.dataset(x)
 \description{
 Validate a canonical synthetic dataset
 }
+\examples{
+x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+validate.synthetic.dataset(x)
+}

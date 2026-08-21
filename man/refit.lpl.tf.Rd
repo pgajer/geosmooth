@@ -33,3 +33,12 @@ A refitted \code{"lpl_tf"} object.
 \description{
 Reuses the fixed operator and selected lambda from an existing LPL-TF fit.
 }
+\examples{
+if (requireNamespace("genlasso", quietly = TRUE)) {
+  X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+  fit <- fit.lpl.tf(X, X[, 1]^2, degree = 1L,
+                    support.type = "knn", support.size = 7L,
+                    lambda = 0.1, lambda.selection = "fixed")
+  refit.lpl.tf(fit, y = X[, 1]^3)
+}
+}

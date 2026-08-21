@@ -84,3 +84,13 @@ Reuses the \eqn{A} operator from
 lambda grid without rebuilding local neighborhoods or local PCA Hessian
 rows.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit <- fit.ssrhe.hessian.l1.regression(
+  X, X[, 1]^2, k = 6L, tangent.dim = 1L,
+  lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
+)
+refit.ssrhe.hessian.l1.regression(
+  fit, y.new = X[, 1]^3, solver = "admm"
+)
+}

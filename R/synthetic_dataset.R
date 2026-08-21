@@ -264,6 +264,9 @@
 #' Validate a canonical synthetic dataset
 #' @param x A `synthetic_dataset`.
 #' @return `x`, invisibly.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' validate.synthetic.dataset(x)
 #' @export
 validate.synthetic.dataset <- function(x) {
   required <- c(
@@ -468,6 +471,9 @@ validate.synthetic.dataset <- function(x) {
 #' Compute the canonical content checksum of a synthetic dataset
 #' @param x A `synthetic_dataset`.
 #' @return A lowercase SHA-256 string.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' synthetic.dataset.checksum(x)
 #' @export
 synthetic.dataset.checksum <- function(x) {
   validate.synthetic.dataset(x)
@@ -478,6 +484,11 @@ synthetic.dataset.checksum <- function(x) {
 #' @param x,y Synthetic datasets.
 #' @param tolerance Absolute-plus-relative comparison tolerance.
 #' @return A list with equality and mismatch details.
+#' @examples
+#' spec <- synthetic.registry.spec("G1")
+#' x <- materialize.synthetic(spec, n = 20L, seed = 1L)
+#' y <- materialize.synthetic(spec, n = 20L, seed = 1L)
+#' compare.synthetic.dataset(x, y)
 #' @export
 compare.synthetic.dataset <- function(x, y, tolerance = c(1e-12, 1e-10)) {
   validate.synthetic.dataset(x)

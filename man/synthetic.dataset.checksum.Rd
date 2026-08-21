@@ -15,3 +15,7 @@ A lowercase SHA-256 string.
 \description{
 Compute the canonical content checksum of a synthetic dataset
 }
+\examples{
+x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+synthetic.dataset.checksum(x)
+}

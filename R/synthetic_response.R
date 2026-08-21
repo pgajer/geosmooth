@@ -13,6 +13,8 @@
 #' Gaussian response specification
 #' @param sd Response standard deviation.
 #' @return A synthetic response component.
+#' @examples
+#' synthetic.response.gaussian(sd = 0.2)
 #' @export
 synthetic.response.gaussian <- function(sd) {
   sd <- .synthetic.scalar.double(sd, "sd", 0)
@@ -24,6 +26,8 @@ synthetic.response.gaussian <- function(sd) {
 #' @param base.sd Base standard deviation.
 #' @param truth.multiplier Multiplier applied to truth.
 #' @return A synthetic response component.
+#' @examples
+#' synthetic.response.heteroskedastic.gaussian(0.1, 0.2)
 #' @export
 synthetic.response.heteroskedastic.gaussian <- function(
     base.sd, truth.multiplier) {
@@ -44,6 +48,8 @@ synthetic.response.heteroskedastic.gaussian <- function(
 #' @param count.rounding Count policy.
 #' @param laplace.algorithm Versioned Laplace algorithm.
 #' @return A synthetic response component.
+#' @examples
+#' synthetic.response.laplace.outlier(0.1, 0.05, 1)
 #' @export
 synthetic.response.laplace.outlier <- function(
     laplace.scale, outlier.fraction, outlier.sd,
@@ -74,6 +80,8 @@ synthetic.response.laplace.outlier <- function(
 #' @param residual.sd Residual standard deviation.
 #' @param intraclass.correlation Intraclass correlation in `[0,1)`.
 #' @return A synthetic response component.
+#' @examples
+#' synthetic.response.clustered.gaussian(0.2, 0.3)
 #' @export
 synthetic.response.clustered.gaussian <- function(
     residual.sd, intraclass.correlation) {
@@ -95,6 +103,8 @@ synthetic.response.clustered.gaussian <- function(
 #' @param minimum.positive Minimum accepted positive responses.
 #' @param maximum.attempts Maximum complete redraw attempts.
 #' @return A synthetic response component.
+#' @examples
+#' synthetic.response.bernoulli(minimum.positive = 1L, maximum.attempts = 5L)
 #' @export
 synthetic.response.bernoulli <- function(
     minimum.positive = 0L, maximum.attempts = 1L) {

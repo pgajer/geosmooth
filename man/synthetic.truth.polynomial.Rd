@@ -17,3 +17,6 @@ A synthetic truth component.
 \description{
 Specify a polynomial truth
 }
+\examples{
+synthetic.truth.polynomial(c(b0 = 1, b1 = 2, b11 = -0.5))
+}

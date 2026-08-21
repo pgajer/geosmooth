@@ -117,3 +117,11 @@ Fits graph-spectral low-pass regression on a supplied graph by transforming
 metric edge lengths into conductances and smoothing the response in the
 eigenbasis of the weighted graph Laplacian.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+fit.metric.graph.lowpass(
+  adj, lengths, y = c(0, 0.2, 1.8, 2), n.eigenpairs = 4L,
+  eta.grid = c(0.1, 1), eigen.solver = "dense"
+)
+}

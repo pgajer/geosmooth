@@ -21,3 +21,6 @@ A draw-free \code{synthetic_stratum}.
 \description{
 Specify a line-segment stratum
 }
+\examples{
+synthetic.stratum.segment("line", c(-1, 1), c(0, 0), c(1, 0))
+}

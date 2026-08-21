@@ -17,3 +17,9 @@ A list with equality and mismatch details.
 \description{
 Compare two synthetic datasets scientifically
 }
+\examples{
+spec <- synthetic.registry.spec("G1")
+x <- materialize.synthetic(spec, n = 20L, seed = 1L)
+y <- materialize.synthetic(spec, n = 20L, seed = 1L)
+compare.synthetic.dataset(x, y)
+}

@@ -24,3 +24,6 @@ A synthetic sampling component.
 \description{
 Uniform-interval sampling specification
 }
+\examples{
+synthetic.sampling.uniform.interval(0, 1, order = "ascending")
+}

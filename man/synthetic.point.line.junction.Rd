@@ -22,3 +22,6 @@ A two-stratum \code{synthetic_stratified_geometry}.
 \description{
 Specify a point-line junction
 }
+\examples{
+synthetic.point.line.junction(c(0, 0), c(0, 0), c(1, 0), c(0, 1))
+}

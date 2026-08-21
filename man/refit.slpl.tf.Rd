@@ -34,3 +34,13 @@ A refitted \code{"slpl_tf"} object.
 \description{
 Refit A Fixed-Operator Synchronized LPL-TF Model
 }
+\examples{
+if (requireNamespace("genlasso", quietly = TRUE)) {
+  X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+  fit <- fit.slpl.tf(X, X[, 1]^2, degree = 1L,
+                     support.type = "knn", support.size = 7L,
+                     lambda1 = 0.1, lambda2 = 0,
+                     lambda.selection = "fixed")
+  refit.slpl.tf(fit, y = X[, 1]^3)
+}
+}

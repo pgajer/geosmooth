@@ -87,6 +87,10 @@
 #' @return A list of class \code{"lpl_tf_operator"} containing the sparse
 #'   operator matrix \code{A}, row metadata, supports, local design summaries,
 #'   diagnostics, settings, and the matched call.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#' lpl.tf.operator(X, degree = 1L, support.type = "knn",
+#'                 support.size = 7L, kernel = "gaussian")
 #' @export
 lpl.tf.operator <- function(
     X,
@@ -331,6 +335,13 @@ print.lpl_tf_operator <- function(x, ...) {
 #'   the operator is built internally.
 #'
 #' @return A list of class \code{"lpl_tf"}.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit.lpl.tf(X, sin(2 * pi * X[, 1]), degree = 1L,
+#'              support.type = "knn", support.size = 7L,
+#'              lambda = 0.1, lambda.selection = "fixed")
+#' }
 #' @export
 fit.lpl.tf <- function(
     X = NULL,
@@ -552,6 +563,14 @@ fit.lpl.tf <- function(
 #' @param ... Reserved.
 #'
 #' @return A refitted \code{"lpl_tf"} object.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit <- fit.lpl.tf(X, X[, 1]^2, degree = 1L,
+#'                     support.type = "knn", support.size = 7L,
+#'                     lambda = 0.1, lambda.selection = "fixed")
+#'   refit.lpl.tf(fit, y = X[, 1]^3)
+#' }
 #' @export
 refit.lpl.tf <- function(object, y, lambda = NULL, reuse.lambda = TRUE,
                          verbose = FALSE, ...) {

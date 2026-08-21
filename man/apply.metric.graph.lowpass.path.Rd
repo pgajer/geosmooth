@@ -46,3 +46,10 @@ responses it is an \eqn{N} by \eqn{J} by \eqn{S} array.
 Applies every requested low-pass parameter to one response or a matrix of
 responses using a reusable spectral basis.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+                                    eigen.solver = "dense")
+apply.metric.graph.lowpass.path(basis, 1:4, eta.grid = c(0, 0.1, 1))
+}

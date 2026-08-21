@@ -89,3 +89,11 @@ Fits the fixed-operator S-LPL-TF estimator
 \lambda_1\|A_{\mathrm{LPL}}f\|_1 +
 \frac{\lambda_2}{2}\|C_{\mathrm{sync}}f\|_2^2.}
 }
+\examples{
+if (requireNamespace("genlasso", quietly = TRUE)) {
+  X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+  fit.slpl.tf(X, sin(2 * pi * X[, 1]), degree = 1L,
+              support.type = "knn", support.size = 7L,
+              lambda1 = 0.1, lambda2 = 0, lambda.selection = "fixed")
+}
+}

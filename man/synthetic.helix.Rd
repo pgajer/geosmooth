@@ -29,3 +29,6 @@ A synthetic geometry component.
 \description{
 Specify a helix geometry
 }
+\examples{
+synthetic.helix(pitch = 0.25, t.range = c(0, pi))
+}

@@ -17,3 +17,8 @@ A draw-free synthetic geometry component.
 \description{
 Assemble a stratified geometry
 }
+\examples{
+point <- synthetic.stratum.point("point", c(0, 0))
+line <- synthetic.stratum.segment("line", c(0, 1), c(0, 0), c(1, 0))
+synthetic.stratified(list(point, line))
+}

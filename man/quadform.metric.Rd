@@ -18,3 +18,7 @@ For one row, a \code{d} by \code{d} matrix; otherwise an
 \description{
 Evaluate the induced metric of a quadform geometry
 }
+\examples{
+geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+quadform.metric(geometry, matrix(c(0, 1), ncol = 1))
+}

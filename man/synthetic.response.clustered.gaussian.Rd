@@ -17,3 +17,6 @@ A synthetic response component.
 \description{
 Clustered Gaussian response specification
 }
+\examples{
+synthetic.response.clustered.gaussian(0.2, 0.3)
+}

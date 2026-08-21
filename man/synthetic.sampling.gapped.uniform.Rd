@@ -35,3 +35,7 @@ A synthetic sampling component.
 \description{
 Gapped-uniform sampling specification
 }
+\examples{
+intervals <- rbind(c(-1, -0.25), c(0.25, 1))
+synthetic.sampling.gapped.uniform(intervals, probabilities = c(0.5, 0.5))
+}

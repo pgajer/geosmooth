@@ -17,3 +17,6 @@ A \code{synthetic_dataset} whose \code{dataset.id} is \code{instance.id}.
 \description{
 Materialize a frozen synthetic instance
 }
+\examples{
+materialize.synthetic.instance("geosmooth.g1.default.v1")
+}

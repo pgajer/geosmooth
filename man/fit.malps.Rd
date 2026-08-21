@@ -257,3 +257,9 @@ Graph construction is supplied by \pkg{dgraphs} or by explicit
 graph-geodesic payload validation are package-local; shortest-path distances
 are computed through \pkg{dgraphs}.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit <- fit.malps(X, sin(2 * pi * X[, 1]), degree = 1L,
+                 support.type = "knn", support.size = 8L)
+head(fit$fitted.values)
+}

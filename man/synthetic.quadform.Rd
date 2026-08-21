@@ -35,3 +35,6 @@ A synthetic geometry component.
 \description{
 Specify a quadform geometry
 }
+\examples{
+synthetic.quadform(1L, 2L, forms = list(matrix(0.5)))
+}

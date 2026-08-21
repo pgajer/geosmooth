@@ -99,3 +99,11 @@ Fits the Phase-2 LPL-TF estimator with a fixed operator:
 \deqn{\hat f = \arg\min_f \frac12\|y-f\|_2^2 +
 \lambda\|A_{\mathrm{LPL}}f\|_1.}
 }
+\examples{
+if (requireNamespace("genlasso", quietly = TRUE)) {
+  X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+  fit.lpl.tf(X, sin(2 * pi * X[, 1]), degree = 1L,
+             support.type = "knn", support.size = 7L,
+             lambda = 0.1, lambda.selection = "fixed")
+}
+}

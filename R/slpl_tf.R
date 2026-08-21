@@ -15,6 +15,10 @@
 #' @return A list of class \code{"slpl_tf_operator"} containing
 #'   \code{A_LPL}, \code{C_sync}, row metadata, diagnostics, settings, and the
 #'   embedded \code{"lpl_tf_operator"}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#' slpl.tf.operator(X, degree = 1L, support.type = "knn",
+#'                  support.size = 7L, kernel = "gaussian")
 #' @export
 slpl.tf.operator <- function(
     X,
@@ -204,6 +208,13 @@ print.slpl_tf_operator <- function(x, ...) {
 #'   the operator is built internally.
 #'
 #' @return A list of class \code{"slpl_tf"}.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit.slpl.tf(X, sin(2 * pi * X[, 1]), degree = 1L,
+#'               support.type = "knn", support.size = 7L,
+#'               lambda1 = 0.1, lambda2 = 0, lambda.selection = "fixed")
+#' }
 #' @export
 fit.slpl.tf <- function(
     X = NULL,
@@ -461,6 +472,15 @@ fit.slpl.tf <- function(
 #' @param ... Reserved.
 #'
 #' @return A refitted \code{"slpl_tf"} object.
+#' @examples
+#' if (requireNamespace("genlasso", quietly = TRUE)) {
+#'   X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+#'   fit <- fit.slpl.tf(X, X[, 1]^2, degree = 1L,
+#'                      support.type = "knn", support.size = 7L,
+#'                      lambda1 = 0.1, lambda2 = 0,
+#'                      lambda.selection = "fixed")
+#'   refit.slpl.tf(fit, y = X[, 1]^3)
+#' }
 #' @export
 refit.slpl.tf <- function(object, y, lambda1 = NULL, lambda2 = NULL,
                           reuse.lambda = TRUE, verbose = FALSE, ...) {

@@ -19,3 +19,6 @@ Default recipes are reconstructed from normalized component foreign keys.
 Parameter overrides are accepted only for the legacy G-family compatibility
 surface and remain content-bound, non-frozen specifications.
 }
+\examples{
+synthetic.registry.spec("G1")
+}
