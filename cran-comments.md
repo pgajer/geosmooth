@@ -1,6 +1,16 @@
-## Submission
+## Resubmission
 
-This is the initial CRAN submission of `geosmooth`.
+This is the first resubmission of the initial CRAN release of `geosmooth`.
+
+The automated CRAN incoming pretests on 2026-08-21 reported test errors on
+Windows and Debian. Two source-layout tests searched upward from the process
+working directory and stopped when the package source root was unavailable.
+They now use a shared source-tree locator based on `testthat::test_path()` and
+skip their source-only assertions when no source tree is present. Both tests
+still run and pass in a source checkout. No package behavior was changed by
+this fix.
+
+## Submission
 
 `geosmooth` imports `dgraphs (>= 0.1.0)`. On 2026-08-19, the CRAN submission
 team confirmed that version 0.1.0 of `dgraphs` was on its way to CRAN. Version
@@ -11,22 +21,22 @@ checks below also resolved the dependency from their standard repositories.
 ## Test environments
 
 * local: macOS 26.6.1, aarch64-apple-darwin23, R-devel (2026-06-24 r90190)
-* GitHub Actions: Ubuntu with R-release, R-devel, and R-oldrel; macOS Intel
-  with R-release; Windows with R-release
+* initial-candidate GitHub Actions: Ubuntu with R-release, R-devel, and
+  R-oldrel; macOS Intel with R-release; Windows with R-release
   (https://github.com/pgajer/geosmooth/actions/runs/32424082905)
-* R-hub: Linux with R-devel and Windows with R-devel
+* initial-candidate R-hub: Linux with R-devel and Windows with R-devel
   (https://github.com/r-hub2/useful-whitefish-geosmooth/actions/runs/32424539662)
 
-The GitHub Actions matrix and both R-hub jobs reported `Status: OK`.
-Win-builder was unavailable when checked on 2026-08-20: repeated HTTPS
-connections to the upload service timed out before a job could be created.
+The initial-candidate GitHub Actions matrix and both R-hub jobs reported
+`Status: OK`. The subsequent CRAN pretests identified only the two
+installed-test path errors described above.
 
 ## Local R CMD check results
 
 The exact source tarball was checked locally with `R CMD check --as-cran`:
 
-* 0 errors | 0 warnings | 0 notes (`Status: OK`)
-* 11,140 tests passed, one source-tree-only runner test was intentionally
+* 0 errors | 0 warnings | 1 expected note (`New submission`)
+* 10,870 tests passed, one source-tree-only runner test was intentionally
   skipped, and no tests failed or warned
 
 The acceptance and scientific-validation suites are intentionally excluded

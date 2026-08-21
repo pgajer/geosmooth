@@ -15,6 +15,15 @@
   expect_true(all(difference <= bound), info = info)
 }
 
+.ssrhe.canonical.field <- function(object, field) {
+  switch(
+    field,
+    U = object$latent,
+    X = object$predictors,
+    y = object$response,
+    object[[field]])
+}
+
 test_that("the SSRHE registry contains every S/V combination and surface lane", {
   ids <- synthetic.registry.ids()
   one.d <- ids[grepl("^S[0-9]{2}\\.V[1-3]$", ids)]
@@ -57,7 +66,7 @@ test_that("all 48 one-dimensional recipes preserve the frozen legacy grid", {
       n = case$n, seed = case$seed, rng.policy = "legacy")
     for (field in names(case$scientific)) {
       .expect.ssrhe.numeric.parity(
-        actual[[field]], case$scientific[[field]],
+        .ssrhe.canonical.field(actual, field), case$scientific[[field]],
         paste(case.id, field))
     }
   }
@@ -75,7 +84,7 @@ test_that("flat and quadform recipes preserve dimensions 2--4", {
       n = case$n, seed = case$seed, rng.policy = "legacy")
     for (field in names(case$scientific)) {
       .expect.ssrhe.numeric.parity(
-        actual[[field]], case$scientific[[field]],
+        .ssrhe.canonical.field(actual, field), case$scientific[[field]],
         paste(case.id, field))
     }
   }

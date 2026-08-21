@@ -12,7 +12,6 @@ fit.slpl.tf(
   lambda2 = 0,
   lambda1.grid = NULL,
   lambda2.grid = NULL,
-  sync.lambda.grid = NULL,
   lambda.selection = c("fixed", "cv"),
   operator.grid = NULL,
   foldid = NULL,
@@ -49,8 +48,6 @@ fit.slpl.tf(
 \item{lambda1.grid}{Optional nonnegative \eqn{\lambda_1} grid for CV.}
 
 \item{lambda2.grid}{Optional nonnegative \eqn{\lambda_2} grid for CV.}
-
-\item{sync.lambda.grid}{Deprecated alias for \code{lambda2.grid}.}
 
 \item{lambda.selection}{\code{"fixed"} or \code{"cv"}. CV uses materialized
 folds and a deterministic Cartesian grid over \code{lambda1.grid} and

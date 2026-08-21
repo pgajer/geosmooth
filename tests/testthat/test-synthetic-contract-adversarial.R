@@ -14,7 +14,6 @@ test_that("ordinary identity and RNG corruptions are rejected", {
 
   bad <- object
   bad$parameters$resolved.seeds$seed <- 18L
-  bad$params <- bad$parameters
   .expect.synthetic.rejected(bad, "resolved.seeds")
 
   bad <- object
@@ -35,31 +34,27 @@ test_that("ordinary identity and RNG corruptions are rejected", {
   .expect.synthetic.rejected(bad, "dataset.id")
 })
 
-test_that("dimension, frame, support, and alias corruptions are rejected", {
+test_that("dimension, frame, predictor, and support corruptions are rejected", {
   object <- materialize.synthetic(
     synthetic.registry.spec("G2"),
     n = 40L, seed = 17L, rng.policy = "named.stream.v1")
 
   bad <- object
   bad$intrinsic.dim <- bad$intrinsic.dim + 1L
-  bad$d <- bad$intrinsic.dim
   .expect.synthetic.rejected(bad, "dimension and region")
 
   bad <- object
   bad$parameters$frame.matrix[] <- 0
-  bad$params <- bad$parameters
   .expect.synthetic.rejected(bad, "not orthonormal")
 
   bad <- object
-  bad$X[1L, 1L] <- bad$X[1L, 1L] + 1
-  .expect.synthetic.rejected(bad, "aliases")
+  bad$predictors[1L, 1L] <- bad$predictors[1L, 1L] + 1
+  .expect.synthetic.rejected(bad, "do not reconstruct predictors")
 
   disk <- materialize.synthetic(
     synthetic.registry.spec("G3a"),
     n = 40L, seed = 23L, rng.policy = "legacy")
   disk$latent[1L, ] <- 100
-  disk$U <- disk$latent
-  disk$Z <- disk$latent
   .expect.synthetic.rejected(disk, "sampling support")
 })
 
@@ -110,13 +105,10 @@ test_that("random-frame equivalence still requires valid frames", {
   y$predictors <- geosmooth:::.embed.synthetic.geometry(
     y$geometry.spec, y$latent,
     frame.matrix = y$parameters$frame.matrix)
-  y$X <- y$predictors
-  y$params <- y$parameters
   expect_identical(validate.synthetic.dataset(y), y)
   expect_true(compare.synthetic.dataset(x, y)$equal)
 
   y$parameters$frame.matrix[1L, 1L] <- 0
-  y$params <- y$parameters
   expect_error(compare.synthetic.dataset(x, y), "not orthonormal")
 })
 

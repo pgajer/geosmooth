@@ -1,12 +1,7 @@
 test_that("GE0 vendored support assets are present", {
-    root <- normalizePath(getwd(), mustWork = TRUE)
-    while (!file.exists(file.path(root, "DESCRIPTION"))) {
-        parent <- dirname(root)
-        if (identical(parent, root)) {
-            stop("Could not find package root")
-        }
-        root <- parent
-    }
+    root <- geosmooth.test.source.root()
+    skip_if(is.null(root),
+            "package source tree is unavailable in installed-package tests")
 
     expect_true(file.exists(file.path(root, "src", "ANN", "ANN.cpp")))
     expect_true(file.exists(file.path(root, "src", "ANN", "ANN.h")))

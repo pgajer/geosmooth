@@ -183,7 +183,6 @@ print.slpl_tf_operator <- function(x, ...) {
 #'   \code{lambda2.grid} when \code{lambda.selection = "cv"}.
 #' @param lambda1.grid Optional nonnegative \eqn{\lambda_1} grid for CV.
 #' @param lambda2.grid Optional nonnegative \eqn{\lambda_2} grid for CV.
-#' @param sync.lambda.grid Deprecated alias for \code{lambda2.grid}.
 #' @param lambda.selection \code{"fixed"} or \code{"cv"}. CV uses materialized
 #'   folds and a deterministic Cartesian grid over \code{lambda1.grid} and
 #'   \code{lambda2.grid}.
@@ -214,7 +213,6 @@ fit.slpl.tf <- function(
     lambda2 = 0,
     lambda1.grid = NULL,
     lambda2.grid = NULL,
-    sync.lambda.grid = NULL,
     lambda.selection = c("fixed", "cv"),
     operator.grid = NULL,
     foldid = NULL,
@@ -245,13 +243,6 @@ fit.slpl.tf <- function(
     if (cv.repeats != 1L) {
         stop("Phase S3 fit.slpl.tf() supports cv.repeats = 1 only.",
              call. = FALSE)
-    }
-    if (!is.null(sync.lambda.grid)) {
-        if (!is.null(lambda2.grid)) {
-            stop("Specify only one of 'lambda2.grid' or 'sync.lambda.grid'.",
-                 call. = FALSE)
-        }
-        lambda2.grid <- sync.lambda.grid
     }
     if (identical(lambda.selection, "fixed")) {
         if (!is.null(lambda1.grid)) {

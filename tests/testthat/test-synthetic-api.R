@@ -45,7 +45,6 @@ test_that("materialized datasets enforce identity and dimension contracts", {
 
   altered <- ds
   altered$predictors[1, 1] <- altered$predictors[1, 1] + 1e-3
-  altered$X <- altered$predictors
   expect_error(
     compare.synthetic.dataset(ds, altered),
     "do not reconstruct predictors")
@@ -110,16 +109,6 @@ test_that("G7 rejects an empty structural-zero subset explicitly", {
     error = identity)
   expect_s3_class(condition, "geosmooth_empty_zero_parts")
   expect_match(conditionMessage(condition), "at least one")
-})
-
-test_that("deprecated wrappers translate maintained calls only", {
-  expect_warning(
-    ds <- dgp.g3a(n = 20, seed = 4),
-    "deprecated")
-  expect_s3_class(ds, "synthetic_dataset")
-  expect_error(
-    suppressWarnings(dgp.g3c(n = 20, truth.fn = cos)),
-    "Arbitrary truth.fn closures")
 })
 
 test_that("canonical frozen instances replay their committed checksums", {

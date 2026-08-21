@@ -888,7 +888,6 @@ malps.gcv <- function(object, y = NULL, smoother.matrix = NULL,
 #'     successful replicate fitted values;
 #'   \item \code{replicate.weights}: an optional \eqn{n \times B} matrix of
 #'     bootstrap weights when \code{keep.weights = TRUE};
-#'   \item \code{weights}: a compatibility alias for \code{replicate.weights};
 #'   \item \code{failures}: a data frame with columns \code{attempt},
 #'     \code{failure}, and \code{message};
 #'   \item \code{summary}: pointwise fitted values, bootstrap summaries, and
@@ -1017,7 +1016,6 @@ bootstrap.malps <- function(object, B = 200L,
         replicate.fitted.values = fitted.reps,
         summary = summary,
         replicate.weights = weights.reps,
-        weights = weights.reps,
         weight.type = weight.type,
         B.requested = B,
         B.completed = completed,

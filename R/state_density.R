@@ -39,14 +39,14 @@ fit.density <- function(
 
     switch(
         method,
-        empirical = fit.density.empirical(
+        empirical = .fit.density.empirical(
             X = X,
             weights = weights,
             density.control = ctrl,
             return.details = return.details,
             ...
         ),
-        graph_random_walk = fit.density.graph.random.walk(
+        graph_random_walk = .fit.density.graph.random.walk(
             X = X,
             weights = weights,
             graph = graph,
@@ -58,13 +58,8 @@ fit.density <- function(
     )
 }
 
-#' Fit Empirical Density
-#'
-#' Normalizes a nonnegative mass/count vector over a fixed support set.
-#'
-#' @inheritParams fit.density
-#' @export
-fit.density.empirical <- function(
+# Normalize a nonnegative mass/count vector over a fixed support set.
+.fit.density.empirical <- function(
     X,
     weights,
     density.control = list(),
@@ -72,7 +67,8 @@ fit.density.empirical <- function(
     ...) {
 
     dots <- .state.density.named.dots(...)
-    .state.density.reject.chart.dots(dots, "fit.density.empirical()")
+    .state.density.reject.chart.dots(
+        dots, "fit.density(method = \"empirical\")")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -90,14 +86,8 @@ fit.density.empirical <- function(
     )
 }
 
-#' Fit Graph Random-Walk Density
-#'
-#' Smooths a nonnegative mass vector by propagating it through a row-stochastic
-#' graph random walk.
-#'
-#' @inheritParams fit.density
-#' @export
-fit.density.graph.random.walk <- function(
+# Smooth a nonnegative mass vector through a row-stochastic graph random walk.
+.fit.density.graph.random.walk <- function(
     X,
     weights,
     graph = NULL,
@@ -107,7 +97,8 @@ fit.density.graph.random.walk <- function(
     ...) {
 
     dots <- .state.density.named.dots(...)
-    .state.density.reject.chart.dots(dots, "fit.density.graph.random.walk()")
+    .state.density.reject.chart.dots(
+        dots, "fit.density(method = \"graph_random_walk\")")
     X <- .state.density.validate.X(X)
     ctrl <- .state.density.control(density.control)
     weights <- .state.density.validate.weights(weights, nrow(X), "weights")
@@ -428,53 +419,6 @@ fit.subject.od <- function(
         )
     }
     .state.density.attach.subject(out, subject.index, weights)
-}
-
-#' Precheck Density Dependencies
-#'
-#' Checks that the package-level functions needed by the occupation-density
-#' contract are available.
-#'
-#' @param fail Logical; if \code{TRUE}, stop when required functions are missing.
-#'
-#' @return A data frame with dependency check rows.
-#' @usage density.dependency.precheck(fail = FALSE)
-#' @export density.dependency.precheck
-density.dependency.precheck <- function(fail = FALSE) {
-    rows <- list()
-    add <- function(package, symbol, required, available, note = "") {
-        rows[[length(rows) + 1L]] <<- data.frame(
-            package = package,
-            symbol = symbol,
-            required = required,
-            available = available,
-            note = note,
-            stringsAsFactors = FALSE
-        )
-    }
-
-    geosmooth.symbols <- c(
-        "fit.lps", "fit.ps.lps", "fit.metric.graph.lowpass",
-        "fit.chart.kernel", "fit.local.likelihood",
-        "lps.grouped.foldid", "lps.nested.cv",
-        "dgp.materialize", "dgp.content.sha256"
-    )
-    for (sym in geosmooth.symbols) {
-        add("geosmooth", sym, TRUE, exists(sym, mode = "function"),
-            "package contract")
-    }
-
-    out <- do.call(rbind, rows)
-    rownames(out) <- NULL
-    if (isTRUE(fail)) {
-        missing.required <- out$required & !out$available
-        if (any(missing.required)) {
-            stop("Missing required density dependencies: ",
-                 paste(out$symbol[missing.required], collapse = ", "),
-                 call. = FALSE)
-        }
-    }
-    out
 }
 
 .state.density.fit.subject.od.visit.cv <- function(X,

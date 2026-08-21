@@ -53,7 +53,6 @@ A list of class \code{"malps_bootstrap"} containing:
 successful replicate fitted values;
 \item \code{replicate.weights}: an optional \eqn{n \times B} matrix of
 bootstrap weights when \code{keep.weights = TRUE};
-\item \code{weights}: a compatibility alias for \code{replicate.weights};
 \item \code{failures}: a data frame with columns \code{attempt},
 \code{failure}, and \code{message};
 \item \code{summary}: pointwise fitted values, bootstrap summaries, and
