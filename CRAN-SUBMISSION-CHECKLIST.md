@@ -11,7 +11,7 @@ submit a tarball built before the final commit.
 - [x] `make test` passes.
 - [x] `make test-all` passes, with only intentional dependency/platform skips.
 - [x] `R CMD check --as-cran` passes on the exact source tarball with 0 errors,
-      0 warnings, and no unexplained notes.
+      0 warnings, and only the expected `New submission` note.
 - [x] The tarball inventory contains no `.github`, `audit_artifacts`, `dev`,
       `scripts`, `tmp`, `tests/migration`, compiled objects, shared libraries,
       check directories, or local release files.
@@ -22,10 +22,11 @@ submit a tarball built before the final commit.
 
 ## External release gate
 
-- [x] GitHub Actions R CMD check matrix is green on Linux, macOS, and Windows.
+- [ ] GitHub Actions R CMD check matrix is green on Linux, macOS, and Windows
+      for the revised candidate.
 - [ ] win-builder R-devel result is 0 errors, 0 warnings, and 0 notes.
-- [x] R-hub checks include Linux and a non-Linux platform and have no
-      unexplained failures.
+- [ ] R-hub checks include Linux and a non-Linux platform and have no
+      unexplained failures for the revised candidate.
 - [x] Reverse dependency checks are reviewed (none are expected for the first
       release).
 - [x] CRAN package-name availability and the current CRAN Repository Policy are
@@ -34,6 +35,13 @@ submit a tarball built before the final commit.
 Win-builder remained unreachable on 2026-08-20: HTTPS connections to its
 upload service timed out, so no job could be created. Do not mark that gate
 complete without a result from the service.
+
+The CRAN incoming pretests on 2026-08-21 reached Windows and Debian but failed
+because two source-layout tests assumed that the process working directory was
+inside the package source tree. The tests now locate the source tree through
+the test file path and skip source-only assertions when it is unavailable.
+Local installed-package checks pass; external checks of the revised candidate
+remain pending.
 
 ## Submission
 

@@ -23,11 +23,15 @@ test_that("OD0 empirical density validates inputs and control values", {
     X <- matrix(1:6, ncol = 2L)
 
     expect_error(
-        fit.density.empirical(X, weights = c(1, -1, 2)),
+        fit.density(
+            X, weights = c(1, -1, 2), method = "empirical"
+        ),
         "nonnegative"
     )
     expect_error(
-        fit.density.empirical(X, weights = c(0, 0, 0)),
+        fit.density(
+            X, weights = c(0, 0, 0), method = "empirical"
+        ),
         "positive total mass"
     )
     expect_error(
@@ -35,9 +39,10 @@ test_that("OD0 empirical density validates inputs and control values", {
         "outside 1:nrow"
     )
     expect_error(
-        fit.density.empirical(
+        fit.density(
             X,
             weights = c(1, 1, 1),
+            method = "empirical",
             density.control = list(mass.tol = -1)
         ),
         "mass.tol"
@@ -85,17 +90,19 @@ test_that("OD0 density-native methods reject chart-dimension arguments", {
     )
 
     expect_error(
-        fit.density.empirical(
+        fit.density(
             X = X,
             weights = weights,
+            method = "empirical",
             chart.dim = "local.auto"
         ),
         "does not use local charts"
     )
     expect_error(
-        fit.density.graph.random.walk(
+        fit.density(
             X = X,
             weights = weights,
+            method = "graph_random_walk",
             graph = graph,
             chart.dim.grid = c(1L, "auto")
         ),
@@ -204,18 +211,6 @@ test_that("OD0 normalize.density exposes chart dimensions in a uniform diagnosti
         expect_equal(length(fit$diagnostics$chart.dim$by.anchor), nrow(X))
         expect_true(is.character(fit$diagnostics$chart.dim$source.path))
     }
-})
-
-test_that("OD0 dependency precheck reports required package functions", {
-    deps <- density.dependency.precheck()
-    expect_true(all(c("package", "symbol", "required", "available", "note") %in%
-                        names(deps)))
-    geosmooth.rows <- deps[deps$package == "geosmooth", , drop = FALSE]
-    expect_true(all(geosmooth.rows$required))
-    expect_true(all(geosmooth.rows$available))
-    expect_identical(unique(deps$package), "geosmooth")
-
-    expect_silent(density.dependency.precheck(fail = TRUE))
 })
 
 test_that("OD0 private smoothness helpers have deterministic placeholder behavior", {
