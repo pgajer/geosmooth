@@ -17,3 +17,6 @@ A synthetic response component.
 \description{
 Bernoulli response specification
 }
+\examples{
+synthetic.response.bernoulli(minimum.positive = 1L, maximum.attempts = 5L)
+}

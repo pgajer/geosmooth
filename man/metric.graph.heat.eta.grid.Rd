@@ -41,3 +41,10 @@ attributes.
 Creates a positive heat-time grid from a
 \code{"metric.graph.lowpass.basis"} object.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+                                    eigen.solver = "dense")
+metric.graph.heat.eta.grid(basis, n.initial = 6L)
+}

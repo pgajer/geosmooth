@@ -20,3 +20,7 @@ A numeric matrix of observed coordinates.
 This deterministic operator performs no random draws. A realized
 \code{frame.matrix} is required for random-frame geometries.
 }
+\examples{
+geometry <- synthetic.circle()
+embed.synthetic.geometry(geometry, matrix(c(0, pi / 2), ncol = 1))
+}

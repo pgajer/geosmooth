@@ -48,3 +48,7 @@ Dispatches to a dedicated density estimator. Subject-occupation density
 estimation is one application: construct a sparse mass vector over a fixed
 support set and call this generic density layer.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+fit.density(X, weights = c(1, 0, 2, 0, 0, 1), method = "empirical")
+}

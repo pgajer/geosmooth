@@ -20,3 +20,7 @@ A numeric vector of segment lengths.
 For quadforms this integrates the induced metric along each straight
 latent segment. Flat quadforms reduce exactly to Euclidean distance.
 }
+\examples{
+geometry <- synthetic.quadform(1L, 1L)
+edge.lengths.synthetic.geometry(geometry, matrix(0), matrix(2))
+}

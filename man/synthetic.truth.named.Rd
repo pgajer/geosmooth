@@ -17,3 +17,6 @@ A synthetic truth component.
 \description{
 Specify a versioned named truth evaluator
 }
+\examples{
+synthetic.truth.named("intrinsic.linear.first.v1")
+}

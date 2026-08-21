@@ -152,6 +152,12 @@
 #' @param compatibility Optional serializable legacy compatibility metadata.
 #' @param metadata Optional serializable scientific metadata.
 #' @return A `synthetic_spec`.
+#' @examples
+#' spec <- synthetic.spec(
+#'   synthetic.circle(), synthetic.sampling.uniform.interval(0, 2 * pi),
+#'   synthetic.truth.named("helix.sin.v1"), synthetic.response.gaussian(0.1)
+#' )
+#' spec$specification.sha256
 #' @export
 synthetic.spec <- function(geometry, sampling, truth, response,
                            recipe.id = NULL, registry.tag = NULL,

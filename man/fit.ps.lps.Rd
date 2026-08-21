@@ -215,3 +215,11 @@ polynomial smoothing (PS-LPS).  For fixed local polynomial parameters, PS-LPS
 fits one local polynomial chart per anchor and adds a quadratic penalty that
 synchronizes chart predictions on overlap points.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit.ps.lps(
+  X, sin(2 * pi * X[, 1]), support.size = 7L, degree = 1L,
+  chart.dim = 1L, lambda.sync.grid = 0,
+  lambda.sync.selection = "fixed", cv.folds = 2L
+)
+}

@@ -217,6 +217,10 @@ Exposing \eqn{A} is useful for auditability and for future
 Adaptive-radius graph construction uses \pkg{dgraphs}; fixed-k and supplied
 neighborhoods are package-local geosmooth paths.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+ssrhe.hessian.operator(X, k = 6L, tangent.dim = 1L)
+}
 \references{
 Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
 using Hessian energy with an application to semi-supervised dimensionality

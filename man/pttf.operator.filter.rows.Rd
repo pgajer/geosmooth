@@ -31,3 +31,14 @@ operator rows. The sparse triplet payload is rebuilt from the filtered
 matrix so triplet row indices always refer to the filtered fit rows, while
 original compact and full logical row identities remain in \code{row.table}.
 }
+\examples{
+n <- 10L
+X <- matrix(seq(0, 1, length.out = n), ncol = 1)
+adj <- lapply(seq_len(n), function(i) intersect(c(i - 1L, i + 1L), 1:n))
+lengths <- Map(function(i, j) abs(X[j, 1] - X[i, 1]), seq_len(n), adj)
+geometry <- pttf.geometry(
+  X, adj, lengths, graph = "supplied", tangent.dim = 1L
+)
+operator <- pttf.operator(geometry, derivative.order = 2L)
+pttf.operator.filter.rows(operator, seq_len(max(1L, nrow(operator$A) - 2L)))
+}

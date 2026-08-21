@@ -15,3 +15,6 @@ A synthetic geometry component.
 \description{
 Specify a simplex geometry
 }
+\examples{
+synthetic.simplex(parts = 3L)
+}

@@ -166,3 +166,10 @@ tilt of the chart reference measure.  The \code{"bernoulli"} branch uses a
 weighted local logistic likelihood and returns fitted probabilities at the
 evaluation anchors.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 21), ncol = 1)
+y <- exp(-20 * (X[, 1] - 0.5)^2)
+y <- y / sum(y)
+fit.local.likelihood(X, y, likelihood.family = "density",
+                     support.size = 7L, degree = 0L)
+}

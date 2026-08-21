@@ -29,3 +29,6 @@ A synthetic geometry component.
 \description{
 Specify a sphere-cap geometry
 }
+\examples{
+synthetic.sphere.cap(radius = 2, footprint.radius = 1)
+}

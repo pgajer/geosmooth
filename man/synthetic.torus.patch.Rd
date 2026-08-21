@@ -31,3 +31,6 @@ A synthetic geometry component.
 \description{
 Specify a torus-patch geometry
 }
+\examples{
+synthetic.torus.patch(major.radius = 2, minor.radius = 0.5)
+}

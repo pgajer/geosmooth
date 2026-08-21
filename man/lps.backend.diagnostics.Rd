@@ -41,3 +41,9 @@ coordinate supports, the operator-support diagnostic is currently equivalent
 to the coordinate-support diagnostic; the fields are still recorded so the
 same manifest schema can be shared with LPL-TF and S-LPL-TF experiments.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 16), ncol = 1)
+fit <- fit.lps(X, X[, 1]^2, support.grid = 6L, degree.grid = 1L,
+               kernel.grid = "gaussian", cv.folds = 2L, backend = "R")
+lps.backend.diagnostics(fit)
+}

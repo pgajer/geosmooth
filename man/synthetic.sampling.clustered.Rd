@@ -30,3 +30,6 @@ A fixed-size synthetic sampling component.
 \description{
 Clustered sampling specification
 }
+\examples{
+synthetic.sampling.clustered(3L, 5L, within.sd = 0.1)
+}

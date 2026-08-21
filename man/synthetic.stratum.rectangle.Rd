@@ -21,3 +21,8 @@ A draw-free \code{synthetic_stratum}.
 \description{
 Specify a rectangle stratum
 }
+\examples{
+synthetic.stratum.rectangle(
+  "square", rbind(c(-1, 1), c(-1, 1)), c(0, 0), diag(2)
+)
+}

@@ -139,6 +139,15 @@ generalized-lasso problem on vertex-held-out training sets using a selection
 matrix \eqn{X}; this is useful for small and moderate diagnostic problems but
 is not yet a scalable production graph-trend-filtering solver.
 }
+\examples{
+if (requireNamespace("genlasso", quietly = TRUE)) {
+  adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+  fit.graph.trend.filtering(
+    adj, y = c(0, 0.2, 1.8, 2), lambda.grid = 0.3,
+    lambda.selection = "fixed", weight.rule = "unit"
+  )
+}
+}
 \references{
 Wang, Y.-X., Sharpnack, J., Smola, A., and Tibshirani, R. J. (2016).
 Trend Filtering on Graphs. \emph{Journal of Machine Learning Research}.

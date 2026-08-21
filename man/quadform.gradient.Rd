@@ -18,3 +18,7 @@ For one form, an \code{n} by \code{d} matrix. For multiple forms, an
 \description{
 Evaluate gradients of all quadforms
 }
+\examples{
+geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+quadform.gradient(geometry, matrix(c(-1, 0, 1), ncol = 1))
+}

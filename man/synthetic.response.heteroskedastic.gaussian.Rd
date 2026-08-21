@@ -17,3 +17,6 @@ A synthetic response component.
 \description{
 Heteroskedastic Gaussian response specification
 }
+\examples{
+synthetic.response.heteroskedastic.gaussian(0.1, 0.2)
+}

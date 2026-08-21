@@ -273,3 +273,12 @@ LPL-TF and S-LPL-TF.  The experimental
 \code{chart.dim = "local.auto"} mode estimates an input-only local chart
 dimension separately for each prediction anchor.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+y <- sin(2 * pi * X[, 1])
+fit <- fit.lps(
+  X, y, support.grid = 8L, degree.grid = 1L,
+  kernel.grid = "tricube", cv.folds = 2L, backend = "R"
+)
+head(fit$fitted.values)
+}

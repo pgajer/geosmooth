@@ -160,6 +160,9 @@
 #' using Hessian energy with an application to semi-supervised dimensionality
 #' reduction. \emph{Neural Computation}.
 #'
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' ssrhe.hessian.operator(X, k = 6L, tangent.dim = 1L)
 #' @export
 ssrhe.hessian.operator <- function(
     X,
@@ -543,6 +546,8 @@ ssrhe.hessian.operator <- function(
 #' @return A data frame with columns \code{adaptive.k.scale},
 #'   \code{min.support}, and \code{max.support}. \code{max.support} is
 #'   \code{NA} by default, meaning no truncation.
+#' @examples
+#' ssrhe.support.grid(n = 50L, tangent.dim = 2L, max.candidates = 4L)
 #' @export
 ssrhe.support.grid <- function(n,
                                tangent.dim,
@@ -1069,6 +1074,11 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #' using Hessian energy with an application to semi-supervised dimensionality
 #' reduction. \emph{Neural Computation}.
 #'
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit.ssrhe.hessian.regression(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L, lambda1 = 0.1
+#' )
 #' @export
 fit.ssrhe.hessian.regression <- function(
     X,
@@ -1179,6 +1189,12 @@ fit.ssrhe.hessian.regression <- function(
 #' @inheritParams fit.ssrhe.hessian.regression
 #'
 #' @return A list of class \code{"ssrhe.hessian.refit"}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit <- fit.ssrhe.hessian.regression(
+#'   X, X[, 1]^2, k = 6L, tangent.dim = 1L, lambda1 = 0.1
+#' )
+#' refit.ssrhe.hessian.regression(fit, y.new = X[, 1]^3)
 #' @export
 refit.ssrhe.hessian.regression <- function(fitted.model,
                                            y.new = NULL,
@@ -1269,6 +1285,12 @@ refit.ssrhe.hessian.regression <- function(fitted.model,
 #' @return A list of class \code{"ssrhe.hessian.cv.fit"} and
 #'   \code{"ssrhe.hessian.fit"} containing the final fit plus
 #'   \code{cv.table}, \code{fold.id}, and \code{selection} diagnostics.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit.ssrhe.hessian.regression.cv(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+#'   lambda1.grid = c(0.01, 0.1), nfolds = 2L
+#' )
 #' @export
 fit.ssrhe.hessian.regression.cv <- function(
     X,
@@ -1666,6 +1688,12 @@ fit.ssrhe.hessian.regression.cv <- function(
 #'   \code{"ssrhe.hessian.fit"} containing the final fit plus
 #'   \code{gcv.table}, \code{selection}, and optional
 #'   \code{support.gcv.table} diagnostics.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit.ssrhe.hessian.regression.gcv(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+#'   lambda1.grid = c(0.01, 0.1)
+#' )
 #' @export
 fit.ssrhe.hessian.regression.gcv <- function(
     X,
@@ -2566,6 +2594,12 @@ fit.ssrhe.hessian.regression.gcv <- function(
 #'   values, residuals, selected lambda, the SSRHE operator, generalized-lasso
 #'   path metadata, lambda-grid fitted values, and CV diagnostics when
 #'   requested.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit.ssrhe.hessian.l1.regression(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+#'   lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
+#' )
 #' @export
 fit.ssrhe.hessian.l1.regression <- function(
     X,
@@ -2873,6 +2907,15 @@ fit.ssrhe.hessian.l1.regression <- function(
 #' @inheritParams fit.ssrhe.hessian.l1.regression
 #'
 #' @return A list of class \code{"ssrhe.hessian.l1.refit"}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit <- fit.ssrhe.hessian.l1.regression(
+#'   X, X[, 1]^2, k = 6L, tangent.dim = 1L,
+#'   lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
+#' )
+#' refit.ssrhe.hessian.l1.regression(
+#'   fit, y.new = X[, 1]^3, solver = "admm"
+#' )
 #' @export
 refit.ssrhe.hessian.l1.regression <- function(
     fitted.model,

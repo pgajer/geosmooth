@@ -12,3 +12,6 @@ Character recipe IDs.
 \description{
 List maintained synthetic recipe IDs
 }
+\examples{
+head(synthetic.registry.ids())
+}

@@ -120,3 +120,6 @@ adapter between ordinary smoothers such as \code{\link{fit.lps}},
 \code{\link{fit.ps.lps}}, and \code{\link{fit.metric.graph.lowpass}} and
 density or occupation-density workflows.
 }
+\examples{
+normalize.density(c(0.5, -0.1, 0.6, 0), X = matrix(1:4, ncol = 1))
+}

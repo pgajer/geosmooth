@@ -198,6 +198,14 @@
 #'   \code{logistic.diagnostics} records local logistic solve attempts,
 #'   convergence statuses, fallback-path counts, event-rate fallback counts,
 #'   and \code{NA} failure counts separately for CV and final fitting.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+#' y <- sin(2 * pi * X[, 1])
+#' fit <- fit.lps(
+#'   X, y, support.grid = 8L, degree.grid = 1L,
+#'   kernel.grid = "tricube", cv.folds = 2L, backend = "R"
+#' )
+#' head(fit$fitted.values)
 #' @export
 fit.lps <- function(
     X, y, foldid = NULL,
@@ -744,6 +752,11 @@ print.lps <- function(x, ...) {
 #' @param object A fitted \code{"lps"} object.
 #' @return A one-row \code{data.frame} with backend, chart-dimension, selection,
 #'   candidate-count, and policy fields.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 16), ncol = 1)
+#' fit <- fit.lps(X, X[, 1]^2, support.grid = 6L, degree.grid = 1L,
+#'                kernel.grid = "gaussian", cv.folds = 2L, backend = "R")
+#' lps.backend.diagnostics(fit)
 #' @export
 lps.backend.diagnostics <- function(object) {
     if (!inherits(object, "lps")) {

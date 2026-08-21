@@ -23,3 +23,6 @@ A synthetic truth component.
 \description{
 Specify a sinusoidal finite-design logit truth
 }
+\examples{
+synthetic.truth.logit(amplitude = 1, target.prevalence = 0.4)
+}

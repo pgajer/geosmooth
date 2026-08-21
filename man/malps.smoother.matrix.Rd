@@ -39,3 +39,10 @@ Setting \code{allow.robust = TRUE} constructs the fixed-final-weight
 linearization, which reproduces the stored fit but should not be interpreted
 as the exact response-to-fit map.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
+fit <- fit.malps(X, X[, 1]^2, degree = 1L,
+                 support.type = "knn", support.size = 8L)
+S <- malps.smoother.matrix(fit)
+max(abs(S \%*\% fit$y - fit$fitted.values))
+}

@@ -32,3 +32,6 @@ A synthetic response component.
 \description{
 Laplace response with Gaussian contamination
 }
+\examples{
+synthetic.response.laplace.outlier(0.1, 0.05, 1)
+}

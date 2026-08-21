@@ -216,3 +216,10 @@ construction and lambda CV are nested.
 The current implementation supports a single response vector. Matrix-response
 penalty selection should be performed column-by-column.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit.ssrhe.hessian.regression.cv(
+  X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+  lambda1.grid = c(0.01, 0.1), nfolds = 2L
+)
+}

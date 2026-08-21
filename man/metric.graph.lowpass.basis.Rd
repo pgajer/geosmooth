@@ -86,3 +86,9 @@ subspace. The largest retained eigenvalue supplies a conservative proxy for
 bounding the contribution of omitted modes because all omitted eigenvalues
 are at least as large.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+                           eigen.solver = "dense")
+}

@@ -22,6 +22,9 @@
 #'   \code{fitted.raw}, \code{theta}, \code{accounting},
 #'   \code{smoothness}, \code{timing}, \code{diagnostics}, and
 #'   \code{warnings}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+#' fit.density(X, weights = c(1, 0, 2, 0, 0, 1), method = "empirical")
 #' @export
 fit.density <- function(
     X,
@@ -154,6 +157,8 @@ fit.density <- function(
 #' @param ... Additional arguments passed to methods.
 #'
 #' @return A list of class \code{"density_fit"}.
+#' @examples
+#' normalize.density(c(0.5, -0.1, 0.6, 0), X = matrix(1:4, ncol = 1))
 #' @export
 normalize.density <- function(x, ...) {
     UseMethod("normalize.density")
@@ -353,6 +358,10 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' @param visit.cv.epsilon Positive floor used in held-out
 #'   \code{-log(rho[visit])} scoring.
 #'
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+#' fit.subject.od(X, subject.index = c(1L, 3L, 3L, 6L),
+#'                method = "empirical")
 #' @export
 fit.subject.od <- function(
     X,

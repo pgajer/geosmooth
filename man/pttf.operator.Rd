@@ -88,3 +88,13 @@ and transported predecessor differences
 \eqn{K_{r-1}(O_{ij})z_j-z_i}. Unavailable predecessor blocks are never filled
 with zero; affected neighbors are dropped and recorded.
 }
+\examples{
+n <- 10L
+X <- matrix(seq(0, 1, length.out = n), ncol = 1)
+adj <- lapply(seq_len(n), function(i) intersect(c(i - 1L, i + 1L), 1:n))
+lengths <- Map(function(i, j) abs(X[j, 1] - X[i, 1]), seq_len(n), adj)
+geometry <- pttf.geometry(
+  X, adj, lengths, graph = "supplied", tangent.dim = 1L
+)
+pttf.operator(geometry, derivative.order = 2L)
+}

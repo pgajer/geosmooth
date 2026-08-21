@@ -89,3 +89,8 @@ OD visit CV, each outer candidate is passed to the source smoother as a
 scalar local model configuration; this avoids nested row-level
 multi-candidate selection inside each held-out-visit fold.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
+fit.subject.od(X, subject.index = c(1L, 3L, 3L, 6L),
+               method = "empirical")
+}

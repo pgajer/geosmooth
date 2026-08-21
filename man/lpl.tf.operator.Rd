@@ -150,3 +150,8 @@ If \eqn{a_i} is the complete assembled residual row, then
 \code{row.normalize = "l1"} uses \eqn{a_i / \|a_i\|_1}. Normalization is
 applied to the whole row, not only to predictor coefficients.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+lpl.tf.operator(X, degree = 1L, support.type = "knn",
+                support.size = 7L, kernel = "gaussian")
+}

@@ -32,3 +32,6 @@ This preserves the legacy \code{gflow} parameterization:
 \code{y = scale * cos(t) - 2 * cos(2*t)}, and
 \code{z = -scale * sin(3*t)}.
 }
+\examples{
+synthetic.trefoil(scale = 0.5, t.range = c(0, pi))
+}

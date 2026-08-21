@@ -29,3 +29,6 @@ A synthetic geometry component.
 \description{
 Specify a circle geometry
 }
+\examples{
+synthetic.circle(radius = 2, angle.range = c(0, pi))
+}

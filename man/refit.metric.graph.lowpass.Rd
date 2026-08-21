@@ -40,3 +40,12 @@ A list of class \code{"metric.graph.lowpass.refit"}.
 \description{
 Reuses a fitted metric graph low-pass eigensystem to smooth new responses.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+fit <- fit.metric.graph.lowpass(
+  adj, lengths, y = 1:4, n.eigenpairs = 4L,
+  eta.grid = c(0.1, 1), eigen.solver = "dense"
+)
+refit.metric.graph.lowpass(fit, y.new = 4:1)
+}

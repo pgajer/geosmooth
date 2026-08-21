@@ -138,3 +138,8 @@ operator from \code{\link{lpl.tf.operator}}. The synchronization component
 \eqn{C_{\mathrm{sync}}} compares inclusive local polynomial prediction maps
 over overlapping supports.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+slpl.tf.operator(X, degree = 1L, support.type = "knn",
+                 support.size = 7L, kernel = "gaussian")
+}

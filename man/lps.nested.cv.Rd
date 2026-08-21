@@ -98,6 +98,16 @@ assignment, giving a reproducible randomized variant);
 (passing the same per-fold offset seed when \code{inner.shuffle.seed} is
 supplied).
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+y <- sin(2 * pi * X[, 1])
+nested <- lps.nested.cv(
+  X, y, outer.foldid = rep(1:3, length.out = 18), inner.folds = 2L,
+  fit.args = list(support.grid = 6L, degree.grid = 1L,
+                  kernel.grid = "gaussian", backend = "R")
+)
+nested$rmse
+}
 \seealso{
 \code{\link[=lps.grouped.foldid]{lps.grouped.foldid()}} for the grouped fold constructor.
 }

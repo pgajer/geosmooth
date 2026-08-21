@@ -45,3 +45,10 @@ Reuses the operator from \code{\link{fit.ssrhe.hessian.regression}} to fit
 new responses or new fixed penalty weights without rebuilding local PCA
 neighborhoods or Hessian-energy matrices.
 }
+\examples{
+X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+fit <- fit.ssrhe.hessian.regression(
+  X, X[, 1]^2, k = 6L, tangent.dim = 1L, lambda1 = 0.1
+)
+refit.ssrhe.hessian.regression(fit, y.new = X[, 1]^3)
+}

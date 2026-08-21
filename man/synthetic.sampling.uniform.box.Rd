@@ -24,3 +24,6 @@ A synthetic sampling component.
 \description{
 Uniform-box sampling specification
 }
+\examples{
+synthetic.sampling.uniform.box(lower = c(-1, 0), upper = c(1, 2))
+}

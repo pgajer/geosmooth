@@ -61,3 +61,11 @@ rounds, and the truncated-basis resolution certificate. It does not decide
 whether an endpoint is competitive; fold-level or cohort-level search logic
 remains the caller's responsibility.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+lengths <- list(1, c(1, 1), c(1, 1), 1)
+basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
+                                    eigen.solver = "dense")
+eta <- metric.graph.heat.eta.grid(basis, n.initial = 6L)
+metric.graph.heat.extend.lower(basis, eta, endpoint.status = "active")
+}

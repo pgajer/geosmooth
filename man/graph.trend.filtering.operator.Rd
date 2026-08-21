@@ -71,3 +71,7 @@ The experimental \code{operator.family = "path.divided.difference"} builds
 canonical path rows and computes position-aware finite differences along
 graph paths using \code{weight.list} as metric edge lengths.
 }
+\examples{
+adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+graph.trend.filtering.operator(adj, order = 1L, weight.rule = "unit")
+}

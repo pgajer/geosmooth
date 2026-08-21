@@ -26,3 +26,6 @@ A validated integer seed.
 \description{
 Resolve the legacy seed for an SSRHE registry recipe
 }
+\examples{
+synthetic.registry.seed("S16.V1", replicate = 2L)
+}

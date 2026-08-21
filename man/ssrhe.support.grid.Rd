@@ -38,3 +38,6 @@ Constructs a compact grid of adaptive-radius support profiles for use with
 intentionally small by default because support selection nests operator
 construction inside response cross-validation.
 }
+\examples{
+ssrhe.support.grid(n = 50L, tangent.dim = 2L, max.candidates = 4L)
+}

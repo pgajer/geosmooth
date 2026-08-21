@@ -29,3 +29,7 @@ A \code{synthetic_dataset}.
 \description{
 Materialize a synthetic-data specification
 }
+\examples{
+spec <- synthetic.registry.spec("G1")
+materialize.synthetic(spec, n = 20L, seed = 1L)
+}
