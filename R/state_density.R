@@ -358,6 +358,18 @@ normalize.density.metric.graph.lowpass.refit <- function(
 #' @param visit.cv.epsilon Positive floor used in held-out
 #'   \code{-log(rho[visit])} scoring.
 #'
+#' @return A list of class \code{"density_fit"}.  Its \code{rho} component is
+#'   the estimated probability mass over the rows of \code{X}, and
+#'   \code{empirical.rho} is the normalized visit-count mass.  The
+#'   \code{subject} component summarizes the number of visits, the number of
+#'   distinct visited support points, the largest visit multiplicity, and the
+#'   fraction of repeatedly visited support points.  Other components describe
+#'   the fitted method, normalization accounting, smoothing diagnostics, and
+#'   warnings as documented in \code{\link{fit.density}}.  With
+#'   \code{od.cv = "visit"} and \code{return.details = TRUE}, the result also
+#'   contains the visit-level cross-validation table, fold assignments, and
+#'   held-out predicted masses.
+#'
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 6), ncol = 1)
 #' fit.subject.od(X, subject.index = c(1L, 3L, 3L, 6L),

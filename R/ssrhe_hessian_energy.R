@@ -158,7 +158,8 @@
 #' @references
 #' Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
 #' using Hessian energy with an application to semi-supervised dimensionality
-#' reduction. \emph{Neural Computation}.
+#' reduction. \emph{Advances in Neural Information Processing Systems 22}.
+#' \url{https://papers.nips.cc/paper_files/paper/2009/hash/f4552671f8909587cf485ea990207f3b-Abstract.html}
 #'
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
@@ -1072,7 +1073,8 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #' @references
 #' Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
 #' using Hessian energy with an application to semi-supervised dimensionality
-#' reduction. \emph{Neural Computation}.
+#' reduction. \emph{Advances in Neural Information Processing Systems 22}.
+#' \url{https://papers.nips.cc/paper_files/paper/2009/hash/f4552671f8909587cf485ea990207f3b-Abstract.html}
 #'
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
@@ -2594,6 +2596,13 @@ fit.ssrhe.hessian.regression.gcv <- function(
 #'   values, residuals, selected lambda, the SSRHE operator, generalized-lasso
 #'   path metadata, lambda-grid fitted values, and CV diagnostics when
 #'   requested.
+#'
+#' @references
+#' Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
+#' using Hessian energy with an application to semi-supervised dimensionality
+#' reduction. \emph{Advances in Neural Information Processing Systems 22}.
+#' \url{https://papers.nips.cc/paper_files/paper/2009/hash/f4552671f8909587cf485ea990207f3b-Abstract.html}
+#'
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
 #' fit.ssrhe.hessian.l1.regression(

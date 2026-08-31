@@ -224,5 +224,6 @@ ssrhe.hessian.operator(X, k = 6L, tangent.dim = 1L)
 \references{
 Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
 using Hessian energy with an application to semi-supervised dimensionality
-reduction. \emph{Neural Computation}.
+reduction. \emph{Advances in Neural Information Processing Systems 22}.
+\url{https://papers.nips.cc/paper_files/paper/2009/hash/f4552671f8909587cf485ea990207f3b-Abstract.html}
 }

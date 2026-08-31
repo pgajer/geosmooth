@@ -35,34 +35,26 @@
 #' @param tolerance Numeric scalar, the convergence threshold for value changes.
 #'   Default is 1e-6.
 #'
-#' @return A numeric vector of the same length as \code{values}, with smoothed
-#'   values within the specified region.
+#' @return A list containing:
+#'   \itemize{
+#'     \item \code{harmonic_predictions}: the numeric vector of smoothed values;
+#'     \item \code{converged}: whether both the maximum update and discrete
+#'       harmonic residual fell below \code{tolerance};
+#'     \item \code{num_region}, \code{num_boundary}, and \code{num_interior}:
+#'       vertex counts for the requested region and its boundary/interior split;
+#'     \item \code{num_iterations}: the number of relaxation iterations run;
+#'     \item \code{max_change} and \code{max_residual}: per-iteration convergence
+#'       diagnostics.
+#'   }
 #'
 #' @examples
-#' \dontrun{
-#' # Create a simple grid graph
-#' grid.graph <- create.graph.from.grid(10, 10)
-#'
-#' # Create noisy function values
-#' values <- sin(0.1 * seq_len(100)) + rnorm(100, 0, 0.1)
-#'
-#' # Define a region for smoothing (center of the grid)
-#' region <- 35:65
-#'
-#' # Apply harmonic smoothing
-#' smoothed.values <- perform.harmonic.smoothing(
-#'   grid.graph$adj.list,
-#'   grid.graph$weight.list,
-#'   values,
-#'   region,
-#'   max.iterations = 200,
-#'   tolerance = 1e-8
+#' adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' weight.list <- list(1, c(1, 1), c(1, 1), 1)
+#' values <- c(0, 2, -1, 1)
+#' result <- perform.harmonic.smoothing(
+#'   adj.list, weight.list, values, region.vertices = 1:3
 #' )
-#'
-#' # Plot original vs smoothed values
-#' plot(values, type = "l", col = "gray")
-#' lines(smoothed.values, col = "red")
-#' }
+#' result$harmonic_predictions
 #'
 #' @seealso \code{\link{harmonic.smoother}} for smoothing with topology tracking,
 #'   \code{\link{get.region.boundary}} for boundary vertex identification
@@ -217,43 +209,21 @@ perform.harmonic.smoothing <- function(adj.list,
 #'     stabilized}
 #'   \item{topology_differences}{Numeric vector of differences between consecutive
 #'     recorded iterations}
+#'   \item{basin_cx_differences}{Alias of \code{topology_differences}}
+#'   \item{converged}{Logical indicator of whether the relaxation converged}
+#'   \item{num_region, num_boundary, num_interior}{Vertex counts for the
+#'     requested region and its boundary/interior split}
 #'
 #' @examples
-#' \dontrun{
-#' # Create a simple grid graph
-#' grid.graph <- create.graph.from.grid(10, 10)
-#'
-#' # Create noisy function values
-#' values <- sin(0.1 * seq_len(100)) + rnorm(100, 0, 0.1)
-#'
-#' # Define a region for smoothing (center of the grid)
-#' region <- 35:65
-#'
-#' # Apply harmonic smoothing with topology tracking
+#' adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' weight.list <- list(1, c(1, 1), c(1, 1), 1)
+#' values <- c(0, 2, -1, 1)
 #' result <- harmonic.smoother(
-#'   grid.graph$adj.list,
-#'   grid.graph$weight.list,
-#'   values,
-#'   region,
-#'   max.iterations = 200,
-#'   tolerance = 1e-8,
-#'   record.frequency = 5,  # Record every 5 iterations
-#'   stability.window = 3,
-#'   stability.threshold = 0.05
+#'   adj.list, weight.list, values, region.vertices = seq_along(values),
+#'   max.iterations = 20, record.frequency = 2
 #' )
-#'
-#' # Get the smoothed values
 #' smoothed.values <- result$harmonic_predictions
-#'
-#' # Plot original vs smoothed values
-#' plot(values, type = "l", col = "gray")
-#' lines(smoothed.values, col = "red")
-#'
-#' # Plot the evolution of topology differences
-#' plot(result$topology_differences, type = "l",
-#'      xlab = "Iteration", ylab = "Topology Difference")
-#' abline(v = result$stable_iteration, col = "blue", lty = 2)
-#' }
+#' smoothed.values
 #'
 #' @seealso \code{\link{perform.harmonic.smoothing}} for basic smoothing,
 #'   \code{\link{plot.harmonic_smoother}} for visualization methods,
@@ -547,19 +517,14 @@ print.summary.harmonic_smoother <- function(x, ...) {
 #' @return Invisibly returns the input object.
 #'
 #' @examples
-#' \dontrun{
-#' # After running harmonic.smoother()
-#' result <- harmonic.smoother(adj.list, weight.list, values, region)
-#'
-#' # Plot topology evolution
-#' plot(result, type = "topology")
-#'
-#' # Plot extrema counts
-#' plot(result, type = "extrema")
-#'
-#' # Plot smoothed values
+#' adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+#' weight.list <- list(1, c(1, 1), c(1, 1), 1)
+#' values <- c(0, 2, -1, 1)
+#' result <- harmonic.smoother(
+#'   adj.list, weight.list, values, region.vertices = seq_along(values),
+#'   max.iterations = 20, record.frequency = 2
+#' )
 #' plot(result, type = "values")
-#' }
 #'
 #' @seealso \code{\link{harmonic.smoother}}
 #'
@@ -671,7 +636,6 @@ plot.harmonic_smoother <- function(x, y = NULL, ..., type = c("topology", "extre
 #'   integer vector if no boundary vertices exist.
 #'
 #' @examples
-#' \dontrun{
 #' # Create a simple grid graph adjacency list (5x5 grid)
 #' create_grid_adj_list <- function(n_rows, n_cols) {
 #'   n <- n_rows * n_cols
@@ -704,7 +668,6 @@ plot.harmonic_smoother <- function(x, y = NULL, ..., type = c("topology", "extre
 #' print(boundary)
 #' # Expected output: c(7, 8, 9, 12, 14, 17, 18, 19)
 #' # (all except the center vertex 13)
-#' }
 #'
 #' @seealso \code{\link{perform.harmonic.smoothing}}, \code{\link{harmonic.smoother}}
 #'

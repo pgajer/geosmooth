@@ -58,6 +58,19 @@ supplied.}
 
 \item{...}{Additional method-specific arguments.}
 }
+\value{
+A list of class \code{"density_fit"}.  Its \code{rho} component is
+the estimated probability mass over the rows of \code{X}, and
+\code{empirical.rho} is the normalized visit-count mass.  The
+\code{subject} component summarizes the number of visits, the number of
+distinct visited support points, the largest visit multiplicity, and the
+fraction of repeatedly visited support points.  Other components describe
+the fitted method, normalization accounting, smoothing diagnostics, and
+warnings as documented in \code{\link{fit.density}}.  With
+\code{od.cv = "visit"} and \code{return.details = TRUE}, the result also
+contains the visit-level cross-validation table, fold assignments, and
+held-out predicted masses.
+}
 \description{
 Convenience wrapper that converts subject visit indices into a density
 input. Density-native methods dispatch to \code{\link{fit.density}}.
