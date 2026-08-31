@@ -150,5 +150,7 @@ if (requireNamespace("genlasso", quietly = TRUE)) {
 }
 \references{
 Wang, Y.-X., Sharpnack, J., Smola, A., and Tibshirani, R. J. (2016).
-Trend Filtering on Graphs. \emph{Journal of Machine Learning Research}.
+Trend filtering on graphs. \emph{Journal of Machine Learning Research},
+17(105), 1--41.
+\url{https://www.jmlr.org/papers/v17/15-147.html}
 }

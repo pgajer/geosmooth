@@ -54,6 +54,10 @@ iteration (columns are iterations)}
 stabilized}
 \item{topology_differences}{Numeric vector of differences between consecutive
 recorded iterations}
+\item{basin_cx_differences}{Alias of \code{topology_differences}}
+\item{converged}{Logical indicator of whether the relaxation converged}
+\item{num_region, num_boundary, num_interior}{Vertex counts for the
+requested region and its boundary/interior split}
 }
 \description{
 Applies harmonic smoothing to function values defined on vertices of a graph
@@ -79,41 +83,15 @@ The function returns comprehensive information about the smoothing process,
 including all intermediate states and the detected stability point.
 }
 \examples{
-\dontrun{
-# Create a simple grid graph
-grid.graph <- create.graph.from.grid(10, 10)
-
-# Create noisy function values
-values <- sin(0.1 * seq_len(100)) + rnorm(100, 0, 0.1)
-
-# Define a region for smoothing (center of the grid)
-region <- 35:65
-
-# Apply harmonic smoothing with topology tracking
+adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+weight.list <- list(1, c(1, 1), c(1, 1), 1)
+values <- c(0, 2, -1, 1)
 result <- harmonic.smoother(
-  grid.graph$adj.list,
-  grid.graph$weight.list,
-  values,
-  region,
-  max.iterations = 200,
-  tolerance = 1e-8,
-  record.frequency = 5,  # Record every 5 iterations
-  stability.window = 3,
-  stability.threshold = 0.05
+  adj.list, weight.list, values, region.vertices = seq_along(values),
+  max.iterations = 20, record.frequency = 2
 )
-
-# Get the smoothed values
 smoothed.values <- result$harmonic_predictions
-
-# Plot original vs smoothed values
-plot(values, type = "l", col = "gray")
-lines(smoothed.values, col = "red")
-
-# Plot the evolution of topology differences
-plot(result$topology_differences, type = "l",
-     xlab = "Iteration", ylab = "Topology Difference")
-abline(v = result$stable_iteration, col = "blue", lty = 2)
-}
+smoothed.values
 
 }
 \seealso{

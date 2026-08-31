@@ -28,19 +28,14 @@ Creates various plots to visualize the results of harmonic smoothing with
 topology tracking.
 }
 \examples{
-\dontrun{
-# After running harmonic.smoother()
-result <- harmonic.smoother(adj.list, weight.list, values, region)
-
-# Plot topology evolution
-plot(result, type = "topology")
-
-# Plot extrema counts
-plot(result, type = "extrema")
-
-# Plot smoothed values
+adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+weight.list <- list(1, c(1, 1), c(1, 1), 1)
+values <- c(0, 2, -1, 1)
+result <- harmonic.smoother(
+  adj.list, weight.list, values, region.vertices = seq_along(values),
+  max.iterations = 20, record.frequency = 2
+)
 plot(result, type = "values")
-}
 
 }
 \seealso{

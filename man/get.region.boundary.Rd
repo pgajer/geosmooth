@@ -34,7 +34,6 @@ smoothing functions, focusing on vertices that have connections to the outside
 of the region.
 }
 \examples{
-\dontrun{
 # Create a simple grid graph adjacency list (5x5 grid)
 create_grid_adj_list <- function(n_rows, n_cols) {
   n <- n_rows * n_cols
@@ -67,7 +66,6 @@ boundary <- get.region.boundary(grid_adj_list, central_region)
 print(boundary)
 # Expected output: c(7, 8, 9, 12, 14, 17, 18, 19)
 # (all except the center vertex 13)
-}
 
 }
 \seealso{

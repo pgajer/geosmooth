@@ -1,6 +1,22 @@
 ## Resubmission
 
-This is the first resubmission of the initial CRAN release of `geosmooth`.
+This is the second resubmission of the initial CRAN release of `geosmooth`.
+
+CRAN review on 2026-08-31 requested method references in `DESCRIPTION`, a
+missing return-value description for `fit.subject.od()`, executable examples
+instead of `\\dontrun{}`, and complete contributor and copyright-holder roles
+in `Authors@R`. We made the following changes:
+
+* Added references for the package's geometric-regression, local-polynomial,
+  graph-trend-filtering, and Hessian-energy methods to `DESCRIPTION` and the
+  corresponding function help pages.
+* Documented the class, structure, and interpretation of the value returned by
+  `fit.subject.od()`.
+* Replaced all four `\\dontrun{}` blocks with short, self-contained examples
+  that run during `R CMD check`.
+* Added the contributors and copyright holders of the vendored Eigen, Spectra,
+  and ANN libraries to `Authors@R` with `ctb` and/or `cph` roles. The upstream
+  notices and license details remain in `inst/COPYRIGHTS` and `inst/licenses`.
 
 The automated CRAN incoming pretests on 2026-08-21 reported test errors on
 Windows and Debian. Two source-layout tests searched upward from the process
@@ -36,7 +52,7 @@ installed-test path errors described above.
 The exact source tarball was checked locally with `R CMD check --as-cran`:
 
 * 0 errors | 0 warnings | 1 expected note (`New submission`)
-* 10,870 tests passed, one source-tree-only runner test was intentionally
+* 10,871 tests passed, one source-tree-only runner test was intentionally
   skipped, and no tests failed or warned
 
 The acceptance and scientific-validation suites are intentionally excluded
