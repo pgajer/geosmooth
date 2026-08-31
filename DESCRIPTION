@@ -39,8 +39,9 @@ Authors@R: c(
            role = "cph",
            comment = "ANN")
     )
-Description: Provides geometric smoothing and conditional expectation
-    estimation methods for coordinate data, point clouds, and weighted graphs.
+Description: Provides geometric methods for nonparametric regression and
+    density estimation on data represented as coordinate matrices or weighted
+    graphs.
     Methods include local polynomial smoothing, model-averaged local polynomial
     smoothing, local polynomial lifting trend filtering, synchronized local
     polynomial lifting trend filtering, graph low-pass filtering, and
