@@ -27,4 +27,16 @@ Authors:
   \item Pawel Gajer \email{pgajer@gmail.com}
 }
 
+Other contributors:
+\itemize{
+  \item Gael Guennebaud (Eigen) [contributor]
+  \item Benoit Jacob (Eigen) [contributor]
+  \item Authors of Eigen (Authorship and copyright in the included Eigen library) [copyright holder]
+  \item Yixuan Qiu (Spectra) [contributor, copyright holder]
+  \item Contributors to Spectra (Copyright in the included Spectra library) [copyright holder]
+  \item Sunil Arya (ANN) [contributor, copyright holder]
+  \item David M. Mount (ANN) [contributor, copyright holder]
+  \item University of Maryland (ANN) [copyright holder]
+}
+
 }

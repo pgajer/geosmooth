@@ -282,3 +282,7 @@ fit <- fit.lps(
 )
 head(fit$fitted.values)
 }
+\references{
+Fan, J. and Gijbels, I. (1996). \emph{Local Polynomial Modelling and Its
+Applications}. Chapman and Hall/CRC. ISBN 9780412983214.
+}

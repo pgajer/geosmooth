@@ -125,3 +125,8 @@ fit.metric.graph.lowpass(
   eta.grid = c(0.1, 1), eigen.solver = "dense"
 )
 }
+\references{
+Gajer, P. and Ravel, J. (2025). Adaptive geometric regression for
+high-dimensional structured data. arXiv:2511.03817.
+\doi{10.48550/arXiv.2511.03817}
+}

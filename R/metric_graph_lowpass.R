@@ -871,6 +871,12 @@ apply.metric.graph.lowpass.path <- function(
 #' @param dense.fallback \code{"auto"}, \code{"never"}, or \code{"always"}.
 #'
 #' @return A list of class \code{"metric.graph.lowpass.fit"}.
+#'
+#' @references
+#' Gajer, P. and Ravel, J. (2025). Adaptive geometric regression for
+#' high-dimensional structured data. arXiv:2511.03817.
+#' \doi{10.48550/arXiv.2511.03817}
+#'
 #' @examples
 #' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
 #' lengths <- list(1, c(1, 1), c(1, 1), 1)

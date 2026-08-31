@@ -32,8 +32,17 @@ iterations to perform. Default is 100.}
 Default is 1e-6.}
 }
 \value{
-A numeric vector of the same length as \code{values}, with smoothed
-values within the specified region.
+A list containing:
+\itemize{
+\item \code{harmonic_predictions}: the numeric vector of smoothed values;
+\item \code{converged}: whether both the maximum update and discrete
+harmonic residual fell below \code{tolerance};
+\item \code{num_region}, \code{num_boundary}, and \code{num_interior}:
+vertex counts for the requested region and its boundary/interior split;
+\item \code{num_iterations}: the number of relaxation iterations run;
+\item \code{max_change} and \code{max_residual}: per-iteration convergence
+diagnostics.
+}
 }
 \description{
 Applies harmonic smoothing to function values defined on vertices of a graph,
@@ -59,30 +68,13 @@ Edge weights are incorporated by using their inverse as weighting factors,
 respecting the geometric structure of the graph.
 }
 \examples{
-\dontrun{
-# Create a simple grid graph
-grid.graph <- create.graph.from.grid(10, 10)
-
-# Create noisy function values
-values <- sin(0.1 * seq_len(100)) + rnorm(100, 0, 0.1)
-
-# Define a region for smoothing (center of the grid)
-region <- 35:65
-
-# Apply harmonic smoothing
-smoothed.values <- perform.harmonic.smoothing(
-  grid.graph$adj.list,
-  grid.graph$weight.list,
-  values,
-  region,
-  max.iterations = 200,
-  tolerance = 1e-8
+adj.list <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
+weight.list <- list(1, c(1, 1), c(1, 1), 1)
+values <- c(0, 2, -1, 1)
+result <- perform.harmonic.smoothing(
+  adj.list, weight.list, values, region.vertices = 1:3
 )
-
-# Plot original vs smoothed values
-plot(values, type = "l", col = "gray")
-lines(smoothed.values, col = "red")
-}
+result$harmonic_predictions
 
 }
 \seealso{

@@ -198,6 +198,11 @@
 #'   \code{logistic.diagnostics} records local logistic solve attempts,
 #'   convergence statuses, fallback-path counts, event-rate fallback counts,
 #'   and \code{NA} failure counts separately for CV and final fitting.
+#'
+#' @references
+#' Fan, J. and Gijbels, I. (1996). \emph{Local Polynomial Modelling and Its
+#' Applications}. Chapman and Hall/CRC. ISBN 9780412983214.
+#'
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 20), ncol = 1)
 #' y <- sin(2 * pi * X[, 1])
