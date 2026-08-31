@@ -1,5 +1,5 @@
 Package: geosmooth
-Title: Geometric Smoothing and Conditional Expectation Methods
+Title: Geometric Methods for Nonparametric Regression and Density Estimation
 Version: 0.1.0
 Authors@R: c(
     person(given = "Pawel",
