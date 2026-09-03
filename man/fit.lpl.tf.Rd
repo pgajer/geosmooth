@@ -53,11 +53,11 @@ when \code{operator} is \code{NULL}.}
 \item{lambda}{Optional fixed lambda shortcut. If supplied, it is used as the
 single fixed lambda and \code{lambda.selection} must be \code{"fixed"}.}
 
-\item{lambda.selection}{\code{"cv"} or \code{"fixed"}. Phase 2 requires an
-explicit \code{lambda.grid} for CV so the candidate grid is not generated
-from the full response vector before fold scoring.}
+\item{lambda.selection}{\code{"cv"} or \code{"fixed"}. CV requires an
+explicit \code{lambda.grid} so the candidate grid is not generated from
+the full response vector before fold scoring.}
 
-\item{operator.grid}{Optional Phase-3 operator candidate grid. Supply a data
+\item{operator.grid}{Optional operator candidate grid. Supply a data
 frame with one row per candidate or a list of named lists. Candidate fields
 may include operator-construction arguments such as \code{degree},
 \code{support.type}, \code{support.size}, \code{min.support},
@@ -72,12 +72,14 @@ may include operator-construction arguments such as \code{degree},
 \code{"mae"}. \code{"rmse"} uses the same lambda ordering as MSE and reports
 square-rooted fold errors.}
 
-\item{cv.seed}{Reserved for reproducible generated folds. Phase 2 generated
-folds are deterministic even when this is \code{NULL}.}
+\item{cv.seed}{Reserved for reproducible generated folds. Generated folds
+are deterministic even when this is \code{NULL}.}
 
-\item{cv.repeats}{Phase 2 supports only one CV repeat.}
+\item{cv.repeats}{Number of CV repeats. The current implementation supports
+only one repeat.}
 
-\item{solver}{Phase 2 supports only \code{"genlasso"}.}
+\item{solver}{Solver backend. The current implementation supports only
+\code{"genlasso"}.}
 
 \item{selection}{Lambda selection rule, \code{"min"} or \code{"one.se"}.}
 
@@ -95,7 +97,7 @@ the operator is built internally.}
 A list of class \code{"lpl_tf"}.
 }
 \description{
-Fits the Phase-2 LPL-TF estimator with a fixed operator:
+Fits an LPL-TF estimator with a fixed operator:
 \deqn{\hat f = \arg\min_f \frac12\|y-f\|_2^2 +
 \lambda\|A_{\mathrm{LPL}}f\|_1.}
 }

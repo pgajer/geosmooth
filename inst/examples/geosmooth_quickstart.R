@@ -1,7 +1,7 @@
 # Runnable quick-start examples for geosmooth.
 #
 # Run from an installed package, or from the source tree after:
-# pkgload::load_all("/Users/pgajer/current_projects/geosmooth")
+# pkgload::load_all(".")
 
 set.seed(1)
 x <- seq(0, 1, length.out = 60)

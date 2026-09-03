@@ -1,7 +1,7 @@
 #' Fit A Parallel-Transport Trend Filter From A PTTF Operator
 #'
-#' Fits the first experimental PTTF regression models from a transported
-#' difference operator produced by \code{\link{pttf.operator}}. Phase 3 focuses
+#' Fits experimental PTTF regression models from a transported difference
+#' operator produced by \code{\link{pttf.operator}}. The implementation focuses
 #' on one response vector and explicit operator-row policies, especially the
 #' 1-D boundary policy used to separate interior transported rows from endpoint
 #' rows.
@@ -28,8 +28,8 @@
 #'   RNG state.
 #' @param cv.loss Cross-validation loss, \code{"mse"} or \code{"mae"}.
 #' @param selection Lambda selection rule, \code{"min"} or \code{"one.se"}.
-#' @param lambda.extension Currently recorded as metadata. Phase 3 implements no
-#'   new extension heuristic.
+#' @param lambda.extension Currently recorded as metadata; no extension
+#'   heuristic is implemented.
 #' @param solver L1 solver backend.
 #' @param operator.row.policy Which operator rows to use for fitting.
 #' @param line.order Vertex order for 1-D boundary-row policies.
@@ -581,6 +581,7 @@ fit.pttf.trend.filtering <- function(
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print pttf.trend.filtering.fit
 #' @export
 print.pttf.trend.filtering.fit <- function(x, ...) {

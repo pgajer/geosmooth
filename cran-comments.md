@@ -18,6 +18,22 @@ in `Authors@R`. We made the following changes:
   and ANN libraries to `Authors@R` with `ctb` and/or `cph` roles. The upstream
   notices and license details remain in `inst/COPYRIGHTS` and `inst/licenses`.
 
+An internal CRAN-submission checklist audit on 2026-09-03 identified several
+release-readiness issues before any duplicate upload was made. We made the
+following additional cleanup changes:
+
+* Removed a forced-included Eigen configuration header that suppressed a GCC
+  diagnostic; the package now checks without compiler-warning suppression.
+* Moved agent-only audits, handoffs, prompts, work orders, and intermediate
+  review products out of the public package repository and into the local
+  private Codex notes tree.
+* Retired stale development-phase DGP registry material from `inst/` into the
+  non-shipped development archive, leaving the shipped synthetic registry as
+  the canonical dataset registry.
+* Added Rd entries and executable examples for registered S3 methods, removed
+  unexplained development-phase labels from user-facing help, and strengthened
+  the source-tree guardrail used by package QA tests.
+
 The automated CRAN incoming pretests on 2026-08-21 reported test errors on
 Windows and Debian. Two source-layout tests searched upward from the process
 working directory and stopped when the package source root was unavailable.
@@ -52,7 +68,7 @@ installed-test path errors described above.
 The exact source tarball was checked locally with `R CMD check --as-cran`:
 
 * 0 errors | 0 warnings | 1 expected note (`New submission`)
-* 10,871 tests passed, one source-tree-only runner test was intentionally
+* 10,872 tests passed, one source-tree-only runner test was intentionally
   skipped, and no tests failed or warned
 
 The acceptance and scientific-validation suites are intentionally excluded

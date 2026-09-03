@@ -13,7 +13,7 @@
 .geosmooth.ge0.status <- function() {
     list(
         package = "geosmooth",
-        phase = "GE0",
+        native.support = "registered",
         native.stub = rcpp_geosmooth_native_stub(),
         vendored.ann = file.exists(system.file("licenses", "ANN-Copyright-Notice.txt",
                                                package = "geosmooth")),

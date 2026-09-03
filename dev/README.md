@@ -26,9 +26,9 @@ The top-level `trend_filtering` research dashboard is generated at
 program-level map of strategic roadmaps, literature reviews, theory notes,
 method-development histories, and package bridges.
 
-- `notes/`: durable explanations, design notes, prompts, plans, and tutorials.
-- `methods/`: method-specific execution history such as audits, reports, runs,
-  results, handoffs, and status records.
+- `notes/`: durable explanations, design notes, plans, and tutorials.
+- `methods/`: method-specific public development material such as specs,
+  reports, reproducibility scripts, results summaries, and status records.
 - `programs/`: package-facing pointers and implementation slices for active
   cross-method or cross-project program roadmaps whose canonical strategic
   home may live in `trend_filtering`.
@@ -39,13 +39,13 @@ method-development histories, and package bridges.
   package phases.
 - `shared/`: cross-method registries, DGPs, fixtures, benchmark specs, and
   dataset manifests.
-- `archive/`: retained historical bundles that are useful for auditability but
-  are not active canonical homes for new work.
+- Agent-only audits, handoffs, prompts, work orders, and intermediate review
+  products belong under `~/.codex/private/geosmooth/`, not in this repository.
 
-New development artifacts should be placed directly under this layout. The
-archive area is for retained legacy material only; promote archive files into
-`methods/`, `shared/`, `notes/`, `programs/`, or `project_briefs/` when they
-become active inputs to new work.
+New development artifacts should be placed directly under this layout when they
+are appropriate for the public repository. Private agent coordination material
+should stay in the private tree, with a README recording its origin and possible
+future disposition.
 
 ## Dashboard
 

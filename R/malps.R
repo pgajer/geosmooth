@@ -102,7 +102,7 @@
 #' @param duplicate.action How duplicate coordinate rows should be handled.
 #'   \code{"keep"} allows duplicates, records duplicate diagnostics, and
 #'   preserves observed-anchor self-inclusion.  \code{"error"} rejects duplicate
-#'   rows.  Jittering duplicates is deliberately not implemented in Phase 1.
+#'   rows.  Jittering duplicates is deliberately not implemented.
 #' @param coordinate.method Coordinate system used for each local polynomial
 #'   design.  \code{"coordinates"} uses supplied coordinates centered at the
 #'   anchor.  \code{"local.pca"} uses a deterministic local PCA chart estimated
@@ -254,7 +254,7 @@ fit.malps <- function(
         stop(sprintf(
             paste0("X contains %d duplicate coordinate row(s). ",
                    "Duplicate rows are allowed with duplicate.action = 'keep'; ",
-                   "jittering duplicates is not implemented in Phase 1a."),
+                   "jittering duplicates is not implemented."),
             duplicate.info$n.duplicate.rows
         ), call. = FALSE)
     }
@@ -501,6 +501,11 @@ fit.malps <- function(
 #' @param ... Reserved for future extensions.
 #'
 #' @return Numeric vector of fitted values.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit <- fit.malps(X, sin(2 * pi * X[, 1]), support.size = 6L)
+#' predict(fit)
+#' @method predict malps
 #' @export
 predict.malps <- function(object, newdata = NULL, type = c("response"),
                           allow.incomplete = FALSE, ...) {
@@ -1058,6 +1063,7 @@ bootstrap.malps <- function(object, B = 200L,
     out
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print malps
 #' @export
 print.malps <- function(x, ...) {
@@ -1075,6 +1081,7 @@ print.malps <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print malps_bootstrap
 #' @export
 print.malps_bootstrap <- function(x, ...) {

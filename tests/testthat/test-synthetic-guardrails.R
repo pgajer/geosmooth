@@ -1,11 +1,18 @@
 .package.source.files <- function() {
+  root <- geosmooth.test.source.root()
+  if (is.null(root)) return(character())
   c(
-    list.files("R", pattern = "\\.[Rr]$", full.names = TRUE),
-    list.files("vignettes", pattern = "\\.[Rr](md)?$", full.names = TRUE))
+    list.files(file.path(root, "R"), pattern = "\\.[Rr]$",
+               full.names = TRUE),
+    list.files(file.path(root, "vignettes"), pattern = "\\.[Rr](md)?$",
+               full.names = TRUE))
 }
 
 test_that("installed synthetic code has no cross-repository source calls", {
   files <- .package.source.files()
+  skip_if(!length(files),
+          "package source tree is unavailable in installed-package tests")
+  expect_gt(length(files), 0L)
   text <- unlist(lapply(files, readLines, warn = FALSE), use.names = FALSE)
   expect_false(any(grepl(
     "source\\s*\\(\\s*['\"](?:/Users/|\\.\\./)",

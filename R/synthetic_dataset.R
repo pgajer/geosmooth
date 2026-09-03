@@ -570,6 +570,9 @@ compare.synthetic.dataset <- function(x, y, tolerance = c(1e-12, 1e-10)) {
 #' @param x A `synthetic_dataset`.
 #' @param ... Ignored.
 #' @return `x`, invisibly.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' print(x)
 #' @method print synthetic_dataset
 #' @export
 print.synthetic_dataset <- function(x, ...) {
@@ -590,6 +593,10 @@ print.synthetic_dataset <- function(x, ...) {
 #' @param optional Ignored.
 #' @param ... Ignored.
 #' @return A one-row data frame.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' as.data.frame(x)
+#' @method as.data.frame synthetic_dataset
 #' @export
 as.data.frame.synthetic_dataset <- function(
     x, row.names = NULL, optional = FALSE, ...) {
@@ -616,6 +623,9 @@ as.data.frame.synthetic_dataset <- function(
 #' @param color Color mapping: response, truth, or region.
 #' @param ... Additional arguments passed to [graphics::plot()].
 #' @return `x`, invisibly.
+#' @examples
+#' x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+#' plot(x)
 #' @method plot synthetic_dataset
 #' @export
 plot.synthetic_dataset <- function(

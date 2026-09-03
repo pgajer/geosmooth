@@ -10,7 +10,7 @@ as:
 
 - Which canonical program roadmap motivates this package work?
 - Which `geosmooth` methods and implementation workspaces are involved?
-- Which package-facing foundation notes, specs, audits, or reports should be
+- Which package-facing foundation notes, specs, or reports should be
   easy to reach from the dashboard?
 - Which downstream work is intentionally linked rather than copied into the
   package repository?
@@ -20,9 +20,8 @@ Program pointer pages are different from:
 - `dev/project_briefs/`: repository-level briefs or package-phase summaries;
 - `dev/methods/<method>/specs/`: method-specific scientific or implementation
   specifications;
-- `dev/methods/<method>/audit_contracts/`: work orders, gates, and auditor
-  assignments;
-- `dev/methods/<method>/audits/`: audit reports and responses.
+- `~/.codex/private/geosmooth/`: agent-only audits, handoffs, prompts, work
+  orders, and intermediate review products.
 
 The current flagship pointer is:
 

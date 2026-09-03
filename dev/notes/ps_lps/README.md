@@ -7,5 +7,7 @@ variants of local polynomial smoothing.
 - `design/`: method design and API decisions.
 - `implementation/`: implementation notes and backend details.
 - `plans/`: planned work and phase plans.
-- `prompts/`: implementer or reviewer prompts.
 - `testing/`: test strategy and validation design notes.
+
+Agent-only prompts, handoffs, audits, work orders, and intermediate review
+products belong under `~/.codex/private/geosmooth/`, not in repository notes.

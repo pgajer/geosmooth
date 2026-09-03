@@ -605,6 +605,10 @@ fit.lps <- function(
 #'   \code{"bernoulli"} and the fitted probabilities for \code{"binomial"}.
 #' @param ... Unused.
 #' @return A numeric vector of predictions.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit <- fit.lps(X, sin(2 * pi * X[, 1]), support.grid = 6L)
+#' predict(fit)
 #' @method predict lps
 #' @export
 predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
@@ -676,6 +680,20 @@ predict.lps <- function(object, newdata = NULL, type = c("response", "raw"),
     .klp.response.scale(pred, object$outcome.family %||% "gaussian")
 }
 
+#' Print Geosmooth S3 Objects
+#'
+#' Print concise summaries for fitted geosmooth models and constructed
+#' operators.
+#'
+#' @param x A geosmooth S3 object.
+#' @param ... Additional arguments, currently ignored.
+#'
+#' @return Invisibly returns \code{x}.
+#' @examples
+#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
+#' fit <- fit.lps(X, sin(2 * pi * X[, 1]), support.grid = 6L)
+#' print(fit)
+#' @rdname geosmooth-print-methods
 #' @method print lps
 #' @export
 print.lps <- function(x, ...) {

@@ -21,3 +21,7 @@ One-dimensional datasets show response and truth against the first latent
 coordinate. Higher-dimensional datasets show the first two predictor
 coordinates, colored by response or region.
 }
+\examples{
+x <- materialize.synthetic(synthetic.registry.spec("G1"), n = 20L, seed = 1L)
+plot(x)
+}

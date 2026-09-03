@@ -97,8 +97,8 @@ values, residuals, selected lambda, the operator, path metadata, and CV
 diagnostics when requested.
 }
 \description{
-Fits graph trend filtering on a supplied undirected graph. Supported
-phase-2 orders are \code{0L}, \code{1L}, and \code{2L}:
+Fits graph trend filtering on a supplied undirected graph. Supported orders
+are \code{0L}, \code{1L}, and \code{2L}:
 \deqn{
 \widehat\beta_\lambda =
 \arg\min_{\beta\in\mathbb R^n}

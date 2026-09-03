@@ -611,7 +611,7 @@ def build_dashboard(
         build_section(
             "notes",
             "Notes",
-            "Durable explanations, design memos, prompts, plans, and tutorials.",
+            "Durable explanations, design memos, plans, and tutorials.",
             len(notes),
             notes_body,
         ),

@@ -999,6 +999,7 @@ ssrhe.support.grid <- function(n,
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.operator
 #' @export
 print.ssrhe.hessian.operator <- function(x, ...) {
@@ -3585,6 +3586,7 @@ refit.ssrhe.hessian.l1.regression <- function(
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.l1.fit
 #' @export
 print.ssrhe.hessian.l1.fit <- function(x, ...) {
@@ -3600,6 +3602,7 @@ print.ssrhe.hessian.l1.fit <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.fit
 #' @export
 print.ssrhe.hessian.fit <- function(x, ...) {
@@ -3611,6 +3614,7 @@ print.ssrhe.hessian.fit <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.refit
 #' @export
 print.ssrhe.hessian.refit <- function(x, ...) {
@@ -3621,6 +3625,7 @@ print.ssrhe.hessian.refit <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.cv.fit
 #' @export
 print.ssrhe.hessian.cv.fit <- function(x, ...) {
@@ -3633,6 +3638,7 @@ print.ssrhe.hessian.cv.fit <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print ssrhe.hessian.gcv.fit
 #' @export
 print.ssrhe.hessian.gcv.fit <- function(x, ...) {

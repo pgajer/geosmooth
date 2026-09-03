@@ -2,7 +2,7 @@
 #'
 #' Builds the weighted graph difference operators used by graph trend
 #' filtering. The default \code{operator.family = "graph.laplacian.recursive"}
-#' uses the phase-2 recursive graph operators
+#' uses recursive graph operators
 #' \deqn{k=0:\quad \Delta_w^{(1)} = D_w,}
 #' \deqn{k=1:\quad \Delta_w^{(2)} = L_w = D_w^\top D_w,}
 #' and
@@ -131,8 +131,8 @@ graph.trend.filtering.operator <- function(adj.list,
 
 #' Fit Graph Trend Filtering
 #'
-#' Fits graph trend filtering on a supplied undirected graph. Supported
-#' phase-2 orders are \code{0L}, \code{1L}, and \code{2L}:
+#' Fits graph trend filtering on a supplied undirected graph. Supported orders
+#' are \code{0L}, \code{1L}, and \code{2L}:
 #' \deqn{
 #' \widehat\beta_\lambda =
 #' \arg\min_{\beta\in\mathbb R^n}
@@ -419,7 +419,7 @@ fit.graph.trend.filtering <- function(adj.list,
     }
     order <- as.integer(order)
     if (!(order %in% 0:2)) {
-        stop("Phase-2 graph trend filtering supports only order = 0L, 1L, or 2L.",
+        stop("Graph trend filtering supports only order = 0L, 1L, or 2L.",
              call. = FALSE)
     }
     weight.rule <- match.arg(weight.rule)
@@ -894,6 +894,7 @@ fit.graph.trend.filtering <- function(adj.list,
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print graph.trend.filtering.fit
 #' @export
 print.graph.trend.filtering.fit <- function(x, ...) {

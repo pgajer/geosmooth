@@ -38,7 +38,7 @@
 #'
 #' This function instead constructs conductances directly from metric lengths:
 #' \deqn{c_{ij} = \phi(\ell_{ij}).}
-#' Supported phase-1 transforms are
+#' Supported transforms are
 #' \deqn{c_{ij}=(\ell_{ij}+\epsilon)^{-\alpha},}
 #' \deqn{c_{ij}=\exp(-\ell_{ij}/\sigma),}
 #' \deqn{c_{ij}=\exp(-\ell_{ij}^{2}/\sigma^{2}),}
@@ -1043,8 +1043,9 @@ fit.metric.graph.lowpass <- function(
 #'   each response column using the cached eigenbasis.
 #' @param eta.grid Optional positive numeric eta grid for per-column GCV.
 #' @param n.candidates Number of eta candidates when \code{eta.grid = NULL}.
-#' @param n.cores Number of cores for per-column GCV. Phase 1 uses sequential
-#'   processing if optional parallel packages are unavailable.
+#' @param n.cores Number of cores for per-column GCV. The current
+#'   implementation uses sequential processing if optional parallel packages
+#'   are unavailable.
 #' @param block.size Optional block size for fixed-eta multi-column refits.
 #' @param verbose Logical progress flag.
 #'
@@ -1546,6 +1547,7 @@ compute.filter.weights.matrix <- function(eigenvalues, eta.grid, filter.type) {
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print metric.graph.lowpass.fit
 #' @export
 print.metric.graph.lowpass.fit <- function(x, ...) {
@@ -1560,6 +1562,7 @@ print.metric.graph.lowpass.fit <- function(x, ...) {
     invisible(x)
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print metric.graph.lowpass.refit
 #' @export
 print.metric.graph.lowpass.refit <- function(x, ...) {

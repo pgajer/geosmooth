@@ -28,6 +28,18 @@ An object of class \code{"summary.harmonic_smoother"} containing:
 Provides detailed summary statistics for harmonic smoother results, including
 the evolution of extrema counts and basin structure differences.
 }
+\examples{
+fit <- structure(
+  list(
+    stable_iteration = 2L,
+    i_basins = list(matrix(c(1, 1), ncol = 2)),
+    topology_differences = numeric()
+  ),
+  class = "harmonic_smoother"
+)
+summary(fit)
+
+}
 \seealso{
 \code{\link{harmonic.smoother}}, \code{\link{print.summary.harmonic_smoother}}
 }

@@ -1,11 +1,10 @@
 #' Construct a Transported Graph Hessian Operator
 #'
 #' Builds an experimental transported-Hessian graph operator without fitting a
-#' response. This is the phase-0 through phase-2 diagnostic layer for the
-#' transported graph Hessian trend-filtering project: it constructs directed
-#' edge differences, matches directions across a base dart, assembles a
-#' second- or third-difference diagnostic operator, and returns diagnostics that
-#' make the transport rule auditable.
+#' response. This diagnostic layer constructs directed edge differences,
+#' matches directions across a base dart, assembles a second- or
+#' third-difference diagnostic operator, and returns diagnostics that make the
+#' transport rule auditable.
 #'
 #' For a dart \eqn{u\to v}, the first difference is
 #' \deqn{
@@ -3660,6 +3659,7 @@ transported.graph.hessian.operator <- function(adj.list,
     )
 }
 
+#' @rdname geosmooth-print-methods
 #' @method print transported.graph.hessian.operator
 #' @export
 print.transported.graph.hessian.operator <- function(x, ...) {

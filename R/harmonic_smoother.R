@@ -368,6 +368,18 @@ harmonic.smoother <- function(adj.list,
 #'
 #' @return Invisibly returns the input object.
 #'
+#' @examples
+#' fit <- structure(
+#'   list(
+#'     stable_iteration = 2L,
+#'     i_harmonic_predictions = matrix(1:4, nrow = 2),
+#'     i_basins = list(matrix(c(1, 1), ncol = 2)),
+#'     topology_differences = numeric()
+#'   ),
+#'   class = "harmonic_smoother"
+#' )
+#' print(fit)
+#'
 #' @seealso \code{\link{harmonic.smoother}}, \code{\link{summary.harmonic_smoother}}
 #'
 #' @method print harmonic_smoother
@@ -410,6 +422,17 @@ print.harmonic_smoother <- function(x, ...) {
 #'   \item{final_minima}{Number of minima at the final iteration}
 #'   \item{extrema_reduction}{Reduction in number of extrema}
 #'   \item{topology_diff_summary}{Summary statistics of topology differences}
+#'
+#' @examples
+#' fit <- structure(
+#'   list(
+#'     stable_iteration = 2L,
+#'     i_basins = list(matrix(c(1, 1), ncol = 2)),
+#'     topology_differences = numeric()
+#'   ),
+#'   class = "harmonic_smoother"
+#' )
+#' summary(fit)
 #'
 #' @seealso \code{\link{harmonic.smoother}}, \code{\link{print.summary.harmonic_smoother}}
 #'
@@ -463,6 +486,24 @@ summary.harmonic_smoother <- function(object, ...) {
 #' @param ... Further arguments passed to or from other methods.
 #'
 #' @return Invisibly returns the input object.
+#'
+#' @examples
+#' object <- structure(
+#'   list(
+#'     stable_iteration = 2L,
+#'     iterations_recorded = 1L,
+#'     initial_extrema = 1L,
+#'     initial_maxima = 1L,
+#'     initial_minima = 0L,
+#'     final_extrema = 1L,
+#'     final_maxima = 1L,
+#'     final_minima = 0L,
+#'     extrema_reduction = 0L,
+#'     topology_diff_summary = NULL
+#'   ),
+#'   class = "summary.harmonic_smoother"
+#' )
+#' print(object)
 #'
 #' @seealso \code{\link{summary.harmonic_smoother}}
 #'

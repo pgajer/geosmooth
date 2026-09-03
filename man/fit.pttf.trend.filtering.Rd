@@ -76,8 +76,8 @@ RNG state.}
 
 \item{selection}{Lambda selection rule, \code{"min"} or \code{"one.se"}.}
 
-\item{lambda.extension}{Currently recorded as metadata. Phase 3 implements no
-new extension heuristic.}
+\item{lambda.extension}{Currently recorded as metadata; no extension
+heuristic is implemented.}
 
 \item{solver}{L1 solver backend.}
 
@@ -109,8 +109,8 @@ the L1 backend is \code{"admm"} or falls back to ADMM.}
 A list of class \code{"pttf.trend.filtering.fit"}.
 }
 \description{
-Fits the first experimental PTTF regression models from a transported
-difference operator produced by \code{\link{pttf.operator}}. Phase 3 focuses
+Fits experimental PTTF regression models from a transported difference
+operator produced by \code{\link{pttf.operator}}. The implementation focuses
 on one response vector and explicit operator-row policies, especially the
 1-D boundary policy used to separate interior transported rows from endpoint
 rows.

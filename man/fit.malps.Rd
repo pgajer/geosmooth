@@ -142,7 +142,7 @@ change local supports or local coefficient estimation.}
 \item{duplicate.action}{How duplicate coordinate rows should be handled.
 \code{"keep"} allows duplicates, records duplicate diagnostics, and
 preserves observed-anchor self-inclusion.  \code{"error"} rejects duplicate
-rows.  Jittering duplicates is deliberately not implemented in Phase 1.}
+rows.  Jittering duplicates is deliberately not implemented.}
 
 \item{coordinate.method}{Coordinate system used for each local polynomial
 design.  \code{"coordinates"} uses supplied coordinates centered at the

@@ -76,7 +76,7 @@ where \eqn{\rho_1(e)} is computed by the Riemannian-complex density machinery.
 
 This function instead constructs conductances directly from metric lengths:
 \deqn{c_{ij} = \phi(\ell_{ij}).}
-Supported phase-1 transforms are
+Supported transforms are
 \deqn{c_{ij}=(\ell_{ij}+\epsilon)^{-\alpha},}
 \deqn{c_{ij}=\exp(-\ell_{ij}/\sigma),}
 \deqn{c_{ij}=\exp(-\ell_{ij}^{2}/\sigma^{2}),}

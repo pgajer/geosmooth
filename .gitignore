@@ -1,4 +1,5 @@
 .Rproj.user
+.DS_Store
 .Rhistory
 .RData
 .Ruserdata
@@ -10,9 +11,14 @@ dev/index.html
 dev/**/html/
 split_handoffs/
 audit_artifacts/
-!dev/methods/*/audit_artifacts/
-dev/methods/*/audit_artifacts/*
-!dev/methods/*/audit_artifacts/.gitkeep
+dev/**/audit_artifacts/
+dev/**/audit_contracts/
+dev/**/audits/
+dev/**/handoffs/
+dev/**/prompts/
+dev/**/*_audit_*/
+dev/**/*_handoff_*/
+dev/**/*_prompt_*/
 *.rds
 *.RDS
 !inst/synthetic_registry/fixtures/

@@ -1,10 +1,10 @@
 # geosmooth
 
-`geosmooth` provides geometric smoothing and conditional expectation methods
-for ordinary coordinate data, point-cloud embeddings, and weighted graphs. It
-includes local polynomial smoothers, graph-aware trend filtering, graph
-low-pass filtering, occupation-density estimators, and Hessian-energy
-regression.
+`geosmooth` provides geometric methods for nonparametric regression and density
+estimation on data represented as coordinate matrices or weighted graphs. It
+includes local polynomial smoothing, model-averaged local polynomial smoothing,
+local polynomial lifting trend filtering, synchronized local polynomial lifting
+trend filtering, graph low-pass filtering, and Hessian-energy regression.
 
 ## Quick Start
 
