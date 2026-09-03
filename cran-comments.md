@@ -53,6 +53,9 @@ checks below also resolved the dependency from their standard repositories.
 ## Test environments
 
 * local: macOS 26.6.1, aarch64-apple-darwin23, R-devel (2026-06-24 r90190)
+* revised-candidate GitHub Actions: Ubuntu with R-release, R-devel, and
+  R-oldrel; macOS Intel with R-release; Windows with R-release
+  (https://github.com/pgajer/geosmooth/actions/runs/33818297135)
 * initial-candidate GitHub Actions: Ubuntu with R-release, R-devel, and
   R-oldrel; macOS Intel with R-release; Windows with R-release
   (https://github.com/pgajer/geosmooth/actions/runs/32424082905)
@@ -60,8 +63,9 @@ checks below also resolved the dependency from their standard repositories.
   (https://github.com/r-hub2/useful-whitefish-geosmooth/actions/runs/32424539662)
 
 The initial-candidate GitHub Actions matrix and both R-hub jobs reported
-`Status: OK`. The subsequent CRAN pretests identified only the two
-installed-test path errors described above.
+`Status: OK`. The revised-candidate GitHub Actions matrix also passed on
+2026-09-03. The subsequent CRAN pretests identified only the two installed-test
+path errors described above.
 
 ## Local R CMD check results
 
