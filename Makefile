@@ -1,4 +1,6 @@
 .PHONY: clean build check check-fast install document attrs test test-all test-lps test-ps-lps test-od test-graph test-ssrhe test-validation test-migration
+.PHONY: test-quadform-fixtures
+.PHONY: test-quadform-interface
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
@@ -44,6 +46,14 @@ test-ssrhe:
 
 test-validation:
 	Rscript scripts/run_test_group.R validation
+
+test-quadform-fixtures:
+	Rscript dev/shared/fixtures/quadform_geodesics/verify.R --self-test
+
+test-quadform-interface:
+	Rscript dev/shared/benchmarks/quadform_geodesics/tests.R
+	Rscript dev/shared/benchmarks/quadform_geodesics/tests_runtime.R
+	Rscript dev/shared/benchmarks/quadform_geodesics/tests_regressions.R
 
 test-migration:
 	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/migration")'

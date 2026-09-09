@@ -18,3 +18,10 @@ canonical home and be referenced by method workspaces.
 
 Do not copy shared specs into method directories. Method-specific documents
 should link to this shared source of truth.
+
+The [quadform geodesic collection](fixtures/quadform_geodesics/README.md)
+provides frozen, shared geometry/domain/endpoint fixtures and a read-only
+validator for shortest-surface-path comparisons.
+
+The [quadform solver interface](benchmarks/quadform_geodesics/README.md) provides
+the shared adapter contract, registry, isolated query runner and path auditing.
