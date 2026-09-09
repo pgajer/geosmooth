@@ -1,6 +1,6 @@
 # Quadform solver interface and comparison harness
 
-Development interface **0.3.1** owns the shared adapter contract, numerical
+Development interface **0.3.2** owns the shared adapter contract, numerical
 connector cache, independent trajectory audit, process supervision, and
 comparison scheduler. Scientific inputs remain in the
 [sealed fixture collection](../../fixtures/quadform_geodesics/README.md).
@@ -246,9 +246,10 @@ double-counted. Search, audit, and end-to-end timings and observed peak RSS are
 recorded separately. Backend thread environment limits are set to one; this
 does not prove every third-party library obeys them.
 
-The harness is ready for adapter integration, not a completed solver comparison.
-Historical/native-path adapters, independent review of this revised interface
-and initializer baseline, and interrupted-solver recovery remain outstanding.
+The harness is not a completed solver comparison. The 0.3.1 reporting correction
+has passed independent review; the later readiness instrumentation is a separate
+revision. Historical/native-path adapters, calibration/resource qualification,
+and interrupted-solver recovery remain outstanding.
 No adaptive calibration has been run as part of the shared-runtime tests.
 
 Keep exploratory outputs in scratch/private storage or ignored `runs/`.
@@ -256,6 +257,35 @@ Internal agent reviews belong outside the public package. Do not modify or
 rebuild the sealed fixture payload during interface or solver development.
 
 ## Revised failure and reporting semantics
+
+Version 0.3.2 adds a bounded readiness runner and monitor diagnostics. The monitor
+retains the first 64 sampling exceptions (message, class, PID, scope, observed
+process state), a total exception count, and approximately one RSS sample per
+second plus the terminating observation. A truncation flag exposes omitted
+exceptions. The three-consecutive-missing-sample stop rule, RSS cap, deadlines,
+and child-sampling behavior are unchanged. Missing child samples still contribute
+zero under the existing policy, now with explicit diagnostics; traces are not
+continuous memory profiles or hard memory bounds.
+
+`readiness.R` runs a separate 24-job pilot: I/A/B, the flat box `grid_direction`
+and high-curvature paraboloid `ab` pairs, both directions, repeat 4103 for A/B,
+and the provisional edge/time cohorts above. It retains the 512 MiB cap and
+257-vertex cap. A 30-minute outer watchdog bounds the pilot. It requires a clean,
+unchanged committed source tree; it never retries or resumes. All planned rows,
+including failures and not-run entries, remain in the exports. Explicit pilot
+adapter bindings do not activate the registry or bypass normal campaign gates.
+
+```sh
+Rscript dev/shared/benchmarks/quadform_geodesics/readiness.R plan /path/to/new-pilot
+Rscript dev/shared/benchmarks/quadform_geodesics/readiness.R run /path/to/new-pilot
+```
+
+The parent output directory must already exist. Use private or ignored storage.
+The plan/source manifest is finalized before execution; `pilot-stdout.log`,
+`state.rds`, job records, and `pilot-monitor.rds` retain progress and outcomes.
+This pilot uses the existing provisional tie/endpoint conventions without
+ratifying them or freezing a calibration. Pilot outcomes do not justify method
+rankings. A new source/version revision always needs a new pilot directory.
 
 Version 0.3.0 follows the first independent implementation audit. Sources and
 report columns changed, so old campaign manifests cannot be resumed as this

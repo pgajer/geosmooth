@@ -12,7 +12,7 @@ qgs.stop.children <- function(handles) {
 }
 
 qgs.supervise <- function(func, args, seconds, rss_mib = 512, start.file = NULL,
-                           stdout = "|", stderr = "|") {
+                           stdout = "|", stderr = "|", memory.info = ps::ps_memory_info) {
   started <- qgs.clock()
   process <- callr::r_bg(function(func, args, cleanup) {
     # Reconcile descendants before normal return, while ancestry is still known.
@@ -27,6 +27,16 @@ qgs.supervise <- function(func, args, seconds, rss_mib = 512, start.file = NULL,
     qgs.stop.children(known)
   }, add = TRUE)
   peak <- 0; samples <- 0L; missing <- 0L; reason <- NULL; algorithm.start <- NULL
+  errors <- list(); error.count <- 0L; trace <- list(); next.trace <- 0; memory <- NA_real_
+  sample.error <- function(e, scope, pid) {
+    error.count <<- error.count + 1L
+    if (length(errors) < 64L) errors[[length(errors) + 1L]] <<- list(
+      elapsed_seconds = qgs.clock() - started, scope = scope, pid = pid,
+      message = conditionMessage(e), class = class(e),
+      worker_alive = tryCatch(process$is_alive(), error = function(e) NA),
+      process_status = tryCatch(ps::ps_status(ps::ps_handle(pid)), error = function(e) conditionMessage(e)))
+    invisible(NULL)
+  }
   while (process$is_alive()) {
     now <- qgs.clock()
     if (!is.null(start.file) && is.null(algorithm.start) && file.exists(start.file)) {
@@ -39,15 +49,15 @@ qgs.supervise <- function(func, args, seconds, rss_mib = 512, start.file = NULL,
     }
     memory <- tryCatch({
       handle <- ps::ps_handle(process$get_pid())
-      parent <- unname(ps::ps_memory_info(handle)[["rss"]])
+      parent <- unname(memory.info(handle)[["rss"]])
       children <- ps::ps_children(handle, recursive = TRUE)
       for (child in children) {
         key <- paste(ps::ps_pid(child), ps::ps_create_time(child), sep = ":")
         known[[key]] <- child
       }
-      parent + sum(vapply(children, function(h) tryCatch(unname(ps::ps_memory_info(h)[["rss"]]),
-                                                        error = function(e) 0), numeric(1)))
-    }, error = function(e) NA_real_)
+      parent + sum(vapply(children, function(h) tryCatch(unname(memory.info(h)[["rss"]]),
+        error = function(e) { sample.error(e, "child", ps::ps_pid(h)); 0 }), numeric(1)))
+    }, error = function(e) { sample.error(e, "worker_tree", process$get_pid()); NA_real_ })
     if (is.finite(memory)) { peak <- max(peak, memory); samples <- samples + 1L; missing <- 0L }
     else missing <- missing + 1L
     if (missing >= 3L && process$is_alive()) reason <- "monitor_unavailable"
@@ -55,6 +65,11 @@ qgs.supervise <- function(func, args, seconds, rss_mib = 512, start.file = NULL,
     if (now >= deadline) reason <- if (!is.null(start.file) && is.null(algorithm.start)) {
       "startup_timeout"
     } else "time_budget"
+    if (now - started >= next.trace || !is.null(reason)) {
+      trace[[length(trace) + 1L]] <- list(elapsed_seconds = now - started,
+        rss_bytes = memory, consecutive_missing = missing)
+      next.trace <- now - started + 1
+    }
     if (!is.null(reason)) {
       process$kill_tree(); process$wait(timeout = 1000)
       qg.assert(!process$is_alive(), "Worker did not terminate within grace period")
@@ -68,6 +83,8 @@ qgs.supervise <- function(func, args, seconds, rss_mib = 512, start.file = NULL,
   })
   qgs.stop.children(known)
   list(value = value, termination = reason, pid = process$get_pid(), peak_rss_bytes = peak, rss_samples = samples,
+    rss_errors = errors, rss_error_count = error.count, rss_errors_truncated = error.count > length(errors),
+    rss_trace = trace, last_rss_bytes = memory,
     elapsed_seconds = qgs.clock() - started, algorithm_start = algorithm.start,
     rss_semantics = "Sampled worker plus descendants RSS sum; shared pages may be counted more than once")
 }

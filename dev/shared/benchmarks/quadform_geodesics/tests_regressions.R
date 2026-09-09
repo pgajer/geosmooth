@@ -76,6 +76,54 @@ test_that("supervisor cleans external descendants on success, error and timeout"
   }
 })
 
+test_that("supervisor retains sampling exceptions without weakening its stop rule", {
+  result <- qgs.supervise(function() Sys.sleep(20), list(), seconds = 5,
+    memory.info = function(h) stop("injected RSS observation failure"))
+  expect_identical(result$termination, "monitor_unavailable")
+  expect_equal(result$rss_error_count, 3)
+  expect_length(result$rss_errors, 3)
+  expect_false(result$rss_errors_truncated)
+  expect_true(all(vapply(result$rss_errors, function(e)
+    identical(e$message, "injected RSS observation failure") &&
+    identical(e$scope, "worker_tree") && e$pid == result$pid &&
+    is.character(e$process_status) && is.logical(e$worker_alive), logical(1))))
+  expect_equal(tail(result$rss_trace, 1)[[1]]$consecutive_missing, 3)
+  expect_true(is.na(result$last_rss_bytes))
+  expect_false(tryCatch(ps::ps_is_running(ps::ps_handle(result$pid)), error = function(e) FALSE))
+})
+
+test_that("readiness planning is bounded, source sealed, and does not activate adapters", {
+  source(file.path(home, "readiness.R"))
+  plan <- qgs.readiness.plan(x)
+  expect_length(plan$jobs, 24)
+  expect_equal(plan$repeats, 4103)
+  expect_equal(plan$seconds, 1800)
+  expect_identical(plan$cohorts, qgs.cohorts())
+  expect_identical(plan$protocol, "qg-readiness-pilot-v1")
+  expect_true(all(vapply(plan$jobs, function(j) j$request$limits$rss_mib == 512, logical(1))))
+  expect_equal(table(vapply(plan$jobs, `[[`, "", "role")), table(rep(c("A", "B", "I"), each = 8)))
+  output <- tempfile("qgs-readiness-plan-")
+  on.exit(unlink(output, recursive = TRUE), add = TRUE)
+  before <- digest::digest(file = file.path(home, "registry.json"), algo = "sha256")
+  qgs.readiness.create(home, file.path(home, "../../fixtures/quadform_geodesics/v1"), output)
+  data <- qgs.campaign.read(output)
+  expect_identical(data$plan, plan)
+  expect_true(all(data$state$status == "not_run"))
+  expect_false(dir.exists(file.path(output, "jobs")))
+  expect_true(all(c("readiness.R", "adaptive_initializer.R", "adaptive_vertex.R", "adaptive_local_graph.R") %in%
+    basename(vapply(data$manifest$sources, `[[`, "", "path"))))
+  expect_error(qgs.campaign.run.local(home, output), "adapter not implemented")
+  expect_identical(digest::digest(file = file.path(home, "registry.json"), algo = "sha256"), before)
+  # Deliberately uncommitted provenance must never launch a pilot.
+  manifest <- data$manifest; manifest$git$status <- " M uncommitted-source"
+  qgs.write(manifest, file.path(output, "manifest.json"))
+  state <- data$state
+  state$manifest_sha256 <- digest::digest(file = file.path(output, "manifest.json"), algo = "sha256")
+  qgs.binary(state, file.path(output, "state.rds"))
+  expect_error(qgs.readiness.run(home, output), "clean, unchanged committed")
+  expect_false(dir.exists(file.path(output, "jobs")))
+})
+
 test_that("campaigns exclude failed searches and uncommitted ledger outcomes from lengths", {
   out <- tempfile("qgs-export-regression-"); on.exit(unlink(out, recursive = TRUE), add = TRUE)
   plan <- qgs.campaign.plan(x, pairs = data.frame(case_id = "flat2_ball", pair_id = "grid_direction"),

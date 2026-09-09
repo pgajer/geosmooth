@@ -1,5 +1,5 @@
 # Development-only adapter contract. Source the frozen collection helpers first.
-qgs.version <- "0.3.1"
+qgs.version <- "0.3.2"
 qgs.home <- local({
   paths <- vapply(sys.frames(), function(frame) {
     p <- get0("ofile", envir = frame, inherits = FALSE)

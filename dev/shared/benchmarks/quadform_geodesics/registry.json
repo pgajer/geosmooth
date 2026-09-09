@@ -1,5 +1,5 @@
 {
-  "interface_version": "0.3.1",
+  "interface_version": "0.3.2",
   "methods": [
     {"id":"direct_connector","family":"control","status":"implemented","file":"solvers/direct_connector.R","scope":"Lifted straight parameter segment; feasible upper bound, not a general geodesic solver"},
     {"id":"grid_dijkstra","family":"graph","status":"planned","scope":"Historical 2D grid baseline"},

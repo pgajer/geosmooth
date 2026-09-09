@@ -33,7 +33,7 @@ process. The Python interpreter is selected through reticulate's normal explicit
 configuration (`RETICULATE_PYTHON`); NumPy/Python/reticulate versions and the exact
 JSON RNG state are recorded. There is no R-RNG fallback and no rounded seed.
 
-The shared interface is now **0.3.1**. Real workers provide the capability
+The shared interface is now **0.3.2**. Real workers provide the capability
 declaration and a durable `control$checkpoint(state)` sink. Preparation checks
 `cache_policy = "lru65536-levels01-v1"`, `edge_key = "u32be-f64be-v1"`,
 `edge_failures = "qgs_edge_error-v1"`, and `checkpoint = "adaptive-state-v1"`.
