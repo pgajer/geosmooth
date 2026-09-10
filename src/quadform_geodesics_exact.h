@@ -84,8 +84,31 @@ template<int Base, size_t Words> struct ExactDyadic {
   }
   void add(double x) {
     BinaryPart p(x);
-    term({static_cast<uint32_t>(p.mantissa),static_cast<uint32_t>(p.mantissa >> 32)},
-         p.exponent,p.negative);
+    if (top >= 0 && negative != p.negative) {
+      term({static_cast<uint32_t>(p.mantissa),static_cast<uint32_t>(p.mantissa >> 32)},
+           p.exponent,p.negative);
+      return;
+    }
+    int shift = p.exponent-Base;
+    if (shift < 0) throw std::overflow_error("Exact accumulator exponent");
+    size_t offset = static_cast<size_t>(shift/32); int bit = shift%32;
+    if (offset+2 >= Words) throw std::overflow_error("Exact accumulator capacity");
+    if (!p.mantissa) return;
+    // A shifted binary64 significand occupies at most three words. Add it
+    // directly, then propagate carry, without a full temporary accumulator.
+    uint64_t low = uint64_t(static_cast<uint32_t>(p.mantissa)) << bit;
+    uint64_t high = (p.mantissa >> 32) << bit;
+    std::array<uint32_t,3> digits{{static_cast<uint32_t>(low),
+      static_cast<uint32_t>((low >> 32) | high),static_cast<uint32_t>(high >> 32)}};
+    uint64_t carry = 0;
+    for (size_t i = 0; i < digits.size() || carry; ++i) {
+      if (offset+i >= Words) throw std::overflow_error("Exact accumulator capacity");
+      uint64_t value = uint64_t(words[offset+i])+carry+(i < digits.size() ? digits[i] : 0);
+      words[offset+i] = static_cast<uint32_t>(value); carry = value >> 32;
+      top = std::max(top,static_cast<int>(offset+i));
+    }
+    while (top >= 0 && words[top] == 0) --top;
+    negative = p.negative;
   }
   void product(double a, double b, double c) {
     std::vector<uint32_t> digits{1}; int exponent = 0; bool sign = false;

@@ -38,3 +38,14 @@ clang++ -std=c++17 -O1 -g -fsanitize=address,undefined \
 
 These comparisons test preservation of the previous rounding behavior, not an
 independent proof that the previous rule is correct.
+
+## Exact Addition
+
+`exact_add.cpp` compares every accumulator word, sign and leading-word index
+with the original term-based addition after each operand. It covers both
+accumulator sizes, every binary64 power-of-two exponent, signed zero,
+cancellation, dense carries, full-range random sequences and invalid operands.
+Compile it with the same flags as `exact_rounding.cpp`. The optimized path
+handles same-sign additions directly; opposite signs retain the original
+cancellation code. Equality of the full state is stronger than agreement of
+the rounded output alone.
