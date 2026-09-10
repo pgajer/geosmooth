@@ -118,7 +118,15 @@ template<int Base, size_t Words> struct ExactDyadic {
     uint64_t significand = 0;
     for (int i = high; i >= shift; --i) significand = (significand << 1) | bit(i);
     bool sticky = false;
-    for (int i = 0; i < shift-1; ++i) if (bit(i)) { sticky = true; break; }
+    // Test discarded bits below the rounding bit a word at a time.
+    if (shift > 1) {
+      size_t full = static_cast<size_t>((shift-1)/32);
+      for (size_t i = 0; i < std::min(full,Words); ++i)
+        if (words[i]) { sticky = true; break; }
+      int remainder = (shift-1)%32;
+      if (!sticky && remainder && full < Words)
+        sticky = (words[full] & ((uint32_t(1) << remainder)-1)) != 0;
+    }
     if (bit(shift-1) && (sticky || (significand & 1))) ++significand;
     double result = std::ldexp(static_cast<double>(significand),Base+shift);
     return negative ? -result : result;

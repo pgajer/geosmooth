@@ -20,3 +20,21 @@ short initial subdivisions and incomplete-exploration labels through R.
 
 The native test is separate from installed package tests and does not add a
 runtime dependency. Sanitizer availability depends on the compiler/platform.
+
+## Exact Rounding
+
+The word-level discarded-bit scan is checked against the original bit-by-bit
+rounding rule, including every leading-bit position in both accumulator sizes,
+word boundaries, ties, carries, signed zero, subnormal values and overflow.
+Random dense and sparse accumulators supplement these boundary checks.
+
+```sh
+clang++ -std=c++17 -O1 -g -fsanitize=address,undefined \
+  -ffp-contract=off -fno-fast-math -I src \
+  dev/shared/benchmarks/quadform_geodesics/native/tests/exact_rounding.cpp \
+  -o /tmp/geosmooth-exact-rounding-tests
+/tmp/geosmooth-exact-rounding-tests
+```
+
+These comparisons test preservation of the previous rounding behavior, not an
+independent proof that the previous rule is correct.
