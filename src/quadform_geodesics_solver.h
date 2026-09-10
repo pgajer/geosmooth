@@ -44,6 +44,7 @@ struct Result {
 };
 Result solve(const Config& config, const Domain& domain, const std::array<double,4>& A,
              std::uint64_t seed, const Point& from, const Point& to);
+Measure connector_length(const std::array<double,4>& A, const Point& from, const Point& to);
 std::array<std::vector<double>,2> reference_uniforms(std::uint64_t seed, int n);
 } // namespace qgn
 

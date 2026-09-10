@@ -139,8 +139,50 @@ test_that("cache eviction and reuse preserve the solution", {
     }
   }
 })
+test_that("indexed edge ordering preserves a seeded calculation-limited path", {
+  x <- solve(method = "local_network",seed = 13,initial_edges = 8L,candidates = 8L,
+    max_epochs = 4L,plateau_epochs = 5L,max_edge_calls = 500,cache_edges = 7L,trace = TRUE)
+  expected <- cbind(c(-.45,-.351257285198909,-.1640146857427,.284870727283096,.4),
+    c(-.2,-.275021701008997,-.358078463795914,-.26575205372103,-.1))
+  expect_equal(x$path,expected,tolerance = 1e-12)
+  expect_identical(x$termination,"edge_limit")
+  expect_equal(x$counters$edge_calls,500)
+  expect_equal(x$counters$edge_requests,501)
+  expect_equal(x$counters$accepted_replacements,4L)
+  expect_equal(x$counters$completed_epochs,2L)
+  orders <- lapply(Filter(function(e)e$event == "epoch_order",x$trace),`[[`,"visit_ids")
+  expect_identical(orders,list(c(6L,4L,5L,2L,8L,7L,3L),10:11,c(10L,13L,12L)))
+  audit(x,diag(c(8,8)),disk)
+})
+test_that("local indices never reuse stale edge measurements across refinements", {
+  for (method in c("single_point","local_network")) for (rule in c("neighbors","fixed_disk","fixed_span")) {
+    call <- function(cache) solve(method = method,neighborhood = rule,seed = 13,
+      initial_edges = 8L,candidates = 8L,max_epochs = 4L,plateau_epochs = 5L,
+      cache_edges = cache,trace = TRUE)
+    reference <- call(0L)
+    for (cache in c(1L,7L,256L)) {
+      x <- call(cache)
+      expect_identical(x$path,reference$path)
+      expect_equal(x$length,reference$length,tolerance = 1e-13)
+      events <- function(z) lapply(z$trace,function(e)e[c("event","epoch","path","visit_ids","path_ids")])
+      expect_identical(events(x),events(reference))
+      expect_lte(x$counters$cache_entries,cache)
+    }
+  }
+})
+test_that("signed-zero endpoints retain their exact representations", {
+  for (method in c("single_point","local_network")) for (zero in c(0,-0)) {
+    a <- c(-.8,zero); b <- c(.8,-zero)
+    x <- api$solve(diag(c(8,-2)),a,b,disk,method = method,seed = 13,
+      initial_edges = 8L,candidates = 8L,max_epochs = 2L,random_orientation = FALSE)
+    bits <- function(z) writeBin(as.double(z),raw(),size = 8L,endian = "big")
+    expect_identical(bits(x$path[1,]),bits(a))
+    expect_identical(bits(x$path[nrow(x$path),]),bits(b))
+    audit(x,diag(c(8,-2)),disk,a,b)
+  }
+})
 test_that("numerical overflow is reported without inventing a path", {
-  x <- api$solve(diag(c(1e308,1e308)),c(-.9,0),c(.9,0),disk)
+  x <- api$solve(diag(c(1.7e308,1.7e308)),c(-.9,0),c(.9,0),disk)
   expect_identical(x$termination,"initialization_numerical_failure")
   expect_identical(x$status,"no_path"); expect_true(is.na(x$length))
 })

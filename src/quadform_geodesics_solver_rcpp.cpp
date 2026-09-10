@@ -1,4 +1,5 @@
 #include "quadform_geodesics_solver.h"
+#include "quadform_geodesics_exact.h"
 #include <Rcpp.h>
 #include <algorithm>
 #include <cmath>
@@ -86,12 +87,12 @@ Rcpp::List rcpp_quadform_geodesics_solver(Rcpp::NumericMatrix A, Rcpp::NumericVe
   if (s.reversed) std::reverse(p.begin(),p.end());
   for (size_t i = 0; i < p.size(); ++i) {
     lifted(i,0) = p[i][0]; lifted(i,1) = p[i][1];
-    lifted(i,2) = p[i][0]*(a[0]*p[i][0]+a[1]*p[i][1])+p[i][1]*(a[2]*p[i][0]+a[3]*p[i][1]);
+    lifted(i,2) = surface_height(a,p[i]);
     if (!std::isfinite(lifted(i,2))) Rcpp::stop("Surface height overflow at returned point");
   }
   const Counters& n = s.counts;
   return Rcpp::List::create(
-    Rcpp::_ ["implementation"] = "self-contained-cpp-v1",
+    Rcpp::_ ["implementation"] = "self-contained-cpp-analytic-v3",
     Rcpp::_ ["status"] = s.path.empty() ? "no_path" : (s.initialized ? "candidate" : "direct_fallback"),
     Rcpp::_ ["termination"] = s.termination,Rcpp::_ ["path"] = matrix(s.path,s.reversed),
     Rcpp::_ ["surface_path"] = lifted,Rcpp::_ ["length"] = s.path.empty() ? NA_REAL : m.length,

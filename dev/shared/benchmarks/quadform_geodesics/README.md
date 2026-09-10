@@ -6,6 +6,14 @@ comparison scheduler. Scientific inputs remain in the
 [sealed fixture collection](../../fixtures/quadform_geodesics/README.md).
 Nothing here is an exported package API; `dev/` is excluded from R builds.
 
+The later package-integrated C++ solver is a separate configuration,
+`self-contained-cpp-analytic-v3`, documented in
+[the native solver guide](native/standalone/README.md) and Appendix B of
+[the mathematical specification](../../fixtures/quadform_geodesics/adaptive_quadform_geodesic_refinement.tex).
+Its exact computed-weight graph sums, cancellation-safe returned heights,
+occurrence IDs, short-path initialization and incomplete-exploration labels
+do not alter the historical adapter protocol described below.
+
 ## Status and quick checks
 
 The registry retains eight historical comparison entries and three adaptive-family
@@ -25,6 +33,51 @@ compiler supporting `clock_gettime(CLOCK_MONOTONIC)`. `testthat` is test-only.
 The small development-only `clock.c` bridge is compiled into a source-hashed
 temporary cache with `R CMD SHLIB`; it does not compile or modify the R package.
 Adaptive backend requirements belong to the adapters, not to this control suite.
+
+## Experimental three-point configuration
+
+Appendix A of the [refinement specification](../../fixtures/quadform_geodesics/adaptive_quadform_geodesic_refinement.tex)
+defines `qg-three-point-center-v1`. It starts with 16 equal-surface-length
+segments of the direct lifted curve, visits interior points in a fresh random
+order each epoch, and draws 32 candidates from the domain-clipped disk centered
+at the point being refined. Only immediate neighbors delimit a replacement.
+There are no larger windows, endpoint disks, global draws, or scheduled
+subdivision after initialization. The existing numerical acceptance rule is
+unchanged.
+
+`three_point_vertex.R`, `three_point_local_graph.R`, and
+`three_point_initializer.R` are separate adapters. They load the historical
+helpers in private environments and replace only the configuration-specific
+initialization, sampling, and scheduling functions from `adaptive/three_point.R`.
+The old adapters and the main registry are unchanged. These experimental
+adapters are not activated for the frozen calibration campaign.
+
+Run `Rscript dev/shared/benchmarks/quadform_geodesics/tests/test_three_point.R`
+from the repository root for focused checks. The PCG64 test requires reticulate
+and a Python interpreter with NumPy; select the interpreter through
+`RETICULATE_PYTHON` if necessary. For the bounded real-surface verification, run
+`Rscript dev/shared/benchmarks/quadform_geodesics/verify_three_point.R OUTPUT`,
+where `OUTPUT` is a new private directory with an existing parent. This runs
+20 selected calculations plus two reproducibility reruns, using both methods
+on a flat square, a steep bowl, and a saddle. Each has its own 120-second,
+200,000-length-evaluation, 512-MiB allowance and independent numerical path
+checks. The runner preserves all outcomes; its exit alone does not certify
+that every calculation passed. Inspect `summary.csv` and the saved records.
+
+The R implementation retains the existing memory and progress-saving behavior.
+This verification tests the new algorithm, not a C++ implementation, general
+geodesic accuracy, or completion of the full frozen collection.
+
+### Direction and neighborhood experiments
+
+The [sensitivity study](experiments/README.md) compares distributions of complete
+forward and reverse runs, and tests whether point-density-dependent neighborhoods
+explain differences between the two refinement methods. It retains the original
+three-point rule as a baseline and adds two explicitly experimental, fixed-scale
+alternatives. `run_sensitivity.R` defaults to 100 runs per direction and method,
+with separate round-, calculation-, and time-limited comparisons. Use
+`--plan-only` to inspect the full plan before starting a large study. Generated
+records stay outside the package; these experiments do not activate the registry.
 
 From the repository root:
 

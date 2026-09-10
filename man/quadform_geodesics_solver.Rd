@@ -61,10 +61,10 @@ length decrease below \code{1e-5}.}
 \item{max_vertices}{Maximum path size, at most 257 and greater than
 \code{initial_edges}.}
 
-\item{max_edge_calls}{Maximum number of newly integrated edges.}
+\item{max_edge_calls}{Maximum number of newly measured edges.}
 
 \item{max_seconds}{Wall-clock allowance in seconds. A single bounded
-integration can overrun a very short allowance.}
+edge calculation can overrun a very short allowance.}
 
 \item{cache_edges}{Maximum cached edges, between zero and 65536.}
 
@@ -91,8 +91,27 @@ Internal solver for the surface \eqn{F(u) = (u, u^T A u)} over a disk or
 rectangle. Initialization uses approximately equal surface-length segments.
 }
 \details{
-Numerical error estimates are not rigorous interval bounds and the
-returned path is not guaranteed to be globally shortest. This internal
+Edge lengths use a scaled analytic integral, with cancellation-free
+divided differences and explicit treatment of a zero crossing of the
+vertical tangent. Error estimates include coefficient rounding and a
+conservative floating-point allowance. They are not rigorous interval
+bounds. The legacy \code{integrand_evaluations} counter is zero because no
+quadrature samples are used. Both internal precision levels use the same
+analytic calculation; retrying cannot reduce its roundoff allowance.
+Returned heights evaluate the exact binary64-input quadratic form using
+integer arithmetic, then round once to nearest, with ties to even. A height
+overflowing binary64 raises an error. Path totals likewise round an exact
+sum of the computed edge records. Local-network search orders these sums
+exactly, with lexicographic path ties only for exactly equal sums. This
+does not make the underlying edge estimates exact surface distances.
+Initialization caps its cumulative tolerance at \code{1e-6} times the target
+segment length, preventing an absolute tolerance from swallowing short
+subdivisions. Unrepresentable subdivisions still return a direct fallback.
+A plateau containing sampling shortfalls or failed comparison windows ends
+as \code{"incomplete_exploration"}, not \code{"local_stagnation"}. Neither is an
+accuracy certificate. A local-network proposal exceeding \code{max_vertices}
+is rejected whole; a best alternative fitting that limit is not sought.
+The returned path is not guaranteed to be globally shortest. This internal
 interface supports one quadratic height over a two-dimensional domain.
 It requires neither Python nor runtime compilation. Use independent R
 processes, not concurrent C++ threads, for parallel solves.

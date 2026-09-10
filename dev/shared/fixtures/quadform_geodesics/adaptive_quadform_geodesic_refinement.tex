@@ -32,8 +32,16 @@
 \maketitle
 \thispagestyle{fancy}
 \begin{abstract}
-\noindent A grid supplies an initial path on a quadratic surface. Local sampling then proposes shorter replacements between fixed points of the current path. The essential refinement is to measure every graph edge as the length of a specified curve \emph{on the surface}. Retaining the old route makes shortening monotone in exact arithmetic, but local stagnation does not establish global optimality. This document specifies the construction, a cheaper single-vertex variant, broader exploration options, and the evidence needed before using the resulting lengths as embedding-study references. It describes planned work; it reports no new numerical experiments.
+\noindent Local sampling proposes shorter replacements between fixed points of a path on a quadratic surface. Every graph edge measures a specified curve \emph{on the surface}. Retaining the old route makes shortening monotone in exact arithmetic, but local stagnation does not establish global optimality. The main text preserves the original grid-based proposal, and Appendix~\ref{app:three-point} preserves the subsequent R configuration. Appendix~\ref{app:cpp-current} specifies the current package-integrated C++ configuration, including analytic connector lengths and all three neighborhood rules. This document specifies algorithms; it reports no numerical experiment results.
 \end{abstract}
+
+\textbf{Version and precedence.} For the implementation identified by
+\src{self-contained-cpp-analytic-v3}, Appendix~\ref{app:cpp-current} is the
+current operational specification. Earlier sections remain historical
+alternatives, not additional requirements imposed on that configuration.
+In particular, their grid, PCG64, checkpoint, publication and quadrature
+protocols must not be combined with the current algorithm. Identifying a
+behavior here does not establish that the implementation satisfies it.
 
 \section{The distance being estimated}
 Let $D$ be a closed unit disk or the square $[0,1]^2$, and let
@@ -49,7 +57,7 @@ where the infimum is over absolutely continuous paths in $D$ with $u(0)=a$ and $
 
 The domain is part of the problem. Paths may touch its boundary. A shortest path on the unrestricted quadform need not solve the restricted problem if it leaves $D$. The domain must not be replaced by a point sample's convex hull. Other balls and boxes in the shared fixtures retain their own declared coordinates and sizes; they are not silently rescaled to the unit disk or unit square.
 
-\textbf{Proposed first implementation.} Use exact surface connectors, the user's two-disk sampling regions, and sequential single-vertex replacement as a simple baseline. Add the full local-graph replacement as a separate configuration, followed by larger windows if local moves stall. Keep the best feasible path and its diagnostics after every accepted update.
+\textbf{Historical first proposal.} Use exact surface connectors, the user's two-disk sampling regions, and sequential single-vertex replacement as a simple baseline. Add the full local-graph replacement as a separate configuration, followed by larger windows if local moves stall. Keep the best feasible path and its diagnostics after every accepted update. The current configuration is specified separately in Appendix~\ref{app:cpp-current}.
 
 \clearpage
 \section{An edge must represent a curve on the surface}
@@ -72,7 +80,7 @@ Write $s=\norm{\delta}$, $\alpha=2a^TA\delta$, and $\beta=2\delta^TA\delta$. For
  \sqrt{s^2+\alpha^2},&\beta=0.
  \end{cases}\label{eq:closed}
 \end{align}
-For $a=b$, return zero directly. This formula follows by integrating $\sqrt{s^2+(\alpha+\beta t)^2}$. A small nonzero $\beta$ can cause cancellation in the difference of antiderivatives. Use a stable evaluation or adaptive quadrature in that regime, with scale-aware error control. Replacing a small denominator by an arbitrary floor changes the mathematical quantity.
+For $a=b$, return zero directly. This formula follows by integrating $\sqrt{s^2+(\alpha+\beta t)^2}$. A small nonzero $\beta$ can cause cancellation in the difference of antiderivatives. A stable evaluation needs scale-aware error control. Ordinary adaptive quadrature is not a sufficient safeguard against a narrow unsampled minimum. Appendix~\ref{app:cpp-current} specifies the current analytic evaluation. Replacing a small denominator by an arbitrary floor changes the mathematical quantity.
 
 \subsection{Connection to the existing geometry utilities}
 The current \src{geosmooth} implementation provides \src{quadform.metric()} and \src{edge.lengths.synthetic.geometry()} in \src{R/synthetic_geometry.R}. The latter integrates lifted parameter segments numerically and handles identical endpoints. Its small-coefficient shortcut and quadrature tolerances still require dedicated validation across the fixture scales; the API name does not certify numerical error.
@@ -427,6 +435,762 @@ Keep the fixture result schema unchanged. Its distance field is for rows satisfy
 Run \texttt{python3 build\_refinement.py} here to compile the companion \src{adaptive_quadform_geodesic_refinement.tex} and bibliography, check citations and LaTeX warnings, and render pages for inspection. All generated files reside under \src{build/}; the sealed \src{v1/} payload is untouched.
 
 \textbf{Decision proposed for review.} Start with surface-valid connectors and Variant A; retain Variant B as the direct realization of the original multi-point local search. Treat larger windows and global exploration as explicit modifications. Validate shortest-path estimates before resuming embedding comparisons. No method's accuracy is asserted by this document.
+
+\clearpage
+\appendix
+\section{Equal-length initialization and randomized three-point refinement}
+\label{app:three-point}
+
+This appendix defines a simpler alternative to the grid-initialized,
+multiple-scale procedure in the main text. Its purpose is to separate two
+questions: whether local path improvement works well with a simpler geometric
+construction, and whether a later C++ implementation makes that construction
+economical. It is a distinct experimental configuration, named
+\src{qg-three-point-center-v1}; it does not revise the meaning of previously
+recorded runs. Both refinement methods described below use the same initial
+curve, the same proposal distribution, and the same acceptance rule. They
+differ only in how they search for a replacement through the sampled points.
+The numerical settings in this appendix are provisional verification settings,
+not established accuracy requirements or a claim of convergence to a shortest
+path. This appendix specifies the algorithm; measured verification results
+are recorded separately.
+
+\subsection{A straight domain segment, divided by surface length}
+
+Write the requested surface endpoints as $a=F(a')$ and $b=F(b')$, with
+$a',b'\in D$. This notation makes the distinction between surface and domain
+coordinates explicit; the main text writes $a,b$ for the domain coordinates.
+The initial domain curve is
+\[
+ u(t)=a'+t(b'-a'),\qquad 0\le t\le1.
+\]
+Its lift is $F(u(t))$, and every edge represents a piece of this lifted curve,
+not a straight chord through the surrounding space. Since the specified disk
+and rectangle domains are convex, the entire initial curve is feasible.
+
+Let $S(t)=w(a',u(t))$, where $w$ is the surface-connector length in
+equation~\eqref{eq:connector}, and let $L=S(1)$. For $m$ edges, choose
+$0=t_0<t_1<\cdots<t_m=1$ such that
+\begin{equation}\label{eq:equal-arc-initializer}
+ S(t_j)=\frac{jL}{m},\qquad u_j=u(t_j),\qquad j=0,\ldots,m.
+\end{equation}
+In exact arithmetic, each connector then has length $L/m$. This subdivision
+changes the representation of the initial curve, but neither the curve nor
+its total length. Equal surface lengths generally require unequal spacing in
+the domain: more domain points are needed where the lift stretches a domain
+segment more strongly. Thus ordinary equally spaced domain points are not a
+substitute for equation~\eqref{eq:equal-arc-initializer}.
+
+For distinct endpoints, the speed of the lifted curve is at least
+$\norm{b'-a'}>0$, so $S$ is strictly increasing. Each interior target therefore
+has a unique solution that can be located by bisection. The verification
+configuration uses $m=16$, giving 17 initial vertices. Coincident endpoints
+instead return a zero-length identity path without subdivision or random
+sampling. A future choice based on a desired edge length is possible, but it
+would be a separate setting; this first comparison fixes the number of edges.
+
+Numerically, compute the direct length and cumulative lengths with the shared
+tighter connector evaluator. Its closed-form or quadrature implementation
+must respect the small-coefficient safeguards in the main text. Solve each
+cumulative target with at most 64 bisection steps. With the declared fixture
+length scale $\ell$, use the provisional tolerance
+\[
+ \tau_{\rm arc}=10^{-10}\ell+10^{-8}\widehat L/m.
+\]
+Accept a cumulative target only when its absolute residual plus the estimated
+integration errors and a rounding allowance is at most $\tau_{\rm arc}$.
+Reevaluate every resulting subsegment and require agreement with
+$\widehat L/m$ within $2\tau_{\rm arc}$ plus rounding allowance, including the
+estimated numerical errors. Also verify that the summed subsegment lengths
+agree with the direct length within their combined integration and rounding
+allowances. These are numerical consistency checks, not rigorous error bounds.
+
+Use the canonical endpoint-key orientation while constructing the subdivision,
+then reverse the vertex sequence when the requested direction is opposite.
+This gives the same initial geometric path in both directions without sharing
+a previous run's computed result. Preserve the requested endpoints exactly.
+Unrepresentable distinct vertices, unresolved length targets, or failed
+consistency checks are explicit initialization failures; do not silently
+replace them with equal domain spacing. Publish the feasible direct connector
+before attempting subdivision, so an interruption can preserve that fallback.
+A fallback alone is not successful equal-length initialization.
+
+This initializer eliminates grid construction and its preferred directions.
+It can nevertheless start from a longer route than the old initializer, which
+retains the better of a grid route and the direct connector. Keep that older
+construction available for comparison. Neither initialization nor equal
+spacing establishes that the initial lifted curve is a geodesic.
+
+\subsection{One randomly ordered round of improvements}
+
+An epoch is one round of visits to the interior path vertices present at its
+start. Record their persistent vertex identifiers, randomly permute that list
+without replacement, and visit the identifiers in the resulting order.
+Accepted changes take effect immediately. At each visit, locate the identifier
+in the current path and use its current immediate neighbors. If an earlier
+replacement deleted that vertex, skip it. A newly inserted vertex waits until
+the next epoch. The two requested endpoints are never movable anchors.
+
+Generate a fresh permutation at every epoch with a seeded Fisher--Yates
+shuffle. Use one random stream for visit order and a separate stream for
+candidate coordinates. For the R reference implementation, both streams use
+the existing NumPy PCG64 generator. Derive their 64-bit seeds from the first
+16 hexadecimal digits of the SHA-256 digest of the UTF-8 string consisting of
+the configuration name, the label \src{order} or \src{candidates}, and the
+request's 16-digit seed, joined by vertical bars. For the shuffle, form a
+uniform 32-bit integer as $\lfloor2^{32}U\rfloor$; when $k$ positions remain,
+reject values at least $k\lfloor2^{32}/k\rfloor$ and use the remainder modulo
+$k$ to choose a position. Limit rejection attempts to 1,000 per choice and
+report failure rather than substituting a biased choice. Save both generator
+states, the permutation, and the current position with the algorithm state.
+Saved state does not by itself add interrupted-run resumption to a runtime
+that does not support it.
+
+Random ordering removes the fixed forward/backward visitation pattern. It does
+not make updates simultaneous: a later visit sees the effects of earlier
+visits. Nor does it guarantee identical refined paths under endpoint reversal.
+Different random repeats and both directions remain necessary checks. Separate
+random streams prevent permutation generation from consuming candidate draws;
+they do not force methods with different evolving paths to see identical
+physical candidate locations.
+
+\subsection{The domain-clipped center disk}
+
+At an interior vertex $u_i$, consider only the three current points
+$(u_{i-1},u_i,u_{i+1})$. Their two outside points delimit the replacement;
+there are no larger windows in this configuration. Define
+\begin{equation}\label{eq:center-disk}
+ r_i=\max\{\norm{u_i-u_{i-1}},\norm{u_i-u_{i+1}}\},
+ \qquad C_i=D\cap B(u_i,r_i).
+\end{equation}
+The distances in this definition are Euclidean distances in the domain, not
+surface distances. Recompute the radius from the current neighbors at every
+visit. There is no radius multiplier, minimum radius based on grid spacing,
+endpoint-centered proposal disk, or domain-wide sampling component.
+
+For each method, request 32 accepted draws uniformly distributed by domain
+area in $C_i$. Generate a point in the full center disk using angle $2\pi U_1$
+and radial distance $r_i\sqrt{U_2}$, then reject it if it is outside $D$.
+Do not project rejected points onto the boundary, because that changes the
+distribution. Allow at most 1,000 attempts per requested draw. A shortfall
+rejects the whole proposed replacement and retains the old path. A zero or
+nonfinite radius is likewise recorded without attempting a replacement.
+Deduplicate exact coordinate coincidences and sort by the existing exact
+vertex-key rule, without replenishing duplicates. Thus both methods receive
+the same draw allowance of 32, although fewer distinct candidates are possible;
+record both counts. Given the same window and candidate-stream state, they
+receive the same candidate set. Different path histories need not produce
+the same set.
+
+Centering the disk at the point being improved concentrates the search near
+the current path. It does not guarantee that every sample lies between the
+neighbors. For example, domain points $(-1,0)$, $(0,0)$, and $(1/4,0)$ give a
+center radius of 1, which includes $(3/4,0)$ beyond the right neighbor. No
+additional strip or corridor restriction is imposed here: such a restriction
+could exclude useful detours on a curved surface. The center-only rule may
+still miss an improvement outside its disk, and local stagnation must not be
+reported as evidence of global optimality.
+
+\subsection{Two searches using the same local candidates}
+
+Single-point refinement compares the old two-edge route with the direct lifted
+connector between $u_{i-1}$ and $u_{i+1}$ and with every two-edge route through
+one candidate. The direct connector allows removal of the center point. The
+new point, when retained, replaces the old center; this method does not add
+extra vertices beyond those in its initial path in the present configuration.
+
+Local-network refinement instead constructs a complete undirected graph on
+the three old vertices and the distinct candidate points, with every edge
+weighted by its lifted-connector length. Its shortest route between the two
+outside vertices can pass through more than one candidate. Consequently, a
+three-point input window need not produce a three-point replacement. The
+method can increase the number of path vertices, subject to the existing
+257-vertex limit. It retains the old route as a feasible alternative and
+rejects an oversized replacement rather than truncating it. Matching candidate
+counts does not match computational work: the network considers many more
+connections, which must remain visible in timing and length-evaluation counts.
+
+Both methods apply equation~\eqref{eq:accept} without weakening its numerical
+safeguards. Specifically, accept only when
+\[
+ \widehat L_o-\widehat L_n>
+ 10^{-12}\ell+10^{-10}\widehat L_o+E_o+E_n.
+\]
+When a nominal improvement exceeds the movement margin but not the margin
+plus estimated integration errors, reevaluate the entire comparison at the
+existing tighter level once. Retain the old route if the comparison remains
+unresolved. Preserve the existing deterministic tie rules, complete edge
+evaluation batches, and publication-before-local-commit behavior. No partial
+or unacknowledged replacement becomes the current path.
+
+\subsection{Stopping and verification before a C++ implementation}
+
+This first version performs at most eight epochs and stops earlier after two
+successive epochs whose relative length decrease is below $10^{-5}$, using
+the normalization in the main text. There is one spatial scale and no scheduled
+midpoint insertion or redistribution after initialization. In particular,
+equal-length spacing is an initialization property, not a property maintained
+after the path changes. These choices isolate the proposed three-point rule;
+they do not assert that 16 initial edges or eight epochs are sufficient for
+all surfaces. Record local stagnation separately from exhaustion of the epoch
+allowance, even though both complete the prescribed schedule.
+
+Keep the existing shared connector evaluator, numerical acceptance tests,
+edge-storage policy, and independent final length checks. Search memory and
+time limits remain explicit. A verification run must state its own limits
+and any allowance for returning a completed answer, without presenting changed
+limits as the original pilot conditions. This R version does not remove Python
+overhead, redesign stored lengths, or claim to solve the previously measured
+resource problems. Those implementation questions are separate from validating
+the mathematical construction.
+
+Before porting the methods, test equal-length subdivision and its additive
+identity, exact endpoints and domain containment, reproducible permutations
+and independent random streams, deletion and insertion during an epoch, equal
+candidate draw allowances, and rejection of insufficient or uncertain
+improvements. Exercise identity and short-segment cases and interrupted
+initialization or publication. Run both methods on flat and curved fixtures,
+including both directions and several random repeats on a curved example.
+Independently integrate the returned paths and report their differences rather
+than assuming reversal symmetry or exact geodesic accuracy. A successful check
+establishes conformity with this configuration and the reported numerical
+tests; it is not an independent implementation audit or a general accuracy
+certificate. Preserve the R reference, the old configuration, and their
+separate results when beginning the C++ implementation.
+
+\clearpage
+\section{Current package-integrated C++ configuration}
+\label{app:cpp-current}
+
+This appendix defines the intended implementation form of
+\src{self-contained-cpp-analytic-v3}. It retains the equal-surface-length
+initializer, center-only sampling, randomly ordered epochs, and strict
+replacement inequality, but replaces the earlier numerical integration and
+Python-dependent execution. Single-point refinement and Local-network
+refinement share all machinery except their local alternative search.
+Their names below refer to those methods, not to historical letter labels.
+
+The package entry point is the internal R function
+\src{quadform_geodesics_solver()}, implemented through the separate
+\src{src/quadform_geodesics_solver_rcpp.cpp} interface and
+\src{src/quadform_geodesics_solver.cpp} computational core. The associated
+header defines the state and result types;
+\src{src/quadform_geodesics_exact.h} supplies integer accumulation for
+surface heights and graph costs. Compilation occurs during package
+installation. There are no R callbacks in the search loop, no Python calls,
+and no runtime compilation. The code still depends on Rcpp and R for input
+conversion, interruption and returned objects; it is not an independent
+standalone executable.
+
+\subsection{Inputs, defaults and feasibility}
+\label{sec:cpp-inputs}
+
+Inputs are a finite, exactly symmetric $2\times2$ matrix $A$, two finite
+domain-coordinate vectors $a,b\in\R^2$, and a closed disk or axis-aligned
+rectangle $D$. The height is $u^T A u$, with no factor of $1/2$.
+The matrix need not be positive definite. Multiple heights and higher
+intrinsic dimensions are outside this interface. Disk centers and rectangle
+bounds retain their supplied coordinates; there is no implicit rescaling,
+convex-hull replacement or boundary projection.
+
+Disk membership uses $\norm{u-c_D}\le R_D$, and rectangle membership uses
+componentwise inclusive bounds. Nonfinite candidate coordinates are rejected.
+The supplied disk radius lies between the smallest positive normalized
+double and $10^{150}$. Rectangle widths must be strictly positive and finite
+when subtracted in double precision. Both requested endpoints must pass the
+same domain predicate. Convexity makes every exact lifted straight connector
+between feasible vertices a feasible surface curve. This is a geometric
+statement, not an interval-arithmetic certificate of boundary containment.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}lrlX@{}}
+\toprule
+Setting & Default & Allowed range & Meaning \\
+\midrule
+Initial edges $m$ & 16 & $2$--$256$ & Equal-length initialization only \\
+Accepted draws $N$ & 32 & $1$--$256$ & Per attempted visit, before deduplication \\
+Epoch limit $K$ & 8 & $0$--$100000$ & Zero requests initialization only \\
+Plateau epochs $P$ & 2 & $1$--$100001$ & Consecutive low-improvement epochs \\
+Path vertex cap $V$ & 257 & $3$--$257$ & Also requires $V\ge m+1$ \\
+Cache capacity $C$ & 65536 & $0$--$65536$ & Cross-visit cache; zero disables it \\
+Rejection cap $J$ & 1000 & $1$--$10000$ & Per accepted disk draw or shuffle choice \\
+Trace cap & 1000 & $0$--$10000$ & Retained events when tracing is enabled \\
+\bottomrule
+\end{tabularx}
+\end{center}
+These count settings are integers. The seed is an integer in
+$[0,2^{32}-1]$, default 1. The length scale $\ell$ defaults to 1 and lies in
+$[10^{-150},10^{150}]$. The edge-calculation allowance defaults to 200000,
+and permits a nonnegative integer or infinity. The time allowance defaults
+to infinity and permits any nonnegative value in seconds. The default method
+is Single-point refinement and the default neighborhood is the fixed-disk
+distance-section rule below. Internal endpoint randomization defaults to true;
+tracing defaults to false. Performance baselines set $C=0$ explicitly; this
+does not change the API's cache-capacity default.
+
+\subsection{Analytic connector length}
+\label{sec:cpp-analytic}
+
+For $h=b-a$, define $c=\norm h$, $v_0=2a^T A h$, and $v_1=2b^T A h$.
+The length is
+\begin{equation}\label{eq:cpp-integral}
+ w(a,b)=\int_0^1\operatorname{hypot}\bigl(c,(1-t)v_0+tv_1\bigr)\dd t.
+\end{equation}
+Both endpoint slopes are evaluated directly, rather than obtaining $v_1$
+from a potentially cancelling $\alpha+\beta$. Identical coordinate endpoints
+have length and estimated error zero. For distinct endpoints, arithmetic in
+this subsection uses C++ \src{long double}, without assuming that it is
+wider than double. The returned length and error are doubles.
+
+Let $M=\max(c,|v_0|,|v_1|)>0$, $\bar c=c/M$, $q=|v_0|/M$ and
+$r=|v_1|/M$. To compute the average of $\operatorname{hypot}(\bar c,x)$
+over a nonnegative interval $[q,r]$, first order its endpoints so $q\le r$.
+If $q=r$, this average is $\operatorname{hypot}(\bar c,q)$. Otherwise set
+\begin{align*}
+ s&=\operatorname{hypot}(\bar c,q),&t&=\operatorname{hypot}(\bar c,r),\\
+ k&=\frac{q+r}{s+t},&x&=\frac{r-q}{q+s}(1+k),
+\end{align*}
+and use
+\begin{equation}\label{eq:cpp-divdiff}
+ G(\bar c,q,r)=\frac12\left[
+ t+qk+\bar c\frac{\bar c}{q+s}(1+k)\Lambda(x)\right],\qquad
+ \Lambda(x)=\begin{cases}\log(1+x)/x,&x\ne0,\\1,&x=0.\end{cases}
+\end{equation}
+Evaluate the logarithm with \src{log1p}. This rationalizes the difference
+$r\operatorname{hypot}(\bar c,r)-q\operatorname{hypot}(\bar c,q)$ and
+the difference of the inverse hyperbolic sines. It does not subtract two
+large, nearby primitive values. All terms in this expression are nonnegative.
+
+If $v_0,v_1$ have the same sign, the scaled length is
+$G(\bar c,\min(q,r),\max(q,r))$. Otherwise split algebraically at the zero
+crossing and use
+\[
+ \frac{q}{q+r}G(\bar c,0,q)+\frac{r}{q+r}G(\bar c,0,r).
+\]
+An endpoint slope equal to zero is allowed. Multiplication by $M$ restores
+the original length scale. In floating-point evaluation, compute the first
+weight as $q/(q+r)$ and the second as one minus that weight. Splitting is
+algebraic, not a quadrature call.
+
+There is one explicit small-horizontal-term branch. If $\bar c\le\epsilon_w$,
+where $\epsilon_w$ is working-precision epsilon, integrate the absolute
+linear slope instead. Its scaled average is $(q+r)/2$ for equal signs and
+$(q^2+r^2)/(2(q+r))$ for opposite signs. Add $c$ to the error allowance,
+using $|\operatorname{hypot}(c,x)-|x||\le c$. Thus this branch omits a
+controlled contribution; it does not silently declare it zero.
+
+\subsection{The floating-point error allowance}
+\label{sec:cpp-errors}
+
+The intended error estimate includes coefficient arithmetic, cancellation
+in those coefficients, evaluation of the scaled formula and the final cast.
+For reproducibility, the following specifies the current allowance, not a
+proof of directed interval enclosure. Let $\eta_w$ be the smallest positive
+working-precision subnormal and $\epsilon_d$ double epsilon. All intermediate
+quantities below denote computed values. For $j=1,2$ put
+\[
+ e_{h_j}=\epsilon_w|h_j|+\eta_w,\qquad
+ e_c=4\epsilon_wc+\operatorname{hypot}(e_{h_1},e_{h_2})+\eta_w.
+\]
+For $z_i=A_{i1}h_1+A_{i2}h_2$ compute
+\[
+ e_{z_i}=8\epsilon_w(|A_{i1}h_1|+|A_{i2}h_2|)
+       +|A_{i1}|e_{h_1}+|A_{i2}|e_{h_2}+4\eta_w.
+\]
+For either endpoint $p\in\{a,b\}$, the allowance for $v(p)=2(p_1z_1+p_2z_2)$ is
+\[
+ e_v(p)=16\epsilon_w(|p_1z_1|+|p_2z_2|)
+       +2(|p_1|e_{z_1}+|p_2|e_{z_2})+8\eta_w.
+\]
+Absolute products are used before cancellation. Set $e_{\rm omit}=c$ in
+the small-horizontal-term branch and zero otherwise. For computed length
+$\widehat w$, the working allowance is
+\begin{equation}\label{eq:cpp-error}
+ E=e_c+\frac{e_v(a)+e_v(b)}2+e_{\rm omit}
+      +64\epsilon_w\widehat w+2\epsilon_d\widehat w+64\eta_w.
+\end{equation}
+The code adds $e_v(a)/2$ and $e_v(b)/2$ separately. Convert $E$ to double
+and advance once toward $+\infty$ with \src{nextafter}. The Lipschitz
+property of the norm motivates the coefficient contribution; the constants
+also allocate room for operation and math-library rounding. Their adequacy
+is an implementation claim, not a certified property of every C++ library.
+
+A distinct-endpoint measurement is usable only when its scale and coefficient
+allowances are finite, its returned length is finite and strictly positive,
+and its error is finite and nonnegative. Failure is explicit; there is no
+ambient-chord substitution or unguarded quadrature fallback. Both legacy
+precision levels now call this same calculation. A tighter-labelled retry
+does not reduce roundoff. Path costs and errors use exact integer accumulation
+of the binary64 edge records, rounded once to nearest with ties to even;
+there is no extra quadrature tolerance attached
+to a path sum.
+
+\subsection{Canonical keys, local tables and optional caching}
+\label{sec:cpp-tables}
+
+A vertex key is the ordered pair of unsigned 64-bit representations of its
+two doubles, compared lexicographically. This is bit ordering, not numeric
+coordinate ordering; $+0$ and $-0$ have distinct keys. Numeric coordinate
+equality is separately used for identity and exclusion of zero-length
+connectors. There is no proximity-based merging of distinct points.
+
+Every local comparison forms a fresh key-sorted union of its old vertices
+and candidates. Key rank is the local index. Required undirected index pairs
+are deduplicated, ordered with smaller index first, sorted lexicographically,
+and measured in that order. A dense symmetric lookup table maps index pairs
+to batch records. Missing entries are errors, not zero-cost edges. An old
+route's edge sequence may reuse a record, but its cost is summed in route
+order. The indexed table is present even when caching is off and is rebuilt
+for every window; indices have no meaning in a later window.
+
+The optional cross-visit cache has canonical endpoint-key pairs as keys and
+a least-recently-used eviction order. It belongs to one solve with one fixed
+$A$ and is destroyed on return. It stores a measurement for each of the two
+legacy precision levels, including its success flag. A normal request may
+reuse a successful tighter entry; otherwise it uses its own level. A
+tighter request does not reuse the normal-level slot. Both slots now use the
+same analytic formula. A hit moves the edge to the front. A missing edge at
+capacity evicts the back entry. No cache file or cache sharing between solves
+is permitted by this configuration.
+
+Cache capacity bounds retained edge keys, not the size of a local graph or
+an operating-system memory allowance. With at most $V+N$ local vertices,
+the local table and complete graph can require quadratic storage. A path
+vertex cap is not a cap on the union of path vertices and candidates.
+
+\subsection{Equal-length initialization in finite precision}
+\label{sec:cpp-initialize}
+
+The direct connector is measured first. Only after a usable measurement is
+available does it become the feasible fallback, with two endpoint IDs. For
+distinct endpoints, construct the subdivision in canonical endpoint-key
+orientation; then restore the chosen internal orientation. For each
+$j=1,\ldots,m-1$ independently bisect $[0,1]$ for the target $j\widehat L/m$,
+with at most 64 steps and midpoints $t=l+(r-l)/2$. Stop unsuccessfully when
+the midpoint equals a bound or no acceptable target is found. Domain points
+are formed as $a+t(b-a)$ and must pass domain membership.
+
+Define
+\[
+ \tau=\min\{10^{-10}\ell+10^{-8}\widehat L/m,10^{-6}\widehat L/m\},\qquad
+ R=64\epsilon_d\widehat L.
+\]
+For a cumulative measurement $(\widehat S(t),E_S)$ accept a target only if
+\[
+ |\widehat S(t)-(j/m)\widehat L|+E_S+(j/m)E_L+R\le\tau.
+\]
+Otherwise replace the lower bound when $\widehat S(t)<(j/m)\widehat L$ and
+the upper bound otherwise. There is no Newton step, grid fallback or
+post-hoc redistribution of failed targets.
+
+After adding exact endpoints, measure all adjacent subsegments in a complete
+ordered batch. Adjacent numerically identical points are rejected. Each edge
+must satisfy
+\[
+ |\widehat w_j-\widehat L/m|+E_j+E_L/m\le2\tau+R,
+\]
+and their once-rounded total must satisfy
+\[
+ \left|\sum_j\widehat w_j-\widehat L\right|
+ \le\sum_j E_j+E_L+(m+1)R.
+\]
+Only then install the initializer, assign consecutive occurrence IDs in
+internal path order, and define $\rho=\max_j\norm{u_j-u_{j-1}}$.
+Equal surface spacing is not maintained after refinement.
+
+The cap on $\tau$ keeps the absolute length-scale allowance from exceeding
+the requested subsegment length. The roundoff allowance scales with the
+actual connector length, not with $\ell$. These rules also apply to very
+short paths. They do not guarantee that the requested subdivision exists
+in representable domain coordinates: unresolved targets, duplicate points,
+and failed spacing or additivity checks still retain the direct connector
+with an explicit initialization-failure label.
+
+\subsection{Random streams and an epoch's visit order}
+\label{sec:cpp-random}
+
+Three separate \src{std::mt19937_64} engines generate candidates, visit order,
+and an optional initial orientation. Their seeds are respectively
+$\operatorname{mix}(s)$, $\operatorname{mix}(s+2^{32})$ and
+$\operatorname{mix}(s+2^{33})$, where $s$ is the user seed. All operations
+in the following definition are unsigned 64-bit operations, with wraparound;
+the shifts are logical and the constants are hexadecimal:
+\begin{quote}\small\ttfamily
+z = x + 0x9e3779b97f4a7c15\par
+z = (z xor (z >> 30)) * 0xbf58476d1ce4e5b9\par
+z = (z xor (z >> 27)) * 0x94d049bb133111eb\par
+mix(x) = z xor (z >> 31).
+\end{quote}
+A uniform variate is $(g\mathbin{\gg}11)2^{-53}\in[0,1)$ from one engine
+output $g$. If orientation randomization is on, draw once from its engine
+and reverse the internal endpoints exactly when $U<1/2$. Candidate and
+order streams are unaffected. Returned coordinates always follow the caller's
+endpoint order. A numerical seed does not reproduce historical PCG64 runs.
+
+At an epoch's start, copy the IDs of all then-interior path occurrences in
+internal order. Shuffle this list with Fisher--Yates: for remaining size
+$k$, draw $x=\lfloor2^{32}U\rfloor$, reject
+$x\ge k\lfloor2^{32}/k\rfloor$, and otherwise exchange positions $k-1$
+and $x\bmod k$ in zero-based indexing. Permit at most $J$ draws for each
+choice. Rejection exhaustion stops the solve; it does not select a biased
+fallback. Each epoch makes a fresh permutation, not an alternation of fixed
+forward and backward sweeps.
+
+Locate each listed ID in the current path immediately before its visit.
+Skip missing IDs and current endpoints. Earlier accepted changes are visible
+to later visits. Newly introduced IDs wait for the next epoch. IDs identify
+path occurrences, whereas keys identify coordinates; a coordinate outside
+the replaced section does not automatically lend its ID to a new occurrence.
+No two overlapping replacements are computed and installed in parallel.
+
+\subsection{The three neighborhood rules}
+\label{sec:cpp-neighborhoods}
+
+Let the current path be $(u_0,\ldots,u_n)$ and the anchor be $u_i$,
+$0<i<n$. A window is the inclusive section $(u_l,\ldots,u_r)$; its endpoints
+are fixed during replacement. Every rule samples a single disk centered at
+$u_i$, clipped only by $D$. Distances here are Euclidean domain distances.
+
+\paragraph{Immediate neighbors: \src{neighbors}.}
+Use $l=i-1$, $r=i+1$, and
+$r_i=\max(\norm{u_i-u_{i-1}},\norm{u_{i+1}-u_i})$, recomputed on each visit.
+This is the geometry of Appendix~\ref{app:three-point}.
+
+\paragraph{Fixed disk: \src{fixed_disk}.}
+Use the same immediate-neighbor window, but set $r_i=\rho$, with $\rho$
+fixed from initialization. The radius does not change with later edge lengths.
+
+\paragraph{Fixed disk and distance section: \src{fixed_span}.}
+Keep $r_i=\rho$. Starting at $i$, walk left until the accumulated domain
+edge length first reaches or exceeds $\rho$, or endpoint 0 is reached.
+Equivalently, if $\sum_{k=1}^{i}\norm{u_k-u_{k-1}}<\rho$ use $l=0$;
+otherwise take the largest $l<i$ satisfying
+$\sum_{k=l+1}^{i}\norm{u_k-u_{k-1}}\ge\rho$.
+On the right, use $r=n$ if the remaining accumulated length is below $\rho$;
+otherwise take the smallest $r>i$ satisfying
+$\sum_{k=i+1}^{r}\norm{u_k-u_{k-1}}\ge\rho$.
+Keep existing endpoint vertices, so the final step may overshoot $\rho$.
+These are pathwise accumulated distances, not straight distances from the
+anchor, and the window may contain many old vertices.
+
+None of these rules clips samples to the interval between the window
+endpoints, a chord strip, or the old polygon. The center disk can include
+points beyond either endpoint. There is no scheduled radius expansion,
+domain-wide proposal component, or additional spatial scale in this version.
+
+\subsection{Candidate generation and local alternatives}
+\label{sec:cpp-alternatives}
+
+At a visit, generate exactly $N$ accepted area-uniform disk draws before
+deduplication. Each trial consumes two candidate uniforms and proposes
+\[
+ u_i+r_i\sqrt{U_2}(\cos(2\pi U_1),\sin(2\pi U_1)).
+\]
+Accept a finite point only if it passes membership in $D$; otherwise retry,
+at most $J$ times for that draw. A nonpositive or nonfinite radius, or a
+single exhausted draw, skips the whole visit. Consumed random draws are not
+rewound. The implementation applies the domain predicate to the computed
+point; it does not separately certify its disk radius with interval bounds.
+
+Deduplicate accepted points by exact key, do not replenish duplicates, and
+sort by key. A draw coincident with an old point still consumes its draw
+allowance. Hence $N$ is not the guaranteed number of distinct new vertices.
+Given identical window geometry and stream state, both methods generate the
+same candidate set. Equal seeds alone do not enforce that condition after
+their paths diverge.
+
+For Single-point refinement, alternatives are the unchanged entire window,
+its direct endpoint connector, and every endpoint--candidate--endpoint route.
+Candidates numerically equal to either window endpoint are omitted from the
+last family. For a multi-vertex distance section, other old interior vertices
+belong to the incumbent only, unless they are themselves sampled candidates.
+A replacement has at most one interior vertex and cannot increase path size.
+
+For Local-network refinement, vertices are all distinct keyed old-window
+points and sampled candidates. Measure a complete undirected graph between
+numerically distinct vertices, retaining all required old-route records.
+Compute a route between the window endpoints with the following label-setting
+search. The source has distance zero and its one-vertex index path; all other
+vertices are initially unreached. A label is the \emph{exact sum of the
+computed binary64 edge weights}, not the rounded sum of a prefix.
+Repeatedly settle the reached, unsettled vertex with smallest exact label,
+breaking exactly equal labels by lexicographic index path. Stop on
+settling the target. Visit unsettled neighbors in index order. For each
+proposal, add the edge weight to the exact prefix label; replace a label
+for a smaller exact cost or an exactly equal cost with a
+lexicographically smaller index path. No tolerance is used for cost ties.
+Zero weights are not traversed. No sparse-graph pruning, nearest-neighbor
+restriction or ambient-chord weight is substituted.
+
+For positive recorded weights, adding the same continuation preserves label
+order. This restores the prefix property required by label-setting search:
+rounding two unequal prefixes to the same double cannot discard the better
+prefix. The result minimizes the exact sum of the recorded weights and hence
+also minimizes its once-rounded value. Lexicographic ties concern exact sums,
+not unequal sums that merely round to the same double. This is a finite-graph
+guarantee for computed weights, not a continuous geodesic or an
+interval-certified minimum of the true connector lengths. Compare
+its candidate again with the incumbent, retaining the incumbent on equal
+cost. Single-point refinement likewise retains the incumbent on ties and
+uses the lexicographically smallest index path for ties between improving
+alternatives. On the same window with the same candidates, the unconstrained
+complete graph contains all Single-point alternatives. That inclusion does
+not imply ordered outcomes across different evolving paths or after the
+whole-path vertex-cap rejection described next.
+
+\subsection{Acceptance, state changes and vertex limits}
+\label{sec:cpp-commit}
+
+Each comparison first obtains its complete required edge batch at the normal
+level. If any measurement fails, retry the complete batch once at the tighter
+level. If it still fails, skip the visit. The path is not changed by a partial
+batch, although counters, cache state and consumed random numbers can change.
+
+Recompute the incumbent section's cost and error from this batch and select
+the candidate using lengths, not lengths plus errors. With section values
+$(\widehat L_o,E_o)$ and $(\widehat L_n,E_n)$, put
+\[
+ \delta=\widehat L_o-\widehat L_n,\qquad
+ \mu=10^{-12}\ell+10^{-10}\widehat L_o.
+\]
+If $\mu<\delta\le\mu+E_o+E_n$ and the comparison has not already used the
+tighter level, repeat the whole comparison once at that level. There is no
+repeated precision escalation. Install a replacement only if both section
+measurements are usable and $\delta>\mu+E_o+E_n$. The analytic evaluator
+does not become more accurate merely because this retry is requested.
+
+For old path size $p$, old window size $w$ and candidate size $v$, require
+$p-w+v\le V$. An oversized shortest candidate is rejected as a whole; the
+algorithm does not truncate it or solve a second vertex-constrained graph
+problem. It can therefore reject a Local-network proposal even when a smaller
+alternative would fit. This is an explicit search limitation.
+
+Prepare the proposed full path, its edge records and IDs before mutation.
+Edges outside the section retain their stored measurements; section records
+come from the accepted batch. Require a finite once-rounded full-path length
+and error. The first and last occurrences of a multi-point replacement
+retain the left and right window endpoint IDs, even when their coordinates
+are identical. A one-point connector collapsing a loop keeps the left
+endpoint ID and removes the right occurrence. Interior retained keys receive
+the first matching, not-yet-used old \emph{interior} occurrence ID; other
+occurrences receive fresh increasing IDs. An ID cannot be reused within the
+replacement. Outside IDs are retained. Thus uniqueness of input occurrence
+IDs is preserved, independently of coordinate duplication. Poll for time
+and interruption before swapping all three prepared
+containers into the state. Increase the accepted count and then record a
+trace event when tracing is enabled. This is an in-memory state change,
+not the historical publication-acknowledgment or checkpoint protocol.
+
+\subsection{Stopping, results, counters and tracing}
+\label{sec:cpp-outcomes}
+
+After a completed epoch, compute
+\[
+ d_e=\frac{\widehat L_{\rm start}-\widehat L_{\rm end}}
+ {\max(\widehat L_{\rm start},10^{-12}\ell)}.
+\]
+Increase the plateau count if $d_e<10^{-5}$, otherwise reset it to zero.
+Stop at $P$ consecutive plateau epochs or after $K$ epochs. If any epoch in
+the current consecutive plateau sequence contained a sampling shortfall or
+a failed comparison window, label this stop \src{incomplete_exploration};
+otherwise label it \src{local_stagnation}. A non-plateau epoch clears that
+sequence's incompleteness flag. The first label means the retained path was
+not fully explored under the requested sampling conditions. There is no
+mandatory broader-window attempt, midpoint insertion, or radius escalation
+before this stop. If no interior vertices remain, an epoch has an empty
+visit list and can still contribute to the plateau count.
+
+The time clock begins in the solver constructor after its random engines
+are initialized. It excludes R argument validation, random-engine seeding,
+and final R result conversion. Checks occur during initialization, batch
+evaluation, sampling, graph search and just before accepted mutation. This
+is a cooperative limit, not a hard deadline. Before a new analytic edge
+calculation, poll and test the edge-call allowance, then increment its count;
+after calculation, poll again. Cache hits do not consume that allowance.
+A budget stop after a computation can discard that uncommitted computation.
+An identity measurement also consumes an edge call. Optional orientation is
+drawn before the first edge poll, including for identity endpoints; candidate
+and order draws are unnecessary for identity. Zero time or edge allowances
+can stop before a usable identity or direct path is installed.
+
+Normal return labels distinguish a fully initialized \src{candidate}, a
+\src{direct_fallback} available after unsuccessful initialization, and
+\src{no_path} when no usable connector was installed. The latter has missing
+length and error, not zero. A budget stop preserves only the last completed
+state. Initialization failures distinguish numerical, unrepresentable-target,
+unresolved-target, spacing and additivity conditions. Other stops include
+identity, epoch limit, local stagnation, incomplete exploration, edge limit,
+time limit and shuffle
+rejection exhaustion. Input errors and R user interrupts propagate as errors;
+they do not become successful fallback returns. Failure to represent a
+returned surface height also raises an R error during result conversion.
+
+\paragraph{Returned heights and exact accumulators.}
+For each returned point, compute $u^TAu$ as the sum of all four products
+$A_{ij}u_i u_j$ using the exact supplied binary64 values. Each finite operand
+is decoded as a signed integer significand times a power of two, including
+subnormals. Multiply significands using unsigned 32-bit words and 64-bit
+carry arithmetic, align powers of two, and add or subtract integer
+magnitudes. The height accumulator has 198 words with quantum $2^{-3222}$;
+it covers all four three-factor products, including cancellation of
+individually overflowing floating-point terms. Convert only the final sum
+to binary64, retaining 53 significant bits (or the subnormal quantum
+$2^{-1074}$), and use the guard bit, all lower bits and the retained low bit
+to round to nearest with ties to even. A rounded infinite height is an
+explicit conversion error. Underflow rounds to a subnormal or signed zero;
+exact cancellation returns zero. Thus a finite height is correctly rounded
+for the supplied inputs, not merely checked for finiteness. This guarantee
+does not cover uncertainty in the original data or make edge-length error
+estimates rigorous.
+
+Graph labels and sums of length or error records use the same integer
+addition and final-rounding rules with 68 words and quantum $2^{-1074}$.
+This capacity exceeds the maximum sum of binary64 weights for the bounded
+local graph. Labels are compared as integers before conversion, even when
+their floating-point conversion would overflow. The implementation requires
+IEEE binary64 doubles and rejects accumulator-capacity errors explicitly.
+
+The result includes the domain path, its surface-coordinate lift, total
+length and error, initializer and radius, resolved configuration, implementation
+and random-generator identifiers, termination, counters, and optional trace.
+Internal reversal is undone for path matrices and path-ID sequences, not for
+the chronological visit-ID list. The caller's exact endpoint values are
+retained, including their signed-zero representations.
+
+The edge-request counter includes requests served by cache; edge calls count
+new measurements, including failed or identity measurements. Cache hits,
+evictions and final entries are separate. The legacy integrand-evaluation
+counter is zero. Candidate-uniform counts include two uniforms per attempted
+disk draw, and order-uniform counts include rejected shuffle choices. There
+is no orientation-draw counter. Visits count anchors reaching the window
+routine, not skipped deleted IDs. Accepted replacements, completed epochs,
+sampling shortfalls, failed comparison windows and vertex-cap rejections are
+separate counts; the failed-window counter is not an exhaustive count of all
+possible failure exits. Per-visit distinct candidate counts and rejected
+candidate graphs are not retained by the current interface.
+
+With tracing off, no refinement history, random checkpoint or file is saved.
+With tracing on, retain direct-path, initializer, epoch-order, replacement
+and epoch-end events until the trace cap. Further events increment an omission
+counter. Each retained event has the current path, path IDs, length, error
+and epoch; epoch-order events carry visit IDs, and replacements carry their
+section decrease and required decrease. Trace truncation does not stop the
+algorithm. The trace is for inspection, not resumption, and contains neither
+all rejected alternatives nor all local edge batches. Separate R processes,
+not concurrent threads invoking R's API, are the supported parallel use.
+
+\subsection{Meaning of this specification}
+
+The intended invariants are feasible fixed endpoints, consistent stored edge
+records, deterministic seeded behavior under fixed numerical conditions,
+and no accepted replacement without the stated length-and-error comparison.
+The operational details above make those claims testable; they do not prove
+them. Error estimates are not interval bounds, iteration limits are not
+accuracy certificates, and an accurate path length need not be a globally
+shortest length. An independent whole-algorithm assessment remains distinct
+from the implementer's numerical tests. Historical reports and frozen
+fixtures retain their original identities and are not rewritten as results
+of this configuration.
 
 \begingroup\small\raggedright
 \bibliographystyle{plain}

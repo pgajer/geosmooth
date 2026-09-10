@@ -1,7 +1,7 @@
 // Computational core: no R-level callbacks, Python, checkpointing or file I/O.
 #include "quadform_geodesics_solver.h"
+#include "quadform_geodesics_exact.h"
 #include <Rcpp.h>
-#include <R_ext/Applic.h>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -19,10 +19,9 @@ using Clock = std::chrono::steady_clock;
 const double inf = std::numeric_limits<double>::infinity();
 struct Stop { std::string reason; };
 double sum(const std::vector<double>& x) {
-  double s = 0, c = 0;
-  for (double v : x) { double t = s + v;
-    c += std::abs(s) >= std::abs(v) ? (s - t) + v : (v - t) + s; s = t; }
-  return s + c;
+  ExactLength total;
+  for (double v : x) { if (!std::isfinite(v)) return v; total.add(v); }
+  return total.rounded();
 }
 double norm(const Point& x) {
   double m = std::max(std::abs(x[0]), std::abs(x[1]));
@@ -31,20 +30,15 @@ double norm(const Point& x) {
   return m * std::sqrt(static_cast<double>(static_cast<long double>(a*a) + b*b));
 }
 Point minus(const Point& a, const Point& b) { return {{a[0]-b[0], a[1]-b[1]}}; }
-std::string key(const Point& p) {
-  static const char* hex = "0123456789abcdef";
-  std::string out = "00000002";
-  for (double v : p) { uint64_t bits; std::memcpy(&bits, &v, 8);
-    for (int j = 7; j >= 0; --j) { unsigned b = (bits >> (8*j)) & 255;
-      out += hex[b >> 4]; out += hex[b & 15]; } }
+using PointKey = std::array<uint64_t,2>;
+using EdgeKey = std::array<PointKey,2>;
+using IndexPath = std::vector<int>;
+// Unsigned bit order is the old fixed-width hexadecimal order, including -0.
+PointKey key(const Point& p) {
+  PointKey out;
+  static_assert(sizeof(double) == sizeof(uint64_t), "64-bit coordinates required");
+  for (size_t j = 0; j < 2; ++j) std::memcpy(&out[j], &p[j], sizeof(double));
   return out;
-}
-std::string edgekey(Point a, Point b) {
-  std::string ka = key(a), kb = key(b);
-  return ka < kb ? ka + ":" + kb : kb + ":" + ka;
-}
-std::string pathkey(const Path& p) {
-  std::string s; for (const auto& u : p) { if (!s.empty()) s += "/"; s += key(u); } return s;
 }
 uint64_t mix(uint64_t x) {
   x += UINT64_C(0x9e3779b97f4a7c15);
@@ -52,6 +46,62 @@ uint64_t mix(uint64_t x) {
   x = (x ^ (x >> 27)) * UINT64_C(0x94d049bb133111eb);
   return x ^ (x >> 31);
 }
+struct EdgeHash {
+  size_t operator()(const EdgeKey& k) const {
+    uint64_t h = 0;
+    for (const auto& p : k) for (auto word : p) h = mix(h ^ word);
+    return static_cast<size_t>(h);
+  }
+};
+// Local vertices have key-sorted indices. Edges are measured in lexicographic
+// endpoint order; an indexed table then serves all path and graph lookups.
+struct EdgeTable {
+  Path vertices; std::vector<PointKey> keys;
+  std::vector<std::array<int,2>> edges;
+  std::vector<int> slots;
+  EdgeTable(const Path& old, const Path& candidates = {}) {
+    std::map<PointKey,Point> unique;
+    for (const auto& p : old) unique.emplace(key(p),p);
+    for (const auto& p : candidates) unique.emplace(key(p),p);
+    for (const auto& p : unique) { keys.push_back(p.first); vertices.push_back(p.second); }
+    slots.assign(vertices.size()*vertices.size(),-1);
+  }
+  IndexPath indices(const Path& path) const {
+    IndexPath out; out.reserve(path.size());
+    for (const auto& p : path) {
+      auto k = key(p); auto it = std::lower_bound(keys.begin(),keys.end(),k);
+      if (it == keys.end() || *it != k) Rcpp::stop("Unknown local vertex");
+      out.push_back(static_cast<int>(it-keys.begin()));
+    }
+    return out;
+  }
+  void add(int a, int b) {
+    if (a > b) std::swap(a,b);
+    size_t slot = static_cast<size_t>(a)*vertices.size()+b;
+    if (slots[slot] < 0) { slots[slot] = 0; edges.push_back({{a,b}}); }
+  }
+  void addpath(const IndexPath& path) {
+    for (size_t j = 1; j < path.size(); ++j) add(path[j-1],path[j]);
+  }
+  void order() {
+    std::sort(edges.begin(),edges.end());
+    for (size_t j = 0; j < edges.size(); ++j) {
+      int a = edges[j][0], b = edges[j][1];
+      slots[static_cast<size_t>(a)*vertices.size()+b] = static_cast<int>(j);
+      slots[static_cast<size_t>(b)*vertices.size()+a] = static_cast<int>(j);
+    }
+  }
+  size_t slot(int a, int b) const {
+    int index = slots[static_cast<size_t>(a)*vertices.size()+b];
+    if (index < 0) Rcpp::stop("Missing local edge");
+    return static_cast<size_t>(index);
+  }
+  Path points(const IndexPath& path) const {
+    Path out; out.reserve(path.size());
+    for (int j : path) out.push_back(vertices[j]);
+    return out;
+  }
+};
 struct Streams {
   std::mt19937_64 candidates, order, orientation;
   explicit Streams(uint64_t seed) : candidates(mix(seed)), order(mix(seed + UINT64_C(4294967296))),
@@ -64,23 +114,79 @@ bool Domain::inside(const Point& p) const {
     p[0] >= lower[0] && p[0] <= upper[0] && p[1] >= lower[1] && p[1] <= upper[1];
 }
 struct CacheEntry {
-  Measure values[2]; bool present[2] = {false, false}; std::list<std::string>::iterator position;
+  Measure values[2]; bool present[2] = {false, false}; std::list<EdgeKey>::iterator position;
 };
-struct Tangent { Point h; double alpha, beta; bool finite = true; };
-void speeds(double* t, int n, void* ptr) {
-  Tangent& z = *static_cast<Tangent*>(ptr);
-  for (int i = 0; i < n; ++i) {
-    double v = z.alpha + z.beta*t[i];
-    double m = std::max(std::max(std::abs(z.h[0]), std::abs(z.h[1])), std::abs(v));
-    if (!std::isfinite(v) || !std::isfinite(m)) { z.finite = false; t[i] = 0; continue; }
-    if (m == 0) { t[i] = 0; continue; }
-    double a = z.h[0]/m, b = z.h[1]/m, c = v/m;
-    t[i] = m * std::sqrt(static_cast<double>(static_cast<long double>(a*a) + b*b + c*c));
-    if (!std::isfinite(t[i])) { z.finite = false; t[i] = 0; }
-  }
+// Average of hypot(c,x) on [q,r], 0 <= q <= r, with scaled arguments.
+// Rationalize r*hypot(c,r)-q*hypot(c,q), and use log1p(x)/x for
+// the asinh divided difference. Neither term subtracts nearby primitives.
+long double positive_mean(long double c, long double q, long double r) {
+  if (q == r) return std::hypot(c,q);
+  long double s = std::hypot(c,q), t = std::hypot(c,r);
+  long double ratio = (q+r)/(s+t);
+  long double x = ((r-q)/(q+s))*(1+ratio);
+  long double logarithm = x == 0 ? 1 : std::log1p(x)/x;
+  return (t + q*ratio + c*(c/(q+s))*(1+ratio)*logarithm)/2;
 }
-using Batch = std::map<std::string, Measure>;
-using Edges = std::map<std::string, std::pair<Point, Point>>;
+
+Measure connector_length(const std::array<double,4>& A, const Point& a, const Point& b) {
+  Measure out;
+  if (a == b) return out;
+  using Real = long double;
+  const Real eps = std::numeric_limits<Real>::epsilon();
+  const Real tiny = std::numeric_limits<Real>::denorm_min();
+  std::array<Real,2> h, eh, ah, eah;
+  for (int j = 0; j < 2; ++j) {
+    h[j] = static_cast<Real>(b[j])-static_cast<Real>(a[j]);
+    eh[j] = eps*std::abs(h[j])+tiny;
+  }
+  Real c = std::hypot(h[0],h[1]);
+  Real ec = 4*eps*c+std::hypot(eh[0],eh[1])+tiny;
+  for (int i = 0; i < 2; ++i) {
+    Real x = static_cast<Real>(A[2*i])*h[0], y = static_cast<Real>(A[2*i+1])*h[1];
+    ah[i] = x+y;
+    eah[i] = 8*eps*(std::abs(x)+std::abs(y))+
+      std::abs(static_cast<Real>(A[2*i]))*eh[0]+
+      std::abs(static_cast<Real>(A[2*i+1]))*eh[1]+4*tiny;
+  }
+  auto slope = [&](const Point& p, Real& error) {
+    Real x = static_cast<Real>(p[0])*ah[0], y = static_cast<Real>(p[1])*ah[1];
+    error = 16*eps*(std::abs(x)+std::abs(y))+
+      2*(std::abs(static_cast<Real>(p[0]))*eah[0]+
+         std::abs(static_cast<Real>(p[1]))*eah[1])+8*tiny;
+    return 2*(x+y);
+  };
+  // Evaluate both endpoint slopes directly: alpha+beta can cancel severely.
+  Real e0, e1, v0 = slope(a,e0), v1 = slope(b,e1);
+  Real scale = std::max(c,std::max(std::abs(v0),std::abs(v1)));
+  if (!(scale > 0) || !std::isfinite(scale) || !std::isfinite(ec) ||
+      !std::isfinite(e0) || !std::isfinite(e1)) { out.ok = false; return out; }
+  Real cn = c/scale, q = std::abs(v0)/scale, r = std::abs(v1)/scale;
+  bool crossing = (v0 < 0) != (v1 < 0);
+  Real mean, omitted = 0;
+  if (cn <= eps) {
+    // |hypot(c,x)-|x|| <= c. Avoid extreme ratios and account for
+    // the omitted horizontal contribution explicitly in the error estimate.
+    mean = crossing ? (q*q+r*r)/(2*(q+r)) : (q+r)/2;
+    omitted = c;
+  } else if (crossing) {
+    Real weight = q/(q+r);
+    mean = weight*positive_mean(cn,0,q)+(1-weight)*positive_mean(cn,0,r);
+  } else {
+    mean = positive_mean(cn,std::min(q,r),std::max(q,r));
+  }
+  Real length = scale*mean;
+  // The norm is 1-Lipschitz in c and in the linearly interpolated slope.
+  // This propagates cancellation-sensitive coefficient errors, in addition
+  // to a conservative operation/libm allowance and the final double cast.
+  Real error = ec+e0/2+e1/2+omitted+64*eps*length+
+    2*std::numeric_limits<double>::epsilon()*length+64*tiny;
+  out.length = static_cast<double>(length);
+  out.error = std::nextafter(static_cast<double>(error),inf);
+  out.ok = std::isfinite(out.length) && out.length > 0 &&
+    std::isfinite(out.error) && out.error >= 0;
+  return out;
+}
+using Batch = std::vector<Measure>;
 class Solver {
 public:
   Config c; Domain domain; std::array<double,4> A; Streams rng; Counters counts;
@@ -90,7 +196,7 @@ public:
   bool initialized = false, reversed = false;
   std::string termination = "epoch_limit";
   Clock::time_point start;
-  std::unordered_map<std::string, CacheEntry> cache; std::list<std::string> lru;
+  std::unordered_map<EdgeKey, CacheEntry, EdgeHash> cache; std::list<EdgeKey> lru;
   Solver(Config config, Domain d, std::array<double,4> a, uint64_t seed) :
     c(config), domain(d), A(a), rng(seed), start(Clock::now()) {}
   double seconds() const { return std::chrono::duration<double>(Clock::now()-start).count(); }
@@ -98,30 +204,21 @@ public:
     if (seconds() >= c.max_seconds) throw Stop{"time_limit"};
     Rcpp::checkUserInterrupt();
   }
-  Measure integrate(Point a, Point b, bool tighter) {
+  Measure integrate(Point a, Point b, bool /* tighter */) {
     poll(); if (counts.calls >= c.max_edges) throw Stop{"edge_limit"};
-    ++counts.calls; Measure out;
-    if (a == b) return out;
-    if (key(b) < key(a)) std::swap(a,b);
-    Tangent z; z.h = minus(b,a);
-    Point Ah = {{A[0]*z.h[0]+A[1]*z.h[1], A[2]*z.h[0]+A[3]*z.h[1]}};
-    z.alpha = 2 * static_cast<double>(static_cast<long double>(a[0]*Ah[0]) + a[1]*Ah[1]);
-    z.beta = 2 * static_cast<double>(static_cast<long double>(z.h[0]*Ah[0]) + z.h[1]*Ah[1]);
-    if (!std::isfinite(z.alpha) || !std::isfinite(z.beta)) { out.ok = false; return out; }
-    double lo = 0, hi = 1, factor = tighter ? .01 : 1;
-    double absolute = 1e-12*c.scale*factor, relative = 1e-10*factor;
-    int evaluations = 0, status = 0, limit = 1000, lenw = 4000, last = 0;
-    int iwork[1000]; double work[4000];
-    // QUADPACK through R's public compiled API, with a C++ integrand, not an R closure.
-    Rdqags(speeds, &z, &lo, &hi, &absolute, &relative, &out.length, &out.error,
-      &evaluations, &status, &limit, &lenw, &last, iwork, work);
-    counts.evaluations += evaluations;
-    out.ok = status == 0 && z.finite && std::isfinite(out.length) && out.length > 0 &&
-      std::isfinite(out.error) && out.error >= 0;
+    ++counts.calls;
+    // Both legacy precision levels use the same analytic calculation. A retry
+    // cannot reduce roundoff; an unresolved replacement remains unaccepted.
+    Measure out = connector_length(A,a,b);
     poll(); return out;
   }
   Measure edge(Point a, Point b, bool tighter) {
-    poll(); ++counts.requests; std::string k = edgekey(a,b);
+    auto ka = key(a), kb = key(b);
+    if (kb < ka) { std::swap(a,b); std::swap(ka,kb); }
+    return measured_edge(a,b,{{ka,kb}},tighter);
+  }
+  Measure measured_edge(Point a, Point b, const EdgeKey& k, bool tighter) {
+    poll(); ++counts.requests;
     auto it = cache.find(k); int level = tighter ? 1 : 0;
     if (it != cache.end()) {
       lru.splice(lru.begin(), lru, it->second.position);
@@ -140,21 +237,19 @@ public:
     }
     it->second.values[level] = out; it->second.present[level] = true; return out;
   }
-  static void add(Edges& edges, Point a, Point b) {
-    if (key(b) < key(a)) std::swap(a,b); edges.emplace(edgekey(a,b),std::make_pair(a,b));
-  }
-  static void addpath(Edges& edges, const Path& p) {
-    for (size_t i = 1; i < p.size(); ++i) add(edges,p[i-1],p[i]);
-  }
-  Batch batch(const Edges& edges, bool tighter, bool& ok) {
-    Batch out; ok = true;
-    for (const auto& e : edges) { Measure m = edge(e.second.first,e.second.second,tighter);
-      ok = ok && m.ok; out.emplace(e.first,m); }
+  Batch batch(const EdgeTable& table, bool tighter, bool& ok) {
+    Batch out; out.reserve(table.edges.size()); ok = true;
+    for (const auto& e : table.edges) {
+      Measure m = measured_edge(table.vertices[e[0]],table.vertices[e[1]],
+        {{table.keys[e[0]],table.keys[e[1]]}},tighter);
+      ok = ok && m.ok; out.push_back(m);
+    }
     return out;
   }
-  static std::vector<Measure> records(const Path& p, const Batch& b) {
+  static std::vector<Measure> records(const IndexPath& p, const EdgeTable& table, const Batch& b) {
     std::vector<Measure> out;
-    for (size_t i = 1; i < p.size(); ++i) out.push_back(b.at(edgekey(p[i-1],p[i])));
+    out.reserve(p.size() > 0 ? p.size()-1 : 0);
+    for (size_t i = 1; i < p.size(); ++i) out.push_back(b[table.slot(p[i-1],p[i])]);
     return out;
   }
   static Measure measure(const std::vector<Measure>& r) {
@@ -181,8 +276,9 @@ public:
       initial_length = total.length; initial_error = total.error; return; }
     bool reverse = key(to) < key(from); Point a = reverse ? to : from, b = reverse ? from : to;
     Path proposed = {a};
-    double tolerance = 1e-10*c.scale + 1e-8*total.length/c.initial_edges;
-    double roundoff = 64*std::numeric_limits<double>::epsilon()*std::max(c.scale,total.length);
+    double tolerance = std::min(1e-10*c.scale + 1e-8*total.length/c.initial_edges,
+                                1e-6*total.length/c.initial_edges);
+    double roundoff = 64*std::numeric_limits<double>::epsilon()*total.length;
     for (int j = 1; j < c.initial_edges; ++j) {
       double fraction = static_cast<double>(j)/c.initial_edges, lo = 0, hi = 1;
       bool resolved = false;
@@ -201,10 +297,12 @@ public:
       if (!resolved) throw Stop{"initialization_unresolved"};
     }
     proposed.push_back(b); if (reverse) std::reverse(proposed.begin(),proposed.end());
-    Edges edges; addpath(edges,proposed); bool ok;
-    Batch values = batch(edges,true,ok);
+    EdgeTable table(proposed); auto proposed_ids = table.indices(proposed);
+    table.edges.reserve(proposed.size()-1);
+    table.addpath(proposed_ids); table.order(); bool ok;
+    Batch values = batch(table,true,ok);
     if (!ok) throw Stop{"initialization_numerical_failure"};
-    auto r = records(proposed,values); Measure m = measure(r);
+    auto r = records(proposed_ids,table,values); Measure m = measure(r);
     for (int i = 0; i < c.initial_edges; ++i) {
       if (proposed[i] == proposed[i+1] ||
           std::abs(r[i].length-total.length/c.initial_edges)+r[i].error+total.error/c.initial_edges >
@@ -220,7 +318,7 @@ public:
   }
   bool sample(const Point& anchor, double radius, Path& candidates) {
     if (!std::isfinite(radius) || radius <= 0) { ++counts.shortfalls; return false; }
-    std::map<std::string,Point> unique;
+    std::map<PointKey,Point> unique;
     for (int j = 0; j < c.candidates; ++j) {
       bool accepted = false;
       for (int attempt = 0; attempt < c.rejection_cap; ++attempt) {
@@ -234,28 +332,23 @@ public:
     }
     for (const auto& v : unique) candidates.push_back(v.second); return true;
   }
-  Path shortest(const Path& vertices, const Batch& values, const Point& from, const Point& to) {
-    size_t n = vertices.size(), start_index = 0, target = 0;
-    std::vector<std::string> keys; for (const auto& p : vertices) keys.push_back(key(p));
-    for (size_t i = 0; i < n; ++i) {
-      if (keys[i] == key(from)) start_index = i; if (keys[i] == key(to)) target = i;
-    }
-    std::vector<double> dist(n,inf); std::vector<bool> done(n,false);
-    std::vector<std::vector<double>> weights(n); std::vector<Path> paths(n);
-    std::vector<std::string> pathkeys(n);
-    dist[start_index] = 0; paths[start_index] = {from}; pathkeys[start_index] = key(from);
+  IndexPath shortest(const EdgeTable& table, const Batch& values, int from, int to) {
+    size_t n = table.vertices.size();
+    std::vector<ExactLength> dist(n); std::vector<bool> done(n,false), reached(n,false);
+    std::vector<IndexPath> paths(n);
+    reached[from] = true; paths[from] = {from};
     for (size_t step = 0; step < n; ++step) {
       poll(); size_t u = n;
-      for (size_t v = 0; v < n; ++v) if (!done[v] && std::isfinite(dist[v]) &&
-          (u == n || dist[v] < dist[u] || (dist[v] == dist[u] && pathkeys[v] < pathkeys[u]))) u = v;
-      if (u == n) break; if (u == target) return paths[u]; done[u] = true;
-      for (size_t v = 0; v < n; ++v) if (!done[v] && vertices[u] != vertices[v]) {
-        double w = values.at(edgekey(vertices[u],vertices[v])).length; if (w == 0) continue;
-        auto proposed_weights = weights[u]; proposed_weights.push_back(w); double d = sum(proposed_weights);
-        std::string pk = pathkeys[u]+"/"+keys[v];
-        if (d < dist[v] || (d == dist[v] && pk < pathkeys[v])) {
-          dist[v] = d; weights[v] = proposed_weights; paths[v] = paths[u];
-          paths[v].push_back(vertices[v]); pathkeys[v] = pk;
+      for (size_t v = 0; v < n; ++v) if (!done[v] && reached[v] &&
+          (u == n || dist[v].compare(dist[u]) < 0 ||
+           (dist[v].compare(dist[u]) == 0 && paths[v] < paths[u]))) u = v;
+      if (u == n) break; if (u == static_cast<size_t>(to)) return paths[u]; done[u] = true;
+      for (size_t v = 0; v < n; ++v) if (!done[v] && table.vertices[u] != table.vertices[v]) {
+        double w = values[table.slot(u,v)].length; if (w == 0) continue;
+        ExactLength d = dist[u]; d.add(w);
+        IndexPath proposed_path = paths[u]; proposed_path.push_back(static_cast<int>(v));
+        if (!reached[v] || d.compare(dist[v]) < 0 || (d.compare(dist[v]) == 0 && proposed_path < paths[v])) {
+          dist[v] = d; reached[v] = true; paths[v] = std::move(proposed_path);
         }
       }
     }
@@ -273,37 +366,37 @@ public:
       std::max(norm(minus(path[i],path[lo])),norm(minus(path[i],path[hi]))) : rho;
     Path old(path.begin()+lo,path.begin()+hi+1), candidates;
     if (!sample(path[i],radius,candidates)) return;
-    Edges edges; addpath(edges,old); std::vector<Path> alternatives;
-    Path vertices;
+    EdgeTable table(old,candidates); auto old_indices = table.indices(old);
+    table.edges.reserve(c.graph ? table.vertices.size()*(table.vertices.size()-1)/2 :
+      old.size()+2*candidates.size());
+    table.addpath(old_indices); std::vector<IndexPath> alternatives;
     if (c.graph) {
-      std::map<std::string,Point> unique;
-      for (auto p : old) unique.emplace(key(p),p);
-      for (auto p : candidates) unique.emplace(key(p),p);
-      for (const auto& p : unique) vertices.push_back(p.second);
-      for (size_t j = 0; j < vertices.size(); ++j) {
-        poll(); for (size_t k = j+1; k < vertices.size(); ++k)
-          if (vertices[j] != vertices[k]) add(edges,vertices[j],vertices[k]);
+      for (size_t j = 0; j < table.vertices.size(); ++j) {
+        poll(); for (size_t k = j+1; k < table.vertices.size(); ++k)
+          if (table.vertices[j] != table.vertices[k]) table.add(j,k);
       }
     } else {
-      alternatives.push_back({old.front(),old.back()});
-      for (auto p : candidates) if (p != old.front() && p != old.back())
-        alternatives.push_back({old.front(),p,old.back()});
-      for (const auto& p : alternatives) addpath(edges,p);
+      alternatives.push_back({old_indices.front(),old_indices.back()});
+      for (int p : table.indices(candidates))
+        if (table.vertices[p] != old.front() && table.vertices[p] != old.back())
+          alternatives.push_back({old_indices.front(),p,old_indices.back()});
+      for (const auto& p : alternatives) table.addpath(p);
     }
-    bool tighter = false, ok; Batch values = batch(edges,false,ok);
-    if (!ok) { tighter = true; values = batch(edges,true,ok); }
+    table.order();
+    bool tighter = false, ok; Batch values = batch(table,false,ok);
+    if (!ok) { tighter = true; values = batch(table,true,ok); }
     if (!ok) { ++counts.failures; return; }
-    Path best; Measure previous, chosen; double delta = 0, required = 0;
+    IndexPath best; Measure previous, chosen; double delta = 0, required = 0;
     for (;;) {
-      previous = measure(records(old,values)); best = old; chosen = previous;
+      previous = measure(records(old_indices,table,values)); best = old_indices; chosen = previous;
       if (c.graph) {
-        Path p = shortest(vertices,values,old.front(),old.back());
-        if (!p.empty()) { Measure m = measure(records(p,values));
+        IndexPath p = shortest(table,values,old_indices.front(),old_indices.back());
+        if (!p.empty()) { Measure m = measure(records(p,table,values));
           if (m.length < chosen.length) { best = p; chosen = m; } }
       } else {
         bool incumbent = true;
-        for (const auto& p : alternatives) { Measure m = measure(records(p,values));
-          if (m.length < chosen.length || (!incumbent && m.length == chosen.length && pathkey(p) < pathkey(best))) {
+        for (const auto& p : alternatives) { Measure m = measure(records(p,table,values));
+          if (m.length < chosen.length || (!incumbent && m.length == chosen.length && p < best)) {
             best = p; chosen = m; incumbent = false; }
         }
       }
@@ -311,7 +404,7 @@ public:
       delta = previous.length-chosen.length; required = margin+previous.error+chosen.error;
       if (!(previous.ok && chosen.ok)) { ++counts.failures; return; }
       if (delta > margin && delta <= required && !tighter) {
-        tighter = true; values = batch(edges,true,ok);
+        tighter = true; values = batch(table,true,ok);
         if (!ok) { ++counts.failures; return; } continue;
       }
       break;
@@ -320,16 +413,26 @@ public:
     if (path.size() - old.size() + best.size() > static_cast<size_t>(c.max_vertices)) {
       ++counts.vertex_rejections; return;
     }
-    Path proposed(path.begin(),path.begin()+lo); proposed.insert(proposed.end(),best.begin(),best.end());
+    Path best_points = table.points(best);
+    Path proposed(path.begin(),path.begin()+lo); proposed.insert(proposed.end(),best_points.begin(),best_points.end());
     proposed.insert(proposed.end(),path.begin()+hi+1,path.end());
-    auto middle = records(best,values);
+    auto middle = records(best,table,values);
     std::vector<Measure> new_segments(segments.begin(),segments.begin()+lo);
     new_segments.insert(new_segments.end(),middle.begin(),middle.end());
     new_segments.insert(new_segments.end(),segments.begin()+hi,segments.end());
     if (!measure(new_segments).ok) { ++counts.failures; return; }
     std::vector<int> new_ids(ids.begin(),ids.begin()+lo); int new_next_id = next_id;
-    for (const auto& p : best) {
-      int id = 0; for (int j = lo; j <= hi; ++j) if (key(path[j]) == key(p)) { id = ids[j]; break; }
+    std::vector<bool> used(old.size(),false);
+    for (size_t k = 0; k < best.size(); ++k) {
+      int id = 0;
+      // Endpoints are occurrences, not coordinate keys. A collapsed one-point
+      // connector keeps the left occurrence; two endpoints keep both IDs.
+      if (k == 0) { id = ids[lo]; used.front() = true; }
+      else if (k+1 == best.size()) { id = ids[hi]; used.back() = true; }
+      else for (int j = lo+1; j < hi; ++j)
+        if (!used[j-lo] && old_indices[j-lo] == best[k]) {
+          id = ids[j]; used[j-lo] = true; break;
+        }
       new_ids.push_back(id == 0 ? new_next_id++ : id);
     }
     new_ids.insert(new_ids.end(),ids.begin()+hi+1,ids.end());
@@ -339,7 +442,7 @@ public:
   void solve(Point from, Point to) {
     try {
       initialize(from,to); if (from == to) { termination = "identity"; return; }
-      int plateau = 0;
+      int plateau = 0; bool incomplete_plateau = false;
       for (epoch = 1; epoch <= c.max_epochs; ++epoch) {
         poll(); std::vector<int> order(ids.begin()+1,ids.end()-1);
         for (size_t k = order.size(); k > 1; --k) {
@@ -351,6 +454,7 @@ public:
           }
           if (!accepted) throw Stop{"order_sampling_failure"};
         }
+        int shortfalls_before = counts.shortfalls, failures_before = counts.failures;
         record("epoch_order",std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::quiet_NaN(),order); double start_length = measure(segments).length;
         for (int id : order) {
           poll(); auto it = std::find(ids.begin(),ids.end(),id);
@@ -358,7 +462,11 @@ public:
         }
         double decrease = (start_length-measure(segments).length)/std::max(start_length,1e-12*c.scale);
         ++completed_epochs; record("epoch_end"); plateau = decrease < 1e-5 ? plateau+1 : 0;
-        if (plateau >= c.plateau_epochs) { termination = "local_stagnation"; break; }
+        if (plateau == 0) incomplete_plateau = false;
+        else incomplete_plateau |= counts.shortfalls > shortfalls_before || counts.failures > failures_before;
+        if (plateau >= c.plateau_epochs) {
+          termination = incomplete_plateau ? "incomplete_exploration" : "local_stagnation"; break;
+        }
       }
     } catch (const Stop& s) { termination = s.reason; }
   }
