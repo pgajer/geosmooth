@@ -316,6 +316,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_quadform_geodesics_method
+Rcpp::List rcpp_quadform_geodesics_method(Rcpp::NumericMatrix A, Rcpp::NumericVector from, Rcpp::NumericVector to, Rcpp::List domain, std::string method, Rcpp::List control);
+RcppExport SEXP _geosmooth_rcpp_quadform_geodesics_method(SEXP ASEXP, SEXP fromSEXP, SEXP toSEXP, SEXP domainSEXP, SEXP methodSEXP, SEXP controlSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type from(fromSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type to(toSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type domain(domainSEXP);
+    Rcpp::traits::input_parameter< std::string >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control(controlSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_quadform_geodesics_method(A, from, to, domain, method, control));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_quadform_geodesics_solver
 Rcpp::List rcpp_quadform_geodesics_solver(Rcpp::NumericMatrix A, Rcpp::NumericVector from, Rcpp::NumericVector to, Rcpp::List domain, Rcpp::List options);
 RcppExport SEXP _geosmooth_rcpp_quadform_geodesics_solver(SEXP ASEXP, SEXP fromSEXP, SEXP toSEXP, SEXP domainSEXP, SEXP optionsSEXP) {
@@ -385,6 +400,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_ps_lps_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_fitted_matrix, 2},
     {"_geosmooth_rcpp_ps_lps_independent_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_independent_fitted_matrix, 3},
     {"_geosmooth_rcpp_ps_lps_assemble_cached_system", (DL_FUNC) &_geosmooth_rcpp_ps_lps_assemble_cached_system, 4},
+    {"_geosmooth_rcpp_quadform_geodesics_method", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_method, 6},
     {"_geosmooth_rcpp_quadform_geodesics_solver", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_solver, 5},
     {"_geosmooth_rcpp_quadform_geodesics_reference_uniforms", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_reference_uniforms, 2},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},

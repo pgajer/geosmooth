@@ -151,6 +151,12 @@ rcpp_ps_lps_assemble_cached_system <- function(cache, y, response_weights, lambd
 
 #' @keywords internal
 #' @noRd
+rcpp_quadform_geodesics_method <- function(A, from, to, domain, method, control) {
+    .Call(`_geosmooth_rcpp_quadform_geodesics_method`, A, from, to, domain, method, control)
+}
+
+#' @keywords internal
+#' @noRd
 rcpp_quadform_geodesics_solver <- function(A, from, to, domain, options) {
     .Call(`_geosmooth_rcpp_quadform_geodesics_solver`, A, from, to, domain, options)
 }
