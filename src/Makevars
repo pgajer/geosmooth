@@ -17,8 +17,5 @@ override OBJECTS := $(filter-out RcppExports.o,$(OBJECTS)) RcppExports.o
 
 $(SHLIB): $(OBJECTS)
 
-# Preserve the solver's tested arithmetic without changing other methods.
-quadform_geodesics_solver.o quadform_geodesics_solver_rcpp.o: PKG_CXXFLAGS += -ffp-contract=off -fno-fast-math
-
 clean:
 	$(RM) $(OBJECTS)

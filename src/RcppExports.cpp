@@ -316,46 +316,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// rcpp_quadform_geodesics_method
-Rcpp::List rcpp_quadform_geodesics_method(Rcpp::NumericMatrix A, Rcpp::NumericVector from, Rcpp::NumericVector to, Rcpp::List domain, std::string method, Rcpp::List control);
-RcppExport SEXP _geosmooth_rcpp_quadform_geodesics_method(SEXP ASEXP, SEXP fromSEXP, SEXP toSEXP, SEXP domainSEXP, SEXP methodSEXP, SEXP controlSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type from(fromSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type to(toSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type domain(domainSEXP);
-    Rcpp::traits::input_parameter< std::string >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control(controlSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_quadform_geodesics_method(A, from, to, domain, method, control));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rcpp_quadform_geodesics_solver
-Rcpp::List rcpp_quadform_geodesics_solver(Rcpp::NumericMatrix A, Rcpp::NumericVector from, Rcpp::NumericVector to, Rcpp::List domain, Rcpp::List options);
-RcppExport SEXP _geosmooth_rcpp_quadform_geodesics_solver(SEXP ASEXP, SEXP fromSEXP, SEXP toSEXP, SEXP domainSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type from(fromSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type to(toSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type domain(domainSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_quadform_geodesics_solver(A, from, to, domain, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// rcpp_quadform_geodesics_reference_uniforms
-Rcpp::List rcpp_quadform_geodesics_reference_uniforms(double seed, int n);
-RcppExport SEXP _geosmooth_rcpp_quadform_geodesics_reference_uniforms(SEXP seedSEXP, SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< double >::type seed(seedSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_quadform_geodesics_reference_uniforms(seed, n));
-    return rcpp_result_gen;
-END_RCPP
-}
 // rcpp_ssrhe_hessian_operator
 SEXP rcpp_ssrhe_hessian_operator(SEXP s_X, SEXP s_k, SEXP s_tangent_dim, SEXP s_nn_index, SEXP s_support_index, SEXP s_tangent_dim_rule, SEXP s_eigen_tolerance, SEXP s_derivative_order, SEXP s_stabilizer, SEXP s_pinv_tol, SEXP s_local_solver, SEXP s_normal_equations_max_condition, SEXP s_verbose);
 RcppExport SEXP _geosmooth_rcpp_ssrhe_hessian_operator(SEXP s_XSEXP, SEXP s_kSEXP, SEXP s_tangent_dimSEXP, SEXP s_nn_indexSEXP, SEXP s_support_indexSEXP, SEXP s_tangent_dim_ruleSEXP, SEXP s_eigen_toleranceSEXP, SEXP s_derivative_orderSEXP, SEXP s_stabilizerSEXP, SEXP s_pinv_tolSEXP, SEXP s_local_solverSEXP, SEXP s_normal_equations_max_conditionSEXP, SEXP s_verboseSEXP) {
@@ -400,9 +360,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_ps_lps_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_fitted_matrix, 2},
     {"_geosmooth_rcpp_ps_lps_independent_fitted_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_independent_fitted_matrix, 3},
     {"_geosmooth_rcpp_ps_lps_assemble_cached_system", (DL_FUNC) &_geosmooth_rcpp_ps_lps_assemble_cached_system, 4},
-    {"_geosmooth_rcpp_quadform_geodesics_method", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_method, 6},
-    {"_geosmooth_rcpp_quadform_geodesics_solver", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_solver, 5},
-    {"_geosmooth_rcpp_quadform_geodesics_reference_uniforms", (DL_FUNC) &_geosmooth_rcpp_quadform_geodesics_reference_uniforms, 2},
     {"_geosmooth_rcpp_ssrhe_hessian_operator", (DL_FUNC) &_geosmooth_rcpp_ssrhe_hessian_operator, 13},
     {NULL, NULL, 0}
 };
