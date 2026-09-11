@@ -65,7 +65,7 @@ LinkingTo:
 Depends:
     R (>= 3.5.0)
 Imports:
-    dgraphs (>= 0.1.0),
+    dgraphs (>= 0.2.1.9000),
     digest,
     jsonlite,
     MASS,
