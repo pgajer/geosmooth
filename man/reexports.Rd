@@ -29,6 +29,44 @@
 \alias{synthetic.torus.patch}
 \alias{synthetic.trefoil}
 \title{Objects exported from other packages}
+\examples{
+geometry <- synthetic.quadform(1L, 1L)
+edge.lengths.synthetic.geometry(geometry, matrix(0), matrix(2))
+geometry <- synthetic.circle()
+embed.synthetic.geometry(geometry, matrix(c(0, pi / 2), ncol = 1))
+geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+quadform.gradient(geometry, matrix(c(-1, 0, 1), ncol = 1))
+geometry <- synthetic.quadform(1L, 2L, forms = list(matrix(1)))
+quadform.metric(geometry, matrix(c(0, 1), ncol = 1))
+synthetic.circle(radius = 2, angle.range = c(0, pi))
+synthetic.helix(pitch = 0.25, t.range = c(0, pi))
+synthetic.point.line.junction(c(0, 0), c(0, 0), c(1, 0), c(0, 1))
+synthetic.quadform(1L, 2L, forms = list(matrix(0.5)))
+synthetic.sampling.clustered(3L, 5L, within.sd = 0.1)
+synthetic.sampling.dirichlet.zeros(
+  concentration = rep(1, 3), zero.fraction = 0.2, zero.parts = 1L
+)
+intervals <- rbind(c(-1, -0.25), c(0.25, 1))
+synthetic.sampling.gapped.uniform(intervals, probabilities = c(0.5, 0.5))
+synthetic.sampling.grid.interval(0, 2 * pi, endpoints = "exclude.lower")
+synthetic.sampling.truncated.normal(0, 1, -2, 2)
+synthetic.sampling.uniform.box(lower = c(-1, 0), upper = c(1, 2))
+synthetic.sampling.uniform.disk(radius = 2)
+synthetic.sampling.uniform.interval(0, 1, order = "ascending")
+synthetic.sampling.uniform.rectangle(c(-1, -2), c(1, 2))
+synthetic.simplex(parts = 3L)
+synthetic.sphere.cap(radius = 2, footprint.radius = 1)
+point <- synthetic.stratum.point("point", c(0, 0))
+line <- synthetic.stratum.segment("line", c(0, 1), c(0, 0), c(1, 0))
+synthetic.stratified(list(point, line))
+synthetic.stratum.point("origin", c(0, 0))
+synthetic.stratum.rectangle(
+  "square", rbind(c(-1, 1), c(-1, 1)), c(0, 0), diag(2)
+)
+synthetic.stratum.segment("line", c(-1, 1), c(0, 0), c(1, 0))
+synthetic.torus.patch(major.radius = 2, minor.radius = 0.5)
+synthetic.trefoil(scale = 0.5, t.range = c(0, pi))
+}
 \keyword{internal}
 \description{
 These objects are imported from other packages. Follow the links
