@@ -1,5 +1,12 @@
 # Quadform solver interface and comparison harness
 
+The installed native solvers and unified `quadform_geodesics()` interface now
+belong to dgraphs. Use its package help, solver tests and frozen-input comparison
+runner for current native development. This older R adapter protocol remains
+here with its geometry-constructor checks until the geometry/sampling migration.
+Its registry and historical qualification status are unchanged. The standalone
+compatibility loader below now requires a dgraphs build containing the solvers.
+
 Development interface **0.3.2** owns the shared adapter contract, numerical
 connector cache, independent trajectory audit, process supervision, and
 comparison scheduler. Scientific inputs remain in the

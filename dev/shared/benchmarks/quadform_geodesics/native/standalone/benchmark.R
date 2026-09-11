@@ -15,7 +15,7 @@ api <- qgn.load(home)
 sources <- c(file.path(repo,"src",c("quadform_geodesics_solver.cpp","quadform_geodesics_solver.h",
     "quadform_geodesics_solver_rcpp.cpp","RcppExports.cpp","Makevars","Makevars.win")),
   file.path(repo,"R",c("quadform_geodesics_solver.R","RcppExports.R")),
-  getLoadedDLLs()[["geosmooth"]][["path"]],system.file("R","geosmooth.rdb",package = "geosmooth"),
+  getLoadedDLLs()[["dgraphs"]][["path"]],system.file("R","dgraphs.rdb",package = "dgraphs"),
   file.path(home,"native/standalone",c("solver.R","reference.R","benchmark.R","tests.R")),
   file.path(home,"native",c("core.cpp","load.R")),file.path(home,"runtime.R"),
   file.path(home,"solvers/adaptive",c("common.R","local_graph.R","three_point.R","sensitivity.R")))

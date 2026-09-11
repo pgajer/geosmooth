@@ -1,5 +1,10 @@
 # Package-Integrated C++ Quadform Geodesic Solver
 
+Package ownership changed to dgraphs on 2026-09-11. The R and C++ source paths
+listed here are now relative to the dgraphs repository, and native component
+tests have moved with them. This directory retains the cross-implementation R
+oracle and its historical benchmark protocol until the geometry migration.
+
 Current configuration: `self-contained-cpp-analytic-v3`. Compared with the
 initial analytic configuration, returned heights now use exact binary-input
 products and sums followed by one rounding. Graph search compares exact sums
@@ -38,8 +43,8 @@ the comparison registry and package version remain unchanged.
 ## Use From R
 
 ```r
-library(geosmooth)
-solve_path <- getFromNamespace("quadform_geodesics_solver", "geosmooth")
+library(dgraphs)
+solve_path <- getFromNamespace("quadform_geodesics_solver", "dgraphs")
 
 result <- solve_path(
   A = diag(c(8, 8)),
@@ -210,7 +215,7 @@ Focused package checks live in `tests/testthat/test-quadform-geodesics.R` and
 high-precision references for previously failing and extreme-scale edges. They
 exercise the installed interface without the development tree. The larger
 reference comparisons remain here. Run `Rscript native/standalone/tests.R` from
-this benchmark directory, with the current geosmooth package and testthat
+this benchmark directory, with the current dgraphs package and testthat
 available. The development tests deliberately select a nonexistent Python
 interpreter. They check input validation, initialization, independent R length
 integration, both methods and all neighborhoods, seeded reproducibility,

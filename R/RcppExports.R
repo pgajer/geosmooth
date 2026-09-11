@@ -149,18 +149,6 @@ rcpp_ps_lps_assemble_cached_system <- function(cache, y, response_weights, lambd
     .Call(`_geosmooth_rcpp_ps_lps_assemble_cached_system`, cache, y, response_weights, lambda_sync)
 }
 
-#' @keywords internal
-#' @noRd
-rcpp_quadform_geodesics_solver <- function(A, from, to, domain, options) {
-    .Call(`_geosmooth_rcpp_quadform_geodesics_solver`, A, from, to, domain, options)
-}
-
-#' @keywords internal
-#' @noRd
-rcpp_quadform_geodesics_reference_uniforms <- function(seed, n) {
-    .Call(`_geosmooth_rcpp_quadform_geodesics_reference_uniforms`, seed, n)
-}
-
 #' SSRHE Hessian operator native backend
 #'
 #' Internal native backend for `ssrhe.hessian.operator()`.
