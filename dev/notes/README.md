@@ -1,8 +1,9 @@
 # Development notes
 
-Use this directory for durable human-readable notes: concepts, design memos,
-implementation notes, plans, prompts, testing strategy, tutorials, migration
-notes, and package-level guidance.
+Use this directory for concise package-facing guidance and implementation
+references. Standalone scientific notes and tutorials now live in the sibling
+`geosmooth_manuscripts/notes/` workspace, with their sources and figures.
 
-Generated evidence from runs, audits, reports, and status checks belongs under
-`dev/methods/`.
+Reports and their experiment assets belong with their manuscript study.
+Agent prompts, handoffs, audits, and execution records belong in private project
+storage, not here. See [Document locations](../../DOCUMENT_LOCATIONS.md).

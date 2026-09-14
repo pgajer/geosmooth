@@ -3,6 +3,12 @@
 This directory holds development notes, method workspaces, and project-level
 planning material that should not live at the package root.
 
+Standalone scientific documents and report bundles were relocated to sibling
+manuscript workspaces on September 12, 2026. See
+[Document locations](../DOCUMENT_LOCATIONS.md) for the current owners. The
+descriptions below apply to package-facing guidance and reusable development
+tools, not to a second copy of those scientific sources or private audit records.
+
 For the strategic scaffold that connects `geosmooth` methods to downstream
 biological and multi-omics applications, start with the canonical
 `trend_filtering` roadmap:

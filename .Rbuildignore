@@ -18,3 +18,4 @@
 ^CRAN-SUBMISSION-CHECKLIST\.md$
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
+^DOCUMENT_LOCATIONS[.]md$
