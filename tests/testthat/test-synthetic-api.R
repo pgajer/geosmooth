@@ -1,12 +1,12 @@
 test_that("synthetic specifications are draw-free and canonically hashable", {
-  geometry <- synthetic.quadform(
+  geometry <- dgraphs::synthetic.quadform(
     intrinsic.dim = 2, ambient.dim = 5,
     forms = list(diag(c(0.5, -0.25))),
     frame = "supplied",
     frame.matrix = rbind(diag(3), matrix(0, nrow = 2, ncol = 3)))
   spec <- synthetic.spec(
     geometry,
-    synthetic.sampling.uniform.box(-1, 1),
+    dgraphs::synthetic.sampling.uniform.box(-1, 1),
     synthetic.truth.polynomial(c(b0 = 1, b1 = 2, b2 = -1)),
     synthetic.response.gaussian(0.1))
   expect_s3_class(spec, "synthetic_spec")
@@ -15,13 +15,13 @@ test_that("synthetic specifications are draw-free and canonically hashable", {
     spec$specification.sha256,
     synthetic.spec(
       geometry,
-      synthetic.sampling.uniform.box(-1, 1),
+      dgraphs::synthetic.sampling.uniform.box(-1, 1),
       synthetic.truth.polynomial(c(b0 = 1, b1 = 2, b2 = -1)),
       synthetic.response.gaussian(0.1))$specification.sha256)
   expect_error(
     synthetic.spec(
       geometry,
-      synthetic.sampling.uniform.box(-1, 1),
+      dgraphs::synthetic.sampling.uniform.box(-1, 1),
       structure(
         list(kind = "truth", family = "bad", version = 1L,
              parameters = list(fun = function(x) x)),
@@ -104,7 +104,7 @@ test_that("legacy derived seeds are preflighted before RNG state changes", {
 
 test_that("G7 rejects an empty structural-zero subset explicitly", {
   condition <- tryCatch(
-    synthetic.sampling.dirichlet.zeros(
+    dgraphs::synthetic.sampling.dirichlet.zeros(
       concentration = 1, zero.fraction = 0.5, zero.parts = integer()),
     error = identity)
   expect_s3_class(condition, "geosmooth_empty_zero_parts")

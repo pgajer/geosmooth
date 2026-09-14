@@ -1037,8 +1037,8 @@ fit.metric.graph.lowpass <- function(
 #'
 #' Reuses a fitted metric graph low-pass eigensystem to smooth new responses.
 #'
-#' @param fitted.model A \code{"metric.graph.lowpass.fit"} object.
-#' @param y.new Numeric vector or matrix with one row per graph vertex.
+#' @param object A \code{"metric.graph.lowpass.fit"} object.
+#' @param y Numeric vector or matrix with one row per graph vertex.
 #' @param per.column.gcv Logical. If \code{TRUE}, select eta independently for
 #'   each response column using the cached eigenbasis.
 #' @param eta.grid Optional positive numeric eta grid for per-column GCV.
@@ -1049,6 +1049,7 @@ fit.metric.graph.lowpass <- function(
 #' @param block.size Optional block size for fixed-eta multi-column refits.
 #' @param verbose Logical progress flag.
 #'
+#' @param ... Additional arguments are not currently supported.
 #' @return A list of class \code{"metric.graph.lowpass.refit"}.
 #' @examples
 #' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
@@ -1057,31 +1058,35 @@ fit.metric.graph.lowpass <- function(
 #'   adj, lengths, y = 1:4, n.eigenpairs = 4L,
 #'   eta.grid = c(0.1, 1), eigen.solver = "dense"
 #' )
-#' refit.metric.graph.lowpass(fit, y.new = 4:1)
+#' refit(fit, y = 4:1)
+#' @seealso \code{\link{refit}} for supported fitted objects and migration.
+#' @method refit metric.graph.lowpass.fit
+#' @aliases refit.metric.graph.lowpass
 #' @export
-refit.metric.graph.lowpass <- function(fitted.model,
-                                       y.new,
+refit.metric.graph.lowpass.fit <- function(object,
+                                       y,
                                        per.column.gcv = FALSE,
                                        eta.grid = NULL,
                                        n.candidates = 40L,
                                        n.cores = 1L,
                                        block.size = NULL,
-                                       verbose = FALSE) {
-    if (!inherits(fitted.model, "metric.graph.lowpass.fit")) {
-        stop("fitted.model must be a 'metric.graph.lowpass.fit' object.")
+                                       verbose = FALSE, ...) {
+    .geosmooth.check.dots(...)
+    if (!inherits(object, "metric.graph.lowpass.fit")) {
+        stop("object must be a 'metric.graph.lowpass.fit' object.")
     }
-    spectral <- fitted.model$spectral
+    spectral <- object$spectral
     V <- spectral$eigenvectors
     eigenvalues <- spectral$eigenvalues
-    if (is.null(V) || !is.matrix(V)) stop("fitted.model$spectral$eigenvectors must be a matrix.")
+    if (is.null(V) || !is.matrix(V)) stop("object$spectral$eigenvectors must be a matrix.")
     if (is.null(eigenvalues) || !is.numeric(eigenvalues)) {
-        stop("fitted.model$spectral$eigenvalues must be numeric.")
+        stop("object$spectral$eigenvalues must be numeric.")
     }
-    .require.metric.graph.lowpass.finite(V, "fitted.model$spectral$eigenvectors")
-    .require.metric.graph.lowpass.finite(eigenvalues, "fitted.model$spectral$eigenvalues")
+    .require.metric.graph.lowpass.finite(V, "object$spectral$eigenvectors")
+    .require.metric.graph.lowpass.finite(eigenvalues, "object$spectral$eigenvalues")
 
     n <- nrow(V)
-    y.info <- .prepare.metric.graph.lowpass.response.matrix(y.new, n)
+    y.info <- .prepare.metric.graph.lowpass.response.matrix(y, n)
     Y <- y.info$Y
     n.responses <- ncol(Y)
     col.names <- y.info$col.names
@@ -1123,7 +1128,7 @@ refit.metric.graph.lowpass <- function(fitted.model,
                 gcv.result = gcv.result,
                 n = n,
                 n.eta = length(eta.grid),
-                context = "refit.metric.graph.lowpass(per.column.gcv = TRUE)"
+                context = "refit(per.column.gcv = TRUE)"
             )
             Y.hat[, j] <- gcv.result$y.hat
             eta.optimal[j] <- gcv.result$eta.optimal
@@ -1163,11 +1168,11 @@ refit.metric.graph.lowpass <- function(fitted.model,
     f.lambda <- spectral$filtered.eigenvalues
     eta.used <- spectral$eta.optimal
     if (is.null(f.lambda) || length(f.lambda) != ncol(V)) {
-        stop("fitted.model$spectral$filtered.eigenvalues is missing or has the wrong length.")
+        stop("object$spectral$filtered.eigenvalues is missing or has the wrong length.")
     }
     .require.metric.graph.lowpass.finite(f.lambda,
-                                         "fitted.model$spectral$filtered.eigenvalues")
-    .require.metric.graph.lowpass.finite(eta.used, "fitted.model$spectral$eta.optimal")
+                                         "object$spectral$filtered.eigenvalues")
+    .require.metric.graph.lowpass.finite(eta.used, "object$spectral$eta.optimal")
     block.index <- .make.metric.graph.lowpass.block.index(n.responses, block.size)
     Y.hat <- matrix(0, nrow = n, ncol = n.responses)
     residuals <- matrix(0, nrow = n, ncol = n.responses)

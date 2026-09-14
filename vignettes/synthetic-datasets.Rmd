@@ -21,8 +21,8 @@ work under an explicit seed and RNG policy and returns a validated
 library(geosmooth)
 
 circle.spec <- synthetic.spec(
-  geometry = synthetic.circle(radius = 1, ambient.dim = 2),
-  sampling = synthetic.sampling.grid.interval(
+  geometry = dgraphs::synthetic.circle(radius = 1, ambient.dim = 2),
+  sampling = dgraphs::synthetic.sampling.grid.interval(
     0, 2 * pi, endpoints = "exclude.lower"),
   truth = synthetic.truth.polynomial(c(b0 = 0)),
   response = synthetic.response.gaussian(sd = 0.05)
@@ -37,13 +37,13 @@ quadratic forms; a paraboloid or saddle supplies one or more symmetric forms.
 
 ```{r quadform}
 surface.spec <- synthetic.spec(
-  geometry = synthetic.quadform(
+  geometry = dgraphs::synthetic.quadform(
     intrinsic.dim = 2,
     ambient.dim = 5,
     forms = list(diag(c(1, -1))),
     frame = "random.orthonormal"
   ),
-  sampling = synthetic.sampling.uniform.box(-1, 1),
+  sampling = dgraphs::synthetic.sampling.uniform.box(-1, 1),
   truth = synthetic.truth.polynomial(c(b0 = 0, b1 = 1, b22 = -0.5)),
   response = synthetic.response.gaussian(sd = 0.1)
 )

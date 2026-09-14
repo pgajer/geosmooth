@@ -76,7 +76,7 @@ run.e4.1.k.calibration <- function(
             stop("K = ", K, " produced NA local fits on the audited design; ",
                  "calibration requires complete fits.", call. = FALSE)
         }
-        S <- lps.smoother.matrix(fit)
+        S <- smoother.matrix(fit)
         bias <- as.numeric(S %*% truth) - truth
         se <- sigma * sqrt(rowSums(S^2))
         ratio <- abs(bias) / se

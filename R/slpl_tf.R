@@ -481,10 +481,13 @@ fit.slpl.tf <- function(
 #'                      support.type = "knn", support.size = 7L,
 #'                      lambda1 = 0.1, lambda2 = 0,
 #'                      lambda.selection = "fixed")
-#'   refit.slpl.tf(fit, y = X[, 1]^3)
+#'   refit(fit, y = X[, 1]^3)
 #' }
+#' @seealso \code{\link{refit}} for supported fitted objects and migration.
+#' @method refit slpl_tf
+#' @aliases refit.slpl.tf
 #' @export
-refit.slpl.tf <- function(object, y, lambda1 = NULL, lambda2 = NULL,
+refit.slpl_tf <- function(object, y, lambda1 = NULL, lambda2 = NULL,
                           reuse.lambda = TRUE, verbose = FALSE, ...) {
     if (!inherits(object, "slpl_tf")) {
         stop("'object' must be an slpl_tf fit.", call. = FALSE)

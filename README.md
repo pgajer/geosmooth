@@ -6,6 +6,17 @@ includes local polynomial smoothing, model-averaged local polynomial smoothing,
 local polynomial lifting trend filtering, synchronized local polynomial lifting
 trend filtering, graph low-pass filtering, and Hessian-energy regression.
 
+For a task-based catalog of every exported function, prediction capabilities,
+and examples, read [Finding your way around geosmooth](vignettes/function-guide.Rmd).
+In an installed package, use `vignette("function-guide", package = "geosmooth")`
+or start with `help("geosmooth-package", package = "geosmooth")`.
+
+The [API design review](dev/notes/package/api-review-2026-09-14.md) discusses
+documentation lessons from Hmisc and possible future simplifications. The
+package now exports 60 functions: geometry/sampling helpers are called through
+`dgraphs::`, quadratic Hessian fitting uses one entry point, and shared
+`refit()` and `smoother.matrix()` generics select methods from fitted objects. See [NEWS](NEWS.md) for migration details.
+
 ## Quick Start
 
 ```r
@@ -150,6 +161,17 @@ ssrhe.fit <- fit.ssrhe.hessian.regression(
     tangent.dim = 2L,
     lambda1 = 0.05,
     return.local.diagnostics = FALSE
+)
+
+# Select penalties with the same fitter (use "gcv" for fully observed data).
+ssrhe.cv <- fit.ssrhe.hessian.regression(
+    X = X2,
+    y = y2,
+    k = 12L,
+    tangent.dim = 2L,
+    lambda.selection = "cv",
+    lambda1.grid = c(0.01, 0.05, 0.2),
+    cv.control = list(cv.folds = 5L)
 )
 ```
 

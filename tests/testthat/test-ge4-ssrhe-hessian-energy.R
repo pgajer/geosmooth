@@ -550,7 +550,7 @@ test_that("fit.ssrhe.hessian.regression reproduces fully observed y when penalti
     expect_equal(fit$objective, 0, tolerance = 1e-12)
 })
 
-test_that("refit.ssrhe.hessian.regression reuses the operator for new responses and lambdas", {
+test_that("refit reuses the operator for new responses and lambdas", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 4),
@@ -566,9 +566,9 @@ test_that("refit.ssrhe.hessian.regression reuses the operator for new responses 
         lambda1 = 0.2,
         lambda2 = 0
     )
-    refit <- refit.ssrhe.hessian.regression(
+    refit <- refit(
         fit,
-        y.new = y2,
+        y = y2,
         lambda1 = 0.4
     )
 
@@ -650,7 +650,7 @@ test_that("fit.ssrhe.hessian.regression matches SSRHE semi-supervised label conv
     expect_true(all(is.na(fit$residuals[!labeled])))
 })
 
-test_that("fit.ssrhe.hessian.regression.cv reuses the operator and selects a grid point", {
+test_that("quadratic Hessian CV reuses the operator and selects a grid point", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 5),
@@ -662,17 +662,17 @@ test_that("fit.ssrhe.hessian.regression.cv reuses the operator and selects a gri
     fold.id <- integer(nrow(X))
     fold.id[labeled] <- rep(1:3, length.out = sum(labeled))
 
-    fit <- fit.ssrhe.hessian.regression.cv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         k = 12L,
         tangent.dim = 2L,
         lambda1.grid = c(0.05, 0.2),
         lambda2.grid = c(0, 0.03),
-        fold.id = fold.id,
         stabilizer = TRUE,
-        loss = "mse",
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "cv",
+        cv.control = list(foldid = fold.id, loss = "mse")
     )
 
     expect_s3_class(fit, "ssrhe.hessian.cv.fit")
@@ -686,14 +686,14 @@ test_that("fit.ssrhe.hessian.regression.cv reuses the operator and selects a gri
     expect_equal(fit$fold.id, fold.id)
 })
 
-test_that("fit.ssrhe.hessian.regression.cv supports adaptive-radius neighborhoods", {
+test_that("quadratic Hessian CV supports adaptive-radius neighborhoods", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 5),
                                y = seq(0, 1, length.out = 5)))
     y <- sin(2 * pi * X[, 1]) + 0.25 * X[, 2]^2
 
-    fit <- fit.ssrhe.hessian.regression.cv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 2L,
@@ -704,10 +704,10 @@ test_that("fit.ssrhe.hessian.regression.cv supports adaptive-radius neighborhood
         min.support = 8L,
         lambda1.grid = c(0.05, 0.2),
         lambda2.grid = c(0, 0.03),
-        nfolds = 3L,
         stabilizer = TRUE,
-        loss = "mse",
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "cv",
+        cv.control = list(cv.folds = 3L, loss = "mse")
     )
 
     expect_s3_class(fit, "ssrhe.hessian.cv.fit")
@@ -735,7 +735,7 @@ test_that("ssrhe.support.grid builds compact adaptive-radius profiles", {
     expect_true(all(grid$min.support <= 30L))
 })
 
-test_that("fit.ssrhe.hessian.regression.cv supports outer support CV", {
+test_that("quadratic Hessian CV supports outer support CV", {
     skip_if_not_installed("Matrix")
 
     x <- seq(0, 1, length.out = 24)
@@ -747,18 +747,17 @@ test_that("fit.ssrhe.hessian.regression.cv supports outer support CV", {
         min.support = c(5L, 8L)
     )
 
-    fit <- fit.ssrhe.hessian.regression.cv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
         derivative.order = 3L,
         neighborhood.type = "adaptive.radius",
-        support.selection = "cv",
-        support.grid = support.grid,
         lambda1.grid = c(1e-4, 1e-2),
         lambda2.grid = 0,
-        fold.id = fold.id,
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "cv",
+        cv.control = list(support.selection = "cv", support.grid = support.grid, foldid = fold.id)
     )
 
     expect_s3_class(fit, "ssrhe.hessian.cv.fit")
@@ -771,14 +770,14 @@ test_that("fit.ssrhe.hessian.regression.cv supports outer support CV", {
     expect_true(all(is.finite(fit$fitted.values)))
 })
 
-test_that("fit.ssrhe.hessian.regression.gcv selects a finite grid point", {
+test_that("quadratic Hessian GCV selects a finite grid point", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 5),
                                y = seq(0, 1, length.out = 5)))
     y <- sin(2 * pi * X[, 1]) + 0.25 * X[, 2]^2
 
-    fit <- fit.ssrhe.hessian.regression.gcv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         k = 12L,
@@ -786,7 +785,8 @@ test_that("fit.ssrhe.hessian.regression.gcv selects a finite grid point", {
         lambda1.grid = c(0.05, 0.2),
         lambda2.grid = c(0, 0.03),
         stabilizer = TRUE,
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "gcv"
     )
 
     expect_s3_class(fit, "ssrhe.hessian.gcv.fit")
@@ -800,14 +800,14 @@ test_that("fit.ssrhe.hessian.regression.gcv selects a finite grid point", {
     expect_equal(fit$lambda$lambda2, fit$selection$lambda2)
 })
 
-test_that("fit.ssrhe.hessian.regression.gcv traces shrink with stronger penalty", {
+test_that("quadratic Hessian GCV traces shrink with stronger penalty", {
     skip_if_not_installed("Matrix")
 
     x <- seq(0, 1, length.out = 24)
     X <- matrix(x, ncol = 1)
     y <- sin(2 * pi * x)
 
-    fit <- fit.ssrhe.hessian.regression.gcv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
@@ -817,7 +817,8 @@ test_that("fit.ssrhe.hessian.regression.gcv traces shrink with stronger penalty"
         min.support = 8L,
         lambda1.grid = c(1e-4, 1e-1),
         lambda2.grid = 0,
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "gcv"
     )
 
     ordered <- fit$gcv.table[order(fit$gcv.table$lambda1), ]
@@ -825,14 +826,14 @@ test_that("fit.ssrhe.hessian.regression.gcv traces shrink with stronger penalty"
     expect_true(all(is.finite(fit$fitted.values)))
 })
 
-test_that("fit.ssrhe.hessian.regression.gcv supports Hutchinson trace estimates", {
+test_that("quadratic Hessian GCV supports Hutchinson trace estimates", {
     skip_if_not_installed("Matrix")
 
     x <- seq(0, 1, length.out = 18)
     X <- matrix(x, ncol = 1)
     y <- sin(2 * pi * x)
 
-    exact <- fit.ssrhe.hessian.regression.gcv(
+    exact <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
@@ -843,9 +844,10 @@ test_that("fit.ssrhe.hessian.regression.gcv supports Hutchinson trace estimates"
         lambda1.grid = c(1e-4, 1e-2),
         lambda2.grid = 0,
         ridge = 1e-8,
-        gcv.trace.method = "exact"
+        lambda.selection = "gcv",
+        gcv.control = list(trace.method = "exact")
     )
-    hutch <- fit.ssrhe.hessian.regression.gcv(
+    hutch <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
@@ -856,11 +858,10 @@ test_that("fit.ssrhe.hessian.regression.gcv supports Hutchinson trace estimates"
         lambda1.grid = c(1e-4, 1e-2),
         lambda2.grid = 0,
         ridge = 1e-8,
-        gcv.trace.method = "hutchinson",
-        gcv.trace.n.probes = 600L,
-        gcv.trace.seed = 19L
+        lambda.selection = "gcv",
+        gcv.control = list(trace.method = "hutchinson", trace.n.probes = 600L, trace.seed = 19L)
     )
-    hutch.again <- fit.ssrhe.hessian.regression.gcv(
+    hutch.again <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
@@ -871,9 +872,8 @@ test_that("fit.ssrhe.hessian.regression.gcv supports Hutchinson trace estimates"
         lambda1.grid = c(1e-4, 1e-2),
         lambda2.grid = 0,
         ridge = 1e-8,
-        gcv.trace.method = "hutchinson",
-        gcv.trace.n.probes = 600L,
-        gcv.trace.seed = 19L
+        lambda.selection = "gcv",
+        gcv.control = list(trace.method = "hutchinson", trace.n.probes = 600L, trace.seed = 19L)
     )
 
     expect_equal(hutch$gcv.table$trace.S,
@@ -888,7 +888,7 @@ test_that("fit.ssrhe.hessian.regression.gcv supports Hutchinson trace estimates"
               1.25)
 })
 
-test_that("fit.ssrhe.hessian.regression.gcv supports outer support GCV", {
+test_that("quadratic Hessian GCV supports outer support GCV", {
     skip_if_not_installed("Matrix")
 
     x <- seq(0, 1, length.out = 24)
@@ -899,17 +899,17 @@ test_that("fit.ssrhe.hessian.regression.gcv supports outer support GCV", {
         min.support = c(5L, 8L)
     )
 
-    fit <- fit.ssrhe.hessian.regression.gcv(
+    fit <- fit.ssrhe.hessian.regression(
         X = X,
         y = y,
         tangent.dim = 1L,
         derivative.order = 3L,
         neighborhood.type = "adaptive.radius",
-        support.selection = "gcv",
-        support.grid = support.grid,
         lambda1.grid = c(1e-4, 1e-2),
         lambda2.grid = 0,
-        ridge = 1e-8
+        ridge = 1e-8,
+        lambda.selection = "gcv",
+        gcv.control = list(support.selection = "gcv", support.grid = support.grid)
     )
 
     expect_s3_class(fit, "ssrhe.hessian.gcv.fit")
@@ -922,7 +922,7 @@ test_that("fit.ssrhe.hessian.regression.gcv supports outer support GCV", {
     expect_true(all(is.finite(fit$fitted.values)))
 })
 
-test_that("fit.ssrhe.hessian.regression.gcv rejects missing responses", {
+test_that("quadratic Hessian GCV rejects missing responses", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 4),
@@ -931,12 +931,13 @@ test_that("fit.ssrhe.hessian.regression.gcv rejects missing responses", {
     y[2L] <- NA_real_
 
     expect_error(
-        fit.ssrhe.hessian.regression.gcv(
+        fit.ssrhe.hessian.regression(
             X = X,
             y = y,
             k = 10L,
             tangent.dim = 2L,
-            lambda1.grid = c(0.1, 1)
+            lambda1.grid = c(0.1, 1),
+            lambda.selection = "gcv"
         ),
         "fully observed"
     )
@@ -1182,7 +1183,7 @@ test_that("fit.ssrhe.hessian.l1.regression selects a CV lambda for order 3", {
     expect_true(all(is.finite(fit$fitted.values)))
 })
 
-test_that("refit.ssrhe.hessian.l1.regression reuses the operator", {
+test_that("refit reuses the operator", {
     skip_if_not_installed("Matrix")
     skip_if_not_installed("genlasso")
 
@@ -1200,9 +1201,9 @@ test_that("refit.ssrhe.hessian.l1.regression reuses the operator", {
         lambda.selection = "fixed",
         maxsteps = 1000L
     )
-    refit <- refit.ssrhe.hessian.l1.regression(
+    refit <- refit(
         fit,
-        y.new = y2,
+        y = y2,
         lambda.grid = 0.12,
         lambda.selection = "fixed",
         maxsteps = 1000L
@@ -1336,7 +1337,7 @@ test_that("fit.ssrhe.hessian.l1.regression supports outer support CV", {
     expect_true(all(is.finite(fit$fitted.values)))
 })
 
-test_that("fit.ssrhe.hessian.regression.cv rejects matrix responses for now", {
+test_that("quadratic Hessian CV rejects matrix responses for now", {
     skip_if_not_installed("Matrix")
 
     X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 4),
@@ -1344,12 +1345,13 @@ test_that("fit.ssrhe.hessian.regression.cv rejects matrix responses for now", {
     y <- cbind(a = X[, 1], b = X[, 2])
 
     expect_error(
-        fit.ssrhe.hessian.regression.cv(
+        fit.ssrhe.hessian.regression(
             X = X,
             y = y,
             k = 10L,
             tangent.dim = 2L,
-            lambda1.grid = c(0.1, 1)
+            lambda1.grid = c(0.1, 1),
+            lambda.selection = "cv"
         ),
         "one response vector"
     )
@@ -1406,14 +1408,15 @@ test_that("order-3 SSRHE L2 rejects supplemental stabilizer paths", {
         "lambda2/stabilizer"
     )
     expect_error(
-        fit.ssrhe.hessian.regression.cv(
+        fit.ssrhe.hessian.regression(
             X = X,
             y = y,
             k = 12L,
             tangent.dim = 2L,
             derivative.order = 3L,
             lambda1.grid = c(0.1, 0.2),
-            lambda2.grid = c(0, 0.1)
+            lambda2.grid = c(0, 0.1),
+            lambda.selection = "cv"
         ),
         "lambda2.grid/stabilizer"
     )

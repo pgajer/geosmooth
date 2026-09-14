@@ -572,10 +572,13 @@ fit.lpl.tf <- function(
 #'   fit <- fit.lpl.tf(X, X[, 1]^2, degree = 1L,
 #'                     support.type = "knn", support.size = 7L,
 #'                     lambda = 0.1, lambda.selection = "fixed")
-#'   refit.lpl.tf(fit, y = X[, 1]^3)
+#'   refit(fit, y = X[, 1]^3)
 #' }
+#' @seealso \code{\link{refit}} for supported fitted objects and migration.
+#' @method refit lpl_tf
+#' @aliases refit.lpl.tf
 #' @export
-refit.lpl.tf <- function(object, y, lambda = NULL, reuse.lambda = TRUE,
+refit.lpl_tf <- function(object, y, lambda = NULL, reuse.lambda = TRUE,
                          verbose = FALSE, ...) {
     if (!inherits(object, "lpl_tf")) {
         stop("'object' must be an lpl_tf fit.", call. = FALSE)

@@ -38,7 +38,7 @@ group.files <- list(
         all.files,
         value = TRUE
     ),
-    ssrhe = "test-ge4-ssrhe-hessian-energy.R",
+    ssrhe = c("test-ge4-ssrhe-hessian-energy.R", "test-hessian-api-consolidation.R"),
     validation = validation.files
 )
 

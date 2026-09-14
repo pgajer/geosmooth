@@ -79,6 +79,16 @@ ssrhe.fit <- geosmooth::fit.ssrhe.hessian.regression(
     return.local.diagnostics = FALSE
 )
 
+ssrhe.cv <- geosmooth::fit.ssrhe.hessian.regression(
+    X = X2,
+    y = y2,
+    k = 12L,
+    tangent.dim = 2L,
+    lambda.selection = "cv",
+    lambda1.grid = c(0.01, 0.05, 0.2),
+    cv.control = list(cv.folds = 5L)
+)
+
 list(
     lps.selected = lps.fit$selected,
     lps.rmse = sqrt(mean((lps.pred - y)^2)),

@@ -2,7 +2,7 @@
 # machinery (Tier 4, uncertainty). No DGP-library dependency: fixtures are
 # seeded deterministic point clouds.
 #
-# The implemented route (lps.smoother.matrix / lps.pointwise.band) extracts S
+# The implemented route (smoother.matrix / lps.pointwise.band) extracts S
 # analytically from the local WLS algebra. The reference route below extracts
 # S independently, column by column, through the public API as fit(e_j) — the
 # E0.2 protocol (linearity makes finite differencing exact). The GATE asserts
@@ -80,7 +80,7 @@ e41.check.band.against.probe <- function(fit, S.probe, sigma0) {
     expect_lt(max(abs(as.numeric(S.probe %*% y) - raw)), e41.tol)
 
     ## Implemented analytic S agrees with the independent probe S entrywise.
-    S.impl <- lps.smoother.matrix(fit)
+    S.impl <- smoother.matrix(fit)
     expect_lt(max(abs(S.impl - S.probe)), e41.tol)
 
     ## Known-sigma variance: sigma0^2 * sum_j S_ij^2 from the probe S.
@@ -160,7 +160,7 @@ test_that("E4.1 smoother extraction supports rectangular X.eval while the band r
     X.eval <- X[seq_len(11L), , drop = FALSE]
 
     fit <- e41.fixed.lps.fit(X, y, X.eval = X.eval)
-    S <- lps.smoother.matrix(fit)
+    S <- smoother.matrix(fit)
     expect_identical(dim(S), c(11L, n))
     expect_lt(max(abs(as.numeric(S %*% y) - fit$fitted.values.raw)), e41.tol)
     expect_error(lps.pointwise.band(fit), "X.eval identical to X")
@@ -178,7 +178,7 @@ test_that("E4.1 extraction reproduces rank-dropped local fits (support below des
     ## internal self-guard (max |S y - fitted| <= 1e-10) enforces it.
     fit.drop <- e41.fixed.lps.fit(X, y, support.size = 2L)
     expect_false(anyNA(fit.drop$fitted.values))
-    S.drop <- lps.smoother.matrix(fit.drop)
+    S.drop <- smoother.matrix(fit.drop)
     expect_lt(max(abs(as.numeric(S.drop %*% y) - fit.drop$fitted.values.raw)),
               e41.tol)
 })
@@ -202,7 +202,7 @@ test_that("E4.1 machinery rejects configurations outside the linear-smoother pre
         ridge.condition.max = Inf,
         unstable.action = "na"
     )
-    expect_error(lps.smoother.matrix(fit.grid), "singleton")
+    expect_error(smoother.matrix(fit.grid), "singleton")
     expect_error(lps.pointwise.band(fit.grid), "singleton")
 
     ## Auto chart dimension: a separate map, excluded by the spec.
@@ -214,7 +214,7 @@ test_that("E4.1 machinery rejects configurations outside the linear-smoother pre
         coordinate.method = "local.pca",
         chart.dim = "auto"
     )
-    expect_error(lps.smoother.matrix(fit.auto), "chart")
+    expect_error(smoother.matrix(fit.auto), "chart")
 
     ## local.pca with the NULL default chart dimension: not explicit.
     fit.null.dim <- e41.fixed.lps.fit(
@@ -222,7 +222,7 @@ test_that("E4.1 machinery rejects configurations outside the linear-smoother pre
         coordinate.method = "local.pca",
         chart.dim = NULL
     )
-    expect_error(lps.smoother.matrix(fit.null.dim), "chart")
+    expect_error(smoother.matrix(fit.null.dim), "chart")
 
     ## Non-gaussian outcome family.
     y.bin <- as.numeric(stats::runif(n) < 0.5)
@@ -239,7 +239,7 @@ test_that("E4.1 machinery rejects configurations outside the linear-smoother pre
         unstable.action = "na",
         outcome.family = "bernoulli"
     )
-    expect_error(lps.smoother.matrix(fit.bern), "gaussian")
+    expect_error(smoother.matrix(fit.bern), "gaussian")
 
     ## Unsupported design basis.
     fit.monomial <- fit.lps(
@@ -254,7 +254,7 @@ test_that("E4.1 machinery rejects configurations outside the linear-smoother pre
         ridge.condition.max = Inf,
         unstable.action = "na"
     )
-    expect_error(lps.smoother.matrix(fit.monomial),
+    expect_error(smoother.matrix(fit.monomial),
                  "orthogonal.polynomial.drop")
 
     ## Band argument validation on a valid fit.

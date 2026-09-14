@@ -33,7 +33,7 @@
 # FAST PATH (spec-questions §5): S depends only on (X, configuration), and the
 # geometry is FIXED across replicates (conditional-on-design coverage, the
 # spec's "empirical coverage of f(x_i) across replicates"). The harness
-# therefore extracts S once via lps.smoother.matrix() and computes each
+# therefore extracts S once via smoother.matrix() and computes each
 # replicate's fit as yhat_r = S %*% y_r — the E0.2-pinned linear-smoother
 # identity. Drift guard: at replicate 1, every `drift.check.every`-th
 # replicate, and the last replicate, the full fit.lps() + lps.pointwise.band()
@@ -153,7 +153,7 @@ run.e4.1.coverage.study <- function(
         stop("the fixed configuration produced NA local fits on this design; ",
              "the coverage study requires complete fits.", call. = FALSE)
     }
-    S <- lps.smoother.matrix(fit.S)
+    S <- smoother.matrix(fit.S)
     df <- sum(diag(S))
     stopifnot(is.finite(df), df < n)
     row.norm <- sqrt(rowSums(S^2))

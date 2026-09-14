@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Finding your way around geosmooth</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Finding your way around geosmooth</h1>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#choose-a-starting-point" id="toc-choose-a-starting-point">Choose a starting point</a></li>
+<li><a href="#a-first-regression-fit" id="toc-a-first-regression-fit">A
+first regression fit</a>
+<ul>
+<li><a href="#prediction-and-reusable-fits" id="toc-prediction-and-reusable-fits">Prediction and reusable
+fits</a></li>
+<li><a href="#refit-and-extract-smoother-matrices" id="toc-refit-and-extract-smoother-matrices">Refit and extract smoother
+matrices</a></li>
+</ul></li>
+<li><a href="#function-catalog" id="toc-function-catalog">Function
+catalog</a>
+<ul>
+<li><a href="#shared-model-operations" id="toc-shared-model-operations">Shared model operations</a></li>
+<li><a href="#local-regression-and-prediction-synchronization" id="toc-local-regression-and-prediction-synchronization">Local
+regression and prediction synchronization</a></li>
+<li><a href="#model-assessment-and-uncertainty" id="toc-model-assessment-and-uncertainty">Model assessment and
+uncertainty</a></li>
+<li><a href="#lifting-trend-filters" id="toc-lifting-trend-filters">Lifting trend filters</a></li>
+<li><a href="#graph-spectral-smoothing-and-graph-trend-filtering" id="toc-graph-spectral-smoothing-and-graph-trend-filtering">Graph
+spectral smoothing and graph trend filtering</a></li>
+<li><a href="#hessian-energy-regression" id="toc-hessian-energy-regression">Hessian-energy regression</a></li>
+<li><a href="#harmonic-interpolation" id="toc-harmonic-interpolation">Harmonic interpolation</a></li>
+<li><a href="#probability-mass-and-subject-occupation" id="toc-probability-mass-and-subject-occupation">Probability mass and
+subject occupation</a></li>
+<li><a href="#experimental-transport-methods" id="toc-experimental-transport-methods">Experimental transport
+methods</a></li>
+<li><a href="#synthetic-datasets-specifications-responses-and-reproducibility" id="toc-synthetic-datasets-specifications-responses-and-reproducibility">Synthetic
+datasets: specifications, responses, and reproducibility</a></li>
+<li><a href="#geometry-constructors-and-helpers-supplied-by-dgraphs" id="toc-geometry-constructors-and-helpers-supplied-by-dgraphs">Geometry
+constructors and helpers supplied by dgraphs</a></li>
+<li><a href="#sampling-constructors-supplied-by-dgraphs" id="toc-sampling-constructors-supplied-by-dgraphs">Sampling constructors
+supplied by dgraphs</a></li>
+</ul></li>
+<li><a href="#finding-detailed-help" id="toc-finding-detailed-help">Finding detailed help</a></li>
+</ul>
+</div>
+
+<style>
+body { max-width: 1120px; }
+td, th { vertical-align: top; }
+td code { white-space: normal; overflow-wrap: anywhere; }
+</style>
+<p><code>geosmooth</code> estimates a response or probability mass on
+coordinate data and graphs. Start with the task you want to perform,
+then choose a method. You do not need to learn the operator constructors
+or synthetic-data helpers to fit your first model.</p>
+<p>This guide describes the current API of version 0.1.0. The catalog
+below covers all 60 explicitly exported functions, each defined in
+<code>geosmooth</code>. The 25 geometry and sampling helpers formerly
+re-exported here are now called directly from <code>dgraphs</code>; a
+separate dependency catalog below lists them. The package also registers
+44 S3 methods, which R selects when you call a generic such as
+<code>predict()</code> or <code>print()</code> on an appropriate object.
+Those are described by workflow rather than as 44 additional entry
+points.</p>
+<div id="choose-a-starting-point" class="section level2">
+<h2>Choose a starting point</h2>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Your task</th>
+<th>Start here</th>
+<th>What to know before choosing</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Regress a response on coordinates</td>
+<td><code>fit.lps()</code></td>
+<td>Local polynomial smoothing; selects neighborhood size, degree, and
+kernel by cross-validation.</td>
+</tr>
+<tr class="even">
+<td>Average predictions from overlapping local models</td>
+<td><code>fit.malps()</code></td>
+<td>Model-averaged local polynomial smoothing; supports coordinate and
+graph-geodesic neighborhoods.</td>
+</tr>
+<tr class="odd">
+<td>Couple local polynomial predictions across overlaps</td>
+<td><code>fit.ps.lps()</code></td>
+<td>Prediction-synchronized local polynomial smoothing; experimental R
+reference implementation.</td>
+</tr>
+<tr class="even">
+<td>Fit a locally adaptive trend with a sparse difference penalty</td>
+<td><code>fit.lpl.tf()</code></td>
+<td>Local polynomial lifting trend filtering; requires optional package
+<code>genlasso</code>.</td>
+</tr>
+<tr class="odd">
+<td>Add synchronization to a lifting trend filter</td>
+<td><code>fit.slpl.tf()</code></td>
+<td>Synchronized local polynomial lifting trend filtering; adds a
+second, quadratic penalty.</td>
+</tr>
+<tr class="even">
+<td>Smooth a response already attached to graph vertices</td>
+<td><code>fit.metric.graph.lowpass()</code> or
+<code>fit.graph.trend.filtering()</code></td>
+<td>Choose spectral low-pass smoothing or a graph-difference penalty.
+Edge-weight meanings differ; see below.</td>
+</tr>
+<tr class="odd">
+<td>Penalize local second derivatives on a point cloud</td>
+<td><code>fit.ssrhe.hessian.regression()</code></td>
+<td>Hessian-energy regression, following semi-supervised regression
+using Hessian energy (SSRHE); use <code>lambda.selection = &quot;cv&quot;</code>
+or <code>&quot;gcv&quot;</code> to select penalties.</td>
+</tr>
+<tr class="even">
+<td>Use an absolute-value Hessian penalty</td>
+<td><code>fit.ssrhe.hessian.l1.regression()</code></td>
+<td>Different regularization from quadratic Hessian energy; has its own
+solver and tuning controls.</td>
+</tr>
+<tr class="odd">
+<td>Interpolate graph values while fixing a region boundary</td>
+<td><code>perform.harmonic.smoothing()</code></td>
+<td>Iterative harmonic relaxation; <code>harmonic.smoother()</code> also
+records extrema and topology diagnostics.</td>
+</tr>
+<tr class="even">
+<td>Estimate probability mass over a fixed support</td>
+<td><code>fit.density()</code></td>
+<td>Takes nonnegative counts or masses; returns mass over the rows of
+<code>X</code>.</td>
+</tr>
+<tr class="odd">
+<td>Estimate where one subject visits that support</td>
+<td><code>fit.subject.od()</code></td>
+<td>Takes visit indices, including repeats; handles occupation-density
+fitting and optional visit-level validation.</td>
+</tr>
+<tr class="even">
+<td>Build reproducible synthetic examples</td>
+<td><code>synthetic.spec()</code> then
+<code>materialize.synthetic()</code></td>
+<td>Combine geometry, sampling, truth, and response noise.</td>
+</tr>
+</tbody>
+</table>
+<p>These choices describe different estimators, not a ranking of
+predictive performance. Parallel-transport trend filtering and
+transported graph Hessians have their own <a href="#experimental-transport-methods">experimental section</a>.</p>
+</div>
+<div id="a-first-regression-fit" class="section level2">
+<h2>A first regression fit</h2>
+<p>Use <code>X</code> with one observation per row and a response
+<code>y</code> of matching length. A local chart is a coordinate system
+fitted near an observation, often using principal component analysis
+(PCA). Start in the supplied coordinates before adding local charts or
+changing numerical controls.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(geosmooth)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">length.out =</span> <span class="dv">60</span>), <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">sin</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> X[, <span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(X), <span class="at">sd =</span> <span class="fl">0.08</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fit.lps</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  X, y,</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>  <span class="at">foldid =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">length.out =</span> <span class="fu">nrow</span>(X)),</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>  <span class="at">support.grid =</span> <span class="fu">c</span>(<span class="dv">8</span><span class="dt">L</span>, <span class="dv">12</span><span class="dt">L</span>, <span class="dv">16</span><span class="dt">L</span>),</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>  <span class="at">degree.grid =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  <span class="at">kernel.grid =</span> <span class="st">&quot;gaussian&quot;</span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">predict</span>(fit))</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; [1] -0.01193899  0.09633293  0.20478722  0.31316459  0.41899355  0.52015223</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>new.X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="at">length.out =</span> <span class="dv">5</span>), <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="fu">predict</span>(fit, <span class="at">newdata =</span> new.X)</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt; [1]  0.593224184  0.978163565  0.003195166 -0.910822694 -0.559835093</span></span></code></pre></div>
+<p>Cross-validation (CV) holds out responses to choose tuning
+parameters. A support is the neighborhood used for a local fit; a grid
+lists candidate values. The local support size and polynomial degree
+jointly determine whether a local fit has enough observations. For
+grouped observations, use <code>lps.grouped.foldid()</code> to keep each
+group in one fold. Use <code>lps.nested.cv()</code> when you need an
+outer assessment of the whole tuning procedure.</p>
+<div id="prediction-and-reusable-fits" class="section level3">
+<h3>Prediction and reusable fits</h3>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Fitted object</th>
+<th>How to get predictions</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Local polynomial smoother</td>
+<td><code>predict(fit)</code> or
+<code>predict(fit, newdata = Xnew)</code></td>
+<td>Existing evaluation points or new coordinate rows.</td>
+</tr>
+<tr class="even">
+<td>Model-averaged local polynomial smoother</td>
+<td><code>predict(fit)</code> or
+<code>predict(fit, newdata = Xnew)</code></td>
+<td>New coordinates are supported for coordinate-distance fits;
+graph-geodesic fits currently reject new targets.</td>
+</tr>
+<tr class="odd">
+<td>Either lifting trend filter</td>
+<td><code>predict(fit)</code></td>
+<td>Training points only; <code>newdata</code> must be
+<code>NULL</code>.</td>
+</tr>
+<tr class="even">
+<td>Prediction-synchronized, chart-kernel, local-likelihood, graph
+low-pass, graph trend-filtering, Hessian, or parallel-transport fit</td>
+<td><code>fit$fitted.values</code></td>
+<td>No registered <code>predict()</code> method for these classes in
+this version. Chart-kernel and local-likelihood fits can receive
+<code>X.eval</code> when fitting.</td>
+</tr>
+<tr class="odd">
+<td>Density or occupation-density result</td>
+<td><code>fit$rho</code></td>
+<td>Probability mass on the evaluation support.</td>
+</tr>
+<tr class="even">
+<td>Harmonic smoothing result</td>
+<td><code>fit$harmonic_predictions</code></td>
+<td>Values on the original graph vertices.</td>
+</tr>
+</tbody>
+</table>
+<p>A <em>refit</em> changes the response while reusing geometry or an
+operator. It does not automatically rerun the original model-selection
+procedure. Each refit method documents whether penalties remain fixed or
+can be selected again. An <em>operator</em> describes the differences or
+derivatives being penalized; it is not itself a fitted response. A
+<em>spectral basis</em> stores graph eigenvectors so many responses can
+be smoothed without recomputing them.</p>
+</div>
+<div id="refit-and-extract-smoother-matrices" class="section level3">
+<h3>Refit and extract smoother matrices</h3>
+<p>Use <code>refit(fit, y = new.y, ...)</code> for all six reusable
+model families. R chooses the method from the fitted object’s class. The
+controls in the last column belong to that method; they are not shared
+by every model.</p>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Fitted model</th>
+<th>Accepted response</th>
+<th>Geometry reused and tuning behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MALPS</td>
+<td>Vector; omitted or <code>NULL</code> reuses the stored response</td>
+<td>Supports and averaging weights stay fixed. Optional
+<code>weights</code> affect local coefficient estimation; robust
+residual weights are recomputed.</td>
+</tr>
+<tr class="even">
+<td>Lifting trend filter</td>
+<td>Vector required</td>
+<td>Reuses the residual operator and stored penalty, or accepts a fixed
+<code>lambda</code>.</td>
+</tr>
+<tr class="odd">
+<td>Synchronized lifting trend filter</td>
+<td>Vector required</td>
+<td>Reuses both operators and stored penalties, or accepts fixed
+<code>lambda1</code> and <code>lambda2</code>.</td>
+</tr>
+<tr class="even">
+<td>Metric graph low-pass</td>
+<td>Vector or matrix required</td>
+<td>Reuses the spectral basis and smoothing parameter;
+<code>per.column.gcv = TRUE</code> selects a parameter for each response
+column.</td>
+</tr>
+<tr class="odd">
+<td>Quadratic Hessian-energy regression</td>
+<td>Vector or matrix; omitted or <code>NULL</code> reuses the stored
+response</td>
+<td>Reuses the operator and fixed penalties; accepts
+<code>lambda1</code>, <code>lambda2</code>, <code>weights</code>, and
+<code>ridge</code>. CV/GCV fits dispatch here and retain their selected
+penalties by default.</td>
+</tr>
+<tr class="even">
+<td>Hessian L1 regression</td>
+<td>One response; omitted or <code>NULL</code> reuses the stored
+response</td>
+<td>Reuses the derivative operator; accepts <code>lambda.grid</code>,
+fixed or CV <code>lambda.selection</code>, and solver controls.</td>
+</tr>
+</tbody>
+</table>
+<p>For repeated metric graph low-pass or quadratic Hessian refits, keep
+using the original fitted object. Their returned refit summaries cannot
+themselves be refitted. The other four families return reusable fitted
+objects.</p>
+<p>Use <code>smoother.matrix(fit, ...)</code> for LPS and MALPS. LPS
+accepts <code>check.tol</code> and returns a map from training responses
+to evaluation predictions under its fixed-configuration restrictions.
+MALPS accepts <code>max.n</code> and <code>allow.robust</code> and
+returns a training-point matrix conditional on stored supports and
+weights. For robust MALPS, <code>allow.robust = TRUE</code> freezes the
+final robust weights; it does not capture their response-dependent
+changes.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>malps.fit <span class="ot">&lt;-</span> <span class="fu">fit.malps</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  X, y, <span class="at">degree =</span> <span class="dv">1</span><span class="dt">L</span>, <span class="at">support.type =</span> <span class="st">&quot;knn&quot;</span>, <span class="at">support.size =</span> <span class="dv">12</span><span class="dt">L</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>new.y <span class="ot">&lt;-</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> X[, <span class="dv">1</span>])</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>malps.refit <span class="ot">&lt;-</span> <span class="fu">refit</span>(malps.fit, <span class="at">y =</span> new.y)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>S <span class="ot">&lt;-</span> <span class="fu">smoother.matrix</span>(malps.fit)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">as.vector</span>(S <span class="sc">%*%</span> new.y) <span class="sc">-</span> <span class="fu">predict</span>(malps.refit)))</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; [1] 4.440892e-16</span></span></code></pre></div>
+<p>The former six <code>refit.*()</code> entry points and two
+<code>*.smoother.matrix()</code> entry points are no longer exported.
+Replace <code>fitted.model =</code> with <code>object =</code> and
+<code>y.new =</code> with <code>y =</code> in old refit calls. Other
+method-specific arguments and return classes are unchanged.
+<code>help(&quot;refit&quot;, package = &quot;geosmooth&quot;)</code> and
+<code>help(&quot;smoother.matrix&quot;, package = &quot;geosmooth&quot;)</code> link to each
+method’s full argument list; former help names remain available.</p>
+</div>
+</div>
+<div id="function-catalog" class="section level2">
+<h2>Function catalog</h2>
+<p>Each row in the geosmooth catalog gives one exported name and its
+purpose. In an R session, open the corresponding help with, for example,
+<code>help(&quot;fit.lps&quot;, package = &quot;geosmooth&quot;)</code>. The final two
+sections explicitly list related functions owned by
+<code>dgraphs</code>; they are not geosmooth exports, and their detailed
+help lives in dgraphs.</p>
+<div id="shared-model-operations" class="section level3">
+<h3>Shared model operations</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>refit()</code></td>
+<td>Refit a supported model with a new response using stored geometry
+and method-specific tuning controls.</td>
+</tr>
+<tr class="even">
+<td><code>smoother.matrix()</code></td>
+<td>Extract the conditional linear map for a supported LPS or MALPS
+fit.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="local-regression-and-prediction-synchronization" class="section level3">
+<h3>Local regression and prediction synchronization</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>fit.lps()</code></td>
+<td>Fit and tune local polynomial regression, including supported
+Gaussian and binary response modes.</td>
+</tr>
+<tr class="even">
+<td><code>fit.malps()</code></td>
+<td>Fit and optionally tune a model-averaged collection of local
+polynomial models.</td>
+</tr>
+<tr class="odd">
+<td><code>fit.ps.lps()</code></td>
+<td>Fit experimental local polynomial models whose predictions are
+synchronized on overlaps.</td>
+</tr>
+<tr class="even">
+<td><code>fit.chart.kernel()</code></td>
+<td>Fit a chart-kernel field, with optional reference-measure quadrature
+weights.</td>
+</tr>
+<tr class="odd">
+<td><code>fit.local.likelihood()</code></td>
+<td>Fit local density or Bernoulli likelihood models; returns a fitted
+field.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="model-assessment-and-uncertainty" class="section level3">
+<h3>Model assessment and uncertainty</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>lps.grouped.foldid()</code></td>
+<td>Assign whole groups of observations to validation folds.</td>
+</tr>
+<tr class="even">
+<td><code>lps.nested.cv()</code></td>
+<td>Assess a tuned local polynomial smoother using outer and inner
+validation folds.</td>
+</tr>
+<tr class="odd">
+<td><code>lps.backend.diagnostics()</code></td>
+<td>Inspect the computational backend, chart dimensions, and selected
+controls.</td>
+</tr>
+<tr class="even">
+<td><code>lps.pointwise.band()</code></td>
+<td>Calculate pointwise uncertainty for a supported fixed-configuration
+Gaussian fit.</td>
+</tr>
+<tr class="odd">
+<td><code>malps.gcv()</code></td>
+<td>Calculate generalized cross-validation and optional leave-one-out
+diagnostics for a stored model-averaged fit.</td>
+</tr>
+<tr class="even">
+<td><code>bootstrap.malps()</code></td>
+<td>Measure refit variability by bootstrap case weights while holding
+the selected geometry fixed.</td>
+</tr>
+</tbody>
+</table>
+<p>Generalized cross-validation (GCV) uses a smoother’s effective
+degrees of freedom to estimate prediction error without explicitly
+fitting every leave-one-out model. It is not interchangeable with every
+form of CV.</p>
+<p>The two uncertainty workflows have different assumptions. LPS
+uncertainty requires a Gaussian fit, the R backend, the documented
+orthogonal polynomial basis, a single candidate configuration, and a
+fixed chart dimension. Its pointwise band also requires evaluation at
+the training points. MALPS matrix and bootstrap diagnostics condition on
+the selected supports and weights; they do not repeat model selection.
+Neither workflow provides simultaneous coverage or automatic uncertainty
+for a full data-selected pipeline.</p>
+</div>
+<div id="lifting-trend-filters" class="section level3">
+<h3>Lifting trend filters</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>lpl.tf.operator()</code></td>
+<td>Build a local polynomial residual operator.</td>
+</tr>
+<tr class="even">
+<td><code>fit.lpl.tf()</code></td>
+<td>Fit a trend filter with an absolute-value penalty on those
+residuals.</td>
+</tr>
+<tr class="odd">
+<td><code>slpl.tf.operator()</code></td>
+<td>Build the residual operator together with an overlap synchronization
+operator.</td>
+</tr>
+<tr class="even">
+<td><code>fit.slpl.tf()</code></td>
+<td>Fit the residual penalty plus quadratic synchronization.</td>
+</tr>
+</tbody>
+</table>
+<p>Both fitters accept a prebuilt operator or can construct one. For a
+single fit, start with the fitter. Build operators explicitly when
+comparing responses, studying neighborhoods, or reusing expensive
+geometry. Both fitters currently require <code>genlasso</code>; their
+supported prediction domain is the training set.</p>
+</div>
+<div id="graph-spectral-smoothing-and-graph-trend-filtering" class="section level3">
+<h3>Graph spectral smoothing and graph trend filtering</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>fit.metric.graph.lowpass()</code></td>
+<td>Select a graph-spectral smoothing parameter by GCV and fit a
+response.</td>
+</tr>
+<tr class="even">
+<td><code>metric.graph.lowpass.operator()</code></td>
+<td>Convert metric edge lengths to conductances and construct a graph
+Laplacian.</td>
+</tr>
+<tr class="odd">
+<td><code>metric.graph.lowpass.basis()</code></td>
+<td>Construct and retain graph eigenvectors for repeated smoothing.</td>
+</tr>
+<tr class="even">
+<td><code>apply.metric.graph.lowpass.path()</code></td>
+<td>Apply a supplied basis over a parameter grid; retain the candidate
+fits.</td>
+</tr>
+<tr class="odd">
+<td><code>metric.graph.heat.eta.grid()</code></td>
+<td>Choose heat-time candidates using spectral information.</td>
+</tr>
+<tr class="even">
+<td><code>metric.graph.heat.extend.lower()</code></td>
+<td>Propose a smaller heat time for an external search, subject to
+resolution safeguards.</td>
+</tr>
+<tr class="odd">
+<td><code>graph.trend.filtering.operator()</code></td>
+<td>Construct graph differences or experimental path divided
+differences.</td>
+</tr>
+<tr class="even">
+<td><code>fit.graph.trend.filtering()</code></td>
+<td>Fit an absolute-value graph-difference penalty; requires
+<code>genlasso</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Graph construction and shortest paths are supplied by
+<code>dgraphs</code>. A graph’s adjacency list contains 1-based vertex
+indices; a parallel weight list gives the corresponding edge values.
+<strong>Check their meaning for the chosen method:</strong> metric
+low-pass smoothing interprets them as lengths and converts them to
+conductances. Recursive graph trend filtering uses conductance-like
+weights, whereas its path divided-difference option uses lengths.
+Conductance measures connection strength; it is not the same quantity as
+distance.</p>
+<p>Heat time (<code>eta</code>) controls the amount of spectral
+smoothing. A truncated basis can fail to resolve small positive heat
+times; use the returned spectral diagnostics when constructing or
+extending a path yourself.</p>
+</div>
+<div id="hessian-energy-regression" class="section level3">
+<h3>Hessian-energy regression</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ssrhe.hessian.operator()</code></td>
+<td>Estimate local derivative operators and Hessian-energy matrices from
+point-cloud neighborhoods.</td>
+</tr>
+<tr class="even">
+<td><code>fit.ssrhe.hessian.regression()</code></td>
+<td>Fit quadratic Hessian-energy regression using fixed penalties, label
+CV, or GCV; optionally select supports.</td>
+</tr>
+<tr class="odd">
+<td><code>fit.ssrhe.hessian.l1.regression()</code></td>
+<td>Fit an absolute-value derivative penalty with fixed or CV-selected
+regularization.</td>
+</tr>
+<tr class="even">
+<td><code>ssrhe.support.grid()</code></td>
+<td>Build candidate adaptive-radius support profiles for tuning.</td>
+</tr>
+</tbody>
+</table>
+<p>The Hessian describes local second derivatives. A quadratic penalty
+spreads curvature reduction across the fitted field; an absolute-value
+penalty can set derivative components to zero. These are different
+estimators.</p>
+<p>Label CV supports semi-supervised use: some vertices may lack an
+observed response. GCV currently requires one fully observed response
+vector and strictly positive observation weights. Exact GCV traces and
+randomized trace estimates have different computational costs and
+reproducibility properties. For the absolute-value fitter,
+<code>solver = &quot;admm&quot;</code> selects the implemented alternating
+direction method of multipliers; the <code>genlasso</code> solver
+requires that optional package.</p>
+<p>To select quadratic Hessian penalties, use the same fitter with an
+explicit selection mode. Mode-specific settings belong in
+<code>cv.control</code> or <code>gcv.control</code>. Scalar penalties
+and candidate grids cannot be combined.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>hessian.fit <span class="ot">&lt;-</span> <span class="fu">fit.ssrhe.hessian.regression</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  X, y, <span class="at">k =</span> <span class="dv">12</span><span class="dt">L</span>, <span class="at">tangent.dim =</span> <span class="dv">1</span><span class="dt">L</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">lambda.selection =</span> <span class="st">&quot;cv&quot;</span>, <span class="at">lambda1.grid =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.1</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">cv.control =</span> <span class="fu">list</span>(<span class="at">foldid =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">length.out =</span> <span class="fu">nrow</span>(X)))</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>hessian.fit<span class="sc">$</span>lambda</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; $lambda1</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; [1] 0.01</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; $lambda2</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; $ridge</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>The former <code>.cv()</code> and <code>.gcv()</code> fitter names
+have been retired. Their old help names still lead to the unified
+fitter’s migration instructions. Existing fixed calls with
+<code>lambda1</code> and optional <code>lambda2</code> continue to
+work.</p>
+</div>
+<div id="harmonic-interpolation" class="section level3">
+<h3>Harmonic interpolation</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>perform.harmonic.smoothing()</code></td>
+<td>Relax interior values while holding the region boundary fixed;
+return convergence diagnostics.</td>
+</tr>
+<tr class="even">
+<td><code>harmonic.smoother()</code></td>
+<td>Run relaxation while recording extrema, prediction history, and
+topology stability.</td>
+</tr>
+<tr class="odd">
+<td><code>get.region.boundary()</code></td>
+<td>Find region vertices with a neighbor outside the region.</td>
+</tr>
+</tbody>
+</table>
+<p>Use <code>print()</code>, <code>summary()</code>, and
+<code>plot()</code> on the tracked <code>harmonic_smoother</code>
+object. The two smoothing functions currently differ in boundary-free
+behavior and convergence checks, so they should not be treated as
+aliases. In the current native implementation, boundary vertices are
+defined by a neighbor outside the region; a degree-one vertex inside a
+whole-graph region is not automatically fixed.</p>
+</div>
+<div id="probability-mass-and-subject-occupation" class="section level3">
+<h3>Probability mass and subject occupation</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>fit.density()</code></td>
+<td>Fit empirical or graph-random-walk mass estimates from nonnegative
+weights on a support.</td>
+</tr>
+<tr class="even">
+<td><code>normalize.density()</code></td>
+<td>Convert a numeric field or supported fitted object to probability
+mass, with normalization diagnostics.</td>
+</tr>
+<tr class="odd">
+<td><code>fit.subject.od()</code></td>
+<td>Convert repeated visit indices into counts and fit a
+subject-occupation distribution.</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>support <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">length.out =</span> <span class="dv">6</span>), <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>occupation <span class="ot">&lt;-</span> <span class="fu">fit.subject.od</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  support, <span class="at">subject.index =</span> <span class="fu">c</span>(<span class="dv">1</span><span class="dt">L</span>, <span class="dv">3</span><span class="dt">L</span>, <span class="dv">3</span><span class="dt">L</span>, <span class="dv">6</span><span class="dt">L</span>), <span class="at">method =</span> <span class="st">&quot;empirical&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>occupation<span class="sc">$</span>rho</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; [1] 0.25 0.00 0.50 0.00 0.00 0.25</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">sum</span>(occupation<span class="sc">$</span>rho)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; [1] 1</span></span></code></pre></div>
+<p>Here the third support point receives twice as many visits as the
+first or sixth. <code>rho</code> is a probability <strong>mass</strong>
+vector over support points, summing to one; it is not automatically a
+continuous density per unit volume. <code>normalize.density()</code> is
+an explicit conversion step, not another regression fit. Inspect its
+clipping and normalization accounting when the source field contains
+negative values.</p>
+<p><code>fit.subject.od()</code> offers more methods than
+<code>fit.density()</code>: it can fit ordinary smoothers and normalize
+their output. Visit-level CV holds out visits and uses
+<code>visit.foldid</code>; ordinary regression CV holds out support rows
+and uses <code>foldid</code> (or the method-specific spelling). Keep
+these validation units distinct.</p>
+</div>
+<div id="experimental-transport-methods" class="section level3">
+<h3>Experimental transport methods</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>pttf.geometry()</code></td>
+<td>Build local tangent frames and their transport across a graph.</td>
+</tr>
+<tr class="even">
+<td><code>pttf.operator()</code></td>
+<td>Construct parallel-transport trend-filtering differences from that
+geometry.</td>
+</tr>
+<tr class="odd">
+<td><code>pttf.operator.filter.rows()</code></td>
+<td>Select operator rows while maintaining provenance and related
+operator data.</td>
+</tr>
+<tr class="even">
+<td><code>fit.pttf.trend.filtering()</code></td>
+<td>Fit a parallel-transport trend filter with an absolute-value or
+quadratic penalty.</td>
+</tr>
+<tr class="odd">
+<td><code>transported.graph.hessian.operator()</code></td>
+<td>Build a separate experimental graph Hessian diagnostic with several
+direction-matching rules.</td>
+</tr>
+</tbody>
+</table>
+<p>Parallel transport aligns local tangent directions before comparing
+derivatives. These experimental interfaces expose geometry, operator,
+and solver diagnostics deliberately. The transported graph Hessian
+constructor is a separate diagnostic workflow; it does not fit a
+response and is not an interchangeable spelling of
+<code>pttf.operator()</code>.</p>
+</div>
+<div id="synthetic-datasets-specifications-responses-and-reproducibility" class="section level3">
+<h3>Synthetic datasets: specifications, responses, and
+reproducibility</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>synthetic.spec()</code></td>
+<td>Combine geometry, sampling, truth, and response descriptors without
+drawing data.</td>
+</tr>
+<tr class="even">
+<td><code>materialize.synthetic()</code></td>
+<td>Draw a dataset from a specification with an explicit seed and
+random-number policy.</td>
+</tr>
+<tr class="odd">
+<td><code>materialize.synthetic.instance()</code></td>
+<td>Reproduce a registered frozen instance and optionally validate its
+checksum.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.registry.ids()</code></td>
+<td>List maintained recipe identifiers.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.registry.spec()</code></td>
+<td>Look up a recipe specification; some recipe families allow parameter
+overrides.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.registry.seed()</code></td>
+<td>Reproduce legacy SSRHE recipe seeds; this is not a seed generator
+for every registry family.</td>
+</tr>
+<tr class="odd">
+<td><code>validate.synthetic.dataset()</code></td>
+<td>Check the structure and consistency of a materialized dataset.</td>
+</tr>
+<tr class="even">
+<td><code>compare.synthetic.dataset()</code></td>
+<td>Compare two datasets with explicit numerical tolerances.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.dataset.checksum()</code></td>
+<td>Compute a content checksum for reproducibility checks.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.sampling.stratified()</code></td>
+<td>Describe allocation between the supported synthetic strata.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.truth.named()</code></td>
+<td>Select a named truth specification with optional parameters.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.truth.polynomial()</code></td>
+<td>Specify polynomial truth in the chosen evaluation coordinates.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.truth.gaussian.mixture()</code></td>
+<td>Specify Gaussian-mixture truth using centers, scales, and
+weights.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.truth.occupation.mixture()</code></td>
+<td>Specify occupation-mixture truth with covariance and probability
+controls.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.truth.logit()</code></td>
+<td>Specify a logit-based truth with prevalence and clipping
+controls.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.response.gaussian()</code></td>
+<td>Specify Gaussian response noise with a supplied standard
+deviation.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.response.heteroskedastic.gaussian()</code></td>
+<td>Specify Gaussian noise whose scale depends on truth.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.response.clustered.gaussian()</code></td>
+<td>Specify within-cluster correlated Gaussian noise.</td>
+</tr>
+<tr class="odd">
+<td><code>synthetic.response.laplace.outlier()</code></td>
+<td>Specify Laplace noise and an outlier component.</td>
+</tr>
+<tr class="even">
+<td><code>synthetic.response.bernoulli()</code></td>
+<td>Specify binary response draws and optional positive-count
+requirements.</td>
+</tr>
+</tbody>
+</table>
+<p>The constructors create specifications;
+<code>materialize.synthetic()</code> performs random draws. Use
+<code>print()</code>, <code>plot()</code>, and
+<code>as.data.frame()</code> on a resulting
+<code>synthetic_dataset</code>. For complete examples, read
+<code>vignette(&quot;synthetic-datasets&quot;, package = &quot;geosmooth&quot;)</code>. Use
+the named-stream random-number policy for new work; historical seed and
+algorithm controls preserve frozen examples and should not be changed
+casually.</p>
+</div>
+<div id="geometry-constructors-and-helpers-supplied-by-dgraphs" class="section level3">
+<h3>Geometry constructors and helpers supplied by dgraphs</h3>
+<p>These names are available from <code>dgraphs</code>, and are no
+longer exported by <code>geosmooth</code>. Replace former
+<code>geosmooth::</code> calls with <code>dgraphs::</code>. See, for
+example, <code>help(&quot;synthetic.circle&quot;, package = &quot;dgraphs&quot;)</code>.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>dgraphs::synthetic.circle()</code></td>
+<td>Describe a circle or circular arc and its embedding.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.helix()</code></td>
+<td>Describe a helical curve.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.trefoil()</code></td>
+<td>Describe a trefoil curve.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.torus.patch()</code></td>
+<td>Describe a patch of a torus.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sphere.cap()</code></td>
+<td>Describe a spherical cap.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.quadform()</code></td>
+<td>Describe a flat or quadratic geometry with intrinsic and ambient
+dimensions.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.simplex()</code></td>
+<td>Describe a simplex with a given number of parts.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.stratified()</code></td>
+<td>Combine strata and optional junctions.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.stratum.point()</code></td>
+<td>Describe a point stratum.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.stratum.segment()</code></td>
+<td>Describe a line-segment stratum.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.stratum.rectangle()</code></td>
+<td>Describe a rectangular stratum.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.point.line.junction()</code></td>
+<td>Describe a point-and-line junction geometry.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::embed.synthetic.geometry()</code></td>
+<td>Map latent coordinates to the ambient space.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::edge.lengths.synthetic.geometry()</code></td>
+<td>Evaluate geometry-aware lengths between latent endpoints.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::quadform.gradient()</code></td>
+<td>Evaluate the gradient of a quadratic geometry.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::quadform.metric()</code></td>
+<td>Evaluate its induced metric.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="sampling-constructors-supplied-by-dgraphs" class="section level3">
+<h3>Sampling constructors supplied by dgraphs</h3>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sampling.uniform.interval()</code></td>
+<td>Describe uniform draws on an interval.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.sampling.uniform.box()</code></td>
+<td>Describe uniform draws in a box.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sampling.uniform.rectangle()</code></td>
+<td>Describe uniform draws in a rectangle with its specified draw
+algorithm.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.sampling.uniform.disk()</code></td>
+<td>Describe uniform draws in a disk.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sampling.grid.interval()</code></td>
+<td>Describe an interval grid with an endpoint convention.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.sampling.gapped.uniform()</code></td>
+<td>Describe sampling across separated intervals.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sampling.truncated.normal()</code></td>
+<td>Describe bounded Gaussian draws.</td>
+</tr>
+<tr class="even">
+<td><code>dgraphs::synthetic.sampling.clustered()</code></td>
+<td>Describe clustered observations around random centers.</td>
+</tr>
+<tr class="odd">
+<td><code>dgraphs::synthetic.sampling.dirichlet.zeros()</code></td>
+<td>Describe Dirichlet sampling with structural zeros.</td>
+</tr>
+</tbody>
+</table>
+<p>Similar geometric domains do not imply identical random-number
+sequences: these descriptors also preserve ordering and algorithm
+choices.</p>
+</div>
+</div>
+<div id="finding-detailed-help" class="section level2">
+<h2>Finding detailed help</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">help</span>(<span class="st">&quot;geosmooth-package&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">help</span>(<span class="st">&quot;fit.lps&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">help</span>(<span class="st">&quot;predict.lps&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">vignette</span>(<span class="st">&quot;function-guide&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">vignette</span>(<span class="st">&quot;synthetic-datasets&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span></code></pre></div>
+<p>The package’s help pages give exact arguments, defaults, return
+values, and examples. Use this guide to find the appropriate family,
+then read the chosen function’s help before configuring its advanced
+controls.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

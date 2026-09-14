@@ -16,7 +16,7 @@ configuration, with \code{X.eval} identical to \code{X}.}
 \item{level}{Confidence level of the band, a single number strictly
 between 0 and 1. Default \code{0.95}.}
 
-\item{check.tol}{Passed to \code{\link[=lps.smoother.matrix]{lps.smoother.matrix()}}'s self-guard.}
+\item{check.tol}{Passed to \code{\link[=smoother.matrix]{smoother.matrix()}}'s self-guard.}
 }
 \value{
 A list of class \code{"lps.pointwise.band"} with named fields:
@@ -28,7 +28,7 @@ and \code{configuration} (the pinned fit configuration).
 }
 \description{
 Computes, from the analytically extracted linear-smoother matrix \code{S} of a
-fixed-configuration LPS fit (see \code{\link[=lps.smoother.matrix]{lps.smoother.matrix()}}), the pointwise
+fixed-configuration LPS fit (see \code{\link[=smoother.matrix]{smoother.matrix()}}), the pointwise
 variance \verb{Var(fitted_i) = sigma^2 * sum_j S_ij^2}, the effective degrees of
 freedom \code{df = tr(S)}, the plug-in noise estimate
 \code{sigma.hat^2 = RSS / (n - tr(S))}, and the pointwise confidence band
@@ -46,7 +46,7 @@ not masked.
 
 Requires \code{X.eval} identical to \code{X} (the square training-fit smoother, on
 which \code{tr(S)} and \code{RSS} are defined), in addition to all restrictions of
-\code{\link[=lps.smoother.matrix]{lps.smoother.matrix()}}. If any evaluation point's local fit returned \code{NA},
+\code{\link[=smoother.matrix]{smoother.matrix()}}. If any evaluation point's local fit returned \code{NA},
 its variance/band entries are \code{NA}, and \code{df}, \code{rss}, and \code{sigma.hat} are
 \code{NA} as well; supplying a known \code{sigma} still yields bands at the
 unaffected points.
@@ -68,5 +68,5 @@ band.known$df
 band.plugin$sigma.hat
 }
 \seealso{
-\code{\link[=lps.smoother.matrix]{lps.smoother.matrix()}}
+\code{\link[=smoother.matrix]{smoother.matrix()}}
 }

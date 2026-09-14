@@ -1045,6 +1045,31 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #'   \code{y}.
 #' @param ridge Nonnegative diagonal ridge added to the linear system for
 #'   numerical stabilization.
+#' @param lambda.selection Penalty selection: \code{"fixed"} (the default)
+#'   uses \code{lambda1} and \code{lambda2}; \code{"cv"} holds out observed
+#'   labels; \code{"gcv"} uses generalized cross-validation. Grid inputs
+#'   require an explicit \code{"cv"} or \code{"gcv"} selection mode.
+#' @param lambda1.grid,lambda2.grid Nonnegative penalty candidates for CV or
+#'   GCV. \code{lambda1.grid} is required in either selection mode;
+#'   \code{lambda2.grid = NULL} means \code{0}. Do not also supply scalar
+#'   \code{lambda1} or \code{lambda2}. Unless explicitly set, \code{stabilizer}
+#'   is enabled when any supplemental penalty candidate is positive.
+#' @param cv.control Named list used only with \code{lambda.selection = "cv"}.
+#'   Entries: \code{foldid = NULL} (one fold label per row of \code{X};
+#'   nonpositive or missing labels are ignored), \code{cv.folds = 5L},
+#'   \code{loss = "mse"} (or \code{"mae"}), and
+#'   \code{selection = "min"} (or \code{"one.se"}, choosing the largest
+#'   total penalty within one standard error of the minimum). Support-search
+#'   entries are \code{support.selection = "rule"} (or \code{"cv"}),
+#'   \code{support.grid = NULL}, and \code{support.max.candidates = 8L}.
+#'   Fold count is ignored when \code{foldid} is supplied.
+#' @param gcv.control Named list used only with \code{lambda.selection = "gcv"}.
+#'   Entries: \code{trace.method = "exact"} (or \code{"hutchinson"}),
+#'   \code{trace.n.probes = 50L}, \code{trace.seed = NULL},
+#'   \code{support.selection = "rule"} (or \code{"gcv"}),
+#'   \code{support.grid = NULL}, and \code{support.max.candidates = 8L}.
+#'   Unknown, unnamed, or duplicated control entries are errors. Controls
+#'   for a different selection mode are rejected rather than ignored.
 #'
 #' @details
 #' For each response column, this function solves
@@ -1067,9 +1092,46 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #' and optional supplemental stabilizer. The package exposes both \eqn{A} and
 #' \eqn{B=A^\top A}; the fitted \eqn{\ell_2} estimator uses \eqn{B}.
 #'
+#' @section Penalty selection:
+#' Fixed fitting supports response vectors or matrices. CV and GCV currently
+#' select penalties for one response vector at a time. Label CV removes each
+#' validation fold from the data-fit term and scores its held-out observed
+#' positive-weight labels. It supports missing responses. GCV requires a fully
+#' observed response and strictly positive observation weights, and minimizes
+#' \deqn{\frac{n^{-1}\sum_i w_i(y_i-\hat f_i)^2}
+#'   {(1-\mathrm{tr}(S_\lambda)/n)^2},}
+#' where \eqn{S_\lambda=(W+\lambda_1 B+\lambda_2 B_S+\epsilon I)^{-1}W}.
+#' The exact trace is deterministic. The Hutchinson option uses Rademacher
+#' probes, reports trace standard errors, and is reproducible with
+#' \code{gcv.control = list(trace.method = "hutchinson", trace.seed = ...)}.
+#'
+#' Both selection modes can also search adaptive-radius support profiles:
+#' set \code{support.selection} to the same mode in its control list. Each row
+#' of \code{support.grid} contains \code{adaptive.k.scale}, \code{min.support},
+#' and optionally \code{max.support}. A \code{NULL} grid is constructed by
+#' \code{\link{ssrhe.support.grid}}. Each profile requires a new operator and
+#' a full penalty search, so this can substantially increase runtime.
+#'
+#' @section Migration:
+#' The former \code{fit.ssrhe.hessian.regression.cv()} and
+#' \code{fit.ssrhe.hessian.regression.gcv()} entry points have been retired.
+#' Use this function with \code{lambda.selection = "cv"} or \code{"gcv"}.
+#' Move \code{fold.id} to \code{cv.control$foldid}, \code{nfolds} to
+#' \code{cv.control$cv.folds}, and \code{loss}/\code{selection} to
+#' \code{cv.control}. Move \code{gcv.trace.method}, \code{gcv.trace.n.probes},
+#' and \code{gcv.trace.seed} to \code{trace.method}, \code{trace.n.probes},
+#' and \code{trace.seed} in \code{gcv.control}. Support search settings also
+#' belong in the active control list; both former support candidate limits
+#' are now named \code{support.max.candidates}.
+#'
 #' @return A list of class \code{"ssrhe.hessian.fit"} containing fitted values,
 #'   residuals, input response, weights, lambda parameters, objective/energy
-#'   diagnostics, the reused \code{operator}, solver metadata, and the call.
+#'   diagnostics, the reused \code{operator}, solver metadata, the call, and
+#'   \code{lambda.selection}. CV adds class \code{"ssrhe.hessian.cv.fit"},
+#'   \code{cv.table}, \code{fold.id}, and \code{selection}; GCV adds class
+#'   \code{"ssrhe.hessian.gcv.fit"}, \code{gcv.table}, \code{gcv.trace}, and
+#'   \code{selection}. Support searches retain \code{selected.support} and
+#'   the corresponding \code{support.cv.table} or \code{support.gcv.table}.
 #'
 #' @references
 #' Kim, K. I., Steinke, F., and Hein, M. (2009). Semi-supervised regression
@@ -1082,6 +1144,16 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #' fit.ssrhe.hessian.regression(
 #'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L, lambda1 = 0.1
 #' )
+#' fit.ssrhe.hessian.regression(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+#'   lambda.selection = "cv", lambda1.grid = c(0.01, 0.1),
+#'   cv.control = list(cv.folds = 2L)
+#' )
+#' fit.ssrhe.hessian.regression(
+#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
+#'   lambda.selection = "gcv", lambda1.grid = c(0.01, 0.1)
+#' )
+#' @aliases fit.ssrhe.hessian.regression.cv fit.ssrhe.hessian.regression.gcv
 #' @export
 fit.ssrhe.hessian.regression <- function(
     X,
@@ -1112,8 +1184,91 @@ fit.ssrhe.hessian.regression <- function(
     return.A = TRUE,
     return.local.diagnostics = FALSE,
     return.timing = FALSE,
-    verbose = FALSE) {
+    verbose = FALSE,
+    lambda.selection = c("fixed", "cv", "gcv"),
+    lambda1.grid = NULL,
+    lambda2.grid = NULL,
+    cv.control = list(),
+    gcv.control = list()) {
 
+    lambda.selection <- match.arg(lambda.selection)
+    cv <- .ssrhe.selection.control(cv.control, list(
+        foldid = NULL, cv.folds = 5L, loss = "mse", selection = "min",
+        support.selection = "rule", support.grid = NULL,
+        support.max.candidates = 8L
+    ), "cv.control")
+    gcv <- .ssrhe.selection.control(gcv.control, list(
+        trace.method = "exact", trace.n.probes = 50L, trace.seed = NULL,
+        support.selection = "rule", support.grid = NULL,
+        support.max.candidates = 8L
+    ), "gcv.control")
+    if (length(cv.control) && lambda.selection != "cv") {
+        stop("cv.control requires lambda.selection = 'cv'.", call. = FALSE)
+    }
+    if (length(gcv.control) && lambda.selection != "gcv") {
+        stop("gcv.control requires lambda.selection = 'gcv'.", call. = FALSE)
+    }
+    if (lambda.selection != "fixed") {
+        if (!missing(lambda1) || !missing(lambda2)) {
+            stop("Supply penalty grids, not scalar lambda1/lambda2, when lambda.selection is 'cv' or 'gcv'.",
+                 call. = FALSE)
+        }
+        if (is.null(lambda1.grid)) {
+            stop("lambda1.grid is required when lambda.selection is 'cv' or 'gcv'.",
+                 call. = FALSE)
+        }
+        lambda1.grid <- .validate.ssrhe.lambda.grid(lambda1.grid, "lambda1.grid")
+        if (is.null(lambda2.grid)) lambda2.grid <- 0
+        lambda2.grid <- .validate.ssrhe.lambda.grid(lambda2.grid, "lambda2.grid")
+        if (missing(stabilizer)) stabilizer <- any(lambda2.grid > 0)
+        common <- list(
+            X = X, y = y, k = k,
+            lambda1.grid = lambda1.grid, lambda2.grid = lambda2.grid,
+            weights = weights, nn.index = nn.index,
+            neighborhood.type = match.arg(neighborhood.type),
+            support.index = support.index, adaptive.k.scale = adaptive.k.scale,
+            radius.rule = match.arg(radius.rule), radius.factor = radius.factor,
+            min.support = min.support, max.support = max.support,
+            support.buffer = support.buffer, support.topup = match.arg(support.topup),
+            tangent.dim.rule = match.arg(tangent.dim.rule),
+            eigen.tolerance = eigen.tolerance, derivative.order = derivative.order,
+            stabilizer = stabilizer, pinv.tol = pinv.tol,
+            local.solver = match.arg(local.solver),
+            normal.equations.max.condition = normal.equations.max.condition,
+            ridge = ridge, return.A = return.A,
+            return.local.diagnostics = return.local.diagnostics,
+            return.timing = return.timing, verbose = verbose
+        )
+        # Preserve the operator's existing missing-dimension behavior.
+        if (!missing(tangent.dim)) common["tangent.dim"] <- list(tangent.dim)
+        if (lambda.selection == "cv") {
+            out <- do.call(.fit.ssrhe.hessian.regression.cv, c(common, list(
+                fold.id = cv$foldid, nfolds = cv$cv.folds,
+                loss = cv$loss, selection = cv$selection,
+                support.selection = cv$support.selection,
+                support.grid = cv$support.grid,
+                support.cv.max.candidates = cv$support.max.candidates
+            )))
+        } else {
+            out <- do.call(.fit.ssrhe.hessian.regression.gcv, c(common, list(
+                gcv.trace.method = gcv$trace.method,
+                gcv.trace.n.probes = gcv$trace.n.probes,
+                gcv.trace.seed = gcv$trace.seed,
+                support.selection = gcv$support.selection,
+                support.grid = gcv$support.grid,
+                support.gcv.max.candidates = gcv$support.max.candidates
+            )))
+        }
+        attr(out, "call") <- match.call()
+        out$lambda.selection <- lambda.selection
+        return(out)
+    }
+    if (!is.null(lambda1.grid) || !is.null(lambda2.grid)) {
+        stop("Penalty grids require lambda.selection = 'cv' or 'gcv'.", call. = FALSE)
+    }
+    if (missing(lambda1)) {
+        stop("lambda1 is required when lambda.selection = 'fixed'.", call. = FALSE)
+    }
     X <- .validate.ssrhe.X(X)
     lambda1 <- .validate.ssrhe.nonnegative.scalar(lambda1, "lambda1")
     lambda2 <- .validate.ssrhe.nonnegative.scalar(lambda2, "lambda2")
@@ -1175,9 +1330,27 @@ fit.ssrhe.hessian.regression <- function(
         verbose = verbose
     )
     out$X <- X
+    out$lambda.selection <- lambda.selection
     attr(out, "call") <- match.call()
     class(out) <- c("ssrhe.hessian.fit", "list")
     out
+}
+
+# Validate control names before any geometry is built; retain explicit NULLs.
+.ssrhe.selection.control <- function(control, defaults, name) {
+    if (!is.list(control) || is.data.frame(control) ||
+        (length(control) && (is.null(names(control)) ||
+         anyNA(names(control)) || any(!nzchar(names(control))) ||
+         anyDuplicated(names(control))))) {
+        stop(name, " must be a named list with unique, nonempty names.", call. = FALSE)
+    }
+    unknown <- setdiff(names(control), names(defaults))
+    if (length(unknown)) {
+        stop("Unknown ", name, " entries: ", paste(unknown, collapse = ", "),
+             call. = FALSE)
+    }
+    defaults[names(control)] <- control
+    defaults
 }
 
 #' Refit SSRHE-Style Hessian-Energy Regression
@@ -1186,43 +1359,48 @@ fit.ssrhe.hessian.regression <- function(
 #' new responses or new fixed penalty weights without rebuilding local PCA
 #' neighborhoods or Hessian-energy matrices.
 #'
-#' @param fitted.model A \code{"ssrhe.hessian.fit"} object.
-#' @param y.new New numeric response vector or matrix with one row per vertex.
+#' @param object A \code{"ssrhe.hessian.fit"} object.
+#' @param y New numeric response vector or matrix with one row per vertex.
 #'   If \code{NULL}, the original response is reused.
 #' @inheritParams fit.ssrhe.hessian.regression
 #'
+#' @param ... Additional arguments are not currently supported.
 #' @return A list of class \code{"ssrhe.hessian.refit"}.
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
 #' fit <- fit.ssrhe.hessian.regression(
 #'   X, X[, 1]^2, k = 6L, tangent.dim = 1L, lambda1 = 0.1
 #' )
-#' refit.ssrhe.hessian.regression(fit, y.new = X[, 1]^3)
+#' refit(fit, y = X[, 1]^3)
+#' @seealso \code{\link{refit}} for supported fitted objects and migration.
+#' @method refit ssrhe.hessian.fit
+#' @aliases refit.ssrhe.hessian.regression
 #' @export
-refit.ssrhe.hessian.regression <- function(fitted.model,
-                                           y.new = NULL,
-                                           lambda1 = fitted.model$lambda$lambda1,
-                                           lambda2 = fitted.model$lambda$lambda2,
-                                           weights = NULL,
-                                           ridge = fitted.model$lambda$ridge,
-                                           verbose = FALSE) {
-    if (!inherits(fitted.model, "ssrhe.hessian.fit")) {
-        stop("fitted.model must be a 'ssrhe.hessian.fit' object.", call. = FALSE)
+refit.ssrhe.hessian.fit <- function(object,
+                                    y = NULL,
+                                    lambda1 = object$lambda$lambda1,
+                                    lambda2 = object$lambda$lambda2,
+                                    weights = NULL,
+                                    ridge = object$lambda$ridge,
+                                    verbose = FALSE, ...) {
+    .geosmooth.check.dots(...)
+    if (!inherits(object, "ssrhe.hessian.fit")) {
+        stop("object must be a 'ssrhe.hessian.fit' object.", call. = FALSE)
     }
-    if (is.null(fitted.model$operator) ||
-        !inherits(fitted.model$operator, "ssrhe.hessian.operator")) {
-        stop("fitted.model does not contain a reusable SSRHE operator.",
+    if (is.null(object$operator) ||
+        !inherits(object$operator, "ssrhe.hessian.operator")) {
+        stop("object does not contain a reusable SSRHE operator.",
              call. = FALSE)
     }
-    if (is.null(y.new)) {
-        y.new <- fitted.model$y
+    if (is.null(y)) {
+        y <- object$y
     }
     if (is.null(weights)) {
-        weights <- fitted.model$weights
+        weights <- object$weights
     }
     out <- .fit.ssrhe.hessian.from.operator(
-        operator = fitted.model$operator,
-        y = y.new,
+        operator = object$operator,
+        y = y,
         lambda1 = lambda1,
         lambda2 = lambda2,
         weights = weights,
@@ -1234,68 +1412,8 @@ refit.ssrhe.hessian.regression <- function(fitted.model,
     out
 }
 
-#' Select SSRHE Hessian Regression Penalties by Label Cross-Validation
-#'
-#' Fits \code{\link{fit.ssrhe.hessian.regression}} over a grid of fixed
-#' \code{lambda1}/\code{lambda2} values using cross-validation on observed
-#' labels. This is intended for semi-supervised SSRHE use: validation folds are
-#' formed only from entries that are observed and have positive data-fit weight.
-#'
-#' @inheritParams fit.ssrhe.hessian.regression
-#' @param lambda1.grid Nonnegative numeric vector of Hessian-energy penalty
-#'   candidates.
-#' @param lambda2.grid Nonnegative numeric vector of supplemental-stabilizer
-#'   penalty candidates. Use \code{0} to omit the supplemental stabilizer from
-#'   selection.
-#' @param nfolds Number of validation folds over observed positive-weight
-#'   labels. Ignored when \code{fold.id} is supplied.
-#' @param fold.id Optional integer vector of length \code{nrow(X)} assigning
-#'   observed positive-weight labels to validation folds. Nonpositive or
-#'   \code{NA} entries are ignored.
-#' @param loss Validation loss, currently \code{"mse"} or \code{"mae"}.
-#' @param selection Selection rule. \code{"min"} chooses the smallest mean
-#'   validation loss. \code{"one.se"} chooses the largest total penalty among
-#'   candidates within one standard error of the minimum.
-#' @param support.selection Support-profile selection rule.
-#'   \code{"rule"} uses the supplied \code{adaptive.k.scale},
-#'   \code{min.support}, and \code{max.support}. \code{"cv"} is currently
-#'   supported for \code{neighborhood.type = "adaptive.radius"} and chooses
-#'   among rows of \code{support.grid} by outer response cross-validation.
-#' @param support.grid Optional data frame of support profiles with columns
-#'   \code{adaptive.k.scale}, \code{min.support}, and optional
-#'   \code{max.support}. If \code{NULL}, \code{\link{ssrhe.support.grid}} builds
-#'   a compact default grid.
-#' @param support.cv.max.candidates Maximum number of support profiles to try
-#'   when \code{support.selection = "cv"}.
-#'
-#' @details
-#' For each validation fold, the held-out labels are removed from the data-fit
-#' term by setting their weights to zero. The fitted values are then scored only
-#' on those held-out labels. The final returned fit is refit with the selected
-#' penalties using all observed positive-weight labels.
-#'
-#' With \code{support.selection = "cv"}, this function performs an outer
-#' support-profile selection loop. For each candidate adaptive-radius support
-#' profile, it constructs a fresh SSRHE operator, runs the usual
-#' \code{lambda1.grid}/\code{lambda2.grid} cross-validation with the same fold
-#' assignments, and selects the support profile with the smallest selected CV
-#' error. This can substantially increase runtime because local operator
-#' construction and lambda CV are nested.
-#'
-#' The current implementation supports a single response vector. Matrix-response
-#' penalty selection should be performed column-by-column.
-#'
-#' @return A list of class \code{"ssrhe.hessian.cv.fit"} and
-#'   \code{"ssrhe.hessian.fit"} containing the final fit plus
-#'   \code{cv.table}, \code{fold.id}, and \code{selection} diagnostics.
-#' @examples
-#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
-#' fit.ssrhe.hessian.regression.cv(
-#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
-#'   lambda1.grid = c(0.01, 0.1), nfolds = 2L
-#' )
-#' @export
-fit.ssrhe.hessian.regression.cv <- function(
+# Internal CV selection engine; public controls are validated and mapped above.
+.fit.ssrhe.hessian.regression.cv <- function(
     X,
     y,
     k = NULL,
@@ -1341,7 +1459,7 @@ fit.ssrhe.hessian.regression.cv <- function(
     n <- nrow(X)
     y.info <- .prepare.ssrhe.response.matrix(y, n, "y")
     if (ncol(y.info$Y) != 1L) {
-        stop("fit.ssrhe.hessian.regression.cv currently supports one response vector.",
+        stop("fit.ssrhe.hessian.regression(lambda.selection = 'cv') currently supports one response vector.",
              call. = FALSE)
     }
     W <- .prepare.ssrhe.weight.matrix(weights, y.info, n)
@@ -1401,7 +1519,7 @@ fit.ssrhe.hessian.regression.cv <- function(
             if (is.na(max.support.ii)) max.support.ii <- NULL
             elapsed <- system.time({
                 cand <- tryCatch(
-                    fit.ssrhe.hessian.regression.cv(
+                    .fit.ssrhe.hessian.regression.cv(
                         X = X,
                         y = y,
                         k = k,
@@ -1625,80 +1743,8 @@ fit.ssrhe.hessian.regression.cv <- function(
     final
 }
 
-#' Select SSRHE Hessian Regression Penalties by GCV
-#'
-#' Fits \code{\link{fit.ssrhe.hessian.regression}} over a grid of
-#' \code{lambda1}/\code{lambda2} values and selects penalties by generalized
-#' cross-validation (GCV). This is a faster, deterministic alternative to
-#' label-fold CV for fully observed SSRHE \eqn{\ell_2} smoothing problems.
-#' The smoother trace can be computed exactly, or estimated by a Hutchinson
-#' randomized trace estimator for larger grids.
-#'
-#' @inheritParams fit.ssrhe.hessian.regression.cv
-#' @param support.selection Support-profile selection rule.
-#'   \code{"rule"} uses the supplied \code{adaptive.k.scale},
-#'   \code{min.support}, and \code{max.support}. \code{"gcv"} is currently
-#'   supported for \code{neighborhood.type = "adaptive.radius"} and chooses
-#'   among rows of \code{support.grid} by outer GCV.
-#' @param support.gcv.max.candidates Maximum number of support profiles to try
-#'   when \code{support.selection = "gcv"}.
-#' @param gcv.trace.method Method used to compute the smoother trace in the GCV
-#'   score. \code{"exact"} solves against the full diagonal weight matrix.
-#'   \code{"hutchinson"} estimates the trace with Rademacher probe vectors.
-#' @param gcv.trace.n.probes Number of Hutchinson probe vectors to use when
-#'   \code{gcv.trace.method = "hutchinson"}.
-#' @param gcv.trace.seed Optional integer seed for reproducible Hutchinson
-#'   trace estimates.
-#'
-#' @details
-#' For a fixed SSRHE operator, the \eqn{\ell_2} fit is a linear smoother
-#' \deqn{
-#'   \hat f_\lambda = S_\lambda y,\qquad
-#'   S_\lambda =
-#'   (W + \lambda_1 B + \lambda_2 B_S + \epsilon I)^{-1} W,
-#' }
-#' where \eqn{W} is the diagonal observation-weight matrix and
-#' \eqn{\epsilon} is \code{ridge}. By default this function computes the exact
-#' smoother trace \eqn{\mathrm{tr}(S_\lambda)} and scores each grid point by
-#' \deqn{
-#'   \mathrm{GCV}(\lambda)
-#'   =
-#'   \frac{n^{-1}\sum_i w_i(y_i-\hat f_i)^2}
-#'        {(1-\mathrm{tr}(S_\lambda)/n)^2}.
-#' }
-#' With \code{gcv.trace.method = "hutchinson"}, the trace is estimated by
-#' \deqn{
-#'   \mathrm{tr}(S_\lambda)
-#'   =
-#'   \mathbb E\{z^\top S_\lambda z\},
-#' }
-#' using independent Rademacher vectors \eqn{z}. Each probe requires one solve
-#' with right-hand side \eqn{Wz}. The estimate is stochastic but can be made
-#' reproducible with \code{gcv.trace.seed}; the returned GCV table reports the
-#' trace standard error.
-#'
-#' The current implementation requires a single fully observed response vector
-#' and strictly positive observation weights. Semi-supervised or missing-label
-#' SSRHE tuning should continue to use
-#' \code{\link{fit.ssrhe.hessian.regression.cv}}.
-#'
-#' With \code{support.selection = "gcv"}, this function performs an outer
-#' adaptive-radius support-profile loop. Each support candidate constructs a
-#' fresh SSRHE operator, runs the same exact GCV grid search, and the candidate
-#' with the smallest selected GCV is refit and returned.
-#'
-#' @return A list of class \code{"ssrhe.hessian.gcv.fit"} and
-#'   \code{"ssrhe.hessian.fit"} containing the final fit plus
-#'   \code{gcv.table}, \code{selection}, and optional
-#'   \code{support.gcv.table} diagnostics.
-#' @examples
-#' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
-#' fit.ssrhe.hessian.regression.gcv(
-#'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
-#'   lambda1.grid = c(0.01, 0.1)
-#' )
-#' @export
-fit.ssrhe.hessian.regression.gcv <- function(
+# Internal GCV selection engine; public controls are validated and mapped above.
+.fit.ssrhe.hessian.regression.gcv <- function(
     X,
     y,
     k = NULL,
@@ -1743,16 +1789,16 @@ fit.ssrhe.hessian.regression.gcv <- function(
     n <- nrow(X)
     y.info <- .prepare.ssrhe.response.matrix(y, n, "y")
     if (ncol(y.info$Y) != 1L) {
-        stop("fit.ssrhe.hessian.regression.gcv currently supports one response vector.",
+        stop("fit.ssrhe.hessian.regression(lambda.selection = 'gcv') currently supports one response vector.",
              call. = FALSE)
     }
     W <- .prepare.ssrhe.weight.matrix(weights, y.info, n)
     if (!all(y.info$observed)) {
-        stop("fit.ssrhe.hessian.regression.gcv currently requires a fully observed response.",
+        stop("fit.ssrhe.hessian.regression(lambda.selection = 'gcv') currently requires a fully observed response.",
              call. = FALSE)
     }
     if (any(W <= 0)) {
-        stop("fit.ssrhe.hessian.regression.gcv currently requires strictly positive weights.",
+        stop("fit.ssrhe.hessian.regression(lambda.selection = 'gcv') currently requires strictly positive weights.",
              call. = FALSE)
     }
     lambda1.grid <- .validate.ssrhe.lambda.grid(lambda1.grid, "lambda1.grid")
@@ -1810,7 +1856,7 @@ fit.ssrhe.hessian.regression.gcv <- function(
             if (is.na(max.support.ii)) max.support.ii <- NULL
             elapsed <- system.time({
                 cand <- tryCatch(
-                    fit.ssrhe.hessian.regression.gcv(
+                    .fit.ssrhe.hessian.regression.gcv(
                         X = X,
                         y = y,
                         k = k,
@@ -1978,8 +2024,8 @@ fit.ssrhe.hessian.regression.gcv <- function(
 
 .fit.ssrhe.hessian.gcv.from.operator <- function(operator,
                                                  y,
-                                                 lambda1.grid,
-                                                 lambda2.grid,
+                                          lambda1.grid,
+                                          lambda2.grid,
                                                  weights,
                                                  ridge,
                                                  trace.method = c("exact", "hutchinson"),
@@ -2126,8 +2172,8 @@ fit.ssrhe.hessian.regression.gcv <- function(
 
 .fit.ssrhe.hessian.from.operator <- function(operator,
                                              y,
-                                             lambda1,
-                                             lambda2,
+                                      lambda1,
+                                      lambda2,
                                              weights,
                                              ridge,
                                              verbose = FALSE) {
@@ -2911,11 +2957,12 @@ fit.ssrhe.hessian.l1.regression <- function(
 #' lambda grid without rebuilding local neighborhoods or local PCA Hessian
 #' rows.
 #'
-#' @param fitted.model A \code{"ssrhe.hessian.l1.fit"} object.
-#' @param y.new Optional new numeric response vector. If \code{NULL}, the
+#' @param object A \code{"ssrhe.hessian.l1.fit"} object.
+#' @param y Optional new numeric response vector. If \code{NULL}, the
 #'   original response is reused.
 #' @inheritParams fit.ssrhe.hessian.l1.regression
 #'
+#' @param ... Additional arguments are not currently supported.
 #' @return A list of class \code{"ssrhe.hessian.l1.refit"}.
 #' @examples
 #' X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
@@ -2923,14 +2970,17 @@ fit.ssrhe.hessian.l1.regression <- function(
 #'   X, X[, 1]^2, k = 6L, tangent.dim = 1L,
 #'   lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
 #' )
-#' refit.ssrhe.hessian.l1.regression(
-#'   fit, y.new = X[, 1]^3, solver = "admm"
+#' refit(
+#'   fit, y = X[, 1]^3, solver = "admm"
 #' )
+#' @seealso \code{\link{refit}} for supported fitted objects and migration.
+#' @method refit ssrhe.hessian.l1.fit
+#' @aliases refit.ssrhe.hessian.l1.regression
 #' @export
-refit.ssrhe.hessian.l1.regression <- function(
-    fitted.model,
-    y.new = NULL,
-    lambda.grid = fitted.model$lambda,
+refit.ssrhe.hessian.l1.fit <- function(
+    object,
+    y = NULL,
+    lambda.grid = object$lambda,
     lambda.selection = c("fixed", "cv"),
     weights = NULL,
     n.lambda = 40L,
@@ -2950,31 +3000,32 @@ refit.ssrhe.hessian.l1.regression <- function(
     rtol = 1e-7,
     btol = 1e-7,
     eps = 1e-4,
-    verbose = FALSE) {
+    verbose = FALSE, ...) {
+    .geosmooth.check.dots(...)
 
-    if (!inherits(fitted.model, "ssrhe.hessian.l1.fit")) {
-        stop("fitted.model must be a 'ssrhe.hessian.l1.fit' object.",
+    if (!inherits(object, "ssrhe.hessian.l1.fit")) {
+        stop("object must be a 'ssrhe.hessian.l1.fit' object.",
              call. = FALSE)
     }
-    if (is.null(fitted.model$operator) ||
-        !inherits(fitted.model$operator, "ssrhe.hessian.operator")) {
-        stop("fitted.model does not contain a reusable SSRHE operator.",
+    if (is.null(object$operator) ||
+        !inherits(object$operator, "ssrhe.hessian.operator")) {
+        stop("object does not contain a reusable SSRHE operator.",
              call. = FALSE)
     }
-    if (is.null(fitted.model$operator$A)) {
-        stop("fitted.model operator does not contain A.", call. = FALSE)
+    if (is.null(object$operator$A)) {
+        stop("object operator does not contain A.", call. = FALSE)
     }
-    if (is.null(y.new)) {
-        y.new <- fitted.model$y
+    if (is.null(y)) {
+        y <- object$y
     }
-    n <- length(fitted.model$fitted.values)
-    y.info <- .prepare.ssrhe.response.matrix(y.new, n, "y.new")
+    n <- length(object$fitted.values)
+    y.info <- .prepare.ssrhe.response.matrix(y, n, "y")
     if (ncol(y.info$Y) != 1L) {
-        stop("refit.ssrhe.hessian.l1.regression currently supports one response vector.",
+        stop("refit() for Hessian L1 currently supports one response vector.",
              call. = FALSE)
     }
     if (is.null(weights)) {
-        weights <- fitted.model$weights
+        weights <- object$weights
     }
     W <- .prepare.ssrhe.weight.matrix(weights, y.info, n)
     lambda.selection <- match.arg(lambda.selection)
@@ -3011,7 +3062,7 @@ refit.ssrhe.hessian.l1.regression <- function(
     )
 
     out <- .fit.ssrhe.hessian.l1.from.operator(
-        operator = fitted.model$operator,
+        operator = object$operator,
         y = as.vector(y.info$Y),
         weights = as.vector(W),
         lambda.grid = lambda.grid,
@@ -3031,8 +3082,8 @@ refit.ssrhe.hessian.l1.regression <- function(
 .fit.ssrhe.hessian.l1.from.operator <- function(operator,
                                                 y,
                                                 weights,
-                                                lambda.grid,
-                                                lambda.selection,
+                                         lambda.grid,
+                                         lambda.selection,
                                                 n.lambda,
                                                 fold.id,
                                                 loss,
@@ -3513,7 +3564,7 @@ refit.ssrhe.hessian.l1.regression <- function(
 }
 
 .validate.ssrhe.hessian.l1.lambda.grid <- function(lambda.grid,
-                                                   lambda.selection) {
+                                            lambda.selection) {
     if (is.null(lambda.grid)) {
         if (identical(lambda.selection, "fixed")) {
             stop("lambda.grid is required when lambda.selection = 'fixed'.",

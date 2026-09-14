@@ -489,7 +489,7 @@ synthetic.dataset.checksum <- function(x) {
 #' x <- materialize.synthetic(spec, n = 20L, seed = 1L)
 #' y <- materialize.synthetic(spec, n = 20L, seed = 1L)
 #' compare.synthetic.dataset(x, y)
-#' @export
+#' @export compare.synthetic.dataset
 compare.synthetic.dataset <- function(x, y, tolerance = c(1e-12, 1e-10)) {
   validate.synthetic.dataset(x)
   validate.synthetic.dataset(y)

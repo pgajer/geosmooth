@@ -54,8 +54,8 @@ probe.column.smoother <- function(X, coordinate.method, chart.dim) {
 probe.case <- function(label, X, y, coordinate.method, chart.dim, sigma0) {
     fit <- probe.fixed.fit(X, y, coordinate.method, chart.dim)
     S.probe <- probe.column.smoother(X, coordinate.method, chart.dim)
-    S.impl <- lps.smoother.matrix(fit)
-    S.impl.again <- lps.smoother.matrix(fit)
+    S.impl <- smoother.matrix(fit)
+    S.impl.again <- smoother.matrix(fit)
     band <- lps.pointwise.band(fit, sigma = sigma0)
     band.plugin <- lps.pointwise.band(fit)
     n <- nrow(X)
