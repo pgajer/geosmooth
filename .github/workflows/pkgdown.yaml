@@ -3,6 +3,9 @@ name: Package website
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'validation/**'
+      - 'dev/**'
   workflow_dispatch:
 
 permissions:

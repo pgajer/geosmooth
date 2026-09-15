@@ -10,10 +10,16 @@ vignette: >
 ---
 
 <style>
-body { max-width: 1120px; }
 td, th { vertical-align: top; }
 td code { white-space: normal; overflow-wrap: anywhere; }
 </style>
+
+```{r standalone-width, echo=FALSE, results='asis'}
+# Let pkgdown own the site layout; widen only the standalone installed vignette.
+if (!identical(Sys.getenv("IN_PKGDOWN"), "true")) {
+  cat("<style>body { max-width: 1120px; }</style>")
+}
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")

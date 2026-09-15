@@ -600,9 +600,11 @@ plot.harmonic_smoother <- function(x, y = NULL, ..., type = c("topology", "extre
     }
 
     iterations <- if (is.null(x$recorded_iterations)) seq_along(x$topology_differences) else x$recorded_iterations[-1L]
-    plot(iterations, x$topology_differences, type = "l",
-         xlab = "Iteration", ylab = "Extrema-set difference",
-         main = "Changes in Recorded Extrema", ...)
+    plot.args <- utils::modifyList(list(
+        x = iterations, y = x$topology_differences, type = "l",
+        xlab = "Iteration", ylab = "Extrema-set difference", ylim = c(0, 1),
+        main = "Changes in Recorded Extrema"), list(...))
+    do.call(graphics::plot, plot.args)
     if (isTRUE(x$stability_detected)) {
       graphics::abline(v = x$stable_iteration, col = "blue", lty = 2)
       graphics::legend("topright", legend = "Extrema stability detected", col = "blue", lty = 2)
@@ -632,16 +634,21 @@ plot.harmonic_smoother <- function(x, y = NULL, ..., type = c("topology", "extre
     })
 
     iterations <- if (is.null(x$recorded_iterations)) seq_along(extrema_counts) else x$recorded_iterations
-    plot(iterations, extrema_counts, type = "l", col = "black",
-         xlab = "Iteration", ylab = "Count",
-         main = "Evolution of Extrema Counts", ...)
+    plot.args <- utils::modifyList(list(
+        x = iterations, y = extrema_counts, type = "l", col = "black",
+        xlab = "Iteration", ylab = "Count", ylim = range(0, extrema_counts),
+        main = "Evolution of Extrema Counts"), list(...))
+    do.call(graphics::plot, plot.args)
     graphics::lines(iterations, maxima_counts, col = "red")
     graphics::lines(iterations, minima_counts, col = "blue")
     if (isTRUE(x$stability_detected)) graphics::abline(v = x$stable_iteration, col = "green", lty = 2)
 
+    detected <- isTRUE(x$stability_detected)
     graphics::legend("topright",
-                     legend = c("Total", "Maxima", "Minima"),
-                     col = c("black", "red", "blue"), lty = 1)
+                     legend = c("Total", "Maxima", "Minima",
+                                if (detected) "Extrema stability detected"),
+                     col = c("black", "red", "blue", if (detected) "green"),
+                     lty = c(1, 1, 1, if (detected) 2))
 
   } else if (type == "values") {
     # Plot original vs smoothed values

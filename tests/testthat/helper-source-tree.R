@@ -22,7 +22,10 @@ geosmooth.test.source.root <- function(starts = NULL) {
                 source.marker <- file.path(root, "R", "RcppExports.R")
                 installed.marker <- file.path(root, "Meta", "package.rds")
                 if (identical(package, "geosmooth") &&
-                    file.exists(source.marker) && !file.exists(installed.marker)) return(root)
+                    file.exists(source.marker) && !file.exists(installed.marker)) {
+                    # dirname() changes Windows separators while walking upward.
+                    return(normalizePath(root, mustWork = TRUE))
+                }
             }
             parent <- dirname(root)
             if (identical(parent, root)) break

@@ -21,24 +21,41 @@ test_that("scale-aware ADMM preserves a constant on a large derivative operator"
     expect_output(print(incomplete), "NOT CONVERGED")
 })
 
-test_that("ADMM agrees with an independent path at the original objective", {
-    skip_if_not_installed("genlasso")
-    X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 5),
-                               y = seq(0, 1, length.out = 5)))
-    y <- sin(2 * pi * X[, 1]) + .25 * X[, 2]^2
-    fit <- fit.ssrhe.hessian.l1.regression(
-        X, y, k = 12L, tangent.dim = 2L, lambda.grid = .01,
-        lambda.selection = "fixed", solver = "admm",
-        admm.abstol = 1e-6, admm.reltol = 1e-5
-    )
-    path <- genlasso::genlasso(y, D = as.matrix(fit$operator$A), svd = TRUE)
-    reference <- as.vector(stats::coef(path, lambda = .01)$beta)
-    objective <- function(b) .5 * sum((b - y)^2) +
-        .01 * sum(abs(fit$operator$A %*% b))
-    expect_true(fit$solver$converged)
-    expect_lt(sqrt(mean((fit$fitted.values - reference)^2)), 1e-3)
-    expect_lt(abs(objective(fit$fitted.values) - objective(reference)), 1e-4)
-    expect_equal(fit$objective, objective(fit$fitted.values))
+test_that("ADMM attains an independent dual bound at the original objective", {
+    # genlasso's SVD path is not a reliable oracle for nearly rank-deficient
+    # Hessian operators. A box-constrained dual supplies a lower bound on the
+    # *same* objective, independent of ADMM's update and stopping code.
+    for (perturb in c(FALSE, TRUE)) {
+        X <- as.matrix(expand.grid(x = seq(0, 1, length.out = 5),
+                                   y = seq(0, 1, length.out = 5)))
+        if (perturb) {
+            withr::local_seed(1)
+            X <- X + matrix(rnorm(length(X), sd = 1e-12), nrow(X))
+        }
+        y <- sin(2 * pi * X[, 1]) + .25 * X[, 2]^2
+        fit <- fit.ssrhe.hessian.l1.regression(
+            X, y, k = 12L, tangent.dim = 2L, lambda.grid = .01,
+            lambda.selection = "fixed", solver = "admm",
+            admm.abstol = 1e-6, admm.reltol = 1e-5
+        )
+        D <- as.matrix(fit$operator$A)
+        objective <- function(b) .5 * sum((b - y)^2) + .01 * sum(abs(D %*% b))
+        dual <- stats::optim(rep(0, nrow(D)),
+            function(u) .5 * sum((y - crossprod(D, u))^2),
+            function(u) -as.vector(D %*% (y - crossprod(D, u))),
+            method = "L-BFGS-B", lower = -.01, upper = .01,
+            control = list(maxit = 20000, factr = 1, pgtol = 1e-10))
+        reference <- as.vector(y - crossprod(D, dual$par))
+        lower.bound <- .5 * sum(y^2) - dual$value
+        expect_identical(dual$convergence, 0L)
+        expect_lte(max(abs(dual$par)), .01 + 1e-12)
+        expect_lt(objective(reference) - lower.bound, 1e-4)
+        expect_true(fit$solver$converged)
+        expect_gte(objective(fit$fitted.values) - lower.bound, -1e-10)
+        expect_lt(objective(fit$fitted.values) - lower.bound, 1e-4)
+        expect_lt(sqrt(mean((fit$fitted.values - reference)^2)), 1e-3)
+        expect_equal(fit$objective, objective(fit$fitted.values))
+    }
 })
 
 test_that("CV retains failed ADMM folds and refuses incomplete selection", {

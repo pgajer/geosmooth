@@ -257,7 +257,7 @@ fit.subject.od(X, subject.index, method = c("empirical", "graph_random_walk", "l
 
 ### get.region.boundary
 
-2 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L736).
+2 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L743).
 
 ```r
 get.region.boundary(adj.list, region)
