@@ -74,10 +74,15 @@ location). Its examples and vignette rebuilds passed. The main check above and
 separate source-runner test cover those source-only checks.
 
 This is development-dependency validation, not CRAN-only release validation.
-Final platform checks using released dependencies are still required. Pushes
-also run the development-dependency matrix; the preceding main revision c6eab52 passed Linux release/oldrel, Windows release and macOS Intel
-release, while current R-devel failed on the dependency RNG issue above.
-Those earlier platform passes are not claimed as checks of the present changes.
+Final platform checks using released dependencies are still required. The
+development-dependency matrix for f7db6c3 (GitHub Actions run 35034345110)
+passed on Linux release/oldrel-1, Windows release and macOS Intel release:
+each reported Status: OK and 11,250 assertions passed, no test warnings, and
+one source-only skip. Current R-devel stopped during the synthetic vignette
+rebuild on the dependency RNG-state issue above, before running package tests.
+The subsequent change in 67452ab only corrects a README mathematical label;
+its website deployment passed and the public result was inspected. Package
+code and tests are unchanged from the checked revision.
 
 No reverse Depends, Imports, LinkingTo, or Suggests dependencies were listed
 for geosmooth in the CRAN source index refreshed on 2026-09-15. Refresh this
