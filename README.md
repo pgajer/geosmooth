@@ -96,7 +96,7 @@ Choose by the structure of your data and the penalty you need:
 - **LPL-TF**: local polynomial lifting trend filtering, `fit.lpl.tf()` and
   `lpl.tf.operator()`.
   Use this when the local polynomial residual operator should be regularized by
-  an \(\ell_1\) trend-filtering penalty.
+  an L1 (absolute-value) trend-filtering penalty.
 
 - **SLPLiFT / S-LPL-TF**: synchronized local polynomial lifting trend
   filtering, `fit.slpl.tf()` and `slpl.tf.operator()`.
