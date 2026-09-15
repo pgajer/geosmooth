@@ -34,7 +34,7 @@ group.files <- list(
     "ps-lps" = "test-ps-lps.R",
     od = grep("^test-state-density-od", all.files, value = TRUE),
     graph = grep(
-        "^test-(ge5-graph-boundary|graph-|metric-graph-lowpass|pttf-)",
+        "^test-(ge5-graph-boundary|graph-|metric-graph-lowpass|pttf-|harmonic-|input-control-)",
         all.files,
         value = TRUE
     ),

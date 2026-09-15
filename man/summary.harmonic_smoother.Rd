@@ -13,7 +13,9 @@
 }
 \value{
 An object of class \code{"summary.harmonic_smoother"} containing:
-\item{stable_iteration}{The iteration at which topology stabilized}
+\item{stable_iteration, stability_detected}{Extrema-stability detection,
+separate from numerical convergence; iteration is NA if undetected}
+\item{converged, status, num_iterations}{Numerical relaxation status}
 \item{iterations_recorded}{Total number of recorded iterations}
 \item{initial_extrema}{Number of extrema at the first iteration}
 \item{initial_maxima}{Number of maxima at the first iteration}

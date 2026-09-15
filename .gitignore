@@ -96,3 +96,6 @@ tmp/
 /dev/notes/migration
 /dev/notes/cross_method/lps_ps_lps_project_brief_09-06-2026.md
 /dev/methods/lps/status/lps_e1_10_grouped_cv_closure_2026-06-14.md
+
+# Generated package website
+/docs/

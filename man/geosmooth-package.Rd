@@ -11,6 +11,15 @@ point clouds, and weighted graphs. The package provides local polynomial,
 model-averaged, trend-filtering, graph low-pass, occupation-density, and
 Hessian-energy methods.
 }
+\section{Start here}{
+
+Use \code{browseVignettes("geosmooth")} to open the installed HTML guides,
+including \code{vignette("function-guide", package = "geosmooth")}.
+The \href{https://pgajer.github.io/geosmooth/articles/function-guide.html}{online guide}
+links to the full reference. The task links below work in installed help
+without an internet connection.
+}
+
 \section{Finding a function}{
 
 Read \code{vignette("function-guide", package = "geosmooth")} for a
@@ -36,6 +45,14 @@ for an absolute-value penalty.}
 }
 }
 
+\examples{
+X <- matrix(seq(0, 1, length.out = 30), ncol = 1)
+y <- sin(2 * pi * X[, 1])
+fit <- fit.lps(X, y, support.grid = 8L, degree.grid = 1L,
+               kernel.grid = "tricube", foldid = rep(1:3, 10))
+head(predict(fit))
+
+}
 \seealso{
 \code{vignette("function-guide", package = "geosmooth")},
 \code{vignette("synthetic-datasets", package = "geosmooth")}

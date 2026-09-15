@@ -54,7 +54,7 @@ Description: Provides geometric methods for nonparametric regression and
     <https://papers.nips.cc/paper/3741-semi-supervised-regression-using-hessian-energy-with-an-application-to-semi-supervised-dimensionality-reduction>.
 Copyright: file inst/COPYRIGHTS
 License: GPL (>= 3)
-URL: https://github.com/pgajer/geosmooth
+URL: https://pgajer.github.io/geosmooth/, https://github.com/pgajer/geosmooth
 BugReports: https://github.com/pgajer/geosmooth/issues
 Encoding: UTF-8
 Language: en-US

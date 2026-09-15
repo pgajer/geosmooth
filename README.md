@@ -7,15 +7,14 @@ local polynomial lifting trend filtering, synchronized local polynomial lifting
 trend filtering, graph low-pass filtering, and Hessian-energy regression.
 
 For a task-based catalog of every exported function, prediction capabilities,
-and examples, read [Finding your way around geosmooth](vignettes/function-guide.Rmd).
+and examples, read [Finding your way around geosmooth](https://pgajer.github.io/geosmooth/articles/function-guide.html).
 In an installed package, use `vignette("function-guide", package = "geosmooth")`
 or start with `help("geosmooth-package", package = "geosmooth")`.
 
-The [API design review](dev/notes/package/api-review-2026-09-14.md) discusses
-documentation lessons from Hmisc and possible future simplifications. The
-package now exports 60 functions: geometry/sampling helpers are called through
-`dgraphs::`, quadratic Hessian fitting uses one entry point, and shared
-`refit()` and `smoother.matrix()` generics select methods from fitted objects. See [NEWS](NEWS.md) for migration details.
+Browse the [reference by task](https://pgajer.github.io/geosmooth/reference/index.html),
+[functions A–Z](https://pgajer.github.io/geosmooth/reference/alphabetical.html), or
+[synthetic datasets guide](https://pgajer.github.io/geosmooth/articles/synthetic-datasets.html).
+See [NEWS](https://pgajer.github.io/geosmooth/news/index.html) for migration details.
 
 ## Installation
 

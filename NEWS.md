@@ -17,6 +17,25 @@
   reporting now accounts for the penalty actually used with row scaling;
   the unscaled Hessian norm remains available separately.
 
+## Input validation and harmonic diagnostics
+
+- Density methods now reject misspelled, duplicated, or unsupported controls
+  and unused terminal arguments. Logical controls require `TRUE` or `FALSE`.
+  Recognized controls forwarded to subject-occupation smoothers remain supported.
+- Graph low-pass, density, and harmonic methods validate finite integer vertex
+  indices before conversion. Fractional indices and iteration counts now error
+  instead of silently selecting a different vertex or truncating a control.
+- Harmonic smoothing documents the actual boundary rule: a region vertex must
+  have a neighbor outside the region; graph leaves are not automatically fixed.
+  The basic function still leaves a boundary-free region unchanged, while the
+  tracked function still relaxes it. Both now report explicit numerical status.
+- `harmonic.smoother()` reports extrema-stability detection separately from
+  numerical convergence. `stable_iteration` is now `NA_integer_` when no
+  stability window was detected; check `stability_detected` before using it.
+  It returns update/residual histories and actual recorded iteration numbers,
+  always records the final state, and uses those numbers in plots. Stability
+  of recorded extrema does not establish convergence or optimal smoothing.
+
 ## API changes
 
 This release reduces the explicit public API from 93 to 60 exported functions.

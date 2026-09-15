@@ -61,3 +61,8 @@ check-fast: build
 
 install: build
 	R CMD INSTALL $(TARBALL)
+
+.PHONY: website
+website:
+	Rscript scripts/build_website.R
+	python3 scripts/check_website.py

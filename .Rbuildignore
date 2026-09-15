@@ -19,3 +19,6 @@
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
 ^DOCUMENT_LOCATIONS[.]md$
+^_pkgdown[.]yml$
+^docs$
+^pkgdown$

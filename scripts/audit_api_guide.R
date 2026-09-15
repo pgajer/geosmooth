@@ -8,6 +8,8 @@ reexports <- sub("^importFrom[(]dgraphs,(.*)[)]$", "\\1",
                  grep("^importFrom[(]dgraphs,", ns, value = TRUE))
 reexports <- intersect(exports, reexports)
 guide <- readLines("vignettes/function-guide.Rmd", warn = FALSE)
+# Strip Markdown link wrappers before checking the canonical catalog rows.
+guide <- gsub("\\[(`[^`]+`)\\]\\([^)]*\\)", "\\1", guide)
 catalog <- sub("^\\| `([^`]+)[(][)]`.*$", "\\1",
                grep("^\\| `[^`]+[(][)]` \\|", guide, value = TRUE))
 dependency.catalog <- sub("^dgraphs::", "", catalog[grepl("^dgraphs::", catalog)])

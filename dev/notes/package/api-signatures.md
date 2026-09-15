@@ -54,7 +54,7 @@ fit.chart.kernel(X, y, X.eval = NULL, support.size = min(15L, nrow(X)), kernel =
 
 ### fit.density
 
-8 arguments. Source: [R/state_density.R](../../../R/state_density.R#L29).
+8 arguments. Source: [R/state_density.R](../../../R/state_density.R#L35).
 
 ```r
 fit.density(X, weights = NULL, method = c("empirical", "graph_random_walk"), graph = NULL, graph.control = list(),
@@ -245,7 +245,7 @@ fit.ssrhe.hessian.regression(X, y, k = NULL, tangent.dim, lambda1, lambda2 = 0, 
 
 ### fit.subject.od
 
-13 arguments. Source: [R/state_density.R](../../../R/state_density.R#L378).
+13 arguments. Source: [R/state_density.R](../../../R/state_density.R#L397).
 
 ```r
 fit.subject.od(X, subject.index, method = c("empirical", "graph_random_walk", "lps_count", "ps_lps_count",
@@ -257,7 +257,7 @@ fit.subject.od(X, subject.index, method = c("empirical", "graph_random_walk", "l
 
 ### get.region.boundary
 
-2 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L716).
+2 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L736).
 
 ```r
 get.region.boundary(adj.list, region)
@@ -276,7 +276,7 @@ graph.trend.filtering.operator(adj.list, weight.list = NULL, order = 0L, weight.
 
 ### harmonic.smoother
 
-9 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L233).
+9 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L243).
 
 ```r
 harmonic.smoother(adj.list, weight.list, values, region.vertices, max.iterations = 100, tolerance = 1e-06,
@@ -404,7 +404,7 @@ metric.graph.lowpass.operator(adj.list, weight.list, conductance.rule = c("inver
 
 ### normalize.density
 
-2 arguments. Source: [R/state_density.R](../../../R/state_density.R#L163).
+2 arguments. Source: [R/state_density.R](../../../R/state_density.R#L176).
 
 ```r
 normalize.density(x, ...)
@@ -412,7 +412,7 @@ normalize.density(x, ...)
 
 ### perform.harmonic.smoothing
 
-6 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L63).
+6 arguments. Source: [R/harmonic_smoother.R](../../../R/harmonic_smoother.R#L64).
 
 ```r
 perform.harmonic.smoothing(adj.list, weight.list, values, region.vertices, max.iterations = 100, tolerance = 1e-06)

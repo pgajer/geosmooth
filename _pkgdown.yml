@@ -1,0 +1,117 @@
+url: https://pgajer.github.io/geosmooth/
+template:
+  bootstrap: 5
+navbar:
+  structure:
+    left: [intro, reference, alphabetical, articles, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Start here
+      href: articles/function-guide.html
+    alphabetical:
+      text: A–Z
+      href: reference/alphabetical.html
+reference:
+- title: "Shared model operations"
+  contents:
+  - refit
+  - smoother.matrix
+- title: "Local regression and prediction synchronization"
+  contents:
+  - fit.lps
+  - fit.malps
+  - fit.ps.lps
+  - fit.chart.kernel
+  - fit.local.likelihood
+- title: "Model assessment and uncertainty"
+  contents:
+  - lps.grouped.foldid
+  - lps.nested.cv
+  - lps.backend.diagnostics
+  - lps.pointwise.band
+  - malps.gcv
+  - bootstrap.malps
+- title: "Lifting trend filters"
+  contents:
+  - lpl.tf.operator
+  - fit.lpl.tf
+  - slpl.tf.operator
+  - fit.slpl.tf
+- title: "Graph spectral smoothing and graph trend filtering"
+  contents:
+  - fit.metric.graph.lowpass
+  - metric.graph.lowpass.operator
+  - metric.graph.lowpass.basis
+  - apply.metric.graph.lowpass.path
+  - metric.graph.heat.eta.grid
+  - metric.graph.heat.extend.lower
+  - graph.trend.filtering.operator
+  - fit.graph.trend.filtering
+- title: "Hessian-energy regression"
+  contents:
+  - ssrhe.hessian.operator
+  - fit.ssrhe.hessian.regression
+  - fit.ssrhe.hessian.l1.regression
+  - ssrhe.support.grid
+- title: "Harmonic interpolation"
+  contents:
+  - perform.harmonic.smoothing
+  - harmonic.smoother
+  - get.region.boundary
+- title: "Probability mass and subject occupation"
+  contents:
+  - fit.density
+  - normalize.density
+  - fit.subject.od
+- title: "Experimental transport methods"
+  contents:
+  - pttf.geometry
+  - pttf.operator
+  - pttf.operator.filter.rows
+  - fit.pttf.trend.filtering
+  - transported.graph.hessian.operator
+- title: "Synthetic datasets: specifications, responses, and reproducibility"
+  contents:
+  - synthetic.spec
+  - materialize.synthetic
+  - materialize.synthetic.instance
+  - synthetic.registry.ids
+  - synthetic.registry.spec
+  - synthetic.registry.seed
+  - validate.synthetic.dataset
+  - compare.synthetic.dataset
+  - synthetic.dataset.checksum
+  - synthetic.sampling.stratified
+  - synthetic.truth.named
+  - synthetic.truth.polynomial
+  - synthetic.truth.gaussian.mixture
+  - synthetic.truth.occupation.mixture
+  - synthetic.truth.logit
+  - synthetic.response.gaussian
+  - synthetic.response.heteroskedastic.gaussian
+  - synthetic.response.clustered.gaussian
+  - synthetic.response.laplace.outlier
+  - synthetic.response.bernoulli
+- title: Package overview
+  contents:
+  - geosmooth-package
+- title: S3 methods
+  desc: Methods selected by the corresponding generic and fitted-object class.
+  contents:
+  - starts_with("predict.")
+  - starts_with("refit.")
+  - starts_with("smoother.matrix.")
+  - starts_with("print.")
+  - starts_with("summary.")
+  - starts_with("plot.")
+  - starts_with("as.data.frame.")
+  - starts_with("normalize.density.")
+  - starts_with("spectral.ensemble.")
+  - starts_with("predictability.score.")
+articles:
+- title: Guides
+  navbar: ~
+  contents:
+  - function-guide
+  - synthetic-datasets

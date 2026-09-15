@@ -11,9 +11,12 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
+For the complete task and function catalog, see
+[Finding your way around geosmooth](function-guide.html).
+
 `geosmooth` represents a synthetic dataset as four serializable components:
-geometry, sampling, truth, and response. `synthetic.spec()` combines those
-components without drawing data. `materialize.synthetic()` performs all random
+geometry, sampling, truth, and response. [`synthetic.spec()`](https://pgajer.github.io/geosmooth/reference/synthetic.spec.html) combines those
+components without drawing data. [`materialize.synthetic()`](https://pgajer.github.io/geosmooth/reference/materialize.synthetic.html) performs all random
 work under an explicit seed and RNG policy and returns a validated
 `synthetic_dataset`.
 
@@ -52,7 +55,7 @@ as.data.frame(surface.data)
 ```
 
 Maintained benchmark recipes are discoverable through
-`synthetic.registry.ids()`. G1--G7 remain compatibility identifiers; the
+[`synthetic.registry.ids()`](https://pgajer.github.io/geosmooth/reference/synthetic.registry.ids.html). G1--G7 remain compatibility identifiers; the
 S01--S16 and V1--V3 identifiers preserve the shared SSRHE regression suite.
 Ordinary datasets bind their full specification hash into `dataset.id`.
 
