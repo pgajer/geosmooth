@@ -37,7 +37,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            github::pgajer/dgraphs@22c0f2b7b1c53af5aabf1f19e6c390ce343d87fe
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
