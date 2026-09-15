@@ -1,9 +1,9 @@
 # geosmooth API signature appendix
 
-Generated from the current source by `Rscript scripts/audit_api_guide.R`.
+Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 60 explicit exports: 60 local functions and 0 dgraphs re-exports; 44 S3 registrations are counted separately.
+There are 60 explicit exports: 60 local functions and 0 dgraphs re-exports; 95 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -22,7 +22,7 @@ apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel
 
 ### bootstrap.malps
 
-11 arguments. Source: [R/malps.R](../../../R/malps.R#L935).
+11 arguments. Source: [R/malps.R](../../../R/malps.R#L954).
 
 ```r
 bootstrap.malps(object, B = 200L, weight.type = c("bayesian", "multinomial"), y = NULL, probs = NULL,
@@ -105,7 +105,7 @@ fit.lpl.tf(X = NULL, y, operator = NULL, adj.list = NULL, weight.list = NULL, gr
 
 ### fit.lps
 
-31 arguments. Source: [R/lps.R](../../../R/lps.R#L215).
+31 arguments. Source: [R/lps.R](../../../R/lps.R#L234).
 
 ```r
 fit.lps(X, y, foldid = NULL, support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian",
@@ -124,7 +124,7 @@ fit.lps(X, y, foldid = NULL, support.grid = c(10L, 15L, 20L), degree.grid = 0:2,
 
 ### fit.malps
 
-41 arguments. Source: [R/malps.R](../../../R/malps.R#L173).
+41 arguments. Source: [R/malps.R](../../../R/malps.R#L192).
 
 ```r
 fit.malps(X, y, graph = NULL, adj.list = NULL, weight.list = NULL, graph.stage = "final",
@@ -209,7 +209,7 @@ fit.slpl.tf(X = NULL, y, operator = NULL, lambda1 = NULL, lambda2 = 0, lambda1.g
 
 ### fit.ssrhe.hessian.l1.regression
 
-47 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2694).
+47 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2740).
 
 ```r
 fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL, lambda.selection = c("cv", "fixed"),
@@ -221,7 +221,7 @@ fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL,
     eigen.tolerance = 0.95, derivative.order = 2L, pinv.tol = sqrt(.Machine$double.eps),
     local.solver = c("auto", "normal.equations", "svd", "qr"), normal.equations.max.condition = 10000,
     solver = c("genlasso", "admm", "auto"), row.scaling = c("none", "l2"), admm.rho = NULL,
-    admm.maxiter = 2000L, admm.abstol = 1e-04, admm.reltol = 0.001, maxsteps = 2000L, minlam = 0,
+    admm.maxiter = 2000L, admm.abstol = 1e-06, admm.reltol = 1e-05, maxsteps = 2000L, minlam = 0,
     approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, support.selection = c("rule",
         "cv"), support.grid = NULL, support.cv.max.candidates = 8L, return.local.diagnostics = FALSE,
     return.timing = FALSE, verbose = FALSE, admm.adaptive.rho = TRUE)
@@ -229,7 +229,7 @@ fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL,
 
 ### fit.ssrhe.hessian.regression
 
-34 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L1158).
+34 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L1178).
 
 ```r
 fit.ssrhe.hessian.regression(X, y, k = NULL, tangent.dim, lambda1, lambda2 = 0, weights = NULL, nn.index = NULL,
@@ -301,7 +301,7 @@ lpl.tf.operator(X, adj.list = NULL, weight.list = NULL, graph = NULL, graph.stag
 
 ### lps.backend.diagnostics
 
-1 arguments. Source: [R/lps.R](../../../R/lps.R#L784).
+1 arguments. Source: [R/lps.R](../../../R/lps.R#L803).
 
 ```r
 lps.backend.diagnostics(object)
@@ -326,15 +326,16 @@ lps.nested.cv(X, y, outer.foldid, fit.args = list(), inner.folds = 5L, cluster.i
 
 ### lps.pointwise.band
 
-4 arguments. Source: [R/lps_uncertainty.R](../../../R/lps_uncertainty.R#L329).
+5 arguments. Source: [R/lps_uncertainty.R](../../../R/lps_uncertainty.R#L343).
 
 ```r
-lps.pointwise.band(object, sigma = NULL, level = 0.95, check.tol = 1e-10)
+lps.pointwise.band(object, sigma = NULL, level = 0.95, check.tol = 1e-10, variance.method = c("residual",
+    "legacy"))
 ```
 
 ### malps.gcv
 
-7 arguments. Source: [R/malps.R](../../../R/malps.R#L806).
+7 arguments. Source: [R/malps.R](../../../R/malps.R#L825).
 
 ```r
 malps.gcv(object, y = NULL, smoother.matrix = NULL, include.loocv = TRUE, max.n = 1000L, allow.robust = FALSE,
@@ -708,6 +709,21 @@ Use the corresponding generic; these registrations are not additional explicit e
 
 ```r
 S3method(as.data.frame,synthetic_dataset)
+S3method(fitted,chart_kernel)
+S3method(fitted,graph.trend.filtering.fit)
+S3method(fitted,harmonic_smoother)
+S3method(fitted,local_likelihood)
+S3method(fitted,lpl_tf)
+S3method(fitted,lps)
+S3method(fitted,malps)
+S3method(fitted,metric.graph.lowpass.fit)
+S3method(fitted,metric.graph.lowpass.refit)
+S3method(fitted,ps_lps)
+S3method(fitted,pttf.trend.filtering.fit)
+S3method(fitted,slpl_tf)
+S3method(fitted,ssrhe.hessian.fit)
+S3method(fitted,ssrhe.hessian.l1.fit)
+S3method(fitted,ssrhe.hessian.refit)
 S3method(normalize.density,default)
 S3method(normalize.density,lps)
 S3method(normalize.density,metric.graph.lowpass.fit)
@@ -720,16 +736,22 @@ S3method(predict,lpl_tf)
 S3method(predict,lps)
 S3method(predict,malps)
 S3method(predict,slpl_tf)
+S3method(print,chart_kernel)
+S3method(print,density_fit)
 S3method(print,graph.trend.filtering.fit)
 S3method(print,harmonic_smoother)
+S3method(print,local_likelihood)
+S3method(print,lpl_tf)
 S3method(print,lpl_tf_operator)
 S3method(print,lps)
 S3method(print,malps)
 S3method(print,malps_bootstrap)
 S3method(print,metric.graph.lowpass.fit)
 S3method(print,metric.graph.lowpass.refit)
+S3method(print,ps_lps)
 S3method(print,pttf.trend.filtering.fit)
 S3method(print,pttf_operator)
+S3method(print,slpl_tf)
 S3method(print,slpl_tf_operator)
 S3method(print,ssrhe.hessian.cv.fit)
 S3method(print,ssrhe.hessian.fit)
@@ -737,6 +759,7 @@ S3method(print,ssrhe.hessian.gcv.fit)
 S3method(print,ssrhe.hessian.l1.fit)
 S3method(print,ssrhe.hessian.operator)
 S3method(print,ssrhe.hessian.refit)
+S3method(print,summary.geosmooth_fit)
 S3method(print,summary.harmonic_smoother)
 S3method(print,synthetic_dataset)
 S3method(print,transported.graph.hessian.operator)
@@ -747,9 +770,38 @@ S3method(refit,metric.graph.lowpass.fit)
 S3method(refit,slpl_tf)
 S3method(refit,ssrhe.hessian.fit)
 S3method(refit,ssrhe.hessian.l1.fit)
+S3method(residuals,chart_kernel)
+S3method(residuals,graph.trend.filtering.fit)
+S3method(residuals,local_likelihood)
+S3method(residuals,lpl_tf)
+S3method(residuals,lps)
+S3method(residuals,malps)
+S3method(residuals,metric.graph.lowpass.fit)
+S3method(residuals,metric.graph.lowpass.refit)
+S3method(residuals,ps_lps)
+S3method(residuals,pttf.trend.filtering.fit)
+S3method(residuals,slpl_tf)
+S3method(residuals,ssrhe.hessian.fit)
+S3method(residuals,ssrhe.hessian.l1.fit)
+S3method(residuals,ssrhe.hessian.refit)
 S3method(smoother.matrix,default)
 S3method(smoother.matrix,lps)
 S3method(smoother.matrix,malps)
+S3method(summary,chart_kernel)
+S3method(summary,density_fit)
+S3method(summary,graph.trend.filtering.fit)
 S3method(summary,harmonic_smoother)
+S3method(summary,local_likelihood)
+S3method(summary,lpl_tf)
+S3method(summary,lps)
+S3method(summary,malps)
+S3method(summary,metric.graph.lowpass.fit)
+S3method(summary,metric.graph.lowpass.refit)
+S3method(summary,ps_lps)
+S3method(summary,pttf.trend.filtering.fit)
+S3method(summary,slpl_tf)
+S3method(summary,ssrhe.hessian.fit)
+S3method(summary,ssrhe.hessian.l1.fit)
+S3method(summary,ssrhe.hessian.refit)
 ```
 

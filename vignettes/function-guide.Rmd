@@ -23,20 +23,15 @@ if (!identical(Sys.getenv("IN_PKGDOWN"), "true")) {
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+read.recipe <- getExportedValue("knitr", "read_chunk")
+read.recipe(system.file("doc-tools/first-fit.R", package = "geosmooth"))
+read.recipe(system.file("doc-tools/graph-workflow.R", package = "geosmooth"))
 ```
 
 `geosmooth` estimates a response or probability mass on coordinate data and
 graphs. Start with the task you want to perform, then choose a method. You do
 not need to learn the operator constructors or synthetic-data helpers to fit
 your first model.
-
-This guide describes the current API of version 0.2.0. The catalog below covers
-all 60 explicitly exported functions, each defined in `geosmooth`. The 25
-geometry and sampling helpers formerly re-exported here are now called directly
-from `dgraphs`; a separate dependency catalog below lists them.
-The package also registers 44 S3 methods, which R selects when you call a generic
-such as `predict()` or `print()` on an appropriate object. Those are described
-by workflow rather than as 44 additional entry points.
 
 ## Choose a starting point
 
@@ -66,19 +61,21 @@ A local chart is a coordinate system fitted near an observation, often using
 principal component analysis (PCA). Start in the supplied coordinates before
 adding local charts or changing numerical controls.
 
-```{r first-fit}
-library(geosmooth)
-set.seed(1)
-X <- matrix(seq(0, 1, length.out = 60), ncol = 1)
-y <- sin(2 * pi * X[, 1]) + rnorm(nrow(X), sd = 0.08)
-fit <- fit.lps(
-  X, y,
-  foldid = rep(1:5, length.out = nrow(X)),
-  support.grid = c(8L, 12L, 16L),
-  degree.grid = 0:1,
-  kernel.grid = "gaussian"
-)
-head(predict(fit))
+```{r first-fit-model}
+```
+
+```{r first-fit-plot, echo=FALSE, fig.width=7.2, fig.height=4, out.width="100%", fig.cap="The points are noisy observations. The solid blue line is the selected fit; the dashed orange line is known only because these data are synthetic.", fig.alt="Noisy observations along a sine curve, with a fitted solid curve close to the dashed synthetic truth."}
+```
+
+Here CV selected `r fit$selected$support.size`-point neighborhoods, degree
+`r fit$selected$degree`, and the Gaussian kernel, with a tuning RMSE of
+`r format(fit$selected$cv.rmse.observed, digits = 3)` response units. A larger support averages more
+nearby responses; the polynomial degree determines the local shape. The selected
+CV score was used for tuning, so it is not an independent measure of performance.
+This small illustration shows how to read a fit; it does not rank estimators.
+
+```{r first-predictions}
+head(fitted(fit))
 new.X <- matrix(seq(0.1, 0.9, length.out = 5), ncol = 1)
 predict(fit, newdata = new.X)
 ```
@@ -97,9 +94,20 @@ you need an outer assessment of the whole tuning procedure.
 | Local polynomial smoother | `predict(fit)` or `predict(fit, newdata = Xnew)` | Existing evaluation points or new coordinate rows. |
 | Model-averaged local polynomial smoother | `predict(fit)` or `predict(fit, newdata = Xnew)` | New coordinates are supported for coordinate-distance fits; graph-geodesic fits currently reject new targets. |
 | Either lifting trend filter | `predict(fit)` | Training points only; `newdata` must be `NULL`. |
-| Prediction-synchronized, chart-kernel, local-likelihood, graph low-pass, graph trend-filtering, Hessian, or parallel-transport fit | `fit$fitted.values` | No registered `predict()` method for these classes in this version. Chart-kernel and local-likelihood fits can receive `X.eval` when fitting. |
+| Prediction-synchronized, chart-kernel, local-likelihood, graph low-pass, graph trend-filtering, Hessian, or parallel-transport fit | `fitted(fit)` | No registered `predict()` method for these classes in this version. Chart-kernel and local-likelihood fits can receive `X.eval` when fitting. |
 | Density or occupation-density result | `fit$rho` | Probability mass on the evaluation support. |
-| Harmonic smoothing result | `fit$harmonic_predictions` | Values on the original graph vertices. |
+| Tracked harmonic result (`harmonic.smoother()`) | `fitted(fit)` | Values on the original graph vertices. |
+| Basic harmonic result (`perform.harmonic.smoothing()`) | `fit$harmonic_predictions` | An unclassed list; retains the basic function's original contract. |
+
+Use `summary(fit)` for selected settings and stored diagnostics. The summary
+explicitly says when convergence information is unavailable. `fitted(fit)`
+preserves the vector or matrix stored by each regression fit. `residuals(fit)`
+preserves missing-label masks and requires an aligned response: a fit evaluated
+at other coordinates has no training residuals. These are response-scale
+residuals, including for binomial fits; they are not Pearson or deviance residuals.
+See `help("model-values", package = "geosmooth")` and
+`help("model-summary", package = "geosmooth")` for the contracts. Probability
+mass remains `fit$rho`; it is a different quantity.
 
 A *refit* changes the response while reusing geometry or an operator. It does
 not automatically rerun the original model-selection procedure. Each refit
@@ -237,6 +245,40 @@ connection strength; it is not the same quantity as distance.
 Heat time (`eta`) controls the amount of spectral smoothing. A truncated basis
 can fail to resolve small positive heat times; use the returned spectral
 diagnostics when constructing or extending a path yourself.
+
+#### From a constructed graph to a fitted response
+
+This example uses the tested development dependency described in the README;
+the compatible dgraphs release must be on CRAN before geosmooth 0.2.0 is submitted.
+The 20 locations form an undirected chain because the construction radius joins
+only adjacent sites. Vertex *i*, coordinate row *i*, and response entry *i* refer
+to the same observation. Retain your identifiers in a separate table and join
+by those identifiers before fitting; a smoother cannot detect a shuffled response.
+
+```{r graph-workflow}
+```
+
+With `conductance.alpha = 1`, a length of 2 becomes a conductance of
+`1 / (2 + 1e-8)`, approximately 0.5. Longer edges therefore connect responses
+less strongly. This choice changes the smoothing operator; it is not just a
+change of labels. The example retains all eigenvectors, so no spectral
+truncation is involved. For large graphs, use the spectral diagnostics described
+in `help("metric.graph.lowpass.basis")` when retaining fewer eigenvectors.
+The second response reuses those eigenvectors and the selected heat time.
+The printed GCV score is a tuning criterion, not held-out predictive error.
+
+| Input context | Meaning | Consequence |
+|---|---|---|
+| Coordinate neighborhoods | Distances in the supplied coordinate units | Rescaling coordinates changes supports. |
+| Graph-geodesic neighborhoods | Sums of edge lengths along paths | Unreachable vertices have infinite distance; support rules must handle connectivity. |
+| Metric low-pass smoothing | Positive lengths transformed to conductances | Reciprocal edges and matching lengths are required; zero lengths are rejected. |
+| Recursive graph differences | Conductance-like weights | Greater weight penalizes differences more strongly. |
+| Path divided differences | Edge lengths | The operator uses metric spacing, not conductance. |
+
+For example, `metric.graph.lowpass.operator(list(2L, integer()), list(1, numeric()))`
+is rejected because the edge has no reciprocal entry. Do not repair directed
+or zero-length input silently. Resolve its scientific meaning before choosing a
+supported undirected positive-length graph.
 
 ### Hessian-energy regression
 
@@ -442,3 +484,26 @@ vignette("synthetic-datasets", package = "geosmooth")
 The package's help pages give exact arguments, defaults, return values, and
 examples. Use this guide to find the appropriate family, then read the chosen
 function's help before configuring its advanced controls.
+
+## Advanced controls without a new fitter
+
+Each main fitter's installed help groups controls for a first fit, selection,
+geometry, numerical solving, and returned diagnostics. Begin with a small
+statistical grid; numerical tolerances do not replace statistical tuning.
+
+| Family | Fold and selection vocabulary | Meaning and main cost |
+|---|---|---|
+| LPS / MALPS | `foldid`, `cv.folds`, support/degree/kernel grids | Held-out response selection; candidate combinations multiply fitting work. |
+| Quadratic Hessian | `lambda.selection`, `cv.control`, `gcv.control` | Label CV or GCV; exact trace calculation is more expensive than sampled traces. |
+| Hessian L1 | `fold.id`, `nfolds`, `lambda.grid`, `admm.*` | CV excludes unconverged solves; each candidate and fold needs a solve. |
+| Graph low-pass | `eta.grid`, `n.eigenpairs` | GCV over heat times; a full spectral basis uses quadratic storage. |
+
+`smoother.matrix()` returns a dense evaluation-by-training matrix. Retained
+candidate fits and solver histories also consume memory. Request them for an
+actual diagnostic purpose. These differences are deliberate method contracts;
+matching argument names would not make the criteria equivalent.
+
+The catalog covers all explicitly exported functions in geosmooth 0.2.0.
+Geometry and sampling functions are owned by dgraphs. Registered methods are
+accessed through familiar generics; use the installed package index for the
+complete method list rather than treating methods as additional fitters.

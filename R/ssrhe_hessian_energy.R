@@ -907,8 +907,9 @@ ssrhe.support.grid <- function(n,
     )
     add.timing("create.graph")
 
+    graph.adj <- .geosmooth.graph.payload(graph)$adj.list
     support.index <- lapply(seq_len(n), function(i) {
-        unique(c(i, graph$adj_list[[i]]))
+        unique(c(i, graph.adj[[i]]))
     })
     add.timing("initial.supports")
 
@@ -971,8 +972,8 @@ ssrhe.support.grid <- function(n,
             support.size = support.size,
             n.topup = n.topup,
             n.truncated = n.truncated,
-            sigma = graph$sigma,
-            graph.timing = graph$timing,
+            sigma = graph$sigma %||% graph$metadata$sigma,
+            graph.timing = graph$timing %||% graph$metadata$timing,
             timing = finalize.timing()
         )
     )
@@ -1154,6 +1155,25 @@ print.ssrhe.hessian.operator <- function(x, ...) {
 #'   lambda.selection = "gcv", lambda1.grid = c(0.01, 0.1)
 #' )
 #' @aliases fit.ssrhe.hessian.regression.cv fit.ssrhe.hessian.regression.gcv
+#' @section Choosing controls:
+#' **First fit:** supply `X`, `y`, neighborhood size `k`, `tangent.dim`, and
+#' `lambda1`; use `lambda.selection = "fixed"` for a specified penalty.
+#'
+#' **Selection:** `lambda.selection`, `lambda1.grid`, and `lambda2.grid` select
+#' penalties. Fold settings belong in `cv.control`; trace settings belong in
+#' `gcv.control`. Label CV and GCV are different criteria. Support selection
+#' rebuilds the operator for each candidate and multiplies this work.
+#'
+#' **Geometry:** neighborhood, adaptive-radius, tangent and derivative controls
+#' determine the operator. Reuse it when fitting multiple responses.
+#'
+#' **Numerics:** ridge and local conditioning controls stabilize solves.
+#' Exact GCV traces require more solves than stochastic trace estimates; the
+#' latter report sampling uncertainty and need a reproducible probe seed.
+#'
+#' **Diagnostics:** inspect the selection table, energies, observed-label mask,
+#' and solver metadata. [fitted()] and [residuals()] preserve response matrices.
+#'
 #' @export
 fit.ssrhe.hessian.regression <- function(
     X,
@@ -2601,13 +2621,14 @@ refit.ssrhe.hessian.fit <- function(object,
 #' @param support.cv.max.candidates Maximum number of support profiles to try
 #'   when \code{support.selection = "cv"}.
 #' @param solver Solver backend. \code{"genlasso"} uses the generalized-lasso
-#'   path backend. \code{"admm"} uses a fixed-lambda ADMM solver for each lambda
-#'   value. \code{"auto"} tries \code{"genlasso"} first and falls back to ADMM
-#'   when path extraction produces an error or non-finite fitted values.
+#'   path to propose a grid when needed, then refines every candidate with ADMM
+#'   on the original objective. \code{"admm"} skips the path and requires an
+#'   explicit grid. \code{"auto"} also proceeds when path construction fails,
+#'   provided an explicit grid is supplied.
 #' @param row.scaling Optional row scaling for the penalty matrix before
 #'   solving. \code{"l2"} scales nonzero rows of \eqn{A} to unit Euclidean norm.
-#' @param admm.rho,admm.maxiter,admm.abstol,admm.reltol ADMM controls used when
-#'   \code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.
+#' @param admm.rho,admm.maxiter,admm.abstol,admm.reltol ADMM controls used by
+#'   all backends, including refinement of generalized-lasso candidates.
 #'   \code{admm.rho = NULL} chooses an initial algorithm penalty of
 #'   \code{1 / max(1, mean(rowSums(D^2)))}, where \code{D} is the penalty
 #'   operator after any requested row scaling. A positive numeric value sets
@@ -2636,8 +2657,9 @@ refit.ssrhe.hessian.fit <- function(object,
 #' The default solver backend is \pkg{genlasso}. For larger or numerically
 #' fragile third-order operators, \code{solver = "admm"} fits the requested
 #' lambda values directly without computing a generalized-lasso path, and
-#' \code{solver = "auto"} falls back to ADMM when the path backend fails or
-#' returns non-finite fitted values. Cross-validation removes held-out labels
+#' all backends use ADMM for the returned coefficients. \code{solver = "auto"}
+#' can additionally recover from path construction errors with an explicit grid.
+#' Cross-validation removes held-out labels
 #' from the data-fit term by setting their weights to zero, then scores
 #' predictions on those held-out labels.
 #'
@@ -2658,11 +2680,15 @@ refit.ssrhe.hessian.fit <- function(object,
 #' inspection with \code{tryCatch}. A selected full-data ADMM fit that fails
 #' to converge is also an error in CV mode.
 #'
-#' For \pkg{genlasso}, \code{solver$status = "path_available"} means that
-#' coefficients were available at the requested penalty, not that an ADMM
-#' convergence certificate was computed; \code{solver$converged} is \code{NA}.
-#' Backend warnings, including its numerical ridge for underdetermined designs,
-#' are retained in \code{solver$warnings} and CV fold diagnostics.
+#' A generalized-lasso path alone can be inaccurate for nearly rank-deficient
+#' operators. It is retained in \code{path} for diagnostics, but its coefficients
+#' are not the returned fit. \code{solver$backend = "genlasso_admm_refined"}
+#' identifies this route; \code{solver$path.objective} records the unrefined
+#' objectives at the grid values. Backend warnings, including its numerical
+#' ridge for underdetermined designs, are retained in \code{solver$warnings}.
+#' CV uses the original objective without that additional ridge. The default
+#' ADMM tolerances are absolute \code{1e-6} and relative \code{1e-5}; convergence
+#' describes numerical stopping at those tolerances, not predictive accuracy.
 #' With \code{row.scaling = "l2"}, the reported objective uses the scaled
 #' penalty; \code{energies$penalty.l1} is that penalty norm, while
 #' \code{energies$hessian.l1} retains the unscaled operator norm.
@@ -2690,6 +2716,26 @@ refit.ssrhe.hessian.fit <- function(object,
 #'   X, sin(2 * pi * X[, 1]), k = 6L, tangent.dim = 1L,
 #'   lambda.grid = 0.05, lambda.selection = "fixed", solver = "admm"
 #' )
+#' @section Choosing controls:
+#' **First fit:** specify `X`, `y`, `k`, `tangent.dim`, and `lambda.grid`.
+#' For a single supplied penalty set `lambda.selection = "fixed"` and
+#' `solver = "admm"` to avoid constructing a path.
+#'
+#' **Selection:** `fold.id`, `nfolds`, `loss`, and `selection` control label CV.
+#' A grid requires one solve per penalty per fold; support CV also rebuilds
+#' geometry. Incomplete candidates are excluded, not silently scored.
+#'
+#' **Geometry:** neighborhood, tangent and derivative controls define `A`.
+#' `row.scaling` changes the penalty itself and thus the statistical objective.
+#'
+#' **Numerics:** `admm.*` controls stopping and algorithmic penalties for all
+#' backends. Path controls (`maxsteps`, `rtol`, `btol`, `eps`) affect the optional
+#' proposal path. They do not certify the final original-objective solve.
+#'
+#' **Diagnostics:** `solver$admm`, candidate/fold status and objective components
+#' describe numerical acceptance. `path` and `beta.grid` can use substantial
+#' memory; use a compact explicit grid with ADMM when no full path is needed.
+#'
 #' @export
 fit.ssrhe.hessian.l1.regression <- function(
     X,
@@ -2724,8 +2770,8 @@ fit.ssrhe.hessian.l1.regression <- function(
     row.scaling = c("none", "l2"),
     admm.rho = NULL,
     admm.maxiter = 2000L,
-    admm.abstol = 1e-4,
-    admm.reltol = 1e-3,
+    admm.abstol = 1e-6,
+    admm.reltol = 1e-5,
     maxsteps = 2000L,
     minlam = 0,
     approx = FALSE,
@@ -3029,8 +3075,8 @@ refit.ssrhe.hessian.l1.fit <- function(
     row.scaling = c("none", "l2"),
     admm.rho = NULL,
     admm.maxiter = 2000L,
-    admm.abstol = 1e-4,
-    admm.reltol = 1e-3,
+    admm.abstol = 1e-6,
+    admm.reltol = 1e-5,
     maxsteps = 2000L,
     minlam = 0,
     approx = FALSE,
@@ -3215,27 +3261,28 @@ refit.ssrhe.hessian.l1.fit <- function(
         selected.idx <- 1L
     }
 
-    fit.source <- backend
-    beta.grid <- NULL
-    if (!identical(backend, "admm") &&
-        !inherits(path.info, "ssrhe.l1.path.error")) {
-        beta.grid <- .ssrhe.hessian.l1.coef.matrix(path, lambda.grid, n)
-    }
-    if (identical(backend, "admm") ||
-        inherits(path.info, "ssrhe.l1.path.error") ||
-        any(!is.finite(beta.grid))) {
-        if (identical(backend, "genlasso")) {
-            stop("SSRHE Hessian L1 path produced non-finite fitted values.",
-                 call. = FALSE)
-        }
-        beta.grid <- .ssrhe.hessian.l1.admm.grid(
-            y = y.clean,
-            weights = weights,
-            D = D.info$D.sparse,
-            lambda.grid = lambda.grid,
-            solver.args = solver.args
-        )
-        fit.source <- if (identical(backend, "auto")) "admm_fallback" else "admm"
+    # A finite generalized-lasso path is not an optimality certificate. Its
+    # rank decisions (and its ridge for missing labels) can change the answer.
+    # Solve the original weighted objective at every proposed lambda, including
+    # when the caller explicitly requests the path backend.
+    path.beta <- if (!is.null(path)) {
+        .ssrhe.hessian.l1.coef.matrix(path, lambda.grid, n)
+    } else NULL
+    beta.grid <- .ssrhe.hessian.l1.admm.grid(
+        y = y.clean, weights = weights, D = D.info$D.sparse,
+        lambda.grid = lambda.grid, solver.args = solver.args
+    )
+    fit.source <- if (identical(backend, "admm")) "admm" else if (
+        inherits(path.info, "ssrhe.l1.path.error")) "admm_fallback" else
+        "genlasso_admm_refined"
+    path.objective <- NULL
+    if (!is.null(path.beta)) {
+        path.objective <- vapply(seq_along(lambda.grid), function(i) {
+            b <- path.beta[, i]
+            if (any(!is.finite(b))) return(NA_real_)
+            .5 * sum(weights * (y.clean - b)^2) +
+                lambda.grid[i] * sum(abs(D.info$D.sparse %*% b))
+        }, numeric(1))
     }
     candidate.status <- .ssrhe.hessian.l1.candidate.status(beta.grid)
     fitted <- beta.grid[, selected.idx]
@@ -3290,6 +3337,7 @@ refit.ssrhe.hessian.l1.fit <- function(
             path.error = if (inherits(path.info, "ssrhe.l1.path.error"))
                 conditionMessage(path.info$error) else NULL,
             requested = backend,
+            path.objective = path.objective,
             representation = D.info$representation,
             svd = D.info$svd,
             row.scaling = D.info$row.scaling,
@@ -3482,48 +3530,13 @@ refit.ssrhe.hessian.l1.fit <- function(
             failure <<- c(failure, conditionMessage(e))
             NULL
         }
-        if (identical(solver.args$solver, "admm")) {
-            beta <- tryCatch(
-                .ssrhe.hessian.l1.admm.grid(
-                    y = y,
-                    weights = train.weights,
-                    D = D,
-                    lambda.grid = lambda.grid,
-                    solver.args = solver.args
-                ),
-                error = failed
-            )
-        } else {
-            path.info <- tryCatch(
-                .fit.ssrhe.hessian.l1.path(
-                    y = y,
-                    weights = train.weights,
-                    D = D,
-                    solver.args = solver.args,
-                    use.svd = use.svd
-                ),
-                error = failed
-            )
-            if (is.null(path.info)) {
-                beta <- NULL
-            } else {
-                path.warnings <- path.info$warnings
-                beta <- .ssrhe.hessian.l1.coef.matrix(path.info$path, lambda.grid, n)
-            }
-            if (identical(solver.args$solver, "auto") &&
-                (is.null(beta) || any(!is.finite(beta)))) {
-                beta <- tryCatch(
-                    .ssrhe.hessian.l1.admm.grid(
-                        y = y,
-                        weights = train.weights,
-                        D = methods::as(D, "dgCMatrix"),
-                        lambda.grid = lambda.grid,
-                        solver.args = solver.args
-                    ),
-                    error = failed
-                )
-            }
-        }
+        # The full-data path already proposed the grid. Holding out labels
+        # introduces a rank-deficient design; score only original-objective
+        # ADMM solutions, never genlasso's ridge-augmented fold coefficients.
+        beta <- tryCatch(.ssrhe.hessian.l1.admm.grid(
+            y = y, weights = train.weights, D = D,
+            lambda.grid = lambda.grid, solver.args = solver.args
+        ), error = failed)
         if (is.null(beta)) {
             fold.diagnostics[[ii]] <- list(errors = failure, warnings = path.warnings)
             next
@@ -3631,8 +3644,8 @@ refit.ssrhe.hessian.l1.fit <- function(
                                                    row.scaling = c("none", "l2"),
                                                    admm.rho = NULL,
                                                    admm.maxiter = 2000L,
-                                                   admm.abstol = 1e-4,
-                                                   admm.reltol = 1e-3,
+                                                   admm.abstol = 1e-6,
+                                                   admm.reltol = 1e-5,
                                                    verbose,
                                                    admm.adaptive.rho = TRUE) {
     n.lambda <- .validate.ssrhe.positive.integer(n.lambda, "n.lambda")

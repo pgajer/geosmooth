@@ -169,6 +169,25 @@
 #' fit <- fit.malps(X, sin(2 * pi * X[, 1]), degree = 1L,
 #'                  support.type = "knn", support.size = 8L)
 #' head(fit$fitted.values)
+#' @section Choosing controls:
+#' **First fit:** supply `X`, `y`, `degree`, and `support.type` with a suitable
+#' `support.size` or `radius`. Coordinate-distance fits support new predictions.
+#'
+#' **Selection:** support and degree grids, `foldid`, and `cv.folds` govern
+#' held-out selection. Robust refits recompute residual weights; selection is
+#' not automatically repeated by \code{\link{refit}}.
+#'
+#' **Geometry:** `support.metric`, graph inputs, anchors, and chart controls
+#' determine the local models. Graph-geodesic fits require aligned vertices
+#' and do not currently predict at new targets.
+#'
+#' **Numerics:** `local.solver`, conditioning controls, and robust weighting
+#' have distinct meanings. Keep their defaults until diagnostics identify a need.
+#'
+#' **Diagnostics:** inspect `selected`, model weights, and stored local fits.
+#' \code{\link{smoother.matrix}} allocates a dense matrix and applies only to fixed
+#' weighting; its `max.n` guard makes that cost explicit.
+#'
 #' @export
 fit.malps <- function(
     X,
@@ -1773,9 +1792,10 @@ print.malps_bootstrap <- function(x, ...) {
         ))
     }
 
-    fields <- .graph.geodesic.fields(graph, stage = graph.stage)
-    adj <- graph[[fields$adj]]
-    weights <- graph[[fields$weight]]
+    payload <- .geosmooth.graph.payload(graph, stage = graph.stage)
+    fields <- payload$fields
+    adj <- payload$adj.list
+    weights <- payload$weight.list
     .validate.graph.geodesic.payload(adj, weights, fields)
     validated <- .validate.metric.graph.lowpass.graph(adj, weights)
     if (length(validated$adj.list) != n) {

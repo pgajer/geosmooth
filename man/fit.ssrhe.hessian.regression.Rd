@@ -264,6 +264,27 @@ belong in the active control list; both former support candidate limits
 are now named \code{support.max.candidates}.
 }
 
+\section{Choosing controls}{
+
+\strong{First fit:} supply \code{X}, \code{y}, neighborhood size \code{k}, \code{tangent.dim}, and
+\code{lambda1}; use \code{lambda.selection = "fixed"} for a specified penalty.
+
+\strong{Selection:} \code{lambda.selection}, \code{lambda1.grid}, and \code{lambda2.grid} select
+penalties. Fold settings belong in \code{cv.control}; trace settings belong in
+\code{gcv.control}. Label CV and GCV are different criteria. Support selection
+rebuilds the operator for each candidate and multiplies this work.
+
+\strong{Geometry:} neighborhood, adaptive-radius, tangent and derivative controls
+determine the operator. Reuse it when fitting multiple responses.
+
+\strong{Numerics:} ridge and local conditioning controls stabilize solves.
+Exact GCV traces require more solves than stochastic trace estimates; the
+latter report sampling uncertainty and need a reproducible probe seed.
+
+\strong{Diagnostics:} inspect the selection table, energies, observed-label mask,
+and solver metadata. \code{\link[=fitted]{fitted()}} and \code{\link[=residuals]{residuals()}} preserve response matrices.
+}
+
 \examples{
 X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
 fit.ssrhe.hessian.regression(

@@ -17,6 +17,8 @@ reference:
   contents:
   - refit
   - smoother.matrix
+  - model-values
+  - model-summary
 - title: "Local regression and prediction synchronization"
   contents:
   - fit.lps

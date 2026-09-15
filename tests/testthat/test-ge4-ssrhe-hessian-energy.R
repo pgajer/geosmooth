@@ -104,10 +104,13 @@ test_that("SSRHE fit paths can skip local geometry diagnostics", {
         prune.method = "none",
         connect.components = FALSE
     )
+    adj <- if (inherits(graph, "dgraph")) {
+        getExportedValue("dgraphs", "graph.adjacency")(graph)
+    } else graph$adj_list
     nearest <- .exact.knn.index(X, nrow(X) - 1L)
     legacy.support <- vector("list", nrow(X))
     for (i in seq_len(nrow(X))) {
-        ids <- unique(c(i, graph$adj_list[[i]]))
+        ids <- unique(c(i, adj[[i]]))
         if (length(ids) < 10L) {
             add <- nearest[i, !nearest[i, ] %in% ids]
             need <- 10L - length(ids)
@@ -943,7 +946,7 @@ test_that("quadratic Hessian GCV rejects missing responses", {
     )
 })
 
-test_that("fit.ssrhe.hessian.l1.regression matches direct genlasso reference", {
+test_that("fit.ssrhe.hessian.l1.regression refines the path against an independent dual bound", {
     skip_if_not_installed("Matrix")
     skip_if_not_installed("genlasso")
 
@@ -969,17 +972,25 @@ test_that("fit.ssrhe.hessian.l1.regression matches direct genlasso reference", {
         maxsteps = 1000L
     )
     ref <- as.vector(stats::coef(ref.path, lambda = lambda)$beta)
+    expect_equal(as.vector(stats::coef(fit$path, lambda = lambda)$beta), ref)
 
     expect_s3_class(fit, "ssrhe.hessian.l1.fit")
-    expect_equal(fit$fitted.values, ref, tolerance = 1e-8)
-    expect_equal(fit$residuals, y - ref, tolerance = 1e-8)
+    D <- as.matrix(fit$operator$A)
+    dual <- optim(rep(0, nrow(D)), function(u) .5*sum((y-crossprod(D,u))^2),
+        function(u) -as.vector(D %*% (y-crossprod(D,u))), method = "L-BFGS-B",
+        lower = -lambda, upper = lambda, control = list(maxit = 20000, factr = 1, pgtol = 1e-10))
+    lower <- .5*sum(y^2) - dual$value
+    expect_true(fit$solver$converged)
+    expect_lt(fit$objective - lower, 1e-4)
+    expect_gte(fit$objective - lower, -1e-10)
+    expect_equal(fit$residuals, y - fit$fitted.values, tolerance = 1e-8)
     expect_equal(fit$energies$hessian.l1,
-                 sum(abs(as.vector(fit$operator$A %*% ref))),
+                 sum(abs(as.vector(fit$operator$A %*% fit$fitted.values))),
                  tolerance = 1e-8)
-    expect_equal(fit$solver$backend, "genlasso")
+    expect_equal(fit$solver$backend, "genlasso_admm_refined")
 })
 
-test_that("fit.ssrhe.hessian.l1.regression matches direct genlasso reference for order 3", {
+test_that("fit.ssrhe.hessian.l1.regression refines the path against an independent dual bound for order 3", {
     skip_if_not_installed("Matrix")
     skip_if_not_installed("genlasso")
 
@@ -1007,15 +1018,23 @@ test_that("fit.ssrhe.hessian.l1.regression matches direct genlasso reference for
         maxsteps = 1000L
     )
     ref <- as.vector(stats::coef(ref.path, lambda = lambda)$beta)
+    expect_equal(as.vector(stats::coef(fit$path, lambda = lambda)$beta), ref)
 
     expect_s3_class(fit, "ssrhe.hessian.l1.fit")
     expect_equal(fit$operator$parameters$derivative.order, 3L)
     expect_true(all(fit$operator$row.table$derivative.order == 3L))
-    expect_equal(fit$fitted.values, ref, tolerance = 1e-8)
+    D <- as.matrix(fit$operator$A)
+    dual <- optim(rep(0, nrow(D)), function(u) .5*sum((y-crossprod(D,u))^2),
+        function(u) -as.vector(D %*% (y-crossprod(D,u))), method = "L-BFGS-B",
+        lower = -lambda, upper = lambda, control = list(maxit = 20000, factr = 1, pgtol = 1e-10))
+    lower <- .5*sum(y^2) - dual$value
+    expect_true(fit$solver$converged)
+    expect_lt(fit$objective - lower, 1e-4)
+    expect_gte(fit$objective - lower, -1e-10)
     expect_equal(fit$energies$hessian.l1,
-                 sum(abs(as.vector(fit$operator$A %*% ref))),
+                 sum(abs(as.vector(fit$operator$A %*% fit$fitted.values))),
                  tolerance = 1e-8)
-    expect_equal(fit$solver$backend, "genlasso")
+    expect_equal(fit$solver$backend, "genlasso_admm_refined")
 })
 
 test_that("fit.ssrhe.hessian.l1.regression supports ADMM and row scaling diagnostics", {

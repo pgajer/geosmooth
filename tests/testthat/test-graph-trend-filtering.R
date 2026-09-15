@@ -120,7 +120,9 @@ make_ssrhe_like_graph_trend_case <- function(kind = c("flat", "quadform")) {
     connect.components = TRUE,
     connect.method = "component.mst"
   )
-  edges <- graph$edge_matrix
+  edges <- if (inherits(graph, "dgraph")) {
+    as.matrix(getExportedValue("dgraphs", "graph.edges")(graph)[, c("from", "to")])
+  } else graph$edge_matrix
   metric.length <- sqrt(rowSums((X[edges[, 1L], , drop = FALSE] -
                                    X[edges[, 2L], , drop = FALSE])^2))
   metric.graph <- adj_weight_from_edge_matrix(nrow(X), edges, metric.length)

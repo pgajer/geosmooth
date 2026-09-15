@@ -7,7 +7,7 @@
 # S independently, column by column, through the public API as fit(e_j) — the
 # E0.2 protocol (linearity makes finite differencing exact). The GATE asserts
 # the two routes agree to the program's algebraic tolerance 1e-10, per point,
-# and that df = tr S, sigma.hat^2 = RSS / (n - tr S), and the band endpoints
+# and that df = tr S, sigma.hat^2 = RSS / ||I - S||_F^2, and the band endpoints
 # match their defining formulas computed from the independent S.
 
 e41.tol <- 1e-10
@@ -102,17 +102,26 @@ e41.check.band.against.probe <- function(fit, S.probe, sigma0) {
     expect_identical(band$z, z)
     expect_identical(band$level, 0.95)
 
-    ## Plug-in variant: sigma.hat^2 = RSS / (n - tr S), all from the probe S.
+    ## Plug-in variant: sigma.hat^2 = RSS / ||I - S||_F^2, all from the probe S.
     band.plugin <- lps.pointwise.band(fit)
     df.ref <- sum(diag(S.probe))
     rss.ref <- sum((y - raw)^2)
     expect_lt(abs(band.plugin$rss - rss.ref), e41.tol)
-    expect_lt(abs(band.plugin$sigma.hat^2 - rss.ref / (n - df.ref)), e41.tol)
+    expect_lt(abs(band.plugin$sigma.hat^2 - rss.ref / sum((diag(n) - S.probe)^2)), e41.tol)
     expect_lt(
         max(abs(band.plugin$variance -
                     band.plugin$sigma.hat^2 * rowSums(S.probe^2))),
         e41.tol
     )
+    legacy <- lps.pointwise.band(fit, variance.method = "legacy")
+    expect_equal(legacy$sigma.hat^2, rss.ref / (n - df.ref))
+    expect_equal(band.plugin$residual.df, sum((diag(n) - S.probe)^2))
+    # For isotropic unit noise, sum of RSS for unit basis responses is E[RSS].
+    expected.rss <- sum(vapply(seq_len(n), function(j) {
+        e <- diag(n)[, j]
+        sum((e - S.probe %*% e)^2)
+    }, numeric(1)))
+    expect_equal(expected.rss / band.plugin$residual.df, 1)
     expect_identical(band.plugin$sigma.source, "plug.in")
     expect_identical(band.plugin$sigma, NA_real_)
 

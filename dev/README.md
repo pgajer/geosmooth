@@ -73,3 +73,43 @@ python3 dev/scripts/build_dev_dashboard.py
 Markdown files remain canonical. Files under `dev/html/`, `dev/index.html`, and
 generated sibling `html/` directories are rebuildable artifacts and should not
 be edited by hand.
+
+## Source and documentation map
+
+| Maintained source | Generated output | Supported command |
+|---|---|---|
+| R roxygen comments | `man/*.Rd`, `NAMESPACE` | `make document` |
+| Rcpp interfaces | R/native export wrappers | `make attrs` (included in document) |
+| `vignettes/*.Rmd` | Installed HTML vignettes | `make build` |
+| Built tarball's `inst/doc/*.html` | Both `validation/vignettes/` and `validation/api-guide/` preview aliases | `make previews` |
+| `inst/doc-tools/first-fit.R` | README figure and guide example | `make readme-figure`; vignette executes the same recipe |
+| `inst/doc-tools/graph-workflow.R` | Graph guide workflow | Vignette build and workflow test |
+| `_pkgdown.yml`, README, Rd, vignettes | `docs/` website | `make website` |
+| R signatures and guide catalog | `dev/notes/package/api-signatures.md` | `make update-api` |
+
+`make check-docs` is read-only. Run it after `make check` and `make website`:
+it checks the source catalog and aliases, the package installed by R CMD check,
+and generated site links. It fails if the appendix is stale; it never rewrites
+it. The API rationale in `dev/notes/package/` is a design note, not the user
+entry point. Private reports are never needed to build the package.
+
+## Implementation map
+
+- Public coordinate fitters: `lps.R`, `malps.R`, `ps_lps.R`, `chart_kernel.R`,
+  and `local_likelihood.R`; local chart and design helpers live alongside them.
+- Lifting estimators and their operators: `lpl_tf.R`, `slpl_tf.R`.
+- Graph validation: `graph_validation_helpers.R`; dgraphs representation and
+  geodesic adaptation: `split_bridge_helpers.R`. Keep validators here instead
+  of creating competing definitions in fitter files.
+- Spectral graph fitting: `metric_graph_lowpass.R`; recursive graph penalties:
+  `graph_trend_filtering.R`; transported geometry and penalties: `pttf_*.R`.
+- Quadratic Hessian construction/selection and L1 orchestration:
+  `ssrhe_hessian_energy.R`; original-objective ADMM: `ssrhe_hessian_l1_solver.R`.
+- Density normalization/accounting and occupation workflows: `state_density.R`.
+- Shared operations: `model_generics.R`; stored-value accessors:
+  `model_values.R`; bounded displays and structured summaries: `model_summaries.R`.
+- Synthetic component registry/materialization: `synthetic_*.R`; plotting and
+  dataset contracts: `synthetic_dataset.R`.
+
+Extract a cohesive helper when changing its behavior or eliminating conflicting
+ownership. File length alone is not a reason to split stable numerical code.

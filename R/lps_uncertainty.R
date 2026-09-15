@@ -5,7 +5,7 @@
 # of y. smoother.matrix() extracts S analytically, row by row, from the
 # same local solves the fit performed; lps.pointwise.band() derives
 # Var(yhat_i) = sigma^2 * sum_j S_ij^2, df = tr(S),
-# sigma.hat^2 = RSS / (n - tr(S)), and the band
+# sigma.hat^2 = RSS / ||I - S||_F^2, and the band
 # yhat_i +/- z_{(1+level)/2} * sigma * ||S_i.||_2.
 
 .klp.uq.supported.design.basis <- "orthogonal.polynomial.drop"
@@ -277,7 +277,7 @@ smoother.matrix.lps <- function(object, check.tol = 1e-10, ...) {
 #' fixed-configuration LPS fit (see \code{\link[=smoother.matrix]{smoother.matrix()}}), the pointwise
 #' variance `Var(fitted_i) = sigma^2 * sum_j S_ij^2`, the effective degrees of
 #' freedom `df = tr(S)`, the plug-in noise estimate
-#' `sigma.hat^2 = RSS / (n - tr(S))`, and the pointwise confidence band
+#' `sigma.hat^2 = RSS / (n - 2*tr(S) + sum(S^2))`, and the pointwise confidence band
 #' `fitted_i +/- z * sigma * ||S_i.||_2` with
 #' `z = qnorm(1 - (1 - level) / 2)`.
 #'
@@ -302,12 +302,26 @@ smoother.matrix.lps <- function(object, check.tol = 1e-10, ...) {
 #'   (default) to use the plug-in `sigma.hat`.
 #' @param level Confidence level of the band, a single number strictly
 #'   between 0 and 1. Default `0.95`.
+#' For independent errors with common variance and a fixed smoother, the expected
+#' residual sum of squares is `sigma^2 * sum((I - S)^2) + ||(I - S) mu||^2`.
+#' The default denominator is therefore the residual noise degrees of freedom,
+#' `n - 2*tr(S) + sum(S^2)`, computed as `sum((I - S)^2)` for stability.
+#' This corrects the variance contribution; it cannot remove signal bias. Normal
+#' bands target the smoothed mean `S mu`. Their interpretation as bands for `mu`
+#' requires negligible smoothing bias. Plug-in bands are approximate, pointwise,
+#' and conditional on the specified configuration; they do not account for
+#' tuning on the same responses, dependent errors, or simultaneous coverage.
+#'
+#' @param variance.method Noise-variance denominator: `"residual"` (default)
+#'   uses `sum((I - S)^2)`; `"legacy"` reproduces the former `n - tr(S)` rule.
+#'   Neither removes smoothing bias. Added after `check.tol` to preserve positional
+#'   calls. The choice affects `sigma.hat` even when a known `sigma` is supplied.
 #' @param check.tol Passed to \code{\link[=smoother.matrix]{smoother.matrix()}}'s self-guard.
 #' @return A list of class `"lps.pointwise.band"` with named fields:
 #'   `fitted` (the fit's raw fitted values), `se`, `variance`, `lower`,
 #'   `upper`, `level`, `z`, `sigma` (the supplied known sigma, or `NA` in
 #'   plug-in mode), `sigma.hat`, `sigma.source` (`"known"` or `"plug.in"`),
-#'   `df` (`tr(S)`), `rss`, `n.train`, `smoother.row.norm` (`||S_i.||_2`),
+#'   `df` (`tr(S)`), `residual.df`, `variance.method`, `rss`, `n.train`, `smoother.row.norm` (`||S_i.||_2`),
 #'   and `configuration` (the pinned fit configuration).
 #' @seealso \code{\link[=smoother.matrix]{smoother.matrix()}}
 #' @examples
@@ -327,7 +341,9 @@ smoother.matrix.lps <- function(object, check.tol = 1e-10, ...) {
 #' band.plugin$sigma.hat
 #' @export
 lps.pointwise.band <- function(object, sigma = NULL, level = 0.95,
-                               check.tol = 1e-10) {
+                               check.tol = 1e-10,
+                               variance.method = c("residual", "legacy")) {
+    variance.method <- match.arg(variance.method)
     .klp.uq.validate.fit(object, require.square = TRUE,
                          caller = "lps.pointwise.band")
     if (!is.null(sigma)) {
@@ -345,8 +361,10 @@ lps.pointwise.band <- function(object, sigma = NULL, level = 0.95,
     df <- sum(diag(S))
     residuals <- object$y - fitted
     rss <- sum(residuals^2)
-    sigma.hat <- if (is.finite(df) && is.finite(rss) && (n - df) > 0) {
-        sqrt(rss / (n - df))
+    residual.df <- sum((diag(n) - S)^2)
+    variance.df <- if (variance.method == "residual") residual.df else n - df
+    sigma.hat <- if (is.finite(variance.df) && is.finite(rss) && variance.df > 0) {
+        sqrt(rss / variance.df)
     } else {
         NA_real_
     }
@@ -356,7 +374,7 @@ lps.pointwise.band <- function(object, sigma = NULL, level = 0.95,
         stop("the plug-in sigma.hat is unavailable for this fit (df = ",
              format(df), ", rss = ", format(rss), ", n = ", n, "); supply a ",
              "known 'sigma', or refit with a configuration whose local fits ",
-             "all succeed and whose df is below n.", call. = FALSE)
+             "all succeed and have positive residual noise degrees of freedom.", call. = FALSE)
     }
     z <- stats::qnorm(1 - (1 - level) / 2)
     variance <- sigma.used^2 * row.sq
@@ -374,6 +392,8 @@ lps.pointwise.band <- function(object, sigma = NULL, level = 0.95,
         sigma.hat = sigma.hat,
         sigma.source = sigma.source,
         df = df,
+        residual.df = residual.df,
+        variance.method = variance.method,
         rss = rss,
         n.train = n,
         smoother.row.norm = sqrt(row.sq),

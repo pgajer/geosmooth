@@ -55,6 +55,12 @@ test_that("ADMM attains an independent dual bound at the original objective", {
         expect_lt(objective(fit$fitted.values) - lower.bound, 1e-4)
         expect_lt(sqrt(mean((fit$fitted.values - reference)^2)), 1e-3)
         expect_equal(fit$objective, objective(fit$fitted.values))
+        if (requireNamespace("genlasso", quietly = TRUE)) {
+            refined <- refit(fit, solver = "genlasso")
+            expect_true(refined$solver$converged)
+            expect_lt(refined$objective - lower.bound, 1e-4)
+            expect_equal(refined$fitted.values, fit$fitted.values)
+        }
     }
 })
 
@@ -158,7 +164,7 @@ test_that("row-scaled objective and weighted missing-label fits remain explicit"
     expect_error(refit(fit, solver = "admm", admm.adaptive.rho = 1), "TRUE or FALSE")
 })
 
-test_that("genlasso retains its warnings without asserting ADMM convergence", {
+test_that("genlasso proposals are refined on the original objective and retain warnings", {
     skip_if_not_installed("genlasso")
     X <- matrix(seq(0, 1, length.out = 12), ncol = 1)
     y <- X[, 1]^2
@@ -167,8 +173,9 @@ test_that("genlasso retains its warnings without asserting ADMM convergence", {
         X, y, k = 6L, tangent.dim = 1L, lambda.grid = .05,
         lambda.selection = "fixed", solver = "genlasso"
     )
-    expect_identical(fit$solver$status, "path_available")
-    expect_true(is.na(fit$solver$converged))
+    expect_identical(fit$solver$status, "converged")
+    expect_true(fit$solver$converged)
+    expect_identical(fit$solver$backend, "genlasso_admm_refined")
     expect_true(any(grepl("ridge", fit$solver$warnings)))
 })
 
@@ -190,4 +197,38 @@ test_that("automatic fallback uses the guarded ADMM solver and preserves its rea
     expect_true(fixed.rho$solver$converged)
     expect_equal(fixed.rho$solver$admm[[1L]]$rho.initial, .01)
     expect_identical(fixed.rho$solver$admm[[1L]]$rho.updates, 0L)
+})
+
+test_that("refined generalized-lasso fits satisfy weighted and scaled objectives", {
+    skip_if_not_installed("genlasso")
+    X <- matrix(seq(0, 1, length.out = 18), ncol = 1)
+    y <- sin(2*pi*X[, 1]); w <- seq(.5, 2, length.out = 18)
+    for (scaling in c("none", "l2")) {
+        fit <- fit.ssrhe.hessian.l1.regression(X, y, weights = w, k = 6L,
+            tangent.dim = 1L, lambda.grid = .03, lambda.selection = "fixed",
+            solver = "genlasso", row.scaling = scaling)
+        D <- as.matrix(fit$operator$A)
+        if (scaling == "l2") D <- D / pmax(sqrt(rowSums(D^2)), .Machine$double.xmin)
+        dual <- optim(rep(0, nrow(D)),
+            function(u) .5*sum((w*y-crossprod(D,u))^2/w),
+            function(u) -as.vector(D %*% ((w*y-crossprod(D,u))/w)),
+            method = "L-BFGS-B", lower = -.03, upper = .03,
+            control = list(maxit = 20000, factr = 1, pgtol = 1e-10))
+        lower <- .5*sum(w*y^2) - dual$value
+        expect_true(fit$solver$converged)
+        expect_lt(fit$objective - lower, 1e-4)
+        expect_gte(fit$objective - lower, -1e-10)
+    }
+    # The affine field is in the Hessian nullspace: zero loss and zero penalty
+    # give an independent global lower bound even with unobserved vertices.
+    y <- 1 + X[, 1]; y[c(3, 8)] <- NA_real_
+    fit <- fit.ssrhe.hessian.l1.regression(X, y, weights = w, k = 6L,
+        tangent.dim = 1L, lambda.grid = .03, lambda.selection = "fixed", solver = "genlasso")
+    expect_true(fit$solver$converged)
+    expect_lt(fit$objective, 1e-5)
+    expect_lt(max(abs(fitted(fit) - (1 + X[, 1]))), 1e-4)
+    expect_true(all(is.na(residuals(fit)[c(3,8)])))
+    expect_error(fit.ssrhe.hessian.l1.regression(X, 1+X[, 1], k = 6L,
+        tangent.dim = 1L, lambda.grid = c(.03, .1), lambda.selection = "cv",
+        solver = "genlasso", nfolds = 3L, admm.maxiter = 1L), class = "ssrhe_l1_cv_error")
 })

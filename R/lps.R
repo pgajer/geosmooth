@@ -211,6 +211,25 @@
 #'   kernel.grid = "tricube", cv.folds = 2L, backend = "R"
 #' )
 #' head(fit$fitted.values)
+#' @section Choosing controls:
+#' **First fit:** supply `X`, `y`, `foldid`, and small `support.grid`,
+#' `degree.grid`, and `kernel.grid` candidates. See the installed function guide.
+#'
+#' **Selection:** `cv.folds`, `cv.seed`, and `selection.strategy` control the
+#' search. Candidate combinations and folds multiply the fitting work; use
+#' [lps.nested.cv()] for an outer assessment of the tuning procedure.
+#'
+#' **Geometry:** `coordinate.method`, `chart.dim`, and local chart controls
+#' describe neighborhoods and coordinate systems, not a different response model.
+#'
+#' **Numerics:** `backend`, `design.basis`, rank thresholds and ridge controls
+#' govern stable local solves. Inspect [lps.backend.diagnostics()] before
+#' changing them. A numerical ridge is distinct from neighborhood selection.
+#'
+#' **Diagnostics:** `selected`, `cv.table`, and `diagnostics` retain selection
+#' and local-fit information. A dense \code{\link{smoother.matrix}} needs one entry per
+#' evaluation/training pair; it is restricted to supported configurations.
+#'
 #' @export
 fit.lps <- function(
     X, y, foldid = NULL,

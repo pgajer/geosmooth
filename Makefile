@@ -66,3 +66,18 @@ install: build
 website:
 	Rscript scripts/build_website.R
 	python3 scripts/check_website.py
+
+.PHONY: update-api check-docs previews readme-figure
+update-api:
+	Rscript scripts/audit_api_guide.R --write
+
+check-docs:
+	Rscript scripts/test_documentation_checks.R
+	Rscript scripts/check_installed_docs.R
+	python3 scripts/check_website.py
+
+previews: build
+	Rscript scripts/refresh_previews.R
+
+readme-figure:
+	Rscript scripts/build_readme_figure.R

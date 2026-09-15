@@ -11,11 +11,43 @@
   Incomplete fixed fits warn and print their status. CV excludes candidates
   with any unsuccessful fold and errors if none qualify or the selected
   full-data ADMM refit is incomplete. Fold diagnostics are retained, including
-  on the no-eligible-candidate error. Generalized-lasso warnings are retained
-  without claiming an ADMM convergence certificate for that backend.
+  on the no-eligible-candidate error. Generalized-lasso warnings are retained.
 - The shared PTTF L1 solver receives the same safeguards. Hessian L1 objective
   reporting now accounts for the penalty actually used with row scaling;
   the unscaled Hessian norm remains available separately.
+
+- Generalized-lasso Hessian paths now propose penalties only: all returned
+  coefficients and CV candidates are solved by ADMM on the original objective.
+  Finite path coefficients can be suboptimal for nearly rank-deficient operators;
+  missing-label path coefficients can include an extra ridge. The path remains
+  diagnostic, with its original objectives in `solver$path.objective` and the
+  refined route labeled `genlasso_admm_refined`. Default Hessian ADMM stopping
+  tolerances are now `1e-6` absolute and `1e-5` relative. Fitted values and selected
+  penalties can change; difficult candidates may require a larger iteration cap.
+
+## Uncertainty and result interpretation
+
+- `lps.pointwise.band()` now estimates noise variance using residual noise
+  degrees of freedom `sum((I - S)^2) = n - 2*tr(S) + sum(S^2)`. The former
+  `n - tr(S)` denominator is available as `variance.method = "legacy"`.
+  `df` still reports `tr(S)`; `residual.df` is returned separately. Bands remain
+  pointwise, conditional on a fixed smoother, and uncorrected for smoothing bias.
+- Regression families support `fitted()` and `residuals()` with their existing
+  vector/matrix and missing-label contracts. Residuals at other evaluation
+  coordinates are rejected. Tracked harmonic fitted values use `fitted()`; density mass
+  stays `$rho`. No new out-of-sample prediction or reusable-refit contract is implied.
+- Lifting, synchronized lifting, density, prediction-synchronized, chart-kernel,
+  and local-likelihood fits print bounded diagnostics. Structured `summary()`
+  methods cover the main regression families. Unavailable convergence information
+  is labeled explicitly, and density accounting and local fallbacks remain visible.
+- The existing guides now include interpreted first-fit and graph workflows,
+  embedded figures with text alternatives, and clear latent/ambient synthetic
+  views. `plot.synthetic_dataset()` adds named `view`, `legend`, and `col`
+  controls while preserving automatic view selection. Point-color keys now
+  describe the displayed values; region coloring requires region labels.
+- Graph adaptation uses dgraphs' public distance API and accepts both transitional
+  graph lists and the forthcoming `dgraph` representation, without restoring
+  retired geometry re-exports.
 
 ## Input validation and harmonic diagnostics
 

@@ -1,5 +1,8 @@
-# Run from the package root: Rscript scripts/audit_api_guide.R
-# Check guide coverage against source exports and regenerate the signature appendix.
+# Run from the package root: Rscript scripts/audit_api_guide.R --check
+# Read-only by default; --write explicitly refreshes the signature appendix.
+args <- commandArgs(trailingOnly = TRUE)
+if (!length(args)) args <- "--check"
+stopifnot(length(args) == 1L, args %in% c("--check", "--write"))
 # Parses source without loading the package or running compiled code.
 ns <- readLines("NAMESPACE", warn = FALSE)
 exports <- sub("^export[(](.*)[)]$", "\\1",
@@ -42,7 +45,7 @@ stopifnot(setequal(names(definitions), setdiff(exports, reexports)))
 s3 <- grep("^S3method[(]", ns, value = TRUE)
 out <- c(
   "# geosmooth API signature appendix", "",
-  "Generated from the current source by `Rscript scripts/audit_api_guide.R`.",
+  "Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.",
   "Companion to [the API review](api-review-2026-09-14.md).", "",
   sprintf("There are %d explicit exports: %d local functions and %d dgraphs re-exports; %d S3 registrations are counted separately.",
           length(exports), length(definitions), length(reexports), length(s3)), "",
@@ -61,6 +64,20 @@ out <- c(out, "## Related dgraphs functions (not geosmooth exports)", "",
          paste0("- `dgraphs::", sort(imports), "()`"), "", "## Registered S3 methods", "",
          "Use the corresponding generic; these registrations are not additional explicit exports.", "",
          "```r", s3, "```", "")
-writeLines(out, "dev/notes/package/api-signatures.md")
+appendix <- "dev/notes/package/api-signatures.md"
+if (args == "--write") writeLines(out, appendix) else if (
+    !file.exists(appendix) || !identical(readLines(appendix, warn = FALSE), out)) {
+    stop("Signature appendix is stale; run make update-api. No files were changed.", call. = FALSE)
+}
+# Verify installed-help aliases from their maintained Rd sources, not filenames.
+rd.files <- list.files("man", pattern = "[.]Rd$", full.names = TRUE)
+aliases <- unlist(lapply(rd.files, function(path) {
+    rd <- tools::parse_Rd(path)
+    tags <- vapply(rd, attr, "", which = "Rd_tag")
+    unlist(lapply(rd[tags == "\\alias"], as.character), use.names = FALSE)
+}), use.names = FALSE)
+methods <- sub("^S3method[(]([^,]+),([^,)]+).*$", "\\1.\\2", s3)
+missing <- setdiff(c(exports, methods, "geosmooth", "geosmooth-package"), aliases)
+if (length(missing)) stop("Missing help aliases: ", paste(missing, collapse = ", "))
 cat(sprintf("Guide coverage verified: %d/%d exports, no duplicate catalog rows.\n", length(catalog), length(exports)))
 cat(sprintf("Recorded %d local signatures, %d re-exports, and %d S3 registrations.\n", length(definitions), length(reexports), length(s3)))

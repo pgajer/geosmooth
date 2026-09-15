@@ -20,8 +20,8 @@
   row.scaling = c("none", "l2"),
   admm.rho = NULL,
   admm.maxiter = 2000L,
-  admm.abstol = 1e-04,
-  admm.reltol = 0.001,
+  admm.abstol = 1e-06,
+  admm.reltol = 1e-05,
   maxsteps = 2000L,
   minlam = 0,
   approx = FALSE,
@@ -65,15 +65,16 @@ validation loss. \code{"one.se"} chooses the largest lambda within one
 standard error of the minimum.}
 
 \item{solver}{Solver backend. \code{"genlasso"} uses the generalized-lasso
-path backend. \code{"admm"} uses a fixed-lambda ADMM solver for each lambda
-value. \code{"auto"} tries \code{"genlasso"} first and falls back to ADMM
-when path extraction produces an error or non-finite fitted values.}
+path to propose a grid when needed, then refines every candidate with ADMM
+on the original objective. \code{"admm"} skips the path and requires an
+explicit grid. \code{"auto"} also proceeds when path construction fails,
+provided an explicit grid is supplied.}
 
 \item{row.scaling}{Optional row scaling for the penalty matrix before
 solving. \code{"l2"} scales nonzero rows of \eqn{A} to unit Euclidean norm.}
 
-\item{admm.rho, admm.maxiter, admm.abstol, admm.reltol}{ADMM controls used when
-\code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.
+\item{admm.rho, admm.maxiter, admm.abstol, admm.reltol}{ADMM controls used by
+all backends, including refinement of generalized-lasso candidates.
 \code{admm.rho = NULL} chooses an initial algorithm penalty of
 \code{1 / max(1, mean(rowSums(D^2)))}, where \code{D} is the penalty
 operator after any requested row scaling. A positive numeric value sets

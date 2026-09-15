@@ -45,6 +45,9 @@ jobs:
             github::pgajer/dgraphs@22c0f2b7b1c53af5aabf1f19e6c390ce343d87fe
           needs: check
 
+      - name: Check documentation sources without rewriting them
+        run: Rscript scripts/audit_api_guide.R --check
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true

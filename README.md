@@ -6,6 +6,13 @@ includes local polynomial smoothing, model-averaged local polynomial smoothing,
 local polynomial lifting trend filtering, synchronized local polynomial lifting
 trend filtering, graph low-pass filtering, and Hessian-energy regression.
 
+![Noisy observations along a sine curve; the solid blue fitted response follows the dashed orange synthetic truth.](man/figures/first-fit.png)
+
+The points are observations, the solid line is a selected local polynomial fit,
+and the dashed line is known synthetic truth. The
+[first-fit guide](https://pgajer.github.io/geosmooth/articles/function-guide.html#a-first-regression-fit)
+shows the code, selected settings, and how to interpret the tuning score.
+
 For a task-based catalog of every exported function, prediction capabilities,
 and examples, read [Finding your way around geosmooth](https://pgajer.github.io/geosmooth/articles/function-guide.html).
 In an installed package, use `vignette("function-guide", package = "geosmooth")`
@@ -62,7 +69,7 @@ lps.fit <- fit.lps(
     foldid = foldid,
     support.grid = c(8L, 12L, 16L),
     degree.grid = 0:1,
-    kernel.grid = c("gaussian", "tricube")
+    kernel.grid = "gaussian"
 )
 
 head(predict(lps.fit))
@@ -73,7 +80,7 @@ selects support size, local polynomial degree, and kernel by cross-validation.
 
 ## Method Map
 
-Current public payload:
+Choose by the structure of your data and the penalty you need:
 
 - **LPS**: local polynomial smoother, `fit.lps()`.
   Use this as the direct local-regression baseline.  It predicts by fitting a
@@ -92,6 +99,11 @@ Current public payload:
   filtering, `fit.slpl.tf()` and `slpl.tf.operator()`.
   Use this when you want LPL-TF plus a quadratic synchronization penalty across
   overlapping local predictions.
+
+- **Graph low-pass**: `fit.metric.graph.lowpass()` smooths a response on an
+  undirected graph with positive edge lengths. The
+  [graph workflow](https://pgajer.github.io/geosmooth/articles/function-guide.html#from-a-constructed-graph-to-a-fitted-response)
+  explains vertex alignment, length-to-conductance conversion, and basis reuse.
 
 - **SSRHE**: SSRHE-style Hessian-energy smoothing,
   `fit.ssrhe.hessian.regression()` and

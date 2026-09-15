@@ -1535,29 +1535,9 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
 }
 
 .lpl.tf.extract.graph.stage <- function(graph, graph.stage) {
-    if (!is.list(graph)) {
-        stop("'graph' must be a list-like graph object.", call. = FALSE)
-    }
-    keys <- switch(
-        graph.stage,
-        final = list(c("adj_list", "weight_list"),
-                     c("adj.list", "weight.list")),
-        raw = list(c("raw_adj_list", "raw_weight_list"),
-                   c("raw.adj.list", "raw.weight.list")),
-        pruned = list(c("pruned_adj_list", "pruned_weight_list"),
-                      c("pruned.adj.list", "pruned.weight.list"))
-    )
-    for (pair in keys) {
-        if (!is.null(graph[[pair[[1L]]]]) && !is.null(graph[[pair[[2L]]]])) {
-            return(list(
-                adj.list = graph[[pair[[1L]]]],
-                weight.list = graph[[pair[[2L]]]],
-                source = paste0("graph.", graph.stage)
-            ))
-        }
-    }
-    stop("Could not extract graph adjacency and weights for graph.stage = '",
-         graph.stage, "'.", call. = FALSE)
+    payload <- .geosmooth.graph.payload(graph, graph.stage)
+    list(adj.list = payload$adj.list, weight.list = payload$weight.list,
+         source = paste0("graph.", graph.stage))
 }
 
 .lpl.tf.scalar.integer <- function(x, name, min = -Inf, max = Inf) {

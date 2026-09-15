@@ -254,8 +254,9 @@ pttf.geometry <- function(
         connect.method = "component.mst",
         graph.detail = "full"
     )
-    validated <- .validate.metric.graph.lowpass.graph(built$adj_list,
-                                                      built$weight_list)
+    payload <- .geosmooth.graph.payload(built)
+    validated <- .validate.metric.graph.lowpass.graph(payload$adj.list,
+                                                      payload$weight.list)
     list(
         adj.list = validated$adj.list,
         weight.list = validated$weight.list,
