@@ -1,87 +1,85 @@
-## Resubmission
+## Update to geosmooth 0.2.0
 
-This is the second resubmission of the initial CRAN release of `geosmooth`.
+This is an update to geosmooth 0.1.0. It consolidates the public API and adds
+an installed HTML function-guide vignette. The statistical estimators and
+method-specific refit behavior are preserved.
 
-CRAN review on 2026-08-31 requested method references in `DESCRIPTION`, a
-missing return-value description for `fit.subject.od()`, executable examples
-instead of `\\dontrun{}`, and complete contributor and copyright-holder roles
-in `Authors@R`. We made the following changes:
+The update removes 35 exported names and adds two S3 generics:
 
-* Added references for the package's geometric-regression, local-polynomial,
-  graph-trend-filtering, and Hessian-energy methods to `DESCRIPTION` and the
-  corresponding function help pages.
-* Documented the class, structure, and interpretation of the value returned by
-  `fit.subject.od()`.
-* Replaced all four `\\dontrun{}` blocks with short, self-contained examples
-  that run during `R CMD check`.
-* Added the contributors and copyright holders of the vendored Eigen, Spectra,
-  and ANN libraries to `Authors@R` with `ctb` and/or `cph` roles. The upstream
-  notices and license details remain in `inst/COPYRIGHTS` and `inst/licenses`.
+* The 25 transitional geometry and sampling re-exports are replaced by calls
+  to the corresponding functions in dgraphs.
+* The separate quadratic Hessian CV and GCV fitters are replaced by
+  `fit.ssrhe.hessian.regression()` with explicit selection modes and controls.
+* Six refit entry points are replaced by `refit(object, y, ...)`.
+* The LPS and MALPS matrix extractors are replaced by
+  `smoother.matrix(object, ...)`.
 
-An internal CRAN-submission checklist audit on 2026-09-03 identified several
-release-readiness issues before any duplicate upload was made. We made the
-following additional cleanup changes:
+NEWS, function help, and the function-guide vignette explain migration,
+including argument-name changes and method-specific restrictions. Former help
+aliases remain available. The synthetic-datasets vignette now uses the
+geometry and sampling API owned by dgraphs.
 
-* Removed a forced-included Eigen configuration header that suppressed a GCC
-  diagnostic; the package now checks without compiler-warning suppression.
-* Moved agent-only audits, handoffs, prompts, work orders, and intermediate
-  review products out of the public package repository and into the local
-  private Codex notes tree.
-* Retired stale development-phase DGP registry material from `inst/` into the
-  non-shipped development archive, leaving the shipped synthetic registry as
-  the canonical dataset registry.
-* Added Rd entries and executable examples for registered S3 methods, removed
-  unexplained development-phase labels from user-facing help, and strengthened
-  the source-tree guardrail used by package QA tests.
+## Dependency release prerequisite
 
-The automated CRAN incoming pretests on 2026-08-21 reported test errors on
-Windows and Debian. Two source-layout tests searched upward from the process
-working directory and stopped when the package source root was unavailable.
-They now use a shared source-tree locator based on `testthat::test_path()` and
-skip their source-only assertions when no source tree is present. Both tests
-still run and pass in a source checkout. No package behavior was changed by
-this fix.
+This document is a preparation draft, not confirmation that the package is
+ready to submit. DESCRIPTION currently requires `dgraphs (>= 0.2.1.9000)`.
+On 2026-09-14 the CRAN source index provided dgraphs 0.2.0, which lacks the
+required geometry and sampling imports.
 
-## Submission
+A compatible dgraphs release must be available from CRAN before this update
+is submitted. Version 0.3.0 is the proposed dgraphs release, subject to its
+maintainer's release decision. Once it is published, update DESCRIPTION to
+require the released version and repeat the final checks using repository
+packages. A successful check with development dgraphs does not establish
+CRAN-only dependency availability.
 
-`geosmooth` imports `dgraphs (>= 0.1.0)`. On 2026-08-19, the CRAN submission
-team confirmed that version 0.1.0 of `dgraphs` was on its way to CRAN. Version
-0.1.0 was present in the CRAN source index on 2026-08-20 and was installed from
-a CRAN mirror into a new library for the local release check. The external
-checks below also resolved the dependency from their standard repositories.
+## Validation
 
-## Test environments
+The version 0.2.0 tarball was built and checked locally on 2026-09-14 using
+`R_LIBS=/tmp/geosmooth-api-consolidation/library make check`, which invokes
+`R CMD check geosmooth_0.2.0.tar.gz --as-cran`.
 
-* local: macOS 26.6.1, aarch64-apple-darwin23, R-devel (2026-06-24 r90190)
-* revised-candidate GitHub Actions: Ubuntu with R-release, R-devel, and
-  R-oldrel; macOS Intel with R-release; Windows with R-release
-  (https://github.com/pgajer/geosmooth/actions/runs/33818297135)
-* initial-candidate GitHub Actions: Ubuntu with R-release, R-devel, and
-  R-oldrel; macOS Intel with R-release; Windows with R-release
-  (https://github.com/pgajer/geosmooth/actions/runs/32424082905)
-* initial-candidate R-hub: Linux with R-devel and Windows with R-devel
-  (https://github.com/r-hub2/useful-whitefish-geosmooth/actions/runs/32424539662)
+* Environment: macOS 26.6.1, aarch64-apple-darwin23, R-devel
+  (2026-06-24 r90190).
+* Dependency: dgraphs 0.2.1.9000 installed from the sibling development source
+  into an isolated temporary library, not installed from CRAN.
+* Result: 0 errors, 0 warnings, 1 NOTE. The incoming-feasibility note reports
+  that only two days have passed since the last CRAN update. The previous
+  insufficient-version warning is resolved by the increase to 0.2.0.
+* 10,963 assertions passed, with no test failures or test warnings. The single
+  source-only runner test skipped in the tarball passed separately in the
+  source checkout; the exported-function/S3-method example-coverage test also
+  passed there.
+* Installation, S3 registration, code/documentation consistency, examples,
+  vignette rebuilds, and both PDF and HTML manual checks passed. Both HTML
+  vignettes appear in the installed documentation.
 
-The initial-candidate GitHub Actions matrix and both R-hub jobs reported
-`Status: OK`. The revised-candidate GitHub Actions matrix also passed on
-2026-09-03. The subsequent CRAN pretests identified only the two installed-test
-path errors described above.
+This validates the candidate with the development dependency only. It does
+not replace final checks against released dgraphs on the supported platforms.
+Plan the submission timing deliberately: the two-day interval should not be
+presented as an urgent corrective release without an actual urgent issue.
 
-## Local R CMD check results
+Earlier numerical comparisons for the API consolidation agreed with the
+previous implementations in 16 refit/matrix scenarios and seven quadratic
+Hessian fitter scenarios, excluding calls and measured runtimes as appropriate.
 
-The exact source tarball was checked locally with `R CMD check --as-cran`:
+The GitHub Actions run for the preceding code commit stopped at dependency
+installation on Linux and Windows because dgraphs >= 0.2.1.9000 was unavailable:
+https://github.com/pgajer/geosmooth/actions/runs/34876555004
+Those failures did not exercise the package tests. Fresh Linux, Windows, and
+macOS checks of the final release candidate using released dependencies are
+still required; older successful platform checks are not validation of 0.2.0.
 
-* 0 errors | 0 warnings | 1 expected note (`New submission`)
-* 10,872 tests passed, one source-tree-only runner test was intentionally
-  skipped, and no tests failed or warned
+No reverse Depends, Imports, LinkingTo, or Suggests dependencies on geosmooth
+were listed in the CRAN source index queried on 2026-09-14. Refresh that check
+before submission and check affected downstream packages if any appear.
 
-The acceptance and scientific-validation suites are intentionally excluded
-from installed-package CRAN checks because they are substantially more
-expensive than package QA. They remain available through the package's opt-in
-development targets. The complete `make test-all` suite also passed locally
-with only intentional dependency/platform skips.
+## Previous review fixes retained
 
-## Notes
-
-The package includes vendored ANN, Eigen, and Spectra headers. Their copyright
-and license information is recorded in `inst/COPYRIGHTS` and `inst/licenses`.
+The package retains the method references and return-value documentation
+requested during the initial review, executable examples for exported functions
+and registered methods, and contributor/copyright-holder attribution for ANN,
+Eigen, and Spectra. Their notices remain in inst/COPYRIGHTS and inst/licenses.
+The earlier compiler-warning suppression remains removed. Source-layout tests
+use the shared source-tree locator and skip source-only assertions when the
+necessary development files are not included in the tarball.

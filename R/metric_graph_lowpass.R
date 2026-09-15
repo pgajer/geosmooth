@@ -1043,9 +1043,10 @@ fit.metric.graph.lowpass <- function(
 #'   each response column using the cached eigenbasis.
 #' @param eta.grid Optional positive numeric eta grid for per-column GCV.
 #' @param n.candidates Number of eta candidates when \code{eta.grid = NULL}.
-#' @param n.cores Number of cores for per-column GCV. The current
-#'   implementation uses sequential processing if optional parallel packages
-#'   are unavailable.
+#' @param n.cores Positive integer retained for compatibility. Response
+#'   columns are always processed sequentially; values greater than one do not
+#'   enable parallel execution. Per-column GCV results report
+#'   \code{n.cores.used = 1L}.
 #' @param block.size Optional block size for fixed-eta multi-column refits.
 #' @param verbose Logical progress flag.
 #'

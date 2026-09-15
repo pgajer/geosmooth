@@ -1,6 +1,6 @@
 Package: geosmooth
 Title: Geometric Methods for Nonparametric Regression and Density Estimation
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person(given = "Pawel",
            family = "Gajer",

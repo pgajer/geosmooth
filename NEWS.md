@@ -1,4 +1,10 @@
-# geosmooth 0.1.0
+# geosmooth 0.2.0
+
+## API changes
+
+This release reduces the explicit public API from 93 to 60 exported functions.
+The 35 retired names are replaced by dependency-qualified calls, a unified
+fitter, or two S3 generics.
 
 - Replace the six exported `refit.*()` functions with the S3 generic
   `refit(object, y, ...)`, covering MALPS, both lifting trend filters,
@@ -10,8 +16,7 @@
   `smoother.matrix(object, ...)`. LPS retains `check.tol` and its
   fixed-configuration requirements; MALPS retains `max.n`, `allow.robust`,
   and its conditional interpretation. The eight former entry points are
-  no longer exported. These two generics reduce the explicit export count
-  from 66 to 60; the function-guide vignette documents all supported methods.
+  no longer exported. The function-guide vignette documents all supported methods.
 
 - API consolidation (breaking change): retire the 25 transitional synthetic
   geometry and sampling re-exports. Call the same names and arguments with
@@ -24,7 +29,6 @@
   `lambda2` are unchanged. Replace the former `.cv()` and `.gcv()` fitters
   with `lambda.selection = "cv"` or `"gcv"` and penalty grids. The old
   function names are no longer exported; their help aliases explain migration.
-  The explicit export count decreases from 93 to 66.
 - CV settings now use `cv.control = list(foldid = ..., cv.folds = ...,
   loss = "mse", selection = "min")`; `foldid` replaces `fold.id` and
   `cv.folds` replaces `nfolds`. GCV trace settings use
@@ -37,11 +41,26 @@
   a single fully observed response and strictly positive weights. Existing
   fit classes, CV/GCV tables, and refit support are preserved.
 
+## Dependencies
+
 - Delegate reusable synthetic geometry and point generation to dgraphs
   (>= 0.2.1.9000).
   Statistical recipes, responses, dataset identities and legacy G4 remain
   here. Geometry Lab and maintained geometry reference tools now live in
   the dgraphs development tree.
+
+## Documentation
+
+- Clarify that metric graph low-pass refits process response columns
+  sequentially. The retained `n.cores` argument does not enable parallel
+  execution, and per-column GCV results report `n.cores.used = 1L`.
+- Add "Finding your way around geosmooth", a task-oriented vignette covering
+  every exported function, supported prediction/refit workflows, and migration
+  to the consolidated API. Link the guide from the package overview and README.
+- Update the synthetic-datasets vignette to use geometry and sampling from
+  dgraphs. Both vignettes are distributed as HTML with the built package.
+
+# geosmooth 0.1.0
 
 * Initial CRAN release.
 * Provides local polynomial and model-averaged local polynomial smoothing,

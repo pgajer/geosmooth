@@ -29,9 +29,10 @@ each response column using the cached eigenbasis.}
 
 \item{n.candidates}{Number of eta candidates when \code{eta.grid = NULL}.}
 
-\item{n.cores}{Number of cores for per-column GCV. The current
-implementation uses sequential processing if optional parallel packages
-are unavailable.}
+\item{n.cores}{Positive integer retained for compatibility. Response
+columns are always processed sequentially; values greater than one do not
+enable parallel execution. Per-column GCV results report
+\code{n.cores.used = 1L}.}
 
 \item{block.size}{Optional block size for fixed-eta multi-column refits.}
 

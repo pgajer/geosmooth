@@ -24,7 +24,7 @@ graphs. Start with the task you want to perform, then choose a method. You do
 not need to learn the operator constructors or synthetic-data helpers to fit
 your first model.
 
-This guide describes the current API of version 0.1.0. The catalog below covers
+This guide describes the current API of version 0.2.0. The catalog below covers
 all 60 explicitly exported functions, each defined in `geosmooth`. The 25
 geometry and sampling helpers formerly re-exported here are now called directly
 from `dgraphs`; a separate dependency catalog below lists them.
