@@ -2608,6 +2608,14 @@ refit.ssrhe.hessian.fit <- function(object,
 #'   solving. \code{"l2"} scales nonzero rows of \eqn{A} to unit Euclidean norm.
 #' @param admm.rho,admm.maxiter,admm.abstol,admm.reltol ADMM controls used when
 #'   \code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.
+#'   \code{admm.rho = NULL} chooses an initial algorithm penalty of
+#'   \code{1 / max(1, mean(rowSums(D^2)))}, where \code{D} is the penalty
+#'   operator after any requested row scaling. A positive numeric value sets
+#'   the initial penalty explicitly. This is separate from statistical
+#'   regularization \code{lambda.grid}. The iteration limit is a hard cap.
+#' @param admm.adaptive.rho Logical; adapt the algorithm penalty during the
+#'   first 1000 iterations by balancing tolerance-normalized primal and dual
+#'   residuals. Set \code{FALSE} to hold the initial penalty fixed.
 #' @param maxsteps,minlam,approx,rtol,btol,eps,verbose Controls passed to
 #'   \pkg{genlasso}.
 #'
@@ -2632,6 +2640,32 @@ refit.ssrhe.hessian.fit <- function(object,
 #' returns non-finite fitted values. Cross-validation removes held-out labels
 #' from the data-fit term by setting their weights to zero, then scores
 #' predictions on those held-out labels.
+#'
+#' ADMM uses proximal numerical stabilization, which does not add a ridge
+#' penalty to the requested objective. Convergence requires primal feasibility,
+#' the dual stopping residual, and stationarity of the original weighted L1
+#' objective to meet their reported tolerances. A finite fixed-lambda iterate
+#' that reaches its cap is returned with a warning and
+#' \code{solver$converged = FALSE}; it is not a completed fit. Inspect
+#' \code{solver$admm} before using it, and consider a larger iteration limit
+#' or an adaptive penalty. Non-finite selected fits are errors.
+#'
+#' CV candidates are eligible only when every fold has an acceptable solve.
+#' ADMM iterates that do not converge are not scored. The CV result retains
+#' \code{fold.status}, \code{fold.converged}, \code{fold.diagnostics},
+#' \code{n.successful.folds}, and \code{eligible}. If no candidate qualifies,
+#' an error of class \code{ssrhe_l1_cv_error} retains fold diagnostics for
+#' inspection with \code{tryCatch}. A selected full-data ADMM fit that fails
+#' to converge is also an error in CV mode.
+#'
+#' For \pkg{genlasso}, \code{solver$status = "path_available"} means that
+#' coefficients were available at the requested penalty, not that an ADMM
+#' convergence certificate was computed; \code{solver$converged} is \code{NA}.
+#' Backend warnings, including its numerical ridge for underdetermined designs,
+#' are retained in \code{solver$warnings} and CV fold diagnostics.
+#' With \code{row.scaling = "l2"}, the reported objective uses the scaled
+#' penalty; \code{energies$penalty.l1} is that penalty norm, while
+#' \code{energies$hessian.l1} retains the unscaled operator norm.
 #'
 #' With \code{support.selection = "cv"}, each adaptive-radius support candidate
 #' builds a fresh SSRHE operator and runs the usual lambda CV with shared fold
@@ -2688,7 +2722,7 @@ fit.ssrhe.hessian.l1.regression <- function(
     normal.equations.max.condition = 1e4,
     solver = c("genlasso", "admm", "auto"),
     row.scaling = c("none", "l2"),
-    admm.rho = 1,
+    admm.rho = NULL,
     admm.maxiter = 2000L,
     admm.abstol = 1e-4,
     admm.reltol = 1e-3,
@@ -2703,7 +2737,8 @@ fit.ssrhe.hessian.l1.regression <- function(
     support.cv.max.candidates = 8L,
     return.local.diagnostics = FALSE,
     return.timing = FALSE,
-    verbose = FALSE) {
+    verbose = FALSE,
+    admm.adaptive.rho = TRUE) {
 
     solver <- match.arg(solver)
     if (!identical(solver, "admm") &&
@@ -2755,6 +2790,7 @@ fit.ssrhe.hessian.l1.regression <- function(
         admm.maxiter = admm.maxiter,
         admm.abstol = admm.abstol,
         admm.reltol = admm.reltol,
+        admm.adaptive.rho = admm.adaptive.rho,
         verbose = verbose
     )
     lambda.grid <- .validate.ssrhe.hessian.l1.lambda.grid(
@@ -2831,6 +2867,7 @@ fit.ssrhe.hessian.l1.regression <- function(
                         admm.maxiter = admm.maxiter,
                         admm.abstol = admm.abstol,
                         admm.reltol = admm.reltol,
+                        admm.adaptive.rho = admm.adaptive.rho,
                         maxsteps = maxsteps,
                         minlam = minlam,
                         approx = approx,
@@ -2990,7 +3027,7 @@ refit.ssrhe.hessian.l1.fit <- function(
     selection = c("min", "one.se"),
     solver = c("genlasso", "admm", "auto"),
     row.scaling = c("none", "l2"),
-    admm.rho = 1,
+    admm.rho = NULL,
     admm.maxiter = 2000L,
     admm.abstol = 1e-4,
     admm.reltol = 1e-3,
@@ -3000,7 +3037,7 @@ refit.ssrhe.hessian.l1.fit <- function(
     rtol = 1e-7,
     btol = 1e-7,
     eps = 1e-4,
-    verbose = FALSE, ...) {
+    verbose = FALSE, admm.adaptive.rho = TRUE, ...) {
     .geosmooth.check.dots(...)
 
     if (!inherits(object, "ssrhe.hessian.l1.fit")) {
@@ -3054,6 +3091,7 @@ refit.ssrhe.hessian.l1.fit <- function(
         admm.maxiter = admm.maxiter,
         admm.abstol = admm.abstol,
         admm.reltol = admm.reltol,
+        admm.adaptive.rho = admm.adaptive.rho,
         verbose = verbose
     )
     lambda.grid <- .validate.ssrhe.hessian.l1.lambda.grid(
@@ -3199,12 +3237,28 @@ refit.ssrhe.hessian.l1.fit <- function(
         )
         fit.source <- if (identical(backend, "auto")) "admm_fallback" else "admm"
     }
+    candidate.status <- .ssrhe.hessian.l1.candidate.status(beta.grid)
     fitted <- beta.grid[, selected.idx]
+    if (!all(is.finite(fitted))) {
+        stop("The selected Hessian L1 fit failed: ",
+             candidate.status$status[selected.idx], ". ",
+             candidate.status$message[selected.idx], call. = FALSE)
+    }
+    if (!candidate.status$acceptable[selected.idx]) {
+        message <- paste0(
+            "The selected Hessian L1 ADMM fit did not converge (",
+            candidate.status$status[selected.idx], ", ",
+            candidate.status$iterations[selected.idx], " iterations). ",
+            "Inspect solver$admm; consider adaptive rho or a larger admm.maxiter.")
+        if (identical(lambda.selection, "cv")) stop(message, call. = FALSE)
+        warning(message, call. = FALSE)
+    }
     observed <- as.vector(y.info$observed & weights > 0)
     residuals <- rep(NA_real_, n)
     residuals[observed] <- y.raw[observed] - fitted[observed]
     data.loss <- 0.5 * sum(weights * (y.clean - fitted)^2)
     hessian.l1 <- sum(abs(as.vector(operator$A %*% fitted)))
+    penalty.l1 <- sum(abs(as.vector(D.info$D.sparse %*% fitted)))
     lambda <- lambda.grid[selected.idx]
 
     list(
@@ -3215,8 +3269,9 @@ refit.ssrhe.hessian.l1.fit <- function(
         lambda = lambda,
         lambda.grid = lambda.grid,
         lambda.selection = lambda.selection,
-        objective = data.loss + lambda * hessian.l1,
-        energies = list(data.loss = data.loss, hessian.l1 = hessian.l1),
+        objective = data.loss + lambda * penalty.l1,
+        energies = list(data.loss = data.loss, hessian.l1 = hessian.l1,
+                        penalty.l1 = penalty.l1),
         operator = operator,
         beta.grid = beta.grid,
         path = path,
@@ -3227,6 +3282,13 @@ refit.ssrhe.hessian.l1.fit <- function(
         diagnostics = diagnostics,
         solver = list(
             backend = fit.source,
+            status = candidate.status$status[selected.idx],
+            converged = candidate.status$converged[selected.idx],
+            candidate.status = candidate.status,
+            warnings = if (is.null(path.info)) character() else
+                path.info$warnings %||% character(),
+            path.error = if (inherits(path.info, "ssrhe.l1.path.error"))
+                conditionMessage(path.info$error) else NULL,
             requested = backend,
             representation = D.info$representation,
             svd = D.info$svd,
@@ -3305,13 +3367,20 @@ refit.ssrhe.hessian.l1.fit <- function(
 
 .fit.ssrhe.hessian.l1.path <- function(y, weights, D, solver.args,
                                        use.svd = FALSE) {
+    path.warnings <- character()
+    capture.path <- function(expr) {
+        withCallingHandlers(expr, warning = function(w) {
+            path.warnings <<- c(path.warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        })
+    }
     observed <- is.finite(y) & is.finite(weights) & weights > 0
     if (!any(observed)) {
         stop("At least one observed positive-weight response is required.",
              call. = FALSE)
     }
     if (all(observed) && all(abs(weights - 1) < sqrt(.Machine$double.eps))) {
-        path <- suppressWarnings(genlasso::genlasso(
+        path <- capture.path(genlasso::genlasso(
             y = y,
             D = D,
             approx = solver.args$approx,
@@ -3333,7 +3402,7 @@ refit.ssrhe.hessian.l1.fit <- function(
             dims = c(length(obs), length(y)),
             giveCsparse = TRUE
         ))
-        path <- suppressWarnings(genlasso::genlasso(
+        path <- capture.path(genlasso::genlasso(
             y = sw * y[obs],
             X = X.design,
             D = D,
@@ -3347,7 +3416,7 @@ refit.ssrhe.hessian.l1.fit <- function(
             svd = use.svd
         ))
     }
-    list(path = path, n.observed = sum(observed))
+    list(path = path, n.observed = sum(observed), warnings = unique(path.warnings))
 }
 
 .ssrhe.hessian.l1.default.lambda.grid <- function(path, n.lambda) {
@@ -3387,76 +3456,6 @@ refit.ssrhe.hessian.l1.fit <- function(
     beta
 }
 
-.ssrhe.soft.threshold <- function(x, lambda) {
-    sign(x) * pmax(abs(x) - lambda, 0)
-}
-
-.ssrhe.hessian.l1.admm <- function(y, weights, D, lambda, solver.args) {
-    D <- methods::as(D, "dgCMatrix")
-    n <- length(y)
-    m <- nrow(D)
-    weights <- as.numeric(weights)
-    y <- as.numeric(y)
-    rho <- solver.args$admm.rho
-    AtA <- Matrix::crossprod(D)
-    system <- AtA * rho + Matrix::Diagonal(n, x = weights)
-    ridge <- max(1e-10, sqrt(.Machine$double.eps) * max(1, mean(Matrix::diag(system))))
-    system <- system + Matrix::Diagonal(n, x = rep(ridge, n))
-    factor <- Matrix::Cholesky(system, LDL = FALSE, Imult = 0)
-    wy <- weights * y
-    beta <- rep(0, n)
-    z <- rep(0, m)
-    u <- rep(0, m)
-    converged <- FALSE
-    iter <- 0L
-    primal <- dual <- Inf
-    for (iter in seq_len(solver.args$admm.maxiter)) {
-        z.old <- z
-        rhs <- wy + rho * as.vector(Matrix::crossprod(D, z - u))
-        beta <- as.vector(Matrix::solve(factor, rhs))
-        Dbeta <- as.vector(D %*% beta)
-        z <- .ssrhe.soft.threshold(Dbeta + u, lambda / rho)
-        u <- u + Dbeta - z
-        primal <- sqrt(sum((Dbeta - z)^2))
-        dual <- rho * sqrt(sum(as.vector(Matrix::crossprod(D, z - z.old))^2))
-        eps.pri <- sqrt(m) * solver.args$admm.abstol +
-            solver.args$admm.reltol * max(sqrt(sum(Dbeta^2)), sqrt(sum(z^2)))
-        eps.dual <- sqrt(n) * solver.args$admm.abstol +
-            solver.args$admm.reltol *
-            sqrt(sum(as.vector(rho * Matrix::crossprod(D, u))^2))
-        if (primal <= eps.pri && dual <= eps.dual) {
-            converged <- TRUE
-            break
-        }
-    }
-    attr(beta, "admm") <- list(
-        iterations = iter,
-        converged = converged,
-        primal.residual = primal,
-        dual.residual = dual,
-        rho = rho
-    )
-    beta
-}
-
-.ssrhe.hessian.l1.admm.grid <- function(y, weights, D, lambda.grid,
-                                        solver.args) {
-    admm.info <- vector("list", length(lambda.grid))
-    beta <- vapply(seq_along(lambda.grid), function(ii) {
-        fit <- .ssrhe.hessian.l1.admm(
-            y = y,
-            weights = weights,
-            D = D,
-            lambda = lambda.grid[ii],
-            solver.args = solver.args
-        )
-        admm.info[[ii]] <<- attr(fit, "admm")
-        as.vector(fit)
-    }, numeric(length(y)))
-    attr(beta, "admm") <- admm.info
-    beta
-}
-
 .ssrhe.hessian.l1.cv <- function(y, weights, D, lambda.grid, fold.id, loss,
                                  selection, solver.args, use.svd = FALSE) {
     n <- length(y)
@@ -3465,11 +3464,24 @@ refit.ssrhe.hessian.l1.fit <- function(
     rownames(cv.errors) <- paste0("Fold", folds)
     colnames(cv.errors) <- format(signif(lambda.grid, 6), scientific = TRUE)
 
+    fold.status <- matrix("solver_error", nrow(cv.errors), ncol(cv.errors),
+                          dimnames = dimnames(cv.errors))
+    fold.converged <- matrix(NA, nrow(cv.errors), ncol(cv.errors),
+                             dimnames = dimnames(cv.errors))
+    fold.diagnostics <- vector("list", length(folds))
+    names(fold.diagnostics) <- rownames(cv.errors)
+
     for (ii in seq_along(folds)) {
         fold <- folds[ii]
         test <- which(fold.id == fold)
         train.weights <- weights
         train.weights[test] <- 0
+        failure <- character()
+        path.warnings <- character()
+        failed <- function(e) {
+            failure <<- c(failure, conditionMessage(e))
+            NULL
+        }
         if (identical(solver.args$solver, "admm")) {
             beta <- tryCatch(
                 .ssrhe.hessian.l1.admm.grid(
@@ -3479,7 +3491,7 @@ refit.ssrhe.hessian.l1.fit <- function(
                     lambda.grid = lambda.grid,
                     solver.args = solver.args
                 ),
-                error = function(e) NULL
+                error = failed
             )
         } else {
             path.info <- tryCatch(
@@ -3490,11 +3502,12 @@ refit.ssrhe.hessian.l1.fit <- function(
                     solver.args = solver.args,
                     use.svd = use.svd
                 ),
-                error = function(e) NULL
+                error = failed
             )
             if (is.null(path.info)) {
                 beta <- NULL
             } else {
+                path.warnings <- path.info$warnings
                 beta <- .ssrhe.hessian.l1.coef.matrix(path.info$path, lambda.grid, n)
             }
             if (identical(solver.args$solver, "auto") &&
@@ -3507,13 +3520,21 @@ refit.ssrhe.hessian.l1.fit <- function(
                         lambda.grid = lambda.grid,
                         solver.args = solver.args
                     ),
-                    error = function(e) NULL
+                    error = failed
                 )
             }
         }
         if (is.null(beta)) {
+            fold.diagnostics[[ii]] <- list(errors = failure, warnings = path.warnings)
             next
         }
+        status <- .ssrhe.hessian.l1.candidate.status(beta)
+        fold.status[ii, ] <- status$status
+        fold.converged[ii, ] <- status$converged
+        fold.diagnostics[[ii]] <- list(
+            candidate.status = status, admm = attr(beta, "admm"),
+            errors = failure, warnings = path.warnings
+        )
         beta.test <- beta[test, , drop = FALSE]
         finite.pred <- colSums(is.finite(beta.test)) == nrow(beta.test)
         target <- matrix(y[test], nrow = length(test), ncol = length(lambda.grid))
@@ -3523,12 +3544,14 @@ refit.ssrhe.hessian.l1.fit <- function(
         } else {
             fold.error <- colSums(w.test * abs(target - beta.test)) / colSums(w.test)
         }
-        fold.error[!finite.pred] <- NA_real_
+        fold.error[!finite.pred | !status$acceptable] <- NA_real_
         cv.errors[ii, ] <- fold.error
     }
 
-    mean.error <- colMeans(cv.errors, na.rm = TRUE)
-    mean.error[!is.finite(mean.error)] <- Inf
+    n.successful.folds <- colSums(is.finite(cv.errors))
+    eligible.candidates <- n.successful.folds == length(folds)
+    mean.error <- colMeans(cv.errors)
+    mean.error[!eligible.candidates | !is.finite(mean.error)] <- Inf
     se <- apply(cv.errors, 2L, function(x) {
         x <- x[is.finite(x)]
         if (length(x) < 2L) return(Inf)
@@ -3536,12 +3559,21 @@ refit.ssrhe.hessian.l1.fit <- function(
     })
     best.idx <- which.min(mean.error)
     if (!is.finite(mean.error[best.idx])) {
-        stop("All SSRHE Hessian L1 CV fits failed for the supplied lambda grid.",
-             call. = FALSE)
+        counts <- table(fold.status)
+        reason <- paste(paste0(names(counts), "=", as.integer(counts)), collapse = ", ")
+        condition <- structure(list(
+            message = paste0("No Hessian L1 CV candidate succeeded on every fold (",
+                             reason, "). Inspect fold diagnostics or increase admm.maxiter."),
+            call = NULL, fold.status = fold.status,
+            fold.diagnostics = fold.diagnostics, fold.errors = cv.errors,
+            n.successful.folds = n.successful.folds, lambda.grid = lambda.grid
+        ), class = c("ssrhe_l1_cv_error", "error", "condition"))
+        stop(condition)
     }
     if (identical(selection, "one.se")) {
         threshold <- mean.error[best.idx] + se[best.idx]
-        eligible <- which(mean.error <= threshold)
+        eligible <- which(eligible.candidates & is.finite(mean.error) &
+                              mean.error <= threshold)
         selected.idx <- eligible[which.max(lambda.grid[eligible])]
     } else {
         selected.idx <- best.idx
@@ -3550,6 +3582,11 @@ refit.ssrhe.hessian.l1.fit <- function(
         fold.id = fold.id,
         lambda.grid = lambda.grid,
         fold.errors = cv.errors,
+        fold.status = fold.status,
+        fold.converged = fold.converged,
+        fold.diagnostics = fold.diagnostics,
+        n.successful.folds = n.successful.folds,
+        eligible = eligible.candidates,
         mean.error = mean.error,
         se = se,
         best.idx = best.idx,
@@ -3592,11 +3629,12 @@ refit.ssrhe.hessian.l1.fit <- function(
                                                    eps,
                                                    solver = c("genlasso", "admm", "auto"),
                                                    row.scaling = c("none", "l2"),
-                                                   admm.rho = 1,
+                                                   admm.rho = NULL,
                                                    admm.maxiter = 2000L,
                                                    admm.abstol = 1e-4,
                                                    admm.reltol = 1e-3,
-                                                   verbose) {
+                                                   verbose,
+                                                   admm.adaptive.rho = TRUE) {
     n.lambda <- .validate.ssrhe.positive.integer(n.lambda, "n.lambda")
     nfolds <- .validate.ssrhe.positive.integer(nfolds, "nfolds")
     maxsteps <- .validate.ssrhe.positive.integer(maxsteps, "maxsteps")
@@ -3606,10 +3644,16 @@ refit.ssrhe.hessian.l1.fit <- function(
     rtol <- .validate.ssrhe.nonnegative.scalar(rtol, "rtol")
     btol <- .validate.ssrhe.nonnegative.scalar(btol, "btol")
     eps <- .validate.ssrhe.nonnegative.scalar(eps, "eps")
-    admm.rho <- .validate.ssrhe.numeric.scalar(admm.rho, "admm.rho")
-    if (!is.finite(admm.rho) || admm.rho <= 0) {
+    if (!is.null(admm.rho)) {
+        admm.rho <- .validate.ssrhe.numeric.scalar(admm.rho, "admm.rho")
+    }
+    if (!is.null(admm.rho) && (!is.finite(admm.rho) || admm.rho <= 0)) {
         stop("admm.rho must be a finite positive numeric scalar.",
              call. = FALSE)
+    }
+    if (!is.logical(admm.adaptive.rho) || length(admm.adaptive.rho) != 1L ||
+        is.na(admm.adaptive.rho)) {
+        stop("admm.adaptive.rho must be TRUE or FALSE.", call. = FALSE)
     }
     admm.maxiter <- .validate.ssrhe.positive.integer(admm.maxiter, "admm.maxiter")
     admm.abstol <- .validate.ssrhe.nonnegative.scalar(admm.abstol, "admm.abstol")
@@ -3633,6 +3677,7 @@ refit.ssrhe.hessian.l1.fit <- function(
         admm.maxiter = admm.maxiter,
         admm.abstol = admm.abstol,
         admm.reltol = admm.reltol,
+        admm.adaptive.rho = admm.adaptive.rho,
         verbose = isTRUE(verbose)
     )
 }
@@ -3642,6 +3687,16 @@ refit.ssrhe.hessian.l1.fit <- function(
 #' @export
 print.ssrhe.hessian.l1.fit <- function(x, ...) {
     cat("SSRHE Hessian L1 regression fit\n")
+    if (!is.null(x$solver$status)) {
+        cat("  solver:", x$solver$backend, "\n")
+        cat("  status:", x$solver$status,
+            if (identical(x$solver$converged, FALSE)) "(NOT CONVERGED)" else "",
+            "\n")
+        if (length(x$solver$warnings)) {
+            cat("  backend warnings:", length(x$solver$warnings),
+                "(see solver$warnings)\n")
+        }
+    }
     cat("  responses:", x$n.responses, "\n")
     cat("  lambda.selection:", x$lambda.selection, "\n")
     cat("  lambda:", format(x$lambda, digits = 4), "\n")

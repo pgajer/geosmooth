@@ -18,7 +18,7 @@
   selection = c("min", "one.se"),
   solver = c("genlasso", "admm", "auto"),
   row.scaling = c("none", "l2"),
-  admm.rho = 1,
+  admm.rho = NULL,
   admm.maxiter = 2000L,
   admm.abstol = 1e-04,
   admm.reltol = 0.001,
@@ -29,6 +29,7 @@
   btol = 1e-07,
   eps = 1e-04,
   verbose = FALSE,
+  admm.adaptive.rho = TRUE,
   ...
 )
 }
@@ -72,10 +73,19 @@ when path extraction produces an error or non-finite fitted values.}
 solving. \code{"l2"} scales nonzero rows of \eqn{A} to unit Euclidean norm.}
 
 \item{admm.rho, admm.maxiter, admm.abstol, admm.reltol}{ADMM controls used when
-\code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.}
+\code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.
+\code{admm.rho = NULL} chooses an initial algorithm penalty of
+\code{1 / max(1, mean(rowSums(D^2)))}, where \code{D} is the penalty
+operator after any requested row scaling. A positive numeric value sets
+the initial penalty explicitly. This is separate from statistical
+regularization \code{lambda.grid}. The iteration limit is a hard cap.}
 
 \item{maxsteps, minlam, approx, rtol, btol, eps, verbose}{Controls passed to
 \pkg{genlasso}.}
+
+\item{admm.adaptive.rho}{Logical; adapt the algorithm penalty during the
+first 1000 iterations by balancing tolerance-normalized primal and dual
+residuals. Set \code{FALSE} to hold the initial penalty fixed.}
 
 \item{...}{Additional arguments are not currently supported.}
 }

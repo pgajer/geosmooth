@@ -35,7 +35,7 @@ fit.ssrhe.hessian.l1.regression(
   normal.equations.max.condition = 10000,
   solver = c("genlasso", "admm", "auto"),
   row.scaling = c("none", "l2"),
-  admm.rho = 1,
+  admm.rho = NULL,
   admm.maxiter = 2000L,
   admm.abstol = 1e-04,
   admm.reltol = 0.001,
@@ -50,7 +50,8 @@ fit.ssrhe.hessian.l1.regression(
   support.cv.max.candidates = 8L,
   return.local.diagnostics = FALSE,
   return.timing = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  admm.adaptive.rho = TRUE
 )
 }
 \arguments{
@@ -168,7 +169,12 @@ when path extraction produces an error or non-finite fitted values.}
 solving. \code{"l2"} scales nonzero rows of \eqn{A} to unit Euclidean norm.}
 
 \item{admm.rho, admm.maxiter, admm.abstol, admm.reltol}{ADMM controls used when
-\code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.}
+\code{solver = "admm"} or when \code{solver = "auto"} falls back to ADMM.
+\code{admm.rho = NULL} chooses an initial algorithm penalty of
+\code{1 / max(1, mean(rowSums(D^2)))}, where \code{D} is the penalty
+operator after any requested row scaling. A positive numeric value sets
+the initial penalty explicitly. This is separate from statistical
+regularization \code{lambda.grid}. The iteration limit is a hard cap.}
 
 \item{maxsteps, minlam, approx, rtol, btol, eps, verbose}{Controls passed to
 \pkg{genlasso}.}
@@ -199,6 +205,10 @@ validation, neighborhood/support construction, native local operator
 construction, optional local diagnostics, sparse matrix assembly, and
 output finalization. For adaptive-radius neighborhoods, subphase timings
 are also attached in \code{neighborhoods$timing}.}
+
+\item{admm.adaptive.rho}{Logical; adapt the algorithm penalty during the
+first 1000 iterations by balancing tolerance-normalized primal and dual
+residuals. Set \code{FALSE} to hold the initial penalty fixed.}
 }
 \value{
 A list of class \code{"ssrhe.hessian.l1.fit"} containing fitted
@@ -239,6 +249,32 @@ lambda values directly without computing a generalized-lasso path, and
 returns non-finite fitted values. Cross-validation removes held-out labels
 from the data-fit term by setting their weights to zero, then scores
 predictions on those held-out labels.
+
+ADMM uses proximal numerical stabilization, which does not add a ridge
+penalty to the requested objective. Convergence requires primal feasibility,
+the dual stopping residual, and stationarity of the original weighted L1
+objective to meet their reported tolerances. A finite fixed-lambda iterate
+that reaches its cap is returned with a warning and
+\code{solver$converged = FALSE}; it is not a completed fit. Inspect
+\code{solver$admm} before using it, and consider a larger iteration limit
+or an adaptive penalty. Non-finite selected fits are errors.
+
+CV candidates are eligible only when every fold has an acceptable solve.
+ADMM iterates that do not converge are not scored. The CV result retains
+\code{fold.status}, \code{fold.converged}, \code{fold.diagnostics},
+\code{n.successful.folds}, and \code{eligible}. If no candidate qualifies,
+an error of class \code{ssrhe_l1_cv_error} retains fold diagnostics for
+inspection with \code{tryCatch}. A selected full-data ADMM fit that fails
+to converge is also an error in CV mode.
+
+For \pkg{genlasso}, \code{solver$status = "path_available"} means that
+coefficients were available at the requested penalty, not that an ADMM
+convergence certificate was computed; \code{solver$converged} is \code{NA}.
+Backend warnings, including its numerical ridge for underdetermined designs,
+are retained in \code{solver$warnings} and CV fold diagnostics.
+With \code{row.scaling = "l2"}, the reported objective uses the scaled
+penalty; \code{energies$penalty.l1} is that penalty norm, while
+\code{energies$hessian.l1} retains the unscaled operator norm.
 
 With \code{support.selection = "cv"}, each adaptive-radius support candidate
 builds a fresh SSRHE operator and runs the usual lambda CV with shared fold

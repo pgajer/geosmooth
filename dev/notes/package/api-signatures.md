@@ -181,7 +181,7 @@ fit.ps.lps(X, y, foldid = NULL, support.size = NULL, degree = 2L, kernel = "gaus
 
 ### fit.pttf.trend.filtering
 
-33 arguments. Source: [R/pttf_fit.R](../../../R/pttf_fit.R#L65).
+34 arguments. Source: [R/pttf_fit.R](../../../R/pttf_fit.R#L70).
 
 ```r
 fit.pttf.trend.filtering(geometry = NULL, operator = NULL, X = NULL, y, derivative.order = 3L, penalty = c("l1",
@@ -190,8 +190,9 @@ fit.pttf.trend.filtering(geometry = NULL, operator = NULL, X = NULL, y, derivati
         "auto"), solver = c("genlasso", "admm", "auto"), operator.row.policy = c("all", "drop.line.boundary",
         "diagnostic.only"), line.order = NULL, boundary.trim = NULL, row.mass.rule = c("none",
         "node.mass"), row.normalize = c("none", "l2"), weights = NULL, maxsteps = 2000L,
-    minlam = 0, approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, admm.rho = 1, admm.maxiter = 2000L,
-    admm.abstol = 1e-04, admm.reltol = 0.001, verbose = FALSE, ...)
+    minlam = 0, approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, admm.rho = NULL,
+    admm.maxiter = 2000L, admm.abstol = 1e-04, admm.reltol = 0.001, verbose = FALSE, admm.adaptive.rho = TRUE,
+    ...)
 ```
 
 ### fit.slpl.tf
@@ -208,7 +209,7 @@ fit.slpl.tf(X = NULL, y, operator = NULL, lambda1 = NULL, lambda2 = 0, lambda1.g
 
 ### fit.ssrhe.hessian.l1.regression
 
-46 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2660).
+47 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2694).
 
 ```r
 fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL, lambda.selection = c("cv", "fixed"),
@@ -219,11 +220,11 @@ fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL,
     support.topup = c("nearest", "none"), tangent.dim.rule = c("fixed", "eigen.cumulative"),
     eigen.tolerance = 0.95, derivative.order = 2L, pinv.tol = sqrt(.Machine$double.eps),
     local.solver = c("auto", "normal.equations", "svd", "qr"), normal.equations.max.condition = 10000,
-    solver = c("genlasso", "admm", "auto"), row.scaling = c("none", "l2"), admm.rho = 1,
+    solver = c("genlasso", "admm", "auto"), row.scaling = c("none", "l2"), admm.rho = NULL,
     admm.maxiter = 2000L, admm.abstol = 1e-04, admm.reltol = 0.001, maxsteps = 2000L, minlam = 0,
     approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, support.selection = c("rule",
         "cv"), support.grid = NULL, support.cv.max.candidates = 8L, return.local.diagnostics = FALSE,
-    return.timing = FALSE, verbose = FALSE)
+    return.timing = FALSE, verbose = FALSE, admm.adaptive.rho = TRUE)
 ```
 
 ### fit.ssrhe.hessian.regression

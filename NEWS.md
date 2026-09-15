@@ -1,5 +1,22 @@
 # geosmooth 0.2.0
 
+## Solver reliability
+
+- Hessian L1 ADMM uses an operator-scale initial penalty by default
+  (`admm.rho = NULL`) and adapts it during its initial iterations. An explicit
+  positive `admm.rho` still sets the initial value; use
+  `admm.adaptive.rho = FALSE` to hold it fixed. Numerical stabilization now
+  preserves the requested objective instead of adding an unintended ridge.
+- ADMM convergence also checks stationarity of the original objective.
+  Incomplete fixed fits warn and print their status. CV excludes candidates
+  with any unsuccessful fold and errors if none qualify or the selected
+  full-data ADMM refit is incomplete. Fold diagnostics are retained, including
+  on the no-eligible-candidate error. Generalized-lasso warnings are retained
+  without claiming an ADMM convergence certificate for that backend.
+- The shared PTTF L1 solver receives the same safeguards. Hessian L1 objective
+  reporting now accounts for the penalty actually used with row scaling;
+  the unscaled Hessian norm remains available separately.
+
 ## API changes
 
 This release reduces the explicit public API from 93 to 60 exported functions.
