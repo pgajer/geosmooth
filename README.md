@@ -50,7 +50,10 @@ vignette("function-guide", package = "geosmooth")
 Development CI uses that same dgraphs revision. The separate **CRAN dependency
 check** workflow installs dependencies exclusively from CRAN and must pass
 before submission. A compatible dgraphs release is still a prerequisite for
-releasing geosmooth 0.2.0.
+releasing geosmooth 0.2.0. Current R-devel also exposes a known dgraphs
+synthetic RNG-state compatibility issue; use an R release build until that
+upstream fix is integrated. The development checks do not establish CRAN-only
+release readiness.
 
 ## Quick Start
 

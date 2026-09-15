@@ -287,4 +287,3 @@ print.local_likelihood <- function(x, ...) {
     print(.geosmooth.fit.summary(x))
     invisible(x)
 }
-
