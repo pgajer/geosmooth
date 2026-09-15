@@ -380,10 +380,10 @@ supplied by dgraphs</a></li>
 </div>
 
 <style>
-body { max-width: 1120px; }
 td, th { vertical-align: top; }
 td code { white-space: normal; overflow-wrap: anywhere; }
 </style>
+<style>body { max-width: 1120px; }</style>
 <p><code>geosmooth</code> estimates a response or probability mass on
 coordinate data and graphs. Start with the task you want to perform,
 then choose a method. You do not need to learn the operator constructors
@@ -415,76 +415,76 @@ points.</p>
 <tbody>
 <tr class="odd">
 <td>Regress a response on coordinates</td>
-<td><code>fit.lps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.lps.html"><code>fit.lps()</code></a></td>
 <td>Local polynomial smoothing; selects neighborhood size, degree, and
 kernel by cross-validation.</td>
 </tr>
 <tr class="even">
 <td>Average predictions from overlapping local models</td>
-<td><code>fit.malps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.malps.html"><code>fit.malps()</code></a></td>
 <td>Model-averaged local polynomial smoothing; supports coordinate and
 graph-geodesic neighborhoods.</td>
 </tr>
 <tr class="odd">
 <td>Couple local polynomial predictions across overlaps</td>
-<td><code>fit.ps.lps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html"><code>fit.ps.lps()</code></a></td>
 <td>Prediction-synchronized local polynomial smoothing; experimental R
 reference implementation.</td>
 </tr>
 <tr class="even">
 <td>Fit a locally adaptive trend with a sparse difference penalty</td>
-<td><code>fit.lpl.tf()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.lpl.tf.html"><code>fit.lpl.tf()</code></a></td>
 <td>Local polynomial lifting trend filtering; requires optional package
 <code>genlasso</code>.</td>
 </tr>
 <tr class="odd">
 <td>Add synchronization to a lifting trend filter</td>
-<td><code>fit.slpl.tf()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.slpl.tf.html"><code>fit.slpl.tf()</code></a></td>
 <td>Synchronized local polynomial lifting trend filtering; adds a
 second, quadratic penalty.</td>
 </tr>
 <tr class="even">
 <td>Smooth a response already attached to graph vertices</td>
-<td><code>fit.metric.graph.lowpass()</code> or
-<code>fit.graph.trend.filtering()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html"><code>fit.metric.graph.lowpass()</code></a>
+or <a href="https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html"><code>fit.graph.trend.filtering()</code></a></td>
 <td>Choose spectral low-pass smoothing or a graph-difference penalty.
 Edge-weight meanings differ; see below.</td>
 </tr>
 <tr class="odd">
 <td>Penalize local second derivatives on a point cloud</td>
-<td><code>fit.ssrhe.hessian.regression()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.regression.html"><code>fit.ssrhe.hessian.regression()</code></a></td>
 <td>Hessian-energy regression, following semi-supervised regression
 using Hessian energy (SSRHE); use <code>lambda.selection = &quot;cv&quot;</code>
 or <code>&quot;gcv&quot;</code> to select penalties.</td>
 </tr>
 <tr class="even">
 <td>Use an absolute-value Hessian penalty</td>
-<td><code>fit.ssrhe.hessian.l1.regression()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.l1.regression.html"><code>fit.ssrhe.hessian.l1.regression()</code></a></td>
 <td>Different regularization from quadratic Hessian energy; has its own
 solver and tuning controls.</td>
 </tr>
 <tr class="odd">
 <td>Interpolate graph values while fixing a region boundary</td>
-<td><code>perform.harmonic.smoothing()</code></td>
-<td>Iterative harmonic relaxation; <code>harmonic.smoother()</code> also
-records extrema and topology diagnostics.</td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/perform.harmonic.smoothing.html"><code>perform.harmonic.smoothing()</code></a></td>
+<td>Iterative harmonic relaxation; <a href="https://pgajer.github.io/geosmooth/reference/harmonic.smoother.html"><code>harmonic.smoother()</code></a>
+also records extrema and topology diagnostics.</td>
 </tr>
 <tr class="even">
 <td>Estimate probability mass over a fixed support</td>
-<td><code>fit.density()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.density.html"><code>fit.density()</code></a></td>
 <td>Takes nonnegative counts or masses; returns mass over the rows of
 <code>X</code>.</td>
 </tr>
 <tr class="odd">
 <td>Estimate where one subject visits that support</td>
-<td><code>fit.subject.od()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.subject.od.html"><code>fit.subject.od()</code></a></td>
 <td>Takes visit indices, including repeats; handles occupation-density
 fitting and optional visit-level validation.</td>
 </tr>
 <tr class="even">
 <td>Build reproducible synthetic examples</td>
-<td><code>synthetic.spec()</code> then
-<code>materialize.synthetic()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.spec.html"><code>synthetic.spec()</code></a>
+then <a href="https://pgajer.github.io/geosmooth/reference/materialize.synthetic.html"><code>materialize.synthetic()</code></a></td>
 <td>Combine geometry, sampling, truth, and response noise.</td>
 </tr>
 </tbody>
@@ -520,9 +520,9 @@ changing numerical controls.</p>
 parameters. A support is the neighborhood used for a local fit; a grid
 lists candidate values. The local support size and polynomial degree
 jointly determine whether a local fit has enough observations. For
-grouped observations, use <code>lps.grouped.foldid()</code> to keep each
-group in one fold. Use <code>lps.nested.cv()</code> when you need an
-outer assessment of the whole tuning procedure.</p>
+grouped observations, use <a href="https://pgajer.github.io/geosmooth/reference/lps.grouped.foldid.html"><code>lps.grouped.foldid()</code></a>
+to keep each group in one fold. Use <a href="https://pgajer.github.io/geosmooth/reference/lps.nested.cv.html"><code>lps.nested.cv()</code></a>
+when you need an outer assessment of the whole tuning procedure.</p>
 <div id="prediction-and-reusable-fits" class="section level3">
 <h3>Prediction and reusable fits</h3>
 <table>
@@ -703,12 +703,12 @@ help lives in dgraphs.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>refit()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/refit.html"><code>refit()</code></a></td>
 <td>Refit a supported model with a new response using stored geometry
 and method-specific tuning controls.</td>
 </tr>
 <tr class="even">
-<td><code>smoother.matrix()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/smoother.matrix.html"><code>smoother.matrix()</code></a></td>
 <td>Extract the conditional linear map for a supported LPS or MALPS
 fit.</td>
 </tr>
@@ -730,27 +730,27 @@ fit.</td>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>fit.lps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.lps.html"><code>fit.lps()</code></a></td>
 <td>Fit and tune local polynomial regression, including supported
 Gaussian and binary response modes.</td>
 </tr>
 <tr class="even">
-<td><code>fit.malps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.malps.html"><code>fit.malps()</code></a></td>
 <td>Fit and optionally tune a model-averaged collection of local
 polynomial models.</td>
 </tr>
 <tr class="odd">
-<td><code>fit.ps.lps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html"><code>fit.ps.lps()</code></a></td>
 <td>Fit experimental local polynomial models whose predictions are
 synchronized on overlaps.</td>
 </tr>
 <tr class="even">
-<td><code>fit.chart.kernel()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.chart.kernel.html"><code>fit.chart.kernel()</code></a></td>
 <td>Fit a chart-kernel field, with optional reference-measure quadrature
 weights.</td>
 </tr>
 <tr class="odd">
-<td><code>fit.local.likelihood()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.local.likelihood.html"><code>fit.local.likelihood()</code></a></td>
 <td>Fit local density or Bernoulli likelihood models; returns a fitted
 field.</td>
 </tr>
@@ -772,31 +772,31 @@ field.</td>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>lps.grouped.foldid()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/lps.grouped.foldid.html"><code>lps.grouped.foldid()</code></a></td>
 <td>Assign whole groups of observations to validation folds.</td>
 </tr>
 <tr class="even">
-<td><code>lps.nested.cv()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/lps.nested.cv.html"><code>lps.nested.cv()</code></a></td>
 <td>Assess a tuned local polynomial smoother using outer and inner
 validation folds.</td>
 </tr>
 <tr class="odd">
-<td><code>lps.backend.diagnostics()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/lps.backend.diagnostics.html"><code>lps.backend.diagnostics()</code></a></td>
 <td>Inspect the computational backend, chart dimensions, and selected
 controls.</td>
 </tr>
 <tr class="even">
-<td><code>lps.pointwise.band()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/lps.pointwise.band.html"><code>lps.pointwise.band()</code></a></td>
 <td>Calculate pointwise uncertainty for a supported fixed-configuration
 Gaussian fit.</td>
 </tr>
 <tr class="odd">
-<td><code>malps.gcv()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/malps.gcv.html"><code>malps.gcv()</code></a></td>
 <td>Calculate generalized cross-validation and optional leave-one-out
 diagnostics for a stored model-averaged fit.</td>
 </tr>
 <tr class="even">
-<td><code>bootstrap.malps()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/bootstrap.malps.html"><code>bootstrap.malps()</code></a></td>
 <td>Measure refit variability by bootstrap case weights while holding
 the selected geometry fixed.</td>
 </tr>
@@ -830,21 +830,21 @@ for a full data-selected pipeline.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>lpl.tf.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/lpl.tf.operator.html"><code>lpl.tf.operator()</code></a></td>
 <td>Build a local polynomial residual operator.</td>
 </tr>
 <tr class="even">
-<td><code>fit.lpl.tf()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.lpl.tf.html"><code>fit.lpl.tf()</code></a></td>
 <td>Fit a trend filter with an absolute-value penalty on those
 residuals.</td>
 </tr>
 <tr class="odd">
-<td><code>slpl.tf.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/slpl.tf.operator.html"><code>slpl.tf.operator()</code></a></td>
 <td>Build the residual operator together with an overlap synchronization
 operator.</td>
 </tr>
 <tr class="even">
-<td><code>fit.slpl.tf()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.slpl.tf.html"><code>fit.slpl.tf()</code></a></td>
 <td>Fit the residual penalty plus quadratic synchronization.</td>
 </tr>
 </tbody>
@@ -870,40 +870,40 @@ supported prediction domain is the training set.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>fit.metric.graph.lowpass()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html"><code>fit.metric.graph.lowpass()</code></a></td>
 <td>Select a graph-spectral smoothing parameter by GCV and fit a
 response.</td>
 </tr>
 <tr class="even">
-<td><code>metric.graph.lowpass.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.operator.html"><code>metric.graph.lowpass.operator()</code></a></td>
 <td>Convert metric edge lengths to conductances and construct a graph
 Laplacian.</td>
 </tr>
 <tr class="odd">
-<td><code>metric.graph.lowpass.basis()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.basis.html"><code>metric.graph.lowpass.basis()</code></a></td>
 <td>Construct and retain graph eigenvectors for repeated smoothing.</td>
 </tr>
 <tr class="even">
-<td><code>apply.metric.graph.lowpass.path()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/apply.metric.graph.lowpass.path.html"><code>apply.metric.graph.lowpass.path()</code></a></td>
 <td>Apply a supplied basis over a parameter grid; retain the candidate
 fits.</td>
 </tr>
 <tr class="odd">
-<td><code>metric.graph.heat.eta.grid()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/metric.graph.heat.eta.grid.html"><code>metric.graph.heat.eta.grid()</code></a></td>
 <td>Choose heat-time candidates using spectral information.</td>
 </tr>
 <tr class="even">
-<td><code>metric.graph.heat.extend.lower()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/metric.graph.heat.extend.lower.html"><code>metric.graph.heat.extend.lower()</code></a></td>
 <td>Propose a smaller heat time for an external search, subject to
 resolution safeguards.</td>
 </tr>
 <tr class="odd">
-<td><code>graph.trend.filtering.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/graph.trend.filtering.operator.html"><code>graph.trend.filtering.operator()</code></a></td>
 <td>Construct graph differences or experimental path divided
 differences.</td>
 </tr>
 <tr class="even">
-<td><code>fit.graph.trend.filtering()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html"><code>fit.graph.trend.filtering()</code></a></td>
 <td>Fit an absolute-value graph-difference penalty; requires
 <code>genlasso</code>.</td>
 </tr>
@@ -938,22 +938,22 @@ extending a path yourself.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>ssrhe.hessian.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/ssrhe.hessian.operator.html"><code>ssrhe.hessian.operator()</code></a></td>
 <td>Estimate local derivative operators and Hessian-energy matrices from
 point-cloud neighborhoods.</td>
 </tr>
 <tr class="even">
-<td><code>fit.ssrhe.hessian.regression()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.regression.html"><code>fit.ssrhe.hessian.regression()</code></a></td>
 <td>Fit quadratic Hessian-energy regression using fixed penalties, label
 CV, or GCV; optionally select supports.</td>
 </tr>
 <tr class="odd">
-<td><code>fit.ssrhe.hessian.l1.regression()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.l1.regression.html"><code>fit.ssrhe.hessian.l1.regression()</code></a></td>
 <td>Fit an absolute-value derivative penalty with fixed or CV-selected
 regularization.</td>
 </tr>
 <tr class="even">
-<td><code>ssrhe.support.grid()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/ssrhe.support.grid.html"><code>ssrhe.support.grid()</code></a></td>
 <td>Build candidate adaptive-radius support profiles for tuning.</td>
 </tr>
 </tbody>
@@ -1009,17 +1009,17 @@ work.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>perform.harmonic.smoothing()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/perform.harmonic.smoothing.html"><code>perform.harmonic.smoothing()</code></a></td>
 <td>Relax interior values while holding the region boundary fixed;
 return convergence diagnostics.</td>
 </tr>
 <tr class="even">
-<td><code>harmonic.smoother()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/harmonic.smoother.html"><code>harmonic.smoother()</code></a></td>
 <td>Run relaxation while recording extrema, prediction history, and
 topology stability.</td>
 </tr>
 <tr class="odd">
-<td><code>get.region.boundary()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/get.region.boundary.html"><code>get.region.boundary()</code></a></td>
 <td>Find region vertices with a neighbor outside the region.</td>
 </tr>
 </tbody>
@@ -1027,10 +1027,19 @@ topology stability.</td>
 <p>Use <code>print()</code>, <code>summary()</code>, and
 <code>plot()</code> on the tracked <code>harmonic_smoother</code>
 object. The two smoothing functions currently differ in boundary-free
-behavior and convergence checks, so they should not be treated as
-aliases. In the current native implementation, boundary vertices are
-defined by a neighbor outside the region; a degree-one vertex inside a
-whole-graph region is not automatically fixed.</p>
+behavior so they should not be treated as aliases. In the current native
+implementation, boundary vertices are defined by a neighbor outside the
+region; a degree-one vertex inside a whole-graph region is not
+automatically fixed. The basic function returns unchanged input with
+<code>status = &quot;no_boundary&quot;</code> when no boundary exists; the tracked
+function still runs relaxation. Both require small value changes and a
+small harmonic residual for numerical convergence. Extrema stability is
+a separate diagnostic: <code>stability_detected</code> records whether a
+window was found, and <code>stable_iteration</code> is <code>NA</code>
+otherwise. On an alternating path, recording every second iteration can
+appear stable while the values continue to oscillate. Check
+<code>converged</code> and <code>max_residual</code>; a stability
+detection does not establish optimal smoothing.</p>
 </div>
 <div id="probability-mass-and-subject-occupation" class="section level3">
 <h3>Probability mass and subject occupation</h3>
@@ -1047,17 +1056,17 @@ whole-graph region is not automatically fixed.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>fit.density()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.density.html"><code>fit.density()</code></a></td>
 <td>Fit empirical or graph-random-walk mass estimates from nonnegative
 weights on a support.</td>
 </tr>
 <tr class="even">
-<td><code>normalize.density()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/normalize.density.html"><code>normalize.density()</code></a></td>
 <td>Convert a numeric field or supported fitted object to probability
 mass, with normalization diagnostics.</td>
 </tr>
 <tr class="odd">
-<td><code>fit.subject.od()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.subject.od.html"><code>fit.subject.od()</code></a></td>
 <td>Convert repeated visit indices into counts and fit a
 subject-occupation distribution.</td>
 </tr>
@@ -1074,16 +1083,16 @@ subject-occupation distribution.</td>
 <p>Here the third support point receives twice as many visits as the
 first or sixth. <code>rho</code> is a probability <strong>mass</strong>
 vector over support points, summing to one; it is not automatically a
-continuous density per unit volume. <code>normalize.density()</code> is
-an explicit conversion step, not another regression fit. Inspect its
+continuous density per unit volume. <a href="https://pgajer.github.io/geosmooth/reference/normalize.density.html"><code>normalize.density()</code></a>
+is an explicit conversion step, not another regression fit. Inspect its
 clipping and normalization accounting when the source field contains
 negative values.</p>
-<p><code>fit.subject.od()</code> offers more methods than
-<code>fit.density()</code>: it can fit ordinary smoothers and normalize
-their output. Visit-level CV holds out visits and uses
-<code>visit.foldid</code>; ordinary regression CV holds out support rows
-and uses <code>foldid</code> (or the method-specific spelling). Keep
-these validation units distinct.</p>
+<p><a href="https://pgajer.github.io/geosmooth/reference/fit.subject.od.html"><code>fit.subject.od()</code></a>
+offers more methods than <a href="https://pgajer.github.io/geosmooth/reference/fit.density.html"><code>fit.density()</code></a>:
+it can fit ordinary smoothers and normalize their output. Visit-level CV
+holds out visits and uses <code>visit.foldid</code>; ordinary regression
+CV holds out support rows and uses <code>foldid</code> (or the
+method-specific spelling). Keep these validation units distinct.</p>
 </div>
 <div id="experimental-transport-methods" class="section level3">
 <h3>Experimental transport methods</h3>
@@ -1100,26 +1109,26 @@ these validation units distinct.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>pttf.geometry()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/pttf.geometry.html"><code>pttf.geometry()</code></a></td>
 <td>Build local tangent frames and their transport across a graph.</td>
 </tr>
 <tr class="even">
-<td><code>pttf.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/pttf.operator.html"><code>pttf.operator()</code></a></td>
 <td>Construct parallel-transport trend-filtering differences from that
 geometry.</td>
 </tr>
 <tr class="odd">
-<td><code>pttf.operator.filter.rows()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/pttf.operator.filter.rows.html"><code>pttf.operator.filter.rows()</code></a></td>
 <td>Select operator rows while maintaining provenance and related
 operator data.</td>
 </tr>
 <tr class="even">
-<td><code>fit.pttf.trend.filtering()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/fit.pttf.trend.filtering.html"><code>fit.pttf.trend.filtering()</code></a></td>
 <td>Fit a parallel-transport trend filter with an absolute-value or
 quadratic penalty.</td>
 </tr>
 <tr class="odd">
-<td><code>transported.graph.hessian.operator()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/transported.graph.hessian.operator.html"><code>transported.graph.hessian.operator()</code></a></td>
 <td>Build a separate experimental graph Hessian diagnostic with several
 direction-matching rules.</td>
 </tr>
@@ -1129,8 +1138,7 @@ direction-matching rules.</td>
 derivatives. These experimental interfaces expose geometry, operator,
 and solver diagnostics deliberately. The transported graph Hessian
 constructor is a separate diagnostic workflow; it does not fit a
-response and is not an interchangeable spelling of
-<code>pttf.operator()</code>.</p>
+response and is not an interchangeable spelling of <a href="https://pgajer.github.io/geosmooth/reference/pttf.operator.html"><code>pttf.operator()</code></a>.</p>
 </div>
 <div id="synthetic-datasets-specifications-responses-and-reproducibility" class="section level3">
 <h3>Synthetic datasets: specifications, responses, and
@@ -1148,101 +1156,100 @@ reproducibility</h3>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>synthetic.spec()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.spec.html"><code>synthetic.spec()</code></a></td>
 <td>Combine geometry, sampling, truth, and response descriptors without
 drawing data.</td>
 </tr>
 <tr class="even">
-<td><code>materialize.synthetic()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/materialize.synthetic.html"><code>materialize.synthetic()</code></a></td>
 <td>Draw a dataset from a specification with an explicit seed and
 random-number policy.</td>
 </tr>
 <tr class="odd">
-<td><code>materialize.synthetic.instance()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/materialize.synthetic.instance.html"><code>materialize.synthetic.instance()</code></a></td>
 <td>Reproduce a registered frozen instance and optionally validate its
 checksum.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.registry.ids()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.registry.ids.html"><code>synthetic.registry.ids()</code></a></td>
 <td>List maintained recipe identifiers.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.registry.spec()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.registry.spec.html"><code>synthetic.registry.spec()</code></a></td>
 <td>Look up a recipe specification; some recipe families allow parameter
 overrides.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.registry.seed()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.registry.seed.html"><code>synthetic.registry.seed()</code></a></td>
 <td>Reproduce legacy SSRHE recipe seeds; this is not a seed generator
 for every registry family.</td>
 </tr>
 <tr class="odd">
-<td><code>validate.synthetic.dataset()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/validate.synthetic.dataset.html"><code>validate.synthetic.dataset()</code></a></td>
 <td>Check the structure and consistency of a materialized dataset.</td>
 </tr>
 <tr class="even">
-<td><code>compare.synthetic.dataset()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/compare.synthetic.dataset.html"><code>compare.synthetic.dataset()</code></a></td>
 <td>Compare two datasets with explicit numerical tolerances.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.dataset.checksum()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.dataset.checksum.html"><code>synthetic.dataset.checksum()</code></a></td>
 <td>Compute a content checksum for reproducibility checks.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.sampling.stratified()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.sampling.stratified.html"><code>synthetic.sampling.stratified()</code></a></td>
 <td>Describe allocation between the supported synthetic strata.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.truth.named()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.truth.named.html"><code>synthetic.truth.named()</code></a></td>
 <td>Select a named truth specification with optional parameters.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.truth.polynomial()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.truth.polynomial.html"><code>synthetic.truth.polynomial()</code></a></td>
 <td>Specify polynomial truth in the chosen evaluation coordinates.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.truth.gaussian.mixture()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.truth.gaussian.mixture.html"><code>synthetic.truth.gaussian.mixture()</code></a></td>
 <td>Specify Gaussian-mixture truth using centers, scales, and
 weights.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.truth.occupation.mixture()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.truth.occupation.mixture.html"><code>synthetic.truth.occupation.mixture()</code></a></td>
 <td>Specify occupation-mixture truth with covariance and probability
 controls.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.truth.logit()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.truth.logit.html"><code>synthetic.truth.logit()</code></a></td>
 <td>Specify a logit-based truth with prevalence and clipping
 controls.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.response.gaussian()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.response.gaussian.html"><code>synthetic.response.gaussian()</code></a></td>
 <td>Specify Gaussian response noise with a supplied standard
 deviation.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.response.heteroskedastic.gaussian()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.response.heteroskedastic.gaussian.html"><code>synthetic.response.heteroskedastic.gaussian()</code></a></td>
 <td>Specify Gaussian noise whose scale depends on truth.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.response.clustered.gaussian()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.response.clustered.gaussian.html"><code>synthetic.response.clustered.gaussian()</code></a></td>
 <td>Specify within-cluster correlated Gaussian noise.</td>
 </tr>
 <tr class="odd">
-<td><code>synthetic.response.laplace.outlier()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.response.laplace.outlier.html"><code>synthetic.response.laplace.outlier()</code></a></td>
 <td>Specify Laplace noise and an outlier component.</td>
 </tr>
 <tr class="even">
-<td><code>synthetic.response.bernoulli()</code></td>
+<td><a href="https://pgajer.github.io/geosmooth/reference/synthetic.response.bernoulli.html"><code>synthetic.response.bernoulli()</code></a></td>
 <td>Specify binary response draws and optional positive-count
 requirements.</td>
 </tr>
 </tbody>
 </table>
-<p>The constructors create specifications;
-<code>materialize.synthetic()</code> performs random draws. Use
-<code>print()</code>, <code>plot()</code>, and
-<code>as.data.frame()</code> on a resulting
+<p>The constructors create specifications; <a href="https://pgajer.github.io/geosmooth/reference/materialize.synthetic.html"><code>materialize.synthetic()</code></a>
+performs random draws. Use <code>print()</code>, <code>plot()</code>,
+and <code>as.data.frame()</code> on a resulting
 <code>synthetic_dataset</code>. For complete examples, read
 <code>vignette(&quot;synthetic-datasets&quot;, package = &quot;geosmooth&quot;)</code>. Use
 the named-stream random-number policy for new work; historical seed and
@@ -1395,6 +1402,17 @@ choices.</p>
 </div>
 <div id="finding-detailed-help" class="section level2">
 <h2>Finding detailed help</h2>
+<p>Function links in this guide open the rendered online reference. When
+working without an internet connection, the same help is installed with
+the package: use <code>help(&quot;fit.lps&quot;, package = &quot;geosmooth&quot;)</code>,
+replacing <code>fit.lps</code> with the function name. Start at
+<code>help(&quot;geosmooth-package&quot;, package = &quot;geosmooth&quot;)</code> for
+clickable task links in installed help, or use
+<code>browseVignettes(&quot;geosmooth&quot;)</code> for the installed HTML
+guides.</p>
+<p>The <a href="synthetic-datasets.html">synthetic datasets guide</a>
+develops reproducible geometry, sampling, truth, and response
+specifications in more detail.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">help</span>(<span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">help</span>(<span class="st">&quot;geosmooth-package&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">help</span>(<span class="st">&quot;fit.lps&quot;</span>, <span class="at">package =</span> <span class="st">&quot;geosmooth&quot;</span>)</span>

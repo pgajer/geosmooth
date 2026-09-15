@@ -51,6 +51,9 @@ for name in exports:
         html = (root / index).read_text()
         if f'{aliases[name]}.html' not in html:
             errors.append(f'{index}: missing help link for {name} ({expected})')
+alphabetical = (root / 'reference/alphabetical.html').read_text()
+if 'Functions A–Z' not in alphabetical or 'Shared model operations' in alphabetical:
+    errors.append('Alphabetical index did not replace the task groups')
 if errors:
     raise SystemExit('\n'.join(errors))
 print(f'Validated {len(pages)} HTML pages and reference links for all {len(exports)} exports.')
