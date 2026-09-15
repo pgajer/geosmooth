@@ -25,6 +25,8 @@ pages = {p.resolve(): Page(p) for p in root.rglob('*.html')}
 errors = []
 for path, page in pages.items():
     for link in page.links:
+        if link.startswith(('https://rdrr.io/pkg/dgraphs/', 'https://rdrr.io/cran/dgraphs/')):
+            errors.append(f'{path.relative_to(root)}: unavailable development-dependency help {link}')
         if link.startswith(site):
             target = urlsplit(link[len(site):])
             resolved = (root / unquote(target.path)).resolve()
