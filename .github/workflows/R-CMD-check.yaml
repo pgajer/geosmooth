@@ -42,7 +42,7 @@ jobs:
         with:
           extra-packages: |
             any::rcmdcheck
-            github::pgajer/dgraphs@22c0f2b7b1c53af5aabf1f19e6c390ce343d87fe
+            github::pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c
           needs: check
 
       - name: Check documentation sources without rewriting them

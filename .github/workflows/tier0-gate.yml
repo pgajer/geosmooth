@@ -36,7 +36,7 @@ jobs:
           extra-packages: |
             any::pkgload
             any::testthat
-            github::pgajer/dgraphs@22c0f2b7b1c53af5aabf1f19e6c390ce343d87fe
+            github::pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c
 
       - name: Run Tier-0 execution-artifact harness
         run: bash dev/methods/lps/ci/run_tier0_execution_artifact.sh
