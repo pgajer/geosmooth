@@ -36,6 +36,7 @@ jobs:
           extra-packages: |
             any::pkgload
             any::testthat
+            github::pgajer/ivue@a952ab6816636a19f2038ba0709181608b71770d
             github::pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c
 
       - name: Run Tier-0 execution-artifact harness
