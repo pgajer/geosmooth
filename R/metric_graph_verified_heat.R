@@ -23,32 +23,72 @@
     invisible(TRUE)
 }
 
-.metric.graph.gcv.tuning <- function(scores, status, grid) {
+.metric.graph.gcv.tuning <- function(scores, status, grid,
+                                     reference.scores = scores,
+                                     structural.flat.reason = NULL) {
     use <- which(status == "valid" & is.finite(scores) & grid > 0)
     if (!length(use)) return(list(status = "no_valid_candidate", best.idx = NA_integer_,
                                  lower.endpoint = FALSE, upper.endpoint = FALSE,
-                                 bracketed = FALSE, near.minimum.indices = integer()))
-    best <- use[which.min(scores[use])]
-    # Absolute tolerance is in squared response units. It identifies unresolved
-    # tuning, rather than claiming equality of the underlying mathematical curve.
-    tolerance <- 1e-10 + 1e-7 * abs(scores[best])
-    near <- use[scores[use] - scores[best] <= tolerance]
-    flat <- length(use) > 1L && length(near) == length(use)
-    label <- if (flat) "unresolved_flat_gcv" else if (length(use) == 1L) {
-        "single_candidate"
-    } else if (length(near) > 1L) "multiple_near_minima" else "unique_grid_minimum"
-    lower <- best == use[which.min(grid[use])]
-    upper <- best == use[which.max(grid[use])]
-    list(status = label, best.idx = if (flat) NA_integer_ else best,
-         lower.endpoint = if (flat) NA else lower,
-         upper.endpoint = if (flat) NA else upper,
-         bracketed = !flat && length(near) == 1L && !lower && !upper,
-         near.minimum.indices = near, tolerance = tolerance)
+                                 bracketed = FALSE, near.minimum.indices = integer(),
+                                 selection.allowed = FALSE))
+    if (length(reference.scores) != length(scores) ||
+        any(!is.finite(reference.scores[use]))) {
+        stop("Tuning requires finite reference scores at every valid time.", call. = FALSE)
+    }
+    # Pointwise agreement and resolving a score difference are separate tests.
+    # Retain both per-score budgets, and cover both formulations. These are
+    # operational resolution bands, not interval-arithmetic certificates.
+    c <- scores[use]
+    r <- reference.scores[use]
+    ec <- 1e-10 + 1e-7 * abs(c)
+    er <- 1e-10 + 1e-7 * abs(r)
+    lower <- pmax(0, pmin(c - ec, r - er))
+    upper <- pmax(c + ec, r + er)
+    resolution <- data.frame(grid.index = use, eta = grid[use],
+                             candidate.score = c, reference.score = r,
+                             candidate.radius = ec, reference.radius = er,
+                             lower = lower, upper = upper)
+    # Repeated copies of a time are one alternative; preserve all original
+    # indices while enveloping their bands for the time-selection decision.
+    times <- unique(grid[use])
+    groups <- lapply(times, function(t) which(grid[use] == t))
+    lo <- vapply(groups, function(ix) min(lower[ix]), numeric(1))
+    hi <- vapply(groups, function(ix) max(upper[ix]), numeric(1))
+    possible <- which(lo <= min(hi))
+    near <- use[which(grid[use] %in% times[possible])]
+    structural <- !is.null(structural.flat.reason)
+    flat <- structural || max(lo) <= min(hi)
+    single <- length(times) == 1L
+    allowed <- single || (!flat && length(possible) == 1L)
+    label <- if (single) "single_candidate" else if (flat) {
+        "unresolved_flat_gcv"
+    } else if (allowed) "unique_grid_minimum" else "multiple_near_minima"
+    if (structural) near <- use
+    selected <- if (single) 1L else if (allowed) possible else NA_integer_
+    best <- if (allowed) use[groups[[selected]][1L]] else NA_integer_
+    lower.endpoint <- if (allowed) grid[best] == min(grid[use]) else NA
+    upper.endpoint <- if (allowed) grid[best] == max(grid[use]) else NA
+    # Strictly positive margin is required to select among distinct times.
+    margin <- if (allowed && !single) min(lo[-selected]) - hi[selected] else NA_real_
+    list(status = label, best.idx = best, lower.endpoint = lower.endpoint,
+         upper.endpoint = upper.endpoint,
+         bracketed = allowed && !single && !lower.endpoint && !upper.endpoint,
+         near.minimum.indices = near, selection.allowed = allowed,
+         structural.flat.reason = structural.flat.reason,
+         resolution.rule = "two_form_score_envelope_v1", resolution = resolution,
+         separation.margin = margin,
+         candidate.minimum.index = use[which.min(c)],
+         reference.minimum.index = use[which.min(r)])
 }
 
 .metric.graph.require.tuning <- function(tuning) {
-    if (!is.null(tuning) && tuning$status == "unresolved_flat_gcv") {
-        stop("GCV is flat within numerical tolerance: no smoothing time selected. Inspect apply.metric.graph.lowpass.path() or use a prespecified time.",
+    if (is.null(tuning)) return(invisible(NULL))
+    if (tuning$status == "unresolved_flat_gcv") {
+        stop("GCV is flat or unresolved at the declared numerical resolution: no smoothing time selected. Inspect apply.metric.graph.lowpass.path() or use a prespecified time.",
+             call. = FALSE)
+    }
+    if (tuning$status == "multiple_near_minima") {
+        stop("GCV differences are numerically unresolved between competing times: no smoothing time selected. Inspect apply.metric.graph.lowpass.path() or use a prespecified time.",
              call. = FALSE)
     }
 }
@@ -87,7 +127,8 @@
     Q <- W[, seq_len(nc), drop = FALSE]
     positive <- which(mu > 0)
     fitted <- array(NA_real_, c(n, J, p))
-    gcv <- df <- matrix(NA_real_, J, p)
+    gcv <- reference.gcv <- df <- matrix(NA_real_, J, p)
+    structural.reasons <- vector("list", p)
     status <- matrix("degenerate_residual_operator", J, p)
     n.obs <- colSums(!is.na(Y))
     heat.error <- .metric.graph.heat.time.diagnostic(basis$spectral, grid, filter.type)
@@ -190,6 +231,11 @@
             magnitude[magnitude == 0] <- 1
             scales <- magnitude * sqrt(colMeans(sweep(centered, 2L, magnitude, `/`)^2))
             scales[scales == 0] <- 1
+            for (col in seq_along(cols)) {
+                reason <- if (q - nc == 1L) "one_dimensional_observed_residual_space" else
+                    if (all(centered[, col] == 0)) "componentwise_constant_response" else NULL
+                structural.reasons[cols[col]] <- list(reason)
+            }
             standardized <- sweep(centered, 2L, scales, `/`)
             pred <- T %*% standardized
             predr <- Tr %*% standardized
@@ -233,6 +279,7 @@
             df[j, cols] <- d
             if (valid) {
                 gcv[j, cols] <- raw.score
+                reference.gcv[j, cols] <- reference.raw.score
                 status[j, cols] <- "valid"
             }
             uncertainty <- heat.error[j] / s + 32 * .Machine$double.eps * n
@@ -245,10 +292,12 @@
                      condition.error = if (length(U)) uncertainty / condition else 0), checks))
         }
     }
-    tuning <- lapply(seq_len(p), function(k) .metric.graph.gcv.tuning(gcv[, k], status[, k], grid))
+    tuning <- lapply(seq_len(p), function(k) .metric.graph.gcv.tuning(
+        gcv[, k], status[, k], grid, reference.gcv[, k], structural.reasons[[k]]))
     list(fitted = fitted, gcv = gcv, df = df, status = status, n.observed = n.obs,
          tuning = tuning,
          numerical = list(policy = "verified.fallback", limits = .metric.graph.verified.limits(),
+                          reference.gcv.scores = reference.gcv,
                           reference.verification = reference$verification,
                           diagnostics = if (length(diagnostics)) do.call(rbind, diagnostics) else data.frame(),
                           response.mask = match(keys, unique(keys)),

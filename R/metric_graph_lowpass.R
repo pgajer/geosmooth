@@ -158,8 +158,9 @@ metric.graph.lowpass.operator <- function(
 #'   every requested positive time and response mask with a separate LAPACK
 #'   eigensystem and a bordered pseudoinverse calculation. Failed residual or
 #'   agreement checks stop the entire path. This double-precision agreement
-#'   check is not a rigorous forward-error certificate. Flat GCV paths are
-#'   returned by the path function but cannot select a time automatically.
+#'   check is not a rigorous forward-error certificate. Structurally flat paths
+#'   and overlapping score-resolution bands cannot select a time automatically;
+#'   they remain available from the path function or at a prespecified time.
 #'   Endpoint and near-minimum flags are retained in \code{tuning}.
 #'   See \code{vignette("verified-heat-fallback")} for equations and limits.
 #'

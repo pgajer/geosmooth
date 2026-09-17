@@ -126,23 +126,84 @@ limits and reference eigensystem diagnostics are also returned. These two
 computations can share floating-point limitations; no claim of arbitrary
 forward accuracy follows from their agreement.
 
-## Tuning flags are part of the result
+## Score accuracy and time selection are different decisions
 
-A grid minimum is not necessarily a bracketed optimum. Each response has a
-`tuning` record with `lower.endpoint`, `upper.endpoint`, `bracketed`, and all
-`near.minimum.indices`. A single requested positive time has both endpoint
-flags and is not bracketed. A unique interior grid minimum is called bracketed
-only **within this grid**, not proven optimal over continuous time.
+Passing a numerical score check does not imply that a difference between two
+scores is resolved. For example, two scores $1-7\times10^{-8}$ and
+$1+7\times10^{-8}$ are each within approximately $10^{-7}$ of the same exact
+value. Their difference exceeds $10^{-7}$; it still provides no evidence that
+one time is better. The verified fallback therefore uses a separate selection
+rule, without changing any numerical acceptance limit.
 
-A score within $10^{-10}+10^{-7}|\operatorname{GCV}_{\min}|$ of the minimum
-is numerically near-minimal. If every positive valid candidate is near-minimal,
-`tuning$status` is `"unresolved_flat_gcv"` and `best.idx` is missing. This
-absolute threshold is in squared response units, so changing measurement
-units can change the declaration of unresolved tuning. The path remains
-available, but automatic selection in `fit()` or a per-response `refit()`
-stops. Prespecified-time application remains possible. Multiple near minima
-on a nonflat path retain their flag and indices; selection uses the smallest
-computed score, without claiming a uniquely determined optimum.
+At time $j$, let $c_j$ and $r_j$ be the checked candidate and reference scores
+in original response units, and define the per-score resolution radius
+$e(x)=10^{-10}+10^{-7}|x|$. The combined band covers both formulations:
+
+$$\ell_j=\max\{0,\min(c_j-e(c_j),r_j-e(r_j))\},\qquad
+u_j=\max\{c_j+e(c_j),r_j+e(r_j)\}.$$
+
+These are **operational numerical-resolution bands**, not statistical
+confidence intervals or certified enclosures of exact values. Their scale is
+explicitly tied to the existing pointwise score budgets. When the formulations
+agree exactly, comparing two times accounts for the sum of their two budgets,
+not just one budget. Using the envelope of both formulations also prevents a
+nominal preference in one calculation from concealing disagreement in the other.
+
+Automatic selection among distinct times requires a single time $j$ satisfying
+
+$$u_j < \min_{k:\,t_k\ne t_j}\ell_k.$$
+
+The separation must be strict: overlapping or touching bands do not justify
+selection. Duplicate copies of a time are one alternative, with their bands
+enveloped and all original indices retained. With one prescribed distinct time,
+application remains available and is labeled `single_candidate`; there is no
+claim of an identified optimum.
+
+The returned `tuning` record provides:
+
+- `unique_grid_minimum` only when a time is separated from every alternative.
+  Endpoint flags remain explicit. `bracketed` means interior to the supplied
+  grid, not proven optimal over continuous time.
+- `unresolved_flat_gcv` if all bands share a common value, or structural flatness
+  is known as described below. No time is selected.
+- `multiple_near_minima` if several possible minima remain, even if other times
+  are clearly worse. No time is selected. This is stricter than the earlier
+  behavior that chose the smallest nominal score in this situation.
+- `no_valid_candidate` when there are no valid positive scores.
+
+`near.minimum.indices` contains every index whose time has a lower band endpoint
+no greater than the smallest upper endpoint, except known structurally flat
+paths, for which every valid time is retained. `selection.allowed`,
+`structural.flat.reason`, `resolution` (both scores, their radii and combined
+bands), and `separation.margin` make the decision inspectable. Raw candidate
+and reference minimum indices are diagnostics, not selected smoothing times.
+The reference score matrix is also in `numerical$reference.gcv.scores`.
+
+Both unresolved statuses stop automatic selection in `fit()` and automatically
+tuned `refit()`. The path and a fixed-time application remain available.
+
+### Structurally flat cases do not depend on rounding
+
+If there are $q$ observations and $c$ connected components, all observed, the
+observed residual space has dimension $q-c$. When $q-c=1$, its direction is fixed
+and its residual matrix has the form $K=\kappa vv^T$ for a fixed unit contrast
+$v$. Hence
+
+$$\operatorname{GCV}=q\frac{\|\kappa vv^Ty\|^2}{\kappa^2}
+=q(v^Ty)^2,$$
+
+which is independent of time. Two observations on a connected graph give the
+familiar special case $(y_1-y_2)^2$. Such paths are marked structurally flat
+regardless of their numerical spread and cannot tune a time. Responses constant
+within each observed component likewise have exactly zero residual score and
+are structurally flat when GCV is defined. When $q=c$, residual degrees of
+freedom vanish and GCV remains undefined instead.
+
+These structural checks accompany, rather than replace, all numerical acceptance
+checks. An inaccurate or nonfinite path still fails. The absolute part of the
+score budget has squared-response units; changing units can still change whether
+a numerical difference is resolved. This is distinct from the additive-shift
+invariance provided by componentwise centering.
 
 ```{r}
 library(geosmooth)
