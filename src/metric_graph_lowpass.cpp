@@ -266,7 +266,9 @@ metric_operator_t build_metric_operator(
     for (auto& e : op.edges) {
         double c = NA_REAL;
         const double ell = e.length;
-        if (conductance_rule == "inverse.length.power") {
+        if (conductance_rule == "identity") {
+            c = ell;
+        } else if (conductance_rule == "inverse.length.power") {
             c = std::pow(ell + epsilon, -alpha);
         } else if (conductance_rule == "exp.length") {
             c = std::exp(-ell / sigma);
@@ -283,10 +285,10 @@ metric_operator_t build_metric_operator(
             op.n_nonfinite_conductance++;
             c = (c > 0.0) ? max_conductance : min_conductance;
         }
-        if (c < min_conductance) {
+        if (conductance_rule != "identity" && c < min_conductance) {
             c = min_conductance;
             op.n_clipped_conductance++;
-        } else if (c > max_conductance) {
+        } else if (conductance_rule != "identity" && c > max_conductance) {
             c = max_conductance;
             op.n_clipped_conductance++;
         }
@@ -295,6 +297,9 @@ metric_operator_t build_metric_operator(
         op.degree[e.v] += c;
     }
 
+    for (double d : op.degree) {
+        if (!std::isfinite(d)) Rf_error("Conductance degree sum overflowed");
+    }
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(4 * op.edges.size() + n);
     if (laplacian_type == "unnormalized") {
@@ -529,7 +534,10 @@ void compute_spectrum(const spmat_t& L,
         return true;
     };
 
-    if (force_dense || auto_dense) {
+    if (force_sparse && n_eigenpairs > n - 2) {
+        Rf_error("Sparse solver cannot return more than n-2 eigenpairs; use auto or dense");
+    }
+    if (force_dense || auto_dense || n_eigenpairs > n - 2) {
         if (!dense_decomp()) Rf_error("Dense eigendecomposition failed");
         return;
     }

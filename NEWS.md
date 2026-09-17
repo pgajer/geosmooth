@@ -1,3 +1,20 @@
+# geosmooth (development)
+
+- Graph low-pass operators, bases and fits accept `weight.type = "conductance"`
+  for direct symmetric nonnegative affinities. Zero-weight edges are removed;
+  positive conductances are not transformed or clipped. Length remains the default.
+- `spectrum = "full"` explicitly obtains and verifies all eigenpairs. Auto uses
+  dense decomposition for requests exceeding the sparse backend capability;
+  incompatible sparse-only requests now fail instead of silently returning n-2.
+- Low-pass GCV now uses the conventional observed-count normalization. Exact
+  zero heat time is an identity diagnostic with undefined GCV, excluded from
+  selection. Positive-time heat scores use stable spectral complements.
+- Full-spectrum heat fits, paths and refits accept `NA` responses, fitting
+  observed squared error plus the heat penalty `exp(t L) - I`. GCV uses the
+  observed fitting operator and observed count. A wholly unobserved component
+  is unidentified and fails explicitly. This extension does not model assay
+  selection, repeated-measurement covariance or observation-frequency weights.
+
 # geosmooth 0.2.0
 
 ## Solver reliability

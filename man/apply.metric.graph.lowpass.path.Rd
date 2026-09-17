@@ -19,7 +19,8 @@ apply.metric.graph.lowpass.path(
 \arguments{
 \item{basis}{A \code{"metric.graph.lowpass.basis"} object.}
 
-\item{y}{Numeric response vector or matrix with one row per graph vertex.}
+\item{y}{Numeric response vector or matrix with one row per graph vertex.
+Missing responses may be \code{NA} for complete-basis heat filtering.}
 
 \item{eta.grid}{Numeric filter-parameter grid.}
 

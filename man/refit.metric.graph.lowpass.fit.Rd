@@ -20,7 +20,8 @@
 \arguments{
 \item{object}{A \code{"metric.graph.lowpass.fit"} object.}
 
-\item{y}{Numeric vector or matrix with one row per graph vertex.}
+\item{y}{Numeric vector or matrix with one row per graph vertex.
+Each column may have its own \code{NA} mask for complete-basis heat filtering.}
 
 \item{per.column.gcv}{Logical. If \code{TRUE}, select eta independently for
 each response column using the cached eigenbasis.}

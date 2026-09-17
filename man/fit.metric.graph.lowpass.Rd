@@ -31,16 +31,20 @@ fit.metric.graph.lowpass(
   eta.expansion.factor = 3,
   eta.max.expansions = 3L,
   eta.identity.departure = 0.01,
-  eta.truncation.tol = 1e-04
+  eta.truncation.tol = 1e-04,
+  weight.type = c("length", "conductance"),
+  spectrum = c("partial", "full")
 )
 }
 \arguments{
 \item{adj.list}{List of integer neighbor vectors using 1-based vertex indices.}
 
-\item{weight.list}{List of positive metric edge lengths parallel to
-\code{adj.list}. These are interpreted as edge lengths, not conductances.}
+\item{weight.list}{List of weights parallel to \code{adj.list}: positive
+metric lengths or nonnegative conductances, according to \code{weight.type}.}
 
-\item{y}{Numeric response vector of length \code{length(adj.list)}.}
+\item{y}{Numeric response vector of length \code{length(adj.list)}.
+\code{NA} marks unobserved vertices and requires a complete basis and
+heat filtering. Every component must have an observed response.}
 
 \item{conductance.rule}{Character scalar. One of
 \code{"inverse.length.power"}, \code{"exp.length"},
@@ -108,14 +112,37 @@ at the largest retained graph-Laplacian eigenvalue.}
 
 \item{eta.truncation.tol}{Omitted-mode attenuation tolerance used to certify
 guarded proposals for a truncated basis.}
+
+\item{weight.type}{Weight interpretation. \code{"length"} transforms lengths;
+\code{"conductance"} uses positive weights unchanged and removes zero edges.
+Reciprocal conductances must agree; self-loops must be removed by the caller.
+Conductance-transform settings are unused for direct conductances.}
+
+\item{spectrum}{\code{"partial"} retains the requested number of modes.
+\code{"full"} requests and verifies all vertex eigenpairs with a dense
+solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.}
 }
 \value{
 A list of class \code{"metric.graph.lowpass.fit"}.
+The GCV record includes per-candidate status, observed count and degrees
+of freedom. Missing-response residuals remain \code{NA}. The
+\code{fitting.mode} field distinguishes the observed heat-penalty fit from
+a fully observed spectral filter. For missing responses, the stored
+spectral filter weights describe the base heat kernel, not eigenvalues
+of the observed fitting matrix.
 }
 \description{
-Fits graph-spectral low-pass regression on a supplied graph by transforming
-metric edge lengths into conductances and smoothing the response in the
-eigenbasis of the weighted graph Laplacian.
+Fits graph-spectral low-pass regression using supplied conductances or
+transformed metric lengths. Missing-response heat fits use an observed-data
+penalized least-squares operator on a complete graph eigensystem.
+}
+\details{
+Missing-response heat fits minimize observed squared error plus
+\eqn{f^T (\exp(tL)-I) f}. This reduces to ordinary heat filtering when
+all vertices are observed. GCV is \eqn{q\,RSS/(q-\mathrm{tr}(S_O))^2},
+with \eqn{q} observed responses and observed-data operator \eqn{S_O}.
+Zero heat time is an identity diagnostic with undefined GCV and cannot
+be selected. A grid with no valid GCV candidate fails explicitly.
 }
 \examples{
 adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)

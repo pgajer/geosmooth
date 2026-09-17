@@ -21,14 +21,16 @@ metric.graph.lowpass.basis(
   dense.eigen.threshold = 200L,
   dense.fallback.threshold = 5000L,
   dense.fallback = c("auto", "never", "always"),
-  verbose = FALSE
+  verbose = FALSE,
+  weight.type = c("length", "conductance"),
+  spectrum = c("partial", "full")
 )
 }
 \arguments{
 \item{adj.list}{List of integer neighbor vectors using 1-based vertex indices.}
 
-\item{weight.list}{List of positive metric edge lengths parallel to
-\code{adj.list}. These are interpreted as edge lengths, not conductances.}
+\item{weight.list}{List of weights parallel to \code{adj.list}: positive
+metric lengths or nonnegative conductances, according to \code{weight.type}.}
 
 \item{conductance.rule}{Character scalar. One of
 \code{"inverse.length.power"}, \code{"exp.length"},
@@ -67,6 +69,15 @@ fallback when sparse decomposition fails and fallback is allowed.}
 \item{dense.fallback}{\code{"auto"}, \code{"never"}, or \code{"always"}.}
 
 \item{verbose}{Logical. Reserved for future diagnostic messages.}
+
+\item{weight.type}{Weight interpretation. \code{"length"} transforms lengths;
+\code{"conductance"} uses positive weights unchanged and removes zero edges.
+Reciprocal conductances must agree; self-loops must be removed by the caller.
+Conductance-transform settings are unused for direct conductances.}
+
+\item{spectrum}{\code{"partial"} retains the requested number of modes.
+\code{"full"} requests and verifies all vertex eigenpairs with a dense
+solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.}
 }
 \value{
 A list of class \code{"metric.graph.lowpass.basis"} containing the

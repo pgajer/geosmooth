@@ -1,13 +1,18 @@
 #' Construct a Metric-Conductance Graph Low-Pass Operator
 #'
-#' Builds a weighted graph Laplacian by transforming metric edge lengths into
-#' conductances. This operator is a direct metric-conductance comparator to
+#' Builds a weighted graph Laplacian from supplied conductances or by
+#' transforming metric edge lengths into conductances. This operator is a direct
+#' metric-conductance comparator to
 #' the legacy rdgraph regression smoother, not a replacement for the
 #' Riemannian-complex/overlap-density smoother.
 #'
 #' @param adj.list List of integer neighbor vectors using 1-based vertex indices.
-#' @param weight.list List of positive metric edge lengths parallel to
-#'   \code{adj.list}. These are interpreted as edge lengths, not conductances.
+#' @param weight.list List of weights parallel to \code{adj.list}: positive
+#'   metric lengths or nonnegative conductances, according to \code{weight.type}.
+#' @param weight.type Weight interpretation. \code{"length"} transforms lengths;
+#'   \code{"conductance"} uses positive weights unchanged and removes zero edges.
+#'   Reciprocal conductances must agree; self-loops must be removed by the caller.
+#'   Conductance-transform settings are unused for direct conductances.
 #' @param conductance.rule Character scalar. One of
 #'   \code{"inverse.length.power"}, \code{"exp.length"},
 #'   \code{"exp.length.squared"}, or \code{"self.tuned.gaussian"}.
@@ -72,9 +77,11 @@ metric.graph.lowpass.operator <- function(
     conductance.local.k = 5L,
     laplacian.type = c("unnormalized", "symmetric.normalized"),
     return.sparse = TRUE,
-    verbose = FALSE) {
+    verbose = FALSE,
+    weight.type = c("length", "conductance")) {
 
-    graph <- .validate.metric.graph.lowpass.graph(adj.list, weight.list)
+    weight.type <- match.arg(weight.type)
+    graph <- .prepare.metric.graph.lowpass.graph(adj.list, weight.list, weight.type)
     args <- .validate.metric.graph.lowpass.operator.args(
         conductance.rule = conductance.rule,
         conductance.epsilon = conductance.epsilon,
@@ -87,6 +94,8 @@ metric.graph.lowpass.operator <- function(
         verbose = verbose
     )
 
+    args$weight.type <- weight.type
+    if (weight.type == "conductance") args$conductance.rule <- "identity"
     out <- rcpp_metric_graph_lowpass_operator(
         graph$adj.list.0based,
         graph$weight.list.cpp,
@@ -100,6 +109,7 @@ metric.graph.lowpass.operator <- function(
         args$laplacian.type
     )
 
+    out <- .label.metric.graph.lowpass.weights(out, weight.type)
     out$graph$adj.list <- graph$adj.list
     out$graph$weight.list <- graph$weight.list
     out <- .attach.metric.graph.lowpass.laplacian(out, return.sparse)
@@ -116,6 +126,9 @@ metric.graph.lowpass.operator <- function(
 #'
 #' @inheritParams metric.graph.lowpass.operator
 #' @param n.eigenpairs Positive integer number of eigenpairs to compute.
+#' @param spectrum \code{"partial"} retains the requested number of modes.
+#'   \code{"full"} requests and verifies all vertex eigenpairs with a dense
+#'   solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.
 #' @param eigen.solver \code{"auto"}, \code{"sparse"}, or \code{"dense"}.
 #' @param dense.eigen.threshold Exact dense threshold for auto mode.
 #' @param dense.fallback.threshold Maximum graph size for emergency dense
@@ -155,9 +168,13 @@ metric.graph.lowpass.basis <- function(
     dense.eigen.threshold = 200L,
     dense.fallback.threshold = 5000L,
     dense.fallback = c("auto", "never", "always"),
-    verbose = FALSE) {
+    verbose = FALSE,
+    weight.type = c("length", "conductance"),
+    spectrum = c("partial", "full")) {
 
-    graph <- .validate.metric.graph.lowpass.graph(adj.list, weight.list)
+    weight.type <- match.arg(weight.type)
+    spectrum <- match.arg(spectrum)
+    graph <- .prepare.metric.graph.lowpass.graph(adj.list, weight.list, weight.type)
     n <- length(graph$adj.list)
     args <- .validate.metric.graph.lowpass.operator.args(
         conductance.rule = conductance.rule,
@@ -170,6 +187,15 @@ metric.graph.lowpass.basis <- function(
         laplacian.type = laplacian.type,
         verbose = verbose
     )
+    if (spectrum == "full") {
+        if (match.arg(eigen.solver) == "sparse") {
+            stop("spectrum = 'full' requires auto or dense eigen.solver.", call. = FALSE)
+        }
+        n.eigenpairs <- n
+    }
+    args$weight.type <- weight.type
+    args$spectrum <- spectrum
+    if (weight.type == "conductance") args$conductance.rule <- "identity"
     solver <- .validate.metric.graph.lowpass.solver.args(
         n.eigenpairs = n.eigenpairs,
         n = n,
@@ -198,7 +224,7 @@ metric.graph.lowpass.basis <- function(
         as.logical(verbose)
     )
 
-    operator <- raw$operator
+    operator <- .label.metric.graph.lowpass.weights(raw$operator, weight.type)
     operator$graph$adj.list <- graph$adj.list
     operator$graph$weight.list <- graph$weight.list
     operator <- .attach.metric.graph.lowpass.laplacian(operator, TRUE)
@@ -213,6 +239,7 @@ metric.graph.lowpass.basis <- function(
     .require.metric.graph.lowpass.finite(
         spectral$eigenvectors, "spectral$eigenvectors"
     )
+    spectral <- .check.metric.graph.lowpass.spectrum(spectral, operator, spectrum)
     spectral$n.vertices <- n
     spectral$n.eigenpairs <- length(spectral$eigenvalues)
     spectral$is.complete <- spectral$n.eigenpairs == n
@@ -536,6 +563,7 @@ metric.graph.heat.extend.lower <- function(
 #'
 #' @param basis A \code{"metric.graph.lowpass.basis"} object.
 #' @param y Numeric response vector or matrix with one row per graph vertex.
+#'   Missing responses may be \code{NA} for complete-basis heat filtering.
 #' @param eta.grid Numeric filter-parameter grid.
 #' @param filter.type Spectral low-pass filter family.
 #' @param block.size Optional number of response columns processed together.
@@ -583,6 +611,14 @@ apply.metric.graph.lowpass.path <- function(
     eta.grid <- .prepare.metric.graph.lowpass.eta.grid(
         eta.grid, basis$spectral$eigenvalues, filter.type, length(eta.grid)
     )
+
+    if (anyNA(Y)) {
+        return(.metric.graph.observed.path.object(
+            basis, Y, eta.grid, filter.type, y.info$col.names,
+            list(block.size = block.size, truncation.tol = truncation.tol,
+                 unresolved.action = unresolved.action, exact.zero = exact.zero)
+        ))
+    }
 
     V <- basis$spectral$eigenvectors
     eigenvalues <- basis$spectral$eigenvalues
@@ -716,9 +752,16 @@ apply.metric.graph.lowpass.path <- function(
             basis$spectral$eigenvalues, grid, filter.type
         )
         .require.metric.graph.lowpass.finite(weights, "filter weights")
-        gcv <- .select.eta.gcv.single(
-            y, y.spectral, V, weights, grid
-        )
+        gcv <- if (anyNA(y)) {
+            path <- .metric.graph.observed.heat.path(basis, matrix(y, ncol = 1L), grid, filter.type)
+            .select.metric.graph.lowpass.candidates(
+                path$fitted[, , 1L, drop = FALSE], path$gcv[, 1L],
+                path$df[, 1L], path$status[, 1L], grid
+            )
+        } else {
+            .select.eta.gcv.single(y, y.spectral, V, weights, grid,
+                                   basis$spectral$eigenvalues, filter.type)
+        }
         .validate.metric.graph.lowpass.gcv.result(
             gcv.result = gcv,
             n = length(y),
@@ -836,13 +879,18 @@ apply.metric.graph.lowpass.path <- function(
 
 #' Fit Metric-Conductance Graph Low-Pass Regression
 #'
-#' Fits graph-spectral low-pass regression on a supplied graph by transforming
-#' metric edge lengths into conductances and smoothing the response in the
-#' eigenbasis of the weighted graph Laplacian.
+#' Fits graph-spectral low-pass regression using supplied conductances or
+#' transformed metric lengths. Missing-response heat fits use an observed-data
+#' penalized least-squares operator on a complete graph eigensystem.
 #'
 #' @inheritParams metric.graph.lowpass.operator
 #' @param y Numeric response vector of length \code{length(adj.list)}.
+#'   \code{NA} marks unobserved vertices and requires a complete basis and
+#'   heat filtering. Every component must have an observed response.
 #' @param n.eigenpairs Positive integer number of eigenpairs to compute.
+#' @param spectrum \code{"partial"} retains the requested number of modes.
+#'   \code{"full"} requests and verifies all vertex eigenpairs with a dense
+#'   solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.
 #' @param filter.type Spectral low-pass filter family.
 #' @param eta.grid Optional numeric eta grid. Values must be positive except
 #'   for \code{filter.type = "heat_kernel"}, where \code{eta = 0} is allowed
@@ -870,7 +918,20 @@ apply.metric.graph.lowpass.path <- function(
 #'   fallback when sparse decomposition fails and fallback is allowed.
 #' @param dense.fallback \code{"auto"}, \code{"never"}, or \code{"always"}.
 #'
+#' @details
+#' Missing-response heat fits minimize observed squared error plus
+#' \eqn{f^T (\exp(tL)-I) f}. This reduces to ordinary heat filtering when
+#' all vertices are observed. GCV is \eqn{q\,RSS/(q-\mathrm{tr}(S_O))^2},
+#' with \eqn{q} observed responses and observed-data operator \eqn{S_O}.
+#' Zero heat time is an identity diagnostic with undefined GCV and cannot
+#' be selected. A grid with no valid GCV candidate fails explicitly.
 #' @return A list of class \code{"metric.graph.lowpass.fit"}.
+#'   The GCV record includes per-candidate status, observed count and degrees
+#'   of freedom. Missing-response residuals remain \code{NA}. The
+#'   \code{fitting.mode} field distinguishes the observed heat-penalty fit from
+#'   a fully observed spectral filter. For missing responses, the stored
+#'   spectral filter weights describe the base heat kernel, not eigenvalues
+#'   of the observed fitting matrix.
 #'
 #' @references
 #' Gajer, P. and Ravel, J. (2025). Adaptive geometric regression for
@@ -912,7 +973,9 @@ fit.metric.graph.lowpass <- function(
     eta.expansion.factor = 3,
     eta.max.expansions = 3L,
     eta.identity.departure = 0.01,
-    eta.truncation.tol = 1e-4) {
+    eta.truncation.tol = 1e-4,
+    weight.type = c("length", "conductance"),
+    spectrum = c("partial", "full")) {
 
     basis <- metric.graph.lowpass.basis(
         adj.list = adj.list,
@@ -930,10 +993,15 @@ fit.metric.graph.lowpass <- function(
         dense.eigen.threshold = dense.eigen.threshold,
         dense.fallback.threshold = dense.fallback.threshold,
         dense.fallback = dense.fallback,
-        verbose = verbose
+        verbose = verbose,
+        weight.type = weight.type,
+        spectrum = spectrum
     )
     n <- basis$spectral$n.vertices
-    y <- .validate.metric.graph.lowpass.response(y, n, "y")
+    if (!is.numeric(y) || !is.null(dim(y)) || length(y) != n) {
+        stop("y must be a numeric vector with one entry per vertex.", call. = FALSE)
+    }
+    y <- .prepare.metric.graph.lowpass.response.matrix(y, n)$Y[, 1L]
     filter.type <- match.arg(filter.type)
     n.candidates <- .validate.positive.integer.scalar(n.candidates, "n.candidates")
     eta.search <- match.arg(eta.search)
@@ -949,8 +1017,8 @@ fit.metric.graph.lowpass <- function(
         filter.type = filter.type,
         n.candidates = n.candidates
     )
-    y.spectral <- as.vector(crossprod(V, y))
-    .require.metric.graph.lowpass.finite(y.spectral, "spectral response coefficients")
+    y.spectral <- if (anyNA(y)) NULL else as.vector(crossprod(V, y))
+    if (!is.null(y.spectral)) .require.metric.graph.lowpass.finite(y.spectral, "spectral response coefficients")
     eta.selection <- .fit.metric.graph.lowpass.eta.search(
         basis = basis,
         y = y,
@@ -982,20 +1050,15 @@ fit.metric.graph.lowpass <- function(
     spectral$filter.type <- filter.type
     spectral$n.eigenpairs <- length(eigenvalues)
 
-    fitted.grid <- V %*% (y.spectral * filter.weights.matrix)
-    .require.metric.graph.lowpass.finite(fitted.grid, "candidate fitted values")
-    rss.grid <- colSums((y - fitted.grid)^2)
-    df.grid <- colSums(filter.weights.matrix)
-    gcv.scores <- rss.grid / pmax(length(y) - df.grid, 1e-10)^2
-    .require.metric.graph.lowpass.finite(gcv.scores, "GCV scores")
-
     residuals <- y - gcv.result$y.hat
     .require.metric.graph.lowpass.finite(gcv.result$y.hat, "fitted values")
-    .require.metric.graph.lowpass.finite(residuals, "residuals")
+    .require.metric.graph.lowpass.finite(residuals[!is.na(y)], "observed residuals")
     result <- list(
         fitted.values = as.vector(gcv.result$y.hat),
         residuals = as.vector(residuals),
         y = y,
+        observed = !is.na(y),
+        fitting.mode = if (anyNA(y)) "observed_heat_penalty" else "spectral_filter",
         graph = operator$graph,
         operator = operator,
         conductance = operator$conductance,
@@ -1004,7 +1067,15 @@ fit.metric.graph.lowpass <- function(
         spectral = spectral,
         gcv = list(
             eta.grid = eta.grid,
-            gcv.scores = as.vector(gcv.scores),
+            gcv.scores = gcv.result$gcv.scores,
+            status = gcv.result$status,
+            n.observed = sum(!is.na(y)),
+            identity = if (any(eta.grid == 0)) list(
+                eta = 0, fitted.values = y, gcv = NA_real_,
+                status = "identity_undefined_gcv"
+            ) else NULL,
+            effective.df.grid = gcv.result$df.grid,
+            normalization = "q * RSS / (q - trace(S_observed))^2",
             eta.optimal = gcv.result$eta.optimal,
             gcv.optimal = gcv.result$gcv.min,
             effective.df = gcv.result$effective.df,
@@ -1039,6 +1110,7 @@ fit.metric.graph.lowpass <- function(
 #'
 #' @param object A \code{"metric.graph.lowpass.fit"} object.
 #' @param y Numeric vector or matrix with one row per graph vertex.
+#'   Each column may have its own \code{NA} mask for complete-basis heat filtering.
 #' @param per.column.gcv Logical. If \code{TRUE}, select eta independently for
 #'   each response column using the cached eigenbasis.
 #' @param eta.grid Optional positive numeric eta grid for per-column GCV.
@@ -1098,6 +1170,12 @@ refit.metric.graph.lowpass.fit <- function(object,
     filter.type <- spectral$filter.type
     if (is.null(filter.type)) filter.type <- "heat_kernel"
 
+    if (anyNA(Y)) {
+        return(.refit.metric.graph.observed.heat(
+            object, Y, per.column.gcv, eta.grid, n.candidates, col.names
+        ))
+    }
+
     if (isTRUE(per.column.gcv)) {
         eta.grid <- .prepare.metric.graph.lowpass.eta.grid(
             eta.grid = eta.grid,
@@ -1123,7 +1201,8 @@ refit.metric.graph.lowpass.fit <- function(object,
         }
         for (j in seq_len(n.responses)) {
             gcv.result <- .select.eta.gcv.single(
-                Y[, j], Vt.Y[, j], V, filter.weights.matrix, eta.grid
+                Y[, j], Vt.Y[, j], V, filter.weights.matrix, eta.grid,
+                eigenvalues, filter.type
             )
             .validate.metric.graph.lowpass.gcv.result(
                 gcv.result = gcv.result,
@@ -1331,11 +1410,17 @@ refit.metric.graph.lowpass.fit <- function(object,
         Y <- if (inherits(y.new, "Matrix")) as.matrix(y.new) else y.new
         if (!is.numeric(Y)) stop("y.new must be numeric.")
     } else {
-        Y <- matrix(.validate.metric.graph.lowpass.response(y.new, n, "y.new"), ncol = 1)
+        if (!is.numeric(y.new) || !is.null(dim(y.new)) || length(y.new) != n) {
+            stop("y must be numeric with one entry per vertex.", call. = FALSE)
+        }
+        Y <- matrix(as.double(y.new), ncol = 1)
         col.names <- NULL
     }
     storage.mode(Y) <- "double"
-    if (any(!is.finite(Y))) stop("y.new cannot contain NA/NaN/Inf.")
+    if (ncol(Y) < 1L || any(is.nan(Y) | is.infinite(Y))) {
+        stop("y must have response columns and cannot contain NaN/Inf; use NA for missing responses.", call. = FALSE)
+    }
+    if (any(colSums(!is.na(Y)) == 0L)) stop("Every response needs at least one observed value.", call. = FALSE)
     list(Y = Y, col.names = col.names)
 }
 
@@ -1457,27 +1542,6 @@ compute.filter.weights.matrix <- function(eigenvalues, eta.grid, filter.type) {
     }
 
     weights
-}
-
-.select.eta.gcv.single <- function(y.obs, y.spectral, V,
-                                  filter.weights.matrix, eta.grid) {
-    n <- length(y.obs)
-    filtered.spectral <- y.spectral * filter.weights.matrix
-    Y.hat.all <- V %*% filtered.spectral
-    residuals.all <- y.obs - Y.hat.all
-    rss <- colSums(residuals.all^2)
-    trace.S <- colSums(filter.weights.matrix)
-    denom <- pmax(n - trace.S, 1e-10)
-    gcv.scores <- rss / (denom^2)
-    best.idx <- which.min(gcv.scores)
-
-    list(
-        y.hat = Y.hat.all[, best.idx],
-        eta.optimal = eta.grid[best.idx],
-        gcv.min = gcv.scores[best.idx],
-        effective.df = trace.S[best.idx],
-        best.idx = best.idx
-    )
 }
 
 #' @rdname geosmooth-print-methods
