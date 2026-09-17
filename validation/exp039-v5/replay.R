@@ -17,6 +17,14 @@ grid <- scan(file.path(inputs,cohort,'grid.txt'),quiet=TRUE)
 columns <- read.delim(file.path(inputs,cohort,'columns.tsv'),stringsAsFactors=FALSE)
 sink(file.path(output,'session.txt'));print(sessionInfo()); print(extSoftVersion());sink()
 cat(format(Sys.time()),cohort,'public package path:',nrow(Y),'vertices;',ncol(Y),'responses;',length(grid),'times\n')
+# Read-only progress instrumentation at the acceptance predicate.
+.v5.counter <- new.env(parent=emptyenv()); .v5.counter$n <- 0L
+trace('.metric.graph.verify.agreement',where=asNamespace('geosmooth'),print=FALSE,
+      tracer=quote({
+          counter <- get('.v5.counter',envir=.GlobalEnv)
+          counter$n <- counter$n+1L
+          if (counter$n %% 30L == 0L) cat(format(Sys.time()),counter$n,'mask/time checks reached\n')
+      }))
 tick <- proc.time()
 path <- apply.metric.graph.lowpass.path(b,Y,grid,numerical.policy='verified.fallback')
 seconds <- (proc.time()-tick)[['elapsed']]
