@@ -698,9 +698,21 @@ extern "C" SEXP S_metric_graph_lowpass_spectrum(
     Eigen::VectorXd eigenvalues;
     Eigen::MatrixXd eigenvectors;
     std::string backend;
-    compute_spectrum(op.laplacian, n_eigenpairs, eigen_solver,
+    // Normalize only the numerical eigensolve, not graph conductances or times.
+    // This avoids an absolute solver scale depending on conductance units.
+    double spectral_scale = 0.0;
+    for (int k = 0; k < op.laplacian.outerSize(); ++k)
+        for (spmat_t::InnerIterator it(op.laplacian, k); it; ++it)
+            spectral_scale = std::max(spectral_scale, std::abs(it.value()));
+    if (spectral_scale == 0.0) spectral_scale = 1.0;
+    spmat_t spectral_matrix = op.laplacian;
+    for (int k = 0; k < spectral_matrix.outerSize(); ++k)
+        for (spmat_t::InnerIterator it(spectral_matrix, k); it; ++it)
+            it.valueRef() /= spectral_scale;
+    compute_spectrum(spectral_matrix, n_eigenpairs, eigen_solver,
                      dense_eigen_threshold, dense_fallback_threshold,
                      dense_fallback, verbose, eigenvalues, eigenvectors, backend);
+    eigenvalues *= spectral_scale;
 
     SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
     SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));

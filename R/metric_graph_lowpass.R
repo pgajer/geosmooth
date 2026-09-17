@@ -136,6 +136,15 @@ metric.graph.lowpass.operator <- function(
 #' @param dense.fallback \code{"auto"}, \code{"never"}, or \code{"always"}.
 #'
 #' @details
+#' Numerical verification anchors the known component nullspace (square-root
+#' degree for the normalized operator), and rejects unresolved positive modes
+#' rather than clamping them to zero. Heat paths, fits and refits additionally
+#' check spectral error at the requested times. Missing-response blocks must
+#' pass a conditioning check as well as Cholesky and residual checks; failure
+#' returns an error without deleting positive edges or adding a ridge.
+#' These are conservative double-precision diagnostics, not rigorous interval
+#' error bounds. A complete basis alone does not certify arbitrary long times.
+#'
 #' The basis is complete only when it contains one eigenvector per graph
 #' vertex. A truncated basis represents only the retained low-frequency
 #' subspace. The largest retained eigenvalue supplies a conservative proxy for
@@ -245,7 +254,7 @@ metric.graph.lowpass.basis <- function(
     spectral$is.complete <- spectral$n.eigenpairs == n
     spectral$largest.retained.eigenvalue <- max(spectral$eigenvalues)
     positive <- spectral$eigenvalues[
-        spectral$eigenvalues > .Machine$double.eps
+        spectral$eigenvalues > 0
     ]
     spectral$smallest.positive.eigenvalue <- if (length(positive)) {
         min(positive)
@@ -291,7 +300,9 @@ metric.graph.lowpass.basis <- function(
 #'   positive retained mode at the upper endpoint.
 #'
 #' @return A numeric vector with grid-construction metadata stored as
-#'   attributes.
+#'   attributes. Exact null modes alone are excluded; uniformly rescaling
+#'   conductances inversely rescales heat times. Unrepresentable endpoints
+#'   cause an error.
 #' @examples
 #' adj <- list(2L, c(1L, 3L), c(2L, 4L), 3L)
 #' lengths <- list(1, c(1, 1), c(1, 1), 1)
@@ -327,7 +338,7 @@ metric.graph.heat.eta.grid <- function(
     )
 
     positive <- sort(basis$spectral$eigenvalues[
-        basis$spectral$eigenvalues > .Machine$double.eps
+        basis$spectral$eigenvalues > 0
     ])
     if (!length(positive)) {
         stop("The basis has no positive retained eigenvalue.", call. = FALSE)
@@ -347,7 +358,7 @@ metric.graph.heat.eta.grid <- function(
         eta.max <- log(1 / equilibrium.tol) / lambda.slow
     }
     if (!is.finite(eta.min) || !is.finite(eta.max) ||
-        eta.min <= 0 || eta.max <= eta.min) {
+        eta.min <= 0 || eta.max < eta.min) {
         stop(
             "The requested heat-time rule did not produce ordered positive endpoints.",
             call. = FALSE
@@ -451,7 +462,7 @@ metric.graph.heat.extend.lower <- function(
     )
 
     positive <- basis$spectral$eigenvalues[
-        basis$spectral$eigenvalues > .Machine$double.eps
+        basis$spectral$eigenvalues > 0
     ]
     if (!length(positive)) {
         stop("The basis has no positive retained eigenvalue.", call. = FALSE)
@@ -612,6 +623,7 @@ apply.metric.graph.lowpass.path <- function(
         eta.grid, basis$spectral$eigenvalues, filter.type, length(eta.grid)
     )
 
+    .check.metric.graph.heat.times(basis$spectral, eta.grid, filter.type)
     if (anyNA(Y)) {
         return(.metric.graph.observed.path.object(
             basis, Y, eta.grid, filter.type, y.info$col.names,
@@ -748,6 +760,7 @@ apply.metric.graph.lowpass.path <- function(
         truncation.tol = eta.truncation.tol
     )
     evaluate <- function(grid) {
+        .check.metric.graph.heat.times(basis$spectral, grid, filter.type)
         weights <- compute.filter.weights.matrix(
             basis$spectral$eigenvalues, grid, filter.type
         )
@@ -773,17 +786,21 @@ apply.metric.graph.lowpass.path <- function(
 
     if (eta.search == "fixed") {
         selected <- evaluate(eta.grid)
-        lower.idx <- which.min(eta.grid)
+        competitive <- which(selected$gcv.result$status == "valid" &
+                             is.finite(selected$gcv.result$gcv.scores))
+        lower.idx <- competitive[which.min(eta.grid[competitive])]
+        upper.idx <- competitive[which.max(eta.grid[competitive])]
         rounds <- data.frame(
             round = 0L,
-            eta.min = min(eta.grid),
-            eta.max = max(eta.grid),
+            eta.min = min(eta.grid[competitive]),
+            eta.max = max(eta.grid[competitive]),
             n.candidates = length(eta.grid),
             best.idx = selected$gcv.result$best.idx,
             eta.optimal = selected$gcv.result$eta.optimal,
             gcv.optimal = selected$gcv.result$gcv.min,
             lower.endpoint.selected =
                 selected$gcv.result$best.idx == lower.idx,
+            upper.endpoint.selected = selected$gcv.result$best.idx == upper.idx,
             extension.status = "not_requested",
             stringsAsFactors = FALSE
         )
@@ -823,12 +840,17 @@ apply.metric.graph.lowpass.path <- function(
     round.rows <- list()
     repeat {
         selected <- evaluate(eta.grid)
-        lower.selected <- selected$gcv.result$best.idx == 1L
+        competitive <- which(selected$gcv.result$status == "valid" &
+                             is.finite(selected$gcv.result$gcv.scores))
+        lower.selected <- selected$gcv.result$best.idx == competitive[which.min(eta.grid[competitive])]
+        upper.selected <- selected$gcv.result$best.idx == competitive[which.max(eta.grid[competitive])]
+        # Extension operates on the competitive positive domain, not invalid diagnostics.
+        competitive.grid <- eta.grid[competitive]
         extension.status <- if (lower.selected) "pending" else "not_requested"
         if (lower.selected) {
             extension <- metric.graph.heat.extend.lower(
                 basis = basis,
-                eta.grid = eta.grid,
+                eta.grid = competitive.grid,
                 endpoint.status = "active",
                 expansion.factor = eta.expansion.factor,
                 max.expansions = eta.max.expansions,
@@ -848,11 +870,12 @@ apply.metric.graph.lowpass.path <- function(
             eta.optimal = selected$gcv.result$eta.optimal,
             gcv.optimal = selected$gcv.result$gcv.min,
             lower.endpoint.selected = lower.selected,
+            upper.endpoint.selected = upper.selected,
             extension.status = extension.status,
             stringsAsFactors = FALSE
         )
         if (!lower.selected) {
-            search.status <- "interior_optimum"
+            search.status <- if (upper.selected) "upper_endpoint_selected" else "interior_optimum"
             break
         }
         if (!extension$admitted) {
@@ -1184,6 +1207,7 @@ refit.metric.graph.lowpass.fit <- function(object,
             filter.type = filter.type,
             n.candidates = n.candidates
         )
+        .check.metric.graph.heat.times(spectral, eta.grid, filter.type)
         filter.weights.matrix <- compute.filter.weights.matrix(eigenvalues, eta.grid, filter.type)
         .require.metric.graph.lowpass.finite(filter.weights.matrix, "refit filter weights")
         trace.S.all <- colSums(filter.weights.matrix)
@@ -1254,6 +1278,7 @@ refit.metric.graph.lowpass.fit <- function(object,
     .require.metric.graph.lowpass.finite(f.lambda,
                                          "object$spectral$filtered.eigenvalues")
     .require.metric.graph.lowpass.finite(eta.used, "object$spectral$eta.optimal")
+    .check.metric.graph.heat.times(spectral, eta.used, filter.type)
     block.index <- .make.metric.graph.lowpass.block.index(n.responses, block.size)
     Y.hat <- matrix(0, nrow = n, ncol = n.responses)
     residuals <- matrix(0, nrow = n, ncol = n.responses)
@@ -1507,18 +1532,17 @@ refit.metric.graph.lowpass.fit <- function(object,
 generate.eta.grid <- function(eigenvalues, filter.type, n.candidates = 40L) {
     n.candidates <- max(5L, as.integer(n.candidates))
     ev <- sort(as.numeric(eigenvalues))
-    ev <- ev[is.finite(ev) & ev > .Machine$double.eps]
-    if (length(ev) == 0L) {
-        return(seq(1e-3, 1, length.out = n.candidates))
-    }
-
+    ev <- ev[is.finite(ev) & ev > 0]
+    if (!length(ev)) stop("No positive retained eigenvalue for an automatic time grid.", call. = FALSE)
+    # Heat time is inverse to conductance units. No absolute epsilon or time
+    # floor may alter the domain; equal nonzero modes give one unique time.
     lo <- 1 / max(ev)
     hi <- 1 / min(ev)
-    if (!is.finite(lo) || !is.finite(hi) || lo <= 0 || hi <= lo) {
-        return(seq(1e-3, 1, length.out = n.candidates))
+    if (!is.finite(lo) || !is.finite(hi) || lo <= 0 || hi < lo) {
+        stop("Automatic time endpoints exceed double-precision range; supply a validated grid.", call. = FALSE)
     }
-
-    exp(seq(log(max(lo, 1e-6)), log(hi), length.out = n.candidates))
+    if (hi == lo) return(lo)
+    exp(seq(log(lo), log(hi), length.out = n.candidates))
 }
 
 compute.filter.weights.matrix <- function(eigenvalues, eta.grid, filter.type) {

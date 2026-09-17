@@ -65,42 +65,94 @@
     labels
 }
 
+# Anchor the exact nullspace from positive-edge topology. Numerical modes outside
+# it must be resolved; clamping an extra negative mode to zero is not permitted.
 .check.metric.graph.lowpass.spectrum <- function(spectral, operator, spectrum) {
     n <- operator$graph$n.vertices
     V <- spectral$eigenvectors
     lambda <- spectral$eigenvalues
-    if (nrow(V) != n || ncol(V) != length(lambda) ||
-        (spectrum == "full" && length(lambda) != n)) {
+    m <- length(lambda)
+    if (nrow(V) != n || ncol(V) != m || (spectrum == "full" && m != n)) {
         stop("Eigensolver did not return the requested spectrum dimension.", call. = FALSE)
     }
     L <- operator$laplacian$matrix
-    scale <- max(1, max(abs(Matrix::rowSums(abs(L)))))
-    tol <- 1e-8
-    if (any(lambda < -tol * scale)) {
-        stop("Laplacian eigensystem has materially negative eigenvalues.", call. = FALSE)
-    }
-    # Graph topology identifies exact zero modes, without zeroing small positive modes.
+    unit <- max(abs(L))
+    if (unit == 0) unit <- 1
+    Ln <- L / unit
+    norm.L <- max(Matrix::rowSums(abs(Ln)))
     components <- .metric.graph.lowpass.components(operator$graph$adj.list)
     nullity <- max(components)
-    zeros <- seq_len(min(nullity, length(lambda)))
-    if (any(abs(lambda[zeros]) > tol * scale)) {
-        stop("Eigensystem does not resolve the graph's nullspace.", call. = FALSE)
+    if (m < nullity) stop("Retained spectrum does not contain the known nullspace.", call. = FALSE)
+    Q <- matrix(0, n, nullity)
+    for (k in seq_len(nullity)) {
+        ix <- which(components == k)
+        z <- rep(1, length(ix))
+        if (operator$laplacian.type == "symmetric.normalized" && length(ix) > 1L) {
+            z <- sqrt(operator$degree[ix] / max(operator$degree[ix]))
+        }
+        Q[ix, k] <- z / sqrt(sum(z^2))
     }
-    lambda[zeros] <- 0
-    lambda <- pmax(lambda, 0)
+    positive <- if (m > nullity) seq.int(nullity + 1L, m) else integer()
+    noise <- 32 * .Machine$double.eps * max(1, norm.L)
+    ln <- lambda / unit
+    if (any(abs(ln[seq_len(nullity)]) > 1e-8 * max(1, norm.L)) ||
+        any(ln[positive] <= noise)) {
+        stop("Unresolved positive spectrum or nullspace: double precision cannot separate the modes; no edges were removed.", call. = FALSE)
+    }
+    V[, seq_len(nullity)] <- Q
+    if (length(positive)) {
+        Z <- V[, positive, drop = FALSE]
+        # Two projections suppress leakage of constants into the decaying modes.
+        Z <- Z - Q %*% crossprod(Q, Z)
+        Z <- Z - Q %*% crossprod(Q, Z)
+        size <- sqrt(colSums(Z^2))
+        if (any(size < .5)) stop("Eigensystem does not resolve the known nullspace.", call. = FALSE)
+        V[, positive] <- sweep(Z, 2L, size, `/`)
+    }
+    lambda[seq_len(nullity)] <- 0
+    ln <- lambda / unit
+    orth <- max(abs(crossprod(V) - diag(m)))
+    E <- as.matrix(Ln %*% V) - sweep(V, 2L, ln, `*`)
+    residual <- sqrt(sum(E^2))
+    null.error <- max(abs(as.matrix(Ln %*% Q)))
+    if (!is.finite(orth) || !is.finite(residual) || orth > 1e-8 ||
+        residual > 1e-8 * max(1, norm.L) || null.error > noise) {
+        stop("Eigensystem failed nullspace, orthogonality or residual verification.", call. = FALSE)
+    }
     spectral$eigenvalues <- lambda
+    spectral$eigenvectors <- V
     spectral$components <- components
     spectral$nullity <- nullity
-    if (length(lambda) == n) {
-        orth <- max(abs(crossprod(V) - diag(n)))
-        residual <- max(abs(as.matrix(L %*% V) - sweep(V, 2L, lambda, `*`))) / scale
-        if (!is.finite(orth) || !is.finite(residual) || orth > tol || residual > tol) {
-            stop("Full eigensystem failed orthogonality or residual verification.", call. = FALSE)
-        }
-        spectral$verification <- list(orthogonality.error = orth,
-                                     relative.residual = residual, tolerance = tol)
-    }
+    spectral$verification <- list(
+        orthogonality.error = orth, relative.residual = residual / max(1, norm.L),
+        nullspace.error = null.error, tolerance = 1e-8,
+        operator.scale = unit, normalized.error = residual + noise + orth * norm.L,
+        normalized.gap = if (length(positive)) min(ln[positive]) else Inf,
+        numerical.policy = "known_nullspace_resolved_positive_modes_time_and_condition_guards")
     spectral
+}
+
+# Conservative diagnostic for heat-operator perturbations; not an interval-
+# arithmetic certificate. Long times must resolve the slow positive modes too.
+.check.metric.graph.heat.times <- function(spectral, grid, filter.type) {
+    if (filter.type != "heat_kernel") return(rep(0, length(grid)))
+    v <- spectral$verification
+    if (is.null(v$normalized.error)) {
+        stop("Heat verification metadata is missing; rebuild the spectral basis.", call. = FALSE)
+    }
+    tau <- grid * v$operator.scale
+    gap <- v$normalized.gap
+    # The gap bound uses the common, explicitly anchored nullspace. Saturation
+    # prevents rejecting well-resolved equilibrium fits merely because t is huge.
+    horizon <- if (is.finite(gap) && gap > v$normalized.error) {
+        pmin(tau, 2 / (gap - v$normalized.error))
+    } else tau
+    error <- horizon * v$normalized.error
+    error[grid == 0] <- 0
+    if (any(!is.finite(error)) || any(error > v$tolerance)) {
+        stop("Requested heat times are numerically unresolved for this spectrum; no certified fit returned.", call. = FALSE)
+    }
+    error
 }
 
 .select.metric.graph.lowpass.candidates <- function(fitted, scores, df, status, grid) {
@@ -161,6 +213,7 @@
         stop("Missing responses require heat_kernel and a complete spectrum (spectrum = 'full').",
              call. = FALSE)
     }
+    heat.error <- .check.metric.graph.heat.times(basis$spectral, grid, filter.type)
     V <- basis$spectral$eigenvectors
     lambda <- basis$spectral$eigenvalues
     n <- nrow(Y)
@@ -200,6 +253,15 @@
             if (length(U)) {
                 AUU <- A[U, U, drop = FALSE]
                 AUO <- A[U, O, drop = FALSE]
+                reciprocal.condition <- rcond(AUU)
+                # A small backward residual cannot certify a nearly singular
+                # prediction block. Include spectral assembly uncertainty.
+                uncertainty <- heat.error[j] / scale +
+                    32 * .Machine$double.eps * n
+                if (!is.finite(reciprocal.condition) || reciprocal.condition <= 0 ||
+                    uncertainty / reciprocal.condition > 1e-8) {
+                    stop("Observed heat block is ill-conditioned at the requested time; no ridge was added.", call. = FALSE)
+                }
                 ch <- tryCatch(chol(AUU), error = function(e) NULL)
                 if (is.null(ch)) stop("Observed heat block is numerically singular; no ridge was added.", call. = FALSE)
                 solved <- backsolve(ch, forwardsolve(t(ch), AUO))

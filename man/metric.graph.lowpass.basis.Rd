@@ -91,6 +91,15 @@ response-independent and can be reused for many responses and filter
 parameters.
 }
 \details{
+Numerical verification anchors the known component nullspace (square-root
+degree for the normalized operator), and rejects unresolved positive modes
+rather than clamping them to zero. Heat paths, fits and refits additionally
+check spectral error at the requested times. Missing-response blocks must
+pass a conditioning check as well as Cholesky and residual checks; failure
+returns an error without deleting positive edges or adding a ridge.
+These are conservative double-precision diagnostics, not rigorous interval
+error bounds. A complete basis alone does not certify arbitrary long times.
+
 The basis is complete only when it contains one eigenvector per graph
 vertex. A truncated basis represents only the retained low-frequency
 subspace. The largest retained eigenvalue supplies a conservative proxy for
