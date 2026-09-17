@@ -134,7 +134,7 @@
 
 # Conservative diagnostic for heat-operator perturbations; not an interval-
 # arithmetic certificate. Long times must resolve the slow positive modes too.
-.check.metric.graph.heat.times <- function(spectral, grid, filter.type) {
+.metric.graph.heat.time.diagnostic <- function(spectral, grid, filter.type) {
     if (filter.type != "heat_kernel") return(rep(0, length(grid)))
     v <- spectral$verification
     if (is.null(v$normalized.error)) {
@@ -149,7 +149,12 @@
     } else tau
     error <- horizon * v$normalized.error
     error[grid == 0] <- 0
-    if (any(!is.finite(error)) || any(error > v$tolerance)) {
+    error
+}
+
+.check.metric.graph.heat.times <- function(spectral, grid, filter.type) {
+    error <- .metric.graph.heat.time.diagnostic(spectral, grid, filter.type)
+    if (any(!is.finite(error)) || any(error > spectral$verification$tolerance)) {
         stop("Requested heat times are numerically unresolved for this spectrum; no certified fit returned.", call. = FALSE)
     }
     error
@@ -209,6 +214,9 @@
 }
 
 .metric.graph.observed.heat.path <- function(basis, Y, grid, filter.type) {
+    if (.metric.graph.verified.policy(basis)) {
+        return(.metric.graph.verified.heat.path(basis, Y, grid, filter.type))
+    }
     if (filter.type != "heat_kernel" || !isTRUE(basis$spectral$is.complete)) {
         stop("Missing responses require heat_kernel and a complete spectrum (spectrum = 'full').",
              call. = FALSE)
@@ -305,6 +313,7 @@
                 gcv.scores = if (single) path$gcv[, 1L] else path$gcv,
                 status = if (single) path$status[, 1L] else path$status,
                 n.observed = path$n.observed, observed = !is.na(Y),
+                tuning = path$tuning, numerical = path$numerical,
                 spectral = basis$spectral, basis.complete = TRUE,
                 basis = basis, parameters = parameters,
                 n.responses = ncol(Y), response.names = names,
@@ -317,7 +326,7 @@
 
 .refit.metric.graph.observed.heat <- function(object, Y, select, grid, n.candidates, names) {
     basis <- list(spectral = object$spectral, graph = object$graph,
-                  operator = object$operator)
+                  operator = object$operator, parameters = object$parameters)
     class(basis) <- c("metric.graph.lowpass.basis", "list")
     filter <- object$spectral$filter.type
     if (select) {
@@ -332,6 +341,7 @@
     idx <- rep(1L, p)
     if (select) {
         for (j in seq_len(p)) {
+            .metric.graph.require.tuning(path$tuning[[j]])
             best <- .select.metric.graph.lowpass.candidates(
                 path$fitted[, , j, drop = FALSE], path$gcv[, j],
                 path$df[, j], path$status[, j], grid)
@@ -346,7 +356,8 @@
                 n.responses = p, per.column.gcv = select,
                 filter.type = filter, n.observed = path$n.observed,
                 effective.df = path$df[at], gcv.scores = path$gcv[at],
-                gcv.status = path$status[at], n.cores.used = 1L)
+                gcv.status = path$status[at], n.cores.used = 1L,
+                tuning = path$tuning, numerical = path$numerical)
     if (select) {
         out$eta.optimal <- grid[idx]
         out$eta.grid <- grid

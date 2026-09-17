@@ -33,7 +33,8 @@ fit.metric.graph.lowpass(
   eta.identity.departure = 0.01,
   eta.truncation.tol = 1e-04,
   weight.type = c("length", "conductance"),
-  spectrum = c("partial", "full")
+  spectrum = c("partial", "full"),
+  numerical.policy = c("conservative", "verified.fallback")
 )
 }
 \arguments{
@@ -122,6 +123,9 @@ Conductance-transform settings are unused for direct conductances.}
 \item{spectrum}{\code{"partial"} retains the requested number of modes.
 \code{"full"} requests and verifies all vertex eigenpairs with a dense
 solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.}
+
+\item{numerical.policy}{See \code{metric.graph.lowpass.basis}. The default
+is conservative; the bounded fallback must be requested explicitly.}
 }
 \value{
 A list of class \code{"metric.graph.lowpass.fit"}.

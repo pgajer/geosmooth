@@ -23,7 +23,8 @@ metric.graph.lowpass.basis(
   dense.fallback = c("auto", "never", "always"),
   verbose = FALSE,
   weight.type = c("length", "conductance"),
-  spectrum = c("partial", "full")
+  spectrum = c("partial", "full"),
+  numerical.policy = c("conservative", "verified.fallback")
 )
 }
 \arguments{
@@ -78,6 +79,18 @@ Conductance-transform settings are unused for direct conductances.}
 \item{spectrum}{\code{"partial"} retains the requested number of modes.
 \code{"full"} requests and verifies all vertex eigenpairs with a dense
 solver, overriding \code{n.eigenpairs}; sparse-only requests are rejected.}
+
+\item{numerical.policy}{Numerical acceptance policy. The default
+\code{"conservative"} retains the heat-time and missing-block condition
+guards. Opt-in \code{"verified.fallback"} requires a full spectrum,
+unnormalized Laplacian, heat filter, and fixed tuning grid. It compares
+every requested positive time and response mask with a separate LAPACK
+eigensystem and a bordered pseudoinverse calculation. Failed residual or
+agreement checks stop the entire path. This double-precision agreement
+check is not a rigorous forward-error certificate. Flat GCV paths are
+returned by the path function but cannot select a time automatically.
+Endpoint and near-minimum flags are retained in \code{tuning}.
+See \code{vignette("verified-heat-fallback")} for equations and limits.}
 }
 \value{
 A list of class \code{"metric.graph.lowpass.basis"} containing the

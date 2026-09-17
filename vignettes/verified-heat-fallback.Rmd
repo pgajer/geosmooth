@@ -1,0 +1,141 @@
+---
+title: "Observed-data heat fits with numerical cross-checks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Observed-data heat fits with numerical cross-checks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+A completed linear solve does not establish that a graph smoother is accurate.
+The default `numerical.policy = "conservative"` therefore retains the spectral,
+heat-time and missing-block condition checks. An opt-in policy,
+`"verified.fallback"`, offers a bounded alternative when the latter two checks
+refuse a calculation. It checks **every** requested positive time and observed
+response mask, even when the conservative checks would pass. It reports which
+calculations needed the fallback. It does not weaken the initial requirement
+that the graph's positive eigenvalues be numerically distinguishable from its
+known nullspace.
+
+The fallback currently supports a complete spectrum, the unnormalized
+Laplacian, the heat filter, and a fixed tuning grid. It uses two calculations
+in double precision. Their agreement is evidence for the tested calculation,
+not an interval certificate or a guarantee for arbitrary graphs. It costs an
+additional dense eigendecomposition and additional matrix solves. Partial
+spectra, normalized Laplacians, other filters and automatic grid expansion are
+outside this implementation's scope.
+
+## The fitted model
+
+Let $L$ be the unnormalized graph Laplacian and
+$H_t=\exp(-tL)$ its heat operator. For fully observed responses the fitted vector
+is $H_ty$. For observed vertices $O$, unobserved vertices $U$, and $q=|O|$,
+the observed-data extension minimizes
+
+$$\|y_O-f_O\|^2+f^T\{\exp(tL)-I\}f,\qquad t>0.$$
+
+Each connected component must have an observed response. A completely
+unobserved component is unidentified and causes an error. With only one
+observation in each component the extension is componentwise constant and GCV
+is undefined; the path is available but cannot tune a time.
+
+Directly forming $\exp(tL)$ can overflow. Instead, put
+$A=(I-H_t)/s$, where $s=\max_i(1-\exp(-t\lambda_i))$ and $\lambda_i$ are the
+Laplacian eigenvalues. The implementation computes the small complements with
+`-expm1(-t * lambda)`. Missing-block elimination gives
+
+$$X=A_{UU}^{-1}A_{UO},\qquad K=A_{OO}-A_{OU}X,$$
+$$\widehat f_U=-Xy_O,\qquad \widehat f_O=(I-sK)y_O.$$
+
+Scaling cancels from GCV, giving a stable expression even when $t$ is very small:
+
+$$\operatorname{df}=q-s\operatorname{tr}(K),\qquad
+\operatorname{GCV}=q\frac{\|Ky_O\|^2}{\operatorname{tr}(K)^2}.$$
+
+The sample size here is the number of observed responses, not the number of
+vertices. The identity endpoint $t=0$ is returned separately with undefined
+GCV and unknown values still missing. There is no denominator floor, ridge,
+edge removal or removal of a failed positive grid point.
+
+## The alternative calculation and acceptance checks
+
+A separate base-R LAPACK eigendecomposition starts from the actual Laplacian.
+Both eigensystems undergo the existing nullspace, residual and orthogonality
+checks. The alternative route constructs $P=A^+$, the Moore--Penrose
+pseudoinverse of its own normalized heat complement. With $Q$ the component
+constant orthonormal basis, it solves
+
+$$\begin{pmatrix}P_{OO}&Q_O\\Q_O^T&0\end{pmatrix}
+  \begin{pmatrix}K_{\rm ref}\\C\end{pmatrix}
+  =\begin{pmatrix}I_q\\0\end{pmatrix}.$$
+
+It predicts unobserved responses with
+$(P_{UO}K_{\rm ref}+Q_U C)y_O$ and observed responses with
+$(I-s_{\rm ref}K_{\rm ref})y_O$. Thus the two routes eliminate different
+blocks. When all responses are observed the reference simply applies its own
+heat operator; neither block solve is necessary.
+
+Acceptance requires all these checks, for every positive time and distinct
+observed-vertex mask:
+
+| Check | Maximum accepted value |
+|:---|---:|
+| Candidate missing-block scaled solve residual | $10^{-8}$ |
+| Reference bordered scaled solve residual | $10^{-9}$ |
+| Maximum absolute row sum of prediction-operator difference | $10^{-7}$ |
+| Maximum entry of error preserving the component nullspace, either operator | $10^{-7}$ |
+| Maximum prediction difference for centered, training-RMS-scaled responses | $10^{-7}$ |
+| Absolute effective-degrees-of-freedom difference | $10^{-7}$ |
+| Standardized-response GCV difference | $10^{-10}+10^{-7}|\operatorname{GCV}_{\rm ref}|$ |
+
+For a solve $BX=C$, its scaled residual is
+$\max|BX-C|/\max(1,\max|C|,\|B\|_\infty\max|X|)$.
+The reference uses the analogous expression with an identity-and-zero right
+hand side. A nonfinite check, a failed solve, unresolved residual degrees of
+freedom, or a failed tolerance stops the entire path. All returned positive-time
+predictions and valid GCV scores must be finite. Raw response units are retained
+in returned predictions and GCV. Training scaling is only used for the numerical
+comparison. Constant training responses use scale one.
+
+`numerical$diagnostics` retains both conservative diagnostics and agreement
+checks. `response.mask` maps response columns to distinct masks; matrix
+factorizations are shared for responses with the same mask. The declared
+limits and reference eigensystem diagnostics are also returned. These two
+computations can share floating-point limitations; no claim of arbitrary
+forward accuracy follows from their agreement.
+
+## Tuning flags are part of the result
+
+A grid minimum is not necessarily a bracketed optimum. Each response has a
+`tuning` record with `lower.endpoint`, `upper.endpoint`, `bracketed`, and all
+`near.minimum.indices`. A single requested positive time has both endpoint
+flags and is not bracketed. A unique interior grid minimum is called bracketed
+only **within this grid**, not proven optimal over continuous time.
+
+A score within $10^{-10}+10^{-7}|\operatorname{GCV}_{\min}|$ of the minimum
+is numerically near-minimal. If every positive valid candidate is near-minimal,
+`tuning$status` is `"unresolved_flat_gcv"` and `best.idx` is missing. This
+absolute threshold is in squared response units, so changing measurement
+units can change the declaration of unresolved tuning. The path remains
+available, but automatic selection in `fit()` or a per-response `refit()`
+stops. Prespecified-time application remains possible. Multiple near minima
+on a nonflat path retain their flag and indices; selection uses the smallest
+computed score, without claiming a uniquely determined optimum.
+
+```{r}
+library(geosmooth)
+adj <- list(2L, c(1L,3L), c(2L,4L), c(3L,5L), 4L)
+w <- list(1, c(1,2), c(2,3), c(3,4), 4)
+basis <- metric.graph.lowpass.basis(
+  adj, w, weight.type="conductance", spectrum="full",
+  numerical.policy="verified.fallback")
+path <- apply.metric.graph.lowpass.path(
+  basis, c(2,NA,4,NA,-1), eta.grid=c(0,.01,.1,1))
+path$tuning
+path$numerical$diagnostics[,c("eta","n.observed","fallback.used",
+                              "candidate.residual","operator.error")]
+```
+
+`fit.metric.graph.lowpass()` accepts the same policy explicitly.
+`apply.metric.graph.lowpass.path()` and `refit()` inherit it unless overridden.
+The conservative default, including its previous refusals, is unchanged.

@@ -14,6 +14,7 @@
   n.cores = 1L,
   block.size = NULL,
   verbose = FALSE,
+  numerical.policy = NULL,
   ...
 )
 }
@@ -38,6 +39,9 @@ enable parallel execution. Per-column GCV results report
 \item{block.size}{Optional block size for fixed-eta multi-column refits.}
 
 \item{verbose}{Logical progress flag.}
+
+\item{numerical.policy}{NULL inherits the fitted object's policy; otherwise
+\code{"conservative"} or \code{"verified.fallback"}.}
 
 \item{...}{Additional arguments are not currently supported.}
 }

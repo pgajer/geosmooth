@@ -151,6 +151,18 @@ metric.graph.lowpass.operator <- function(
 #' bounding the contribution of omitted modes because all omitted eigenvalues
 #' are at least as large.
 #'
+#' @param numerical.policy Numerical acceptance policy. The default
+#'   \code{"conservative"} retains the heat-time and missing-block condition
+#'   guards. Opt-in \code{"verified.fallback"} requires a full spectrum,
+#'   unnormalized Laplacian, heat filter, and fixed tuning grid. It compares
+#'   every requested positive time and response mask with a separate LAPACK
+#'   eigensystem and a bordered pseudoinverse calculation. Failed residual or
+#'   agreement checks stop the entire path. This double-precision agreement
+#'   check is not a rigorous forward-error certificate. Flat GCV paths are
+#'   returned by the path function but cannot select a time automatically.
+#'   Endpoint and near-minimum flags are retained in \code{tuning}.
+#'   See \code{vignette("verified-heat-fallback")} for equations and limits.
+#'
 #' @return A list of class \code{"metric.graph.lowpass.basis"} containing the
 #'   graph operator, eigenvalues, eigenvectors, solver metadata, and spectral
 #'   completeness diagnostics.
@@ -179,10 +191,12 @@ metric.graph.lowpass.basis <- function(
     dense.fallback = c("auto", "never", "always"),
     verbose = FALSE,
     weight.type = c("length", "conductance"),
-    spectrum = c("partial", "full")) {
+    spectrum = c("partial", "full"),
+    numerical.policy = c("conservative", "verified.fallback")) {
 
     weight.type <- match.arg(weight.type)
     spectrum <- match.arg(spectrum)
+    numerical.policy <- match.arg(numerical.policy)
     graph <- .prepare.metric.graph.lowpass.graph(adj.list, weight.list, weight.type)
     n <- length(graph$adj.list)
     args <- .validate.metric.graph.lowpass.operator.args(
@@ -204,6 +218,11 @@ metric.graph.lowpass.basis <- function(
     }
     args$weight.type <- weight.type
     args$spectrum <- spectrum
+    args$numerical.policy <- numerical.policy
+    if (numerical.policy == "verified.fallback" &&
+        (spectrum != "full" || args$laplacian.type != "unnormalized")) {
+        stop("verified.fallback requires spectrum = 'full' and the unnormalized Laplacian.", call. = FALSE)
+    }
     if (weight.type == "conductance") args$conductance.rule <- "identity"
     solver <- .validate.metric.graph.lowpass.solver.args(
         n.eigenpairs = n.eigenpairs,
@@ -595,6 +614,9 @@ metric.graph.heat.extend.lower <- function(
 #' basis <- metric.graph.lowpass.basis(adj, lengths, n.eigenpairs = 4L,
 #'                                     eigen.solver = "dense")
 #' apply.metric.graph.lowpass.path(basis, 1:4, eta.grid = c(0, 0.1, 1))
+#' @param numerical.policy NULL inherits the basis policy; otherwise
+#'   \code{"conservative"} or \code{"verified.fallback"}. See
+#'   \code{metric.graph.lowpass.basis} for the bounded fallback contract.
 #' @export
 apply.metric.graph.lowpass.path <- function(
     basis,
@@ -605,9 +627,13 @@ apply.metric.graph.lowpass.path <- function(
     block.size = NULL,
     truncation.tol = 1e-4,
     unresolved.action = c("warn", "error", "allow"),
-    exact.zero = TRUE) {
+    exact.zero = TRUE,
+    numerical.policy = NULL) {
 
     .validate.metric.graph.lowpass.basis(basis)
+    if (!is.null(numerical.policy)) {
+        basis$parameters$numerical.policy <- match.arg(numerical.policy, c("conservative", "verified.fallback"))
+    }
     filter.type <- match.arg(filter.type)
     unresolved.action <- match.arg(unresolved.action)
     exact.zero <- .validate.logical.scalar(exact.zero, "exact.zero")
@@ -623,12 +649,15 @@ apply.metric.graph.lowpass.path <- function(
         eta.grid, basis$spectral$eigenvalues, filter.type, length(eta.grid)
     )
 
-    .check.metric.graph.heat.times(basis$spectral, eta.grid, filter.type)
-    if (anyNA(Y)) {
+    if (!.metric.graph.verified.policy(basis)) {
+        .check.metric.graph.heat.times(basis$spectral, eta.grid, filter.type)
+    }
+    if (anyNA(Y) || .metric.graph.verified.policy(basis)) {
         return(.metric.graph.observed.path.object(
             basis, Y, eta.grid, filter.type, y.info$col.names,
             list(block.size = block.size, truncation.tol = truncation.tol,
-                 unresolved.action = unresolved.action, exact.zero = exact.zero)
+                 unresolved.action = unresolved.action, exact.zero = exact.zero,
+                 numerical.policy = basis$parameters$numerical.policy %||% "conservative")
         ))
     }
 
@@ -759,18 +788,27 @@ apply.metric.graph.lowpass.path <- function(
         identity.departure = eta.identity.departure,
         truncation.tol = eta.truncation.tol
     )
+    if (.metric.graph.verified.policy(basis) && eta.search != "fixed") {
+        stop("verified.fallback currently requires eta.search = 'fixed'.", call. = FALSE)
+    }
     evaluate <- function(grid) {
-        .check.metric.graph.heat.times(basis$spectral, grid, filter.type)
+        if (!.metric.graph.verified.policy(basis)) {
+            .check.metric.graph.heat.times(basis$spectral, grid, filter.type)
+        }
         weights <- compute.filter.weights.matrix(
             basis$spectral$eigenvalues, grid, filter.type
         )
         .require.metric.graph.lowpass.finite(weights, "filter weights")
-        gcv <- if (anyNA(y)) {
+        gcv <- if (anyNA(y) || .metric.graph.verified.policy(basis)) {
             path <- .metric.graph.observed.heat.path(basis, matrix(y, ncol = 1L), grid, filter.type)
-            .select.metric.graph.lowpass.candidates(
+            .metric.graph.require.tuning(path$tuning[[1L]])
+            selected <- .select.metric.graph.lowpass.candidates(
                 path$fitted[, , 1L, drop = FALSE], path$gcv[, 1L],
                 path$df[, 1L], path$status[, 1L], grid
             )
+            selected$tuning <- path$tuning[[1L]]
+            selected$numerical <- path$numerical
+            selected
         } else {
             .select.eta.gcv.single(y, y.spectral, V, weights, grid,
                                    basis$spectral$eigenvalues, filter.type)
@@ -969,6 +1007,8 @@ apply.metric.graph.lowpass.path <- function(
 #'   adj, lengths, y = c(0, 0.2, 1.8, 2), n.eigenpairs = 4L,
 #'   eta.grid = c(0.1, 1), eigen.solver = "dense"
 #' )
+#' @param numerical.policy See \code{metric.graph.lowpass.basis}. The default
+#'   is conservative; the bounded fallback must be requested explicitly.
 #' @export
 fit.metric.graph.lowpass <- function(
     adj.list,
@@ -999,7 +1039,8 @@ fit.metric.graph.lowpass <- function(
     eta.identity.departure = 0.01,
     eta.truncation.tol = 1e-4,
     weight.type = c("length", "conductance"),
-    spectrum = c("partial", "full")) {
+    spectrum = c("partial", "full"),
+    numerical.policy = c("conservative", "verified.fallback")) {
 
     basis <- metric.graph.lowpass.basis(
         adj.list = adj.list,
@@ -1019,7 +1060,8 @@ fit.metric.graph.lowpass <- function(
         dense.fallback = dense.fallback,
         verbose = verbose,
         weight.type = weight.type,
-        spectrum = spectrum
+        spectrum = spectrum,
+        numerical.policy = numerical.policy
     )
     n <- basis$spectral$n.vertices
     if (!is.numeric(y) || !is.null(dim(y)) || length(y) != n) {
@@ -1104,7 +1146,8 @@ fit.metric.graph.lowpass <- function(
             gcv.optimal = gcv.result$gcv.min,
             effective.df = gcv.result$effective.df,
             best.idx = best.idx,
-            search = eta.selection$search
+            search = eta.selection$search,
+            tuning = gcv.result$tuning
         ),
         parameters = c(
             basis$parameters,
@@ -1121,6 +1164,7 @@ fit.metric.graph.lowpass <- function(
                     eta.selection$search$settings$truncation.tol
             )
         ),
+        numerical = gcv.result$numerical,
         timing = NULL
     )
     attr(result, "call") <- match.call()
@@ -1159,6 +1203,8 @@ fit.metric.graph.lowpass <- function(
 #' @seealso \code{\link{refit}} for supported fitted objects and migration.
 #' @method refit metric.graph.lowpass.fit
 #' @aliases refit.metric.graph.lowpass
+#' @param numerical.policy NULL inherits the fitted object's policy; otherwise
+#'   \code{"conservative"} or \code{"verified.fallback"}.
 #' @export
 refit.metric.graph.lowpass.fit <- function(object,
                                        y,
@@ -1167,10 +1213,14 @@ refit.metric.graph.lowpass.fit <- function(object,
                                        n.candidates = 40L,
                                        n.cores = 1L,
                                        block.size = NULL,
-                                       verbose = FALSE, ...) {
+                                       verbose = FALSE,
+                                       numerical.policy = NULL, ...) {
     .geosmooth.check.dots(...)
     if (!inherits(object, "metric.graph.lowpass.fit")) {
         stop("object must be a 'metric.graph.lowpass.fit' object.")
+    }
+    if (!is.null(numerical.policy)) {
+        object$parameters$numerical.policy <- match.arg(numerical.policy, c("conservative", "verified.fallback"))
     }
     spectral <- object$spectral
     V <- spectral$eigenvectors
@@ -1194,7 +1244,7 @@ refit.metric.graph.lowpass.fit <- function(object,
     filter.type <- spectral$filter.type
     if (is.null(filter.type)) filter.type <- "heat_kernel"
 
-    if (anyNA(Y)) {
+    if (anyNA(Y) || .metric.graph.verified.policy(object)) {
         return(.refit.metric.graph.observed.heat(
             object, Y, per.column.gcv, eta.grid, n.candidates, col.names
         ))
