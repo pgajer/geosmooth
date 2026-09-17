@@ -155,3 +155,14 @@ test_that("unidentified components and unsupported missing models fail explicitl
     expect_error(heat_test_fit(c(1, NaN, 2, 3, 4)), "NaN/Inf")
     expect_error(heat_test_fit(rep(NA_real_, 5)), "observed value")
 })
+
+
+test_that("normalized direct conductances avoid degree-product underflow and overflow", {
+    for (w in c(1e-310, 1e300)) {
+        op <- metric.graph.lowpass.operator(list(2L, 1L), list(w, w),
+                                            weight.type = "conductance",
+                                            laplacian.type = "symmetric.normalized")
+        expect_equal(as.matrix(op$laplacian$matrix), matrix(c(1, -1, -1, 1), 2),
+                     tolerance = 1e-12)
+    }
+})

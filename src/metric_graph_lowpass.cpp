@@ -314,7 +314,7 @@ metric_operator_t build_metric_operator(
     } else {
         for (const auto& e : op.edges) {
             if (op.degree[e.u] > 0.0 && op.degree[e.v] > 0.0) {
-                const double c_norm = e.conductance / std::sqrt(op.degree[e.u] * op.degree[e.v]);
+                const double c_norm = (e.conductance / std::sqrt(op.degree[e.u])) / std::sqrt(op.degree[e.v]);
                 triplets.emplace_back(e.u, e.v, -c_norm);
                 triplets.emplace_back(e.v, e.u, -c_norm);
             }
