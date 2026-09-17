@@ -87,15 +87,37 @@ observed-vertex mask:
 | Maximum prediction difference for centered, training-RMS-scaled responses | $10^{-7}$ |
 | Absolute effective-degrees-of-freedom difference | $10^{-7}$ |
 | Standardized-response GCV difference | $10^{-10}+10^{-7}|\operatorname{GCV}_{\rm ref}|$ |
+| Final original-unit GCV difference used for tuning | $10^{-10}+10^{-7}|\operatorname{GCV}^{\rm original}_{\rm ref}|$ |
 
 For a solve $BX=C$, its scaled residual is
 $\max|BX-C|/\max(1,\max|C|,\|B\|_\infty\max|X|)$.
 The reference uses the analogous expression with an identity-and-zero right
 hand side. A nonfinite check, a failed solve, unresolved residual degrees of
 freedom, or a failed tolerance stops the entire path. All returned positive-time
-predictions and valid GCV scores must be finite. Raw response units are retained
-in returned predictions and GCV. Training scaling is only used for the numerical
-comparison. Constant training responses use scale one.
+predictions and valid GCV scores must be finite.
+
+The final scores use the same centered calculation as the numerical check.
+For each response, subtract its observed mean **within each connected
+component**, then divide by its training root-mean-square deviation $\sigma$.
+Means are calculated relative to an observed anchor in that component, avoiding
+summing a large additive baseline. Write $y_O=c_O+\sigma z$, where $c$ is
+constant within each component. Since $Kc_O=0$ and the prediction operator $T$
+preserves those component constants, the package computes
+
+$$\widehat f=c+\sigma Tz,\qquad
+\operatorname{GCV}_{\rm original}=\sigma^2\operatorname{GCV}(z).$$
+
+These are algebraic identities, not a change of regression model. The same
+observed component means and scale are used for the independent calculation.
+Both the standardized scores and these final original-unit scores must pass
+their stated agreement tests **before** being returned or used to select a time.
+The implementation never recomputes GCV by multiplying $K$ by the uncentered
+measurements. `gcv.scaled.error` records the standardized comparison, while
+`gcv.final.scaled.error` records the final-score comparison; each is divided by
+its allowed tolerance and must not exceed one. A response constant within every
+component uses scale one and has exactly zero residual score whenever residual
+degrees of freedom exist. Component means use observed training measurements
+only. The operator nullspace-preservation check remains mandatory.
 
 `numerical$diagnostics` retains both conservative diagnostics and agreement
 checks. `response.mask` maps response columns to distinct masks; matrix

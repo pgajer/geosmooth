@@ -8,7 +8,7 @@
     c(candidate.residual = 1e-8, reference.residual = 1e-9,
       operator.error = 1e-7, nullspace.error = 1e-7,
       prediction.error = 1e-7, df.error = 1e-7,
-      gcv.scaled.error = 1)
+      gcv.scaled.error = 1, gcv.final.scaled.error = 1)
 }
 
 .metric.graph.verify.agreement <- function(diagnostics) {
@@ -172,11 +172,23 @@
             d <- q - s * tr
             dr <- q - sr * trr
             values <- Y[O, cols, drop = FALSE]
-            # Compare standardized training responses, then return fits in their
-            # original units. Training-only scaling avoids held-out leakage.
-            centers <- colMeans(values)
-            centered <- sweep(values, 2L, centers, `-`)
-            scales <- sqrt(colMeans(centered^2))
+            # Remove the observed component-constant nullspace before any
+            # response multiplication. Relative-to-anchor centering avoids
+            # summing a large baseline. Each component needs its own mean;
+            # subtracting one global mean is insufficient for disconnected graphs.
+            centered <- values
+            centers <- matrix(0, nc, length(cols))
+            for (component in seq_len(nc)) {
+                ix <- which(labels[O] == component)
+                anchor <- values[ix[1L], ]
+                delta <- sweep(values[ix, , drop = FALSE], 2L, anchor, `-`)
+                mean.delta <- colMeans(delta)
+                centered[ix, ] <- sweep(delta, 2L, mean.delta, `-`)
+                centers[component, ] <- anchor + mean.delta
+            }
+            magnitude <- apply(abs(centered), 2L, max)
+            magnitude[magnitude == 0] <- 1
+            scales <- magnitude * sqrt(colMeans(sweep(centered, 2L, magnitude, `/`)^2))
             scales[scales == 0] <- 1
             standardized <- sweep(centered, 2L, scales, `/`)
             pred <- T %*% standardized
@@ -184,11 +196,19 @@
             valid <- q > nc && is.finite(tr) && is.finite(trr) &&
                 min(tr, trr) > 128 * .Machine$double.eps * q
             score <- scorer <- rep(NA_real_, length(cols))
-            score.error <- 0
+            score.error <- final.score.error <- 0
+            raw.score <- reference.raw.score <- rep(NA_real_, length(cols))
             if (valid) {
                 score <- q * colSums((K %*% standardized / tr)^2)
                 scorer <- q * colSums((Kr %*% standardized / trr)^2)
                 score.error <- max(abs(score - scorer) / (1e-10 + 1e-7 * abs(scorer)))
+                # Restore units from the checked quantities, not by multiplying
+                # K by uncentered values again. Sequential scaling avoids forming
+                # scale^2 when that intermediate would overflow.
+                raw.score <- (score * scales) * scales
+                reference.raw.score <- (scorer * scales) * scales
+                final.score.error <- max(abs(raw.score - reference.raw.score) /
+                    (1e-10 + 1e-7 * abs(reference.raw.score)))
             }
             checks <- list(candidate.residual = candidate.residual,
                            reference.residual = reference.residual,
@@ -196,15 +216,16 @@
                            nullspace.error = max(abs(T %*% Q[O, , drop = FALSE] - Q),
                                                  abs(Tr %*% Q[O, , drop = FALSE] - Q)),
                            prediction.error = max(abs(pred - predr)),
-                           df.error = abs(d - dr), gcv.scaled.error = score.error)
+                           df.error = abs(d - dr), gcv.scaled.error = score.error,
+                           gcv.final.scaled.error = final.score.error)
             .metric.graph.verify.agreement(checks)
             if (q > nc && !valid) {
                 stop("Verified heat fallback has unresolved residual degrees of freedom.", call. = FALSE)
             }
-            # Evaluate raw responses, rather than inserting centering corrections
-            # into the fitting operator whose agreement was just checked.
-            raw <- T %*% values
-            raw.score <- if (valid) q * colSums((K %*% values / tr)^2) else rep(NA_real_, length(cols))
+            # Restore component means only after applying the checked operator
+            # to centered responses. Its nullspace-preservation check remains
+            # mandatory; centering does not excuse an inaccurate operator.
+            raw <- sweep(pred, 2L, scales, `*`) + centers[labels, , drop = FALSE]
             if (any(!is.finite(raw)) || (valid && any(!is.finite(raw.score)))) {
                 stop("Verified heat fallback produced non-finite response results.", call. = FALSE)
             }
