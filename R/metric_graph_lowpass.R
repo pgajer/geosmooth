@@ -910,8 +910,9 @@ apply.metric.graph.lowpass.path <- function(
 #' @param eta.truncation.tol Omitted-mode attenuation tolerance used to certify
 #'   guarded proposals for a truncated basis.
 #' @param eigen.solver \code{"auto"}, \code{"sparse"}, or \code{"dense"}.
-#'   \code{"auto"} uses dense decomposition only for
-#'   \code{n <= dense.eigen.threshold}, then sparse-first.
+#'   \code{"auto"} uses dense decomposition for
+#'   \code{n <= dense.eigen.threshold} or a request exceeding the sparse
+#'   backend's \code{n - 2} capacity; otherwise it tries sparse first.
 #' @param dense.eigen.threshold Exact dense threshold for auto mode. Default
 #'   \code{200L}, intended for small reference/testing problems.
 #' @param dense.fallback.threshold Maximum graph size for emergency dense
