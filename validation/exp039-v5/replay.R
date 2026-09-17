@@ -8,7 +8,11 @@ binary <- function(name) {
            spec$shape[1],spec$shape[2])
 }
 b <- readRDS(file.path(source,cohort,'basis.rds'))
-Y <- binary('responses'); reference.gcv <- binary('reference-gcv'); reference.df <- binary('reference-df')
+Y <- binary('responses')
+# The exporter uses IEEE NaN only as the transport marker for missing values.
+# Its observed entries are required to be finite; R's public API requires NA.
+Y[is.nan(Y)] <- NA_real_
+reference.gcv <- binary('reference-gcv'); reference.df <- binary('reference-df')
 grid <- scan(file.path(inputs,cohort,'grid.txt'),quiet=TRUE)
 columns <- read.delim(file.path(inputs,cohort,'columns.tsv'),stringsAsFactors=FALSE)
 sink(file.path(output,'session.txt'));print(sessionInfo()); print(extSoftVersion());sink()

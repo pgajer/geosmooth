@@ -20,6 +20,7 @@ for cohort in ['ZAPPS','PreSSMat']:
         lookup=[{(r['mask_id'],r['feature'],str(r['heldout_fold'])):r for r in g['responses']} for g in grids]
         ds=[next(r['reference_df'] for r in g['diagnostics'] if r['mask_id']==m['mask_id']) for g in grids]
         for ci,r in enumerate(m['responses']):
+            assert np.all(np.isfinite(z['Y'][:,ci]))
             y=np.full(n,np.nan);y[z['observed']]=z['Y'][:,ci];Y.append(y)
             fold=str(r.get('heldout_fold','probe'))
             columns.append(dict(column=len(Y),mask=mi,mask_id=m['mask_id'],feature=r['feature'],heldout_fold=fold))
