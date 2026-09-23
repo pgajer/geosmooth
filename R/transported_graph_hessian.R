@@ -3104,12 +3104,12 @@ transported.graph.hessian.operator <- function(adj.list,
         ))
     }
     layout.args <- list(
-        adj_list = subgraph$adj.list,
-        weight_list = subgraph$weight.list,
+        adj.list = subgraph$adj.list,
+        weight.list = subgraph$weight.list,
         dim = edge.dim,
         rounds = 20L,
-        final_rounds = 20L,
-        num_init = 4L,
+        final.rounds = 20L,
+        num.init = 4L,
         seed = 1L,
         disconnected = "error"
     )
@@ -3188,63 +3188,46 @@ transported.graph.hessian.operator <- function(adj.list,
 
 .transported.graph.hessian.edge.kk.function <- function() {
     if (!requireNamespace("grip", quietly = TRUE)) return(NULL)
-    ns <- getNamespace("grip")
-    for (nm in c("edge.kk",
-                 "grip.optimize.edge.kk.layout",
-                 "grip.optimize.edge.isometric.layout")) {
-        if (exists(nm, envir = ns, inherits = FALSE)) {
-            return(list(
-                name = nm,
-                fun = get(nm, envir = ns, inherits = FALSE)
-            ))
-        }
+    fun <- getExportedValue("grip", "edge.kk")
+    if (!all(c("adj.list", "weight.list", "max.iter", "return.trace") %in%
+             names(formals(fun)))) {
+        stop("Update grip: edge.kk() must support the dot-delimited API.")
     }
-    NULL
+    list(name = "edge.kk", fun = fun)
 }
 
 .transported.graph.hessian.weighted.layout.function <- function() {
     if (!requireNamespace("grip", quietly = TRUE)) return(NULL)
-    ns <- getNamespace("grip")
-    for (nm in c("grip", "weighted.grip", "grip.layout.weighted")) {
-        if (exists(nm, envir = ns, inherits = FALSE)) {
-            fun <- get(nm, envir = ns, inherits = FALSE)
-            if (identical(nm, "grip") &&
-                !"metric" %in% names(formals(fun))) {
-                next
-            }
-            return(list(
-                name = nm,
-                fun = fun
-            ))
-        }
+    fun <- getExportedValue("grip", "grip")
+    if (!all(c("adj.list", "weight.list", "metric", "final.rounds") %in%
+             names(formals(fun)))) {
+        stop("Update grip: grip() must support the dot-delimited API.")
     }
-    NULL
+    list(name = "grip", fun = fun)
 }
 
 .transported.graph.hessian.run.edge.kk <- function(edge.kk, coords, subgraph,
                                                    dim) {
     args <- list(
         coords = coords,
-        adj_list = subgraph$adj.list,
-        weight_list = subgraph$weight.list,
+        adj.list = subgraph$adj.list,
+        weight.list = subgraph$weight.list,
         dim = dim,
-        stiffness_method = "uniform",
-        density_mix_schedule = 1,
-        scale_mode = "identity",
-        max_iter = 16L,
-        return_trace = FALSE,
+        stiffness.method = "uniform",
+        density.mix.schedule = 1,
+        scale.mode = "identity",
+        max.iter = 16L,
+        return.trace = FALSE,
         diagnostics = FALSE
     )
-    formals.names <- names(formals(edge.kk$fun))
-    if ("engine" %in% formals.names) {
-        args$engine <- "cpp"
+    args$engine <- "cpp"
+    # Pass every intended control. An incompatible interface must not silently
+    # discard the graph or optimizer settings and select a different method.
+    unsupported <- setdiff(names(args), names(formals(edge.kk$fun)))
+    if (length(unsupported) && !"..." %in% names(formals(edge.kk$fun))) {
+        stop("Incompatible grip edge.kk() arguments: ", paste(unsupported, collapse = ", "))
     }
-    call.args <- if ("..." %in% formals.names) {
-        args
-    } else {
-        args[names(args) %in% formals.names]
-    }
-    out <- try(do.call(edge.kk$fun, call.args), silent = TRUE)
+    out <- try(do.call(edge.kk$fun, args), silent = TRUE)
     if (!inherits(out, "try-error") && is.list(out)) {
         out$backend <- edge.kk$name
     }
