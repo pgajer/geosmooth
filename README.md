@@ -33,27 +33,30 @@ help("geosmooth-package", package = "geosmooth")
 ```
 
 The development version (0.2.0) includes the guides below and requires a
-newer dgraphs than CRAN currently supplies. Install the tested dependency
-revision explicitly; installing dgraphs from its changing main branch is not
+newer dgraphs than CRAN currently supplies. Its optional GRIP and edge-KK
+embeddings also require the current dot-delimited grip API. Install the tested
+dependency revisions explicitly; installing from changing main branches is not
 an equivalent dependency specification. A source installation needs an R
 compilation toolchain.
 
 ```r
 install.packages("pak")
 pak::pkg_install(c(
-  "pgajer/dgraphs@22c0f2b7b1c53af5aabf1f19e6c390ce343d87fe",
+  "pgajer/ivue@a952ab6816636a19f2038ba0709181608b71770d",
+  "pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c",
+  "pgajer/grip@07dc145c89ff31b399a7e4c0b8e1b86f391fc08b",
   "pgajer/geosmooth"
 ))
 vignette("function-guide", package = "geosmooth")
 ```
 
-Development CI uses that same dgraphs revision. The separate **CRAN dependency
+Development CI uses those same dependency revisions. The separate **CRAN dependency
 check** workflow installs dependencies exclusively from CRAN and must pass
 before submission. A compatible dgraphs release is still a prerequisite for
-releasing geosmooth 0.2.0. Current R-devel also exposes a known dgraphs
-synthetic RNG-state compatibility issue; use an R release build until that
-upstream fix is integrated. The development checks do not establish CRAN-only
-release readiness.
+releasing geosmooth 0.2.0. The pinned dgraphs revision includes the R-devel
+synthetic RNG-state compatibility fix. The grip API used by the optional
+embeddings must also be available on CRAN before release. The development
+checks do not establish CRAN-only release readiness.
 
 ## Quick Start
 
