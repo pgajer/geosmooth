@@ -30,7 +30,7 @@ fit.masked.graph.field <- function(operator, vertex, y, lambda, weights = NULL) 
     ids <- which(supported)
     H <- Matrix::Diagonal(n, q) + lambda * L
     f <- rep(NA_real_, n)
-    f[ids] <- as.numeric(Matrix::solve(H[ids, ids, drop = FALSE], b[ids]))
+    f[ids] <- as.numeric(Matrix::solve(Matrix::forceSymmetric(H[ids, ids, drop = FALSE]), b[ids]))
     residual <- as.numeric(H[ids, ids, drop = FALSE] %*% f[ids]) - b[ids]
     rel <- sqrt(sum(residual^2)) / max(sqrt(sum(b[ids]^2)), .Machine$double.eps)
     if (any(!is.finite(f[ids])) || rel > 1e-7)
@@ -129,6 +129,8 @@ fit.masked.graph.field <- function(operator, vertex, y, lambda, weights = NULL) 
 #' @param lambdas Positive finite candidate penalties.
 #' @param outer.folds,inner.folds Numbers of grouped folds.
 #' @param seed Fold seed, independent of worker scheduling.
+#' @param progress Optional function called after each outer fold with fold and
+#'   selected penalty; intended for experiment progress records.
 #' @param fold.id Optional preassigned outer fold per observation; a group must
 #'   occupy exactly one fold.
 #' @return Outer predictions, baseline predictions, scores on supported cases,
@@ -137,10 +139,11 @@ fit.masked.graph.field <- function(operator, vertex, y, lambda, weights = NULL) 
 #' @export
 cv.masked.graph.field <- function(operator, vertex, y, group,
     lambdas = 10^seq(-6, 2, length.out = 17), outer.folds = 5L,
-    inner.folds = 4L, seed = 1L, fold.id = NULL) {
+    inner.folds = 4L, seed = 1L, fold.id = NULL, progress = NULL) {
     .field.observations(vertex, y, nrow(.field.laplacian(operator)))
     if (length(group) != length(y) || anyNA(group) || any(!nzchar(as.character(group))))
         stop("Supply one nonmissing group identifier per observation.")
+    if (!is.null(progress) && !is.function(progress)) stop("progress must be a function or NULL.")
     group <- as.character(group)
     if (!is.numeric(lambdas) || !length(lambdas) || any(!is.finite(lambdas) | lambdas <= 0))
         stop("lambdas must be positive finite values.")
@@ -159,6 +162,8 @@ cv.masked.graph.field <- function(operator, vertex, y, group,
         pred[test] <- fit$fitted[vertex[test]]
         baseline[test] <- sum(.field.weights(group[train]) * y[train])
         tuning[[as.character(fold)]] <- tuned
+        if (!is.null(progress)) progress(list(fold=fold, lambda=tuned$lambda,
+            boundary=tuned$boundary, heldout.coverage=mean(is.finite(pred[test]))))
     }
     final.folds <- .field.folds(group, inner.folds, seed + 2L)
     final.tuning <- .field.tune(operator, vertex, y, group, lambdas, final.folds)
@@ -254,4 +259,40 @@ select.masked.graph.field <- function(comparison, study) {
     list(selected.by.fold = selected, predicted = pred, coverage = mean(is.finite(pred)),
          mse = .field.score(reference$observed, pred, reference$group),
          final.graph = names(fits)[winner], final = fits[[winner]]$final)
+}
+
+#' Summarize Measurement Support for a Graph Field
+#'
+#' Reports graph-hop distance to the nearest observed vertex and the number of
+#' distinct measured participants at each vertex and its immediate neighbors.
+#' These are descriptive support measures, not uncertainty intervals or a
+#' guarantee of transportability. Vertex order follows the supplied operator.
+#' @param operator An unnormalized metric.graph.lowpass.operator.
+#' @param vertex Integer vertex indices of observed responses.
+#' @param group Nonmissing participant identifiers for the observations.
+#' @return A data frame with nearest.observation.hops (Inf if unreachable),
+#'   local.participants and component.supported for each vertex.
+#' @export
+support.masked.graph.field <- function(operator, vertex, group) {
+    n <- nrow(.field.laplacian(operator))
+    .field.observations(vertex, rep(0, length(vertex)), n)
+    if (length(group) != length(vertex) || anyNA(group) || any(!nzchar(as.character(group))))
+        stop("Supply one nonmissing group identifier per observation.")
+    adj <- operator$graph$adj.list
+    distance <- rep(Inf, n); sources <- unique(vertex)
+    queue <- integer(n); queue[seq_along(sources)] <- sources
+    head <- 1L; tail <- length(sources); distance[sources] <- 0
+    while (head <= tail) {
+        v <- queue[head]; head <- head + 1L
+        new <- unique(adj[[v]][is.infinite(distance[adj[[v]]])])
+        if (length(new)) {
+            distance[new] <- distance[v] + 1
+            queue[tail + seq_along(new)] <- new; tail <- tail + length(new)
+        }
+    }
+    people <- split(as.character(group), factor(vertex, levels=seq_len(n)))
+    counts <- vapply(seq_len(n), function(v)
+        length(unique(unlist(people[unique(c(v, adj[[v]]))], use.names=FALSE))), integer(1))
+    data.frame(nearest.observation.hops=distance, local.participants=counts,
+               component.supported=is.finite(distance))
 }

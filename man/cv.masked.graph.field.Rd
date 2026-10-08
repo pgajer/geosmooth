@@ -13,7 +13,8 @@ cv.masked.graph.field(
   outer.folds = 5L,
   inner.folds = 4L,
   seed = 1L,
-  fold.id = NULL
+  fold.id = NULL,
+  progress = NULL
 )
 }
 \arguments{
@@ -33,6 +34,9 @@ cv.masked.graph.field(
 
 \item{fold.id}{Optional preassigned outer fold per observation; a group must
 occupy exactly one fold.}
+
+\item{progress}{Optional function called after each outer fold with fold and
+selected penalty; intended for experiment progress records.}
 }
 \value{
 Outer predictions, baseline predictions, scores on supported cases,

@@ -84,3 +84,10 @@ test_that("complete observations recover the full-spectrum Tikhonov solution", {
         list(1,c(1,1),1),laplacian.type="symmetric.normalized")
     expect_error(fit.masked.graph.field(normalized,1,2,1),"unnormalized")
 })
+
+test_that("support summaries count people rather than repeated specimens", {
+    support <- support.masked.graph.field(field_operator(),c(1,1,3),c('a','a','b'))
+    expect_equal(support$nearest.observation.hops,c(0,1,0,Inf))
+    expect_equal(support$local.participants,c(1L,2L,1L,0L))
+    expect_equal(support$component.supported,c(TRUE,TRUE,TRUE,FALSE))
+})
