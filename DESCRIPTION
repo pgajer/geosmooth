@@ -71,6 +71,7 @@ Imports:
     MASS,
     Matrix,
     methods,
+    parallel,
     Rcpp,
     stats,
     utils
