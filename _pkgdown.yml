@@ -26,6 +26,7 @@ reference:
   - fit.ps.lps
   - fit.chart.kernel
   - fit.local.likelihood
+  - unfold.simplex.chart
 - title: "Model assessment and uncertainty"
   contents:
   - lps.grouped.foldid
@@ -48,6 +49,11 @@ reference:
   - apply.metric.graph.lowpass.path
   - metric.graph.heat.eta.grid
   - metric.graph.heat.extend.lower
+  - fit.masked.graph.field
+  - support.masked.graph.field
+  - cv.masked.graph.field
+  - compare.masked.graph.fields
+  - select.masked.graph.field
   - graph.trend.filtering.operator
   - fit.graph.trend.filtering
 - title: "Hessian-energy regression"
@@ -117,3 +123,5 @@ articles:
   contents:
   - function-guide
   - synthetic-datasets
+  - local-simplex-charts
+  - pca-pls-chart-comparison

@@ -516,3 +516,6 @@ complete method list rather than treating methods as additional fitters.
 
 For intrinsic simplex charts, weighted PCA/PLS and their limits, see the
 [local simplex charts guide](local-simplex-charts.html).
+
+For worked synthetic comparisons, held-out prediction figures and reproducible
+PCA/PLS examples, see [PCA and PLS charts](pca-pls-chart-comparison.html).

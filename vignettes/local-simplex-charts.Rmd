@@ -185,3 +185,6 @@ implementation favors explicit geometry and reproducibility over speed at very
 large sample sizes.
 
 See the [function guide](function-guide.html) for the remaining smoothers.
+
+The companion [PCA and PLS comparison](pca-pls-chart-comparison.html)
+executes five synthetic examples with held-out prediction scores and figures.
