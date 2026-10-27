@@ -32,5 +32,5 @@ for scenario in range(5):
             for q in range(6):
                 results.append([scenario, method, d, ridge, q+1, pred[q,m,g], const[q]])
 with (out/'predictions.csv').open('w') as f:
-    w=csv.writer(f); w.writerow(['scenario','method','dimension','ridge','query','prediction','constant']); w.writerows(results)
+    w=csv.writer(f, lineterminator='\n'); w.writerow(['scenario','method','dimension','ridge','query','prediction','constant']); w.writerows(results)
 print(f'{len(results)} predictions across five scenarios')
