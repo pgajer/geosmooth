@@ -183,6 +183,12 @@ their detailed help lives in dgraphs.
 | [`fit.ps.lps()`](https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html) | Fit experimental local polynomial models whose predictions are synchronized on overlaps. |
 | [`fit.chart.kernel()`](https://pgajer.github.io/geosmooth/reference/fit.chart.kernel.html) | Fit a chart-kernel field, with optional reference-measure quadrature weights. |
 | [`fit.local.likelihood()`](https://pgajer.github.io/geosmooth/reference/fit.local.likelihood.html) | Fit local density or Bernoulli likelihood models; returns a fitted field. |
+| [`unfold.simplex.chart()`](https://pgajer.github.io/geosmooth/reference/unfold.simplex.chart.html) | Certify and unfold a local one/two-face simplex neighborhood before constructing charts. |
+| [`fit.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/fit.masked.graph.field.html) | Fit a graph field from partially observed responses. |
+| [`support.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/support.masked.graph.field.html) | Identify graph components supported by observed responses. |
+| [`cv.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/cv.masked.graph.field.html) | Assess masked fields using participant-grouped nested cross-validation. |
+| [`compare.masked.graph.fields()`](https://pgajer.github.io/geosmooth/reference/compare.masked.graph.fields.html) | Compare candidate graph fields with independent workers. |
+| [`select.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/select.masked.graph.field.html) | Assemble nested graph-selection predictions from inner-fold choices. |
 
 ### Model assessment and uncertainty
 
@@ -507,3 +513,6 @@ The catalog covers all explicitly exported functions in geosmooth 0.2.0.
 Geometry and sampling functions are owned by dgraphs. Registered methods are
 accessed through familiar generics; use the installed package index for the
 complete method list rather than treating methods as additional fitters.
+
+For intrinsic simplex charts, weighted PCA/PLS and their limits, see the
+[local simplex charts guide](local-simplex-charts.html).

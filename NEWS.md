@@ -1,3 +1,13 @@
+# Development
+
+* Add opt-in intrinsic simplex and Euclidean Bernoulli charts to
+  `fit.local.likelihood()`, with weighted PCA/PLS, training-fold-only fitting,
+  stable ridge optimization and explicit diagnostics/fallbacks. Legacy defaults
+  and density fits are unchanged.
+* Add `unfold.simplex.chart()` for conservative one/two-face certificates.
+  Corner, tie and multi-face supports are not forced into a chart.
+* Require dgraphs >= 0.3.0.9000 for its general intrinsic distance API.
+
 # geosmooth 0.2.0
 
 ## Solver reliability

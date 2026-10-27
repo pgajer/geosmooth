@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 60 explicit exports: 60 local functions and 0 dgraphs re-exports; 95 S3 registrations are counted separately.
+There are 66 explicit exports: 66 local functions and 0 dgraphs re-exports; 95 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -30,12 +30,29 @@ bootstrap.malps(object, B = 200L, weight.type = c("bayesian", "multinomial"), y 
     ...)
 ```
 
+### compare.masked.graph.fields
+
+4 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L197).
+
+```r
+compare.masked.graph.fields(operators, studies, workers = 1L, ...)
+```
+
 ### compare.synthetic.dataset
 
 3 arguments. Source: [R/synthetic_dataset.R](../../../R/synthetic_dataset.R#L493).
 
 ```r
 compare.synthetic.dataset(x, y, tolerance = c(1e-12, 1e-10))
+```
+
+### cv.masked.graph.field
+
+10 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L140).
+
+```r
+cv.masked.graph.field(operator, vertex, y, group, lambdas = 10^seq(-6, 2, length.out = 17), outer.folds = 5L,
+    inner.folds = 4L, seed = 1L, fold.id = NULL, progress = NULL)
 ```
 
 ### fit.chart.kernel
@@ -75,19 +92,21 @@ fit.graph.trend.filtering(adj.list, weight.list = NULL, y, order = 0L, lambda.gr
 
 ### fit.local.likelihood
 
-33 arguments. Source: [R/local_likelihood.R](../../../R/local_likelihood.R#L99).
+36 arguments. Source: [R/local_likelihood.R](../../../R/local_likelihood.R#L117).
 
 ```r
 fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bernoulli"), support.size = min(15L,
     nrow(X)), degree = 1L, kernel = c("gaussian", "tricube", "epanechnikov", "triangular"),
     bandwidth.multiplier = 1, support.grid = NULL, degree.grid = NULL, kernel.grid = NULL,
     bandwidth.multiplier.grid = NULL, lambda.ridge.grid = NULL, foldid = NULL, cv.folds = 5L,
-    cv.seed = 1L, coordinate.method = c("coordinates", "local.pca"), chart.dim = NULL, chart.dim.grid = NULL,
-    selection.strategy = c("grid", "sparse_kd", "plateau_kd"), chart.dim.max = NULL, design.margin = 2L,
-    auto.chart.support.metric = c("coordinates", "operator", "both"), auto.chart.selection.metric = c("coordinates",
-        "operator"), quadrature.weights = NULL, lambda.ridge = 1e-08, min.local.mass = sqrt(.Machine$double.eps),
-    min.nonzero.mass = 1L, fallback = c("degree0", "zero", "chart_kernel", "na"), optimizer = c("newton",
-        "optim"), max.iter = 50L, tol = 1e-08, return.details = TRUE)
+    cv.seed = 1L, coordinate.method = c("coordinates", "local.pca", "local.pls"), chart.dim = NULL,
+    chart.dim.grid = NULL, selection.strategy = c("grid", "sparse_kd", "plateau_kd"), chart.dim.max = NULL,
+    design.margin = 2L, auto.chart.support.metric = c("coordinates", "operator", "both"),
+    auto.chart.selection.metric = c("coordinates", "operator"), quadrature.weights = NULL,
+    lambda.ridge = 1e-08, min.local.mass = sqrt(.Machine$double.eps), min.nonzero.mass = 1L,
+    fallback = c("degree0", "zero", "chart_kernel", "na"), optimizer = c("newton", "optim"),
+    max.iter = 50L, tol = 1e-08, return.details = TRUE, chart.geometry = c("legacy", "euclidean",
+        "linf.simplex"), unfold.faces = FALSE, intercept.mass = 0.5)
 ```
 
 ### fit.lpl.tf
@@ -140,6 +159,14 @@ fit.malps(X, y, graph = NULL, adj.list = NULL, weight.list = NULL, graph.stage =
     cv.seed = NULL, cv.one.se = FALSE, gcv.exact.max.n = 1000L, local.solver = c("auto",
         "normal.equations", "qr", "svd"), normal.equations.max.condition = 1e+08, robust.iterations = 0L,
     robust.tuning.constant = 6, verbose = FALSE, ...)
+```
+
+### fit.masked.graph.field
+
+5 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L14).
+
+```r
+fit.masked.graph.field(operator, vertex, y, lambda, weights = NULL)
 ```
 
 ### fit.metric.graph.lowpass
@@ -458,6 +485,14 @@ pttf.operator.filter.rows(operator, rows, reason = NULL, preserve.original = TRU
 refit(object, y, ...)
 ```
 
+### select.masked.graph.field
+
+2 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L234).
+
+```r
+select.masked.graph.field(comparison, study)
+```
+
 ### slpl.tf.operator
 
 28 arguments. Source: [R/slpl_tf.R](../../../R/slpl_tf.R#L23).
@@ -504,6 +539,14 @@ ssrhe.hessian.operator(X, k = NULL, tangent.dim, nn.index = NULL, neighborhood.t
 
 ```r
 ssrhe.support.grid(n, tangent.dim, derivative.order = 2L, support.buffer = 2L, max.candidates = 8L)
+```
+
+### support.masked.graph.field
+
+3 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L276).
+
+```r
+support.masked.graph.field(operator, vertex, group)
 ```
 
 ### synthetic.dataset.checksum
@@ -663,6 +706,14 @@ transported.graph.hessian.operator(adj.list, weight.list = NULL, transport.order
         "metric.local.scale"), gradient.disk.hops.candidates = 1:5, gradient.disk.radius.fraction.candidates = c(0.05,
         0.075, 0.1, 0.15, 0.2), gradient.disk.local.scale.multiplier.candidates = c(1, 1.5,
         2, 3, 4), gradient.ridge = 1e-08, gradient.quadratic.disk.hops = 2L, gradient.quadratic.max.vertices = gradient.max.vertices)
+```
+
+### unfold.simplex.chart
+
+4 arguments. Source: [R/simplex_chart.R](../../../R/simplex_chart.R#L29).
+
+```r
+unfold.simplex.chart(X, query, face.tol = 1e-12, distance.tol = 1e-08)
 ```
 
 ### validate.synthetic.dataset
