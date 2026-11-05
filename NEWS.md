@@ -4,6 +4,12 @@
   Automatic selection avoids full dense knot matrices above 256 locations or
   when the dense workspace limit is exceeded. Full-knot KKT checks preserve the
   objective without thinning; prediction also uses the compact representation.
+
+* Add exact Euclidean ANN search and opt-in approximation (`eps > 0`) to all
+  three neighbor probability estimators. `search = "auto"` selects exact ANN
+  for Euclidean coordinates and brute force for other inputs. Preserve grouped
+  exclusions and nearest answering visits; reuse trees within prediction and CV.
+
 * Add `fit.logistic.trend.filtering()` for order-2 univariate logistic trend
   filtering with a C++ backend, exact ties, binomial weights, optional covariates
   and offsets, explicit ridge options, fold-based penalty selection, and

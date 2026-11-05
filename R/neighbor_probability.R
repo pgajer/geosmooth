@@ -21,6 +21,16 @@
 #' @param normalization Row normalization: \code{"none"}, \code{"sum"}, or
 #'   \code{"max"}. The latter two require nonnegative rows with positive mass.
 #'   Supply already-computed distances with \code{normalization = "none"}.
+#'   Normalization changes coordinates, not the distance definition: Euclidean
+#'   distances on max-normalized profiles are ambient chords, not intrinsic
+#'   paths on the cube surface. Such path distances require a separate metric.
+#' @param search Neighbor search: \code{"auto"} uses ANN for Euclidean
+#'   coordinates and brute force otherwise; \code{"ann"} explicitly requests
+#'   the ANN kd-tree; \code{"brute"} is the exhaustive reference backend.
+#'   ANN requires Euclidean coordinates, including normalized coordinates.
+#' @param eps Nonnegative ANN approximation tolerance, default zero (exact).
+#'   Positive values require ANN. The distance approximation guarantee does
+#'   not bound probability error or case stopping ranks after exclusions.
 #' @param id Unique nonmissing record IDs. Defaults to row numbers as strings.
 #'   Supply persistent IDs to obtain ordering invariant to row permutations.
 #' @param group Nonmissing participant IDs, defaulting to \code{id}.
@@ -42,6 +52,17 @@
 #' is applied. Insufficient reachable people or cases return \code{NA}.
 #' The number of cases reachable can depend on the query when a participant's
 #' visits have discordant outcomes.
+#'
+#' ANN expands candidate neighborhoods until the requested people or cases
+#' are available. Exact search completes the boundary before applying the ID
+#' tie rule. Approximate search sorts retrieved candidates by exact distance;
+#' for each retrieved participant it also checks all answering visits, keeping
+#' the closest. It can miss other participants and tied records. Approximate
+#' boundary diagnostics describe retrieved participants, not a complete shell.
+#' Available people/cases diagnostics still describe the full training set.
+#' Trees are reused across queries and sizes, and across participants within
+#' each CV split. They are rebuilt for each prediction call and are not stored
+#' in the serializable fit. CV retains one tree per split and repeat.
 #'
 #' Tuning averages losses within participant, then across repeats, then across
 #' participants. Its standard error is the standard deviation of those
@@ -75,12 +96,23 @@ fit.neighbor.probability <- function(
     metric = c("euclidean", "chebyshev"),
     normalization = c("none", "sum", "max"),
     id = NULL, group = NULL, foldid = NULL,
-    selection = c("min", "one.se", "locality.one.se")) {
+    selection = c("min", "one.se", "locality.one.se"),
+    search = c("auto", "ann", "brute"), eps = 0) {
 
     method <- match.arg(method)
     metric <- match.arg(metric)
     normalization <- match.arg(normalization)
     selection <- match.arg(selection)
+    search <- match.arg(search)
+    if (!is.numeric(eps) || length(eps) != 1L || !is.finite(eps) || eps < 0 ||
+        !is.finite((1 + eps)^2))
+        stop("'eps' must be a finite nonnegative ANN tolerance.")
+    if (search == "auto")
+        search <- if (!is.null(X) && metric == "euclidean") "ann" else "brute"
+    if (search == "ann" && (is.null(X) || metric != "euclidean"))
+        stop("ANN search requires Euclidean coordinates.")
+    if (search != "ann" && eps > 0)
+        stop("Positive 'eps' requires ANN search.")
     if (!(is.numeric(y) || is.logical(y)) || !is.null(dim(y)) || !length(y) ||
         any(is.nan(y)) || any(!is.na(y) & (!is.finite(y) | !y %in% c(0, 1))))
         stop("'y' must be a binary vector with NA for missing responses.")
@@ -112,6 +144,7 @@ fit.neighbor.probability <- function(
                    group.code = match(group, unique(group)),
                    priority = priority, method = method, metric = metric,
                    normalization = normalization, backend = "C++",
+                   search = search, eps = eps,
                    tie.rule = "nearest-cases-v1| + SHA-256; ID collision tie",
                    selection = selection, k = NULL, cv.table = NULL,
                    foldid = NULL, call = match.call())
@@ -145,6 +178,8 @@ fit.neighbor.probability <- function(
         k.grid <- seq.int(lo, cap)
     }
     sizes <- .neighbor.sizes(k.grid, method)
+    indices <- lapply(splits, function(repeat.splits)
+        lapply(repeat.splits, function(t) .neighbor.index(object, t)))
     total <- total2 <- numeric(length(sizes))
     valid <- rep(TRUE, length(sizes))
     people <- unique(group[observed])
@@ -154,7 +189,8 @@ fit.neighbor.probability <- function(
         loss <- numeric(length(sizes))
         for (r in seq_len(ncol(folds))) {
             train <- splits[[r]][[folds[q[1L], r]]]
-            pred <- .neighbor.at.rows(object, q, train, sizes, FALSE)$probability
+            pred <- .neighbor.at.rows(object, q, train, sizes, FALSE,
+                indices[[r]][[folds[q[1L], r]]])$probability
             loss <- loss + colMeans((pred - y[q])^2) / ncol(folds)
         }
         valid <- valid & is.finite(loss)
@@ -197,6 +233,9 @@ fit.neighbor.probability <- function(
 #'   \code{probability}. Unsupported estimates remain \code{NA}.
 #'   \code{boundary.ties} counts distances within \code{1e-12} of the cutoff;
 #'   ordering itself uses exact distance ties. Diagnoses count distinct people.
+#'   With positive \code{eps}, boundary counts cover retrieved participants
+#'   only (\code{boundary.complete = FALSE}). \code{search.candidates} gives
+#'   the final number of candidate records, including visit refinement.
 #' @examples
 #' X <- matrix(0:5, ncol = 1)
 #' f <- fit.neighbor.probability(X, c(1, 0, 1, 0, 0, 1), k = 2)
@@ -244,17 +283,28 @@ predict.neighbor.probability.fit <- function(
                             if (object$method == "knn") "insufficient_people" else "insufficient_cases")
     result$k <- sizes
     result$method <- object$method
+    result$search <- if (is.null(object$search)) "brute" else object$search
+    result$eps <- if (is.null(object$eps)) 0 else object$eps
+    result$boundary.complete <- result$eps == 0
     result
 }
 
-.neighbor.at.rows <- function(object, rows, train, sizes, diagnostics) {
+.neighbor.at.rows <- function(object, rows, train, sizes, diagnostics, index = NULL) {
     .neighbor.call(object,
                    if (!is.null(object$X)) object$X[rows, , drop = FALSE] else NULL,
                    if (!is.null(object$distances)) object$distances[rows, , drop = FALSE] else NULL,
-                   object$group.code[rows], train, sizes, diagnostics)
+                   object$group.code[rows], train, sizes, diagnostics, index)
 }
 
-.neighbor.call <- function(object, query, distance, query.group, train, sizes, diagnostics) {
+.neighbor.index <- function(object, train) {
+    if (!identical(object$search, "ann") || !length(train)) return(NULL)
+    rcpp_neighbor_ann_index(object$X, as.integer(train - 1L), object$priority,
+                            as.integer(object$group.code), object$y)
+}
+
+.neighbor.call <- function(object, query, distance, query.group, train, sizes,
+                           diagnostics, index = NULL) {
+    if (is.null(index)) index <- .neighbor.index(object, train)
     empty <- matrix(numeric(), 0L, 0L)
     rcpp_neighbor_probability(
         if (is.null(object$X)) empty else object$X,
@@ -264,7 +314,8 @@ predict.neighbor.probability.fit <- function(
         as.integer(query.group), as.integer(object$priority), sizes,
         match(object$method, c("knn", "case_raw", "case_corrected")) - 1L,
         match(object$metric, c("euclidean", "chebyshev")) - 1L,
-        is.null(object$X), diagnostics)
+        is.null(object$X), diagnostics, index,
+        if (is.null(object$eps)) 0 else object$eps)
 }
 
 .neighbor.ids <- function(x, n, name) {

@@ -38,6 +38,9 @@ A query-by-size matrix, or a diagnostic list with that matrix as
 \code{probability}. Unsupported estimates remain \code{NA}.
 \code{boundary.ties} counts distances within \code{1e-12} of the cutoff;
 ordering itself uses exact distance ties. Diagnoses count distinct people.
+With positive \code{eps}, boundary counts cover retrieved participants
+only (\code{boundary.complete = FALSE}). \code{search.candidates} gives
+the final number of candidate records, including visit refinement.
 }
 \description{
 Predict Nearest-Person Binary Probabilities

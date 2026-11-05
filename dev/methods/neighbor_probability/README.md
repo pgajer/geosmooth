@@ -60,7 +60,7 @@ Additional tests enumerate every one of the 64 binary assignments on a
 six-point example against independent rank arithmetic. Other tests cover
 missing and one-class labels, insufficient cases, disconnected distances,
 participant-held exclusion, discordant repeated visits, row permutation,
-invalid inputs and all three selection rules. The current focused suite has
+invalid inputs and all three selection rules. The original focused suite had
 947 passing expectations, zero failures and zero warnings. This is correctness
 evidence, not evidence of predictive value on microbiome outcomes.
 
@@ -85,3 +85,10 @@ The full package test suite and CRAN submission checks are outside this
 targeted feature validation. Reports must not describe this as a full-package
 CRAN pass. Build logs and structured test summaries remain under
 tmp/neighbor-validation, outside Git.
+
+## ANN extension
+
+The [ANN backend and timing record](ann_backend.md) describes exact Euclidean
+search, opt-in approximation, additional validation, and the bounded AGP pilot.
+It also records the separate intrinsic surface metric required for the proposed
+max-normalized analysis.

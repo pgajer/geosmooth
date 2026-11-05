@@ -19,6 +19,7 @@ source("tests/testthat/helper-source-tree.R")
 summaries <- list()
 for (file in c("test-neighbor-probability.R",
                "test-neighbor-documentation.R",
+               "test-neighbor-ann.R",
                "test-geosmooth-native-naming.R")) {
     result <- testthat::test_file(file.path("tests", "testthat", file),
                                  reporter = "summary", stop_on_failure = TRUE)

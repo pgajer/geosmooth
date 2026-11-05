@@ -16,7 +16,9 @@ fit.neighbor.probability(
   id = NULL,
   group = NULL,
   foldid = NULL,
-  selection = c("min", "one.se", "locality.one.se")
+  selection = c("min", "one.se", "locality.one.se"),
+  search = c("auto", "ann", "brute"),
+  eps = 0
 )
 }
 \arguments{
@@ -42,7 +44,10 @@ No graph or powered path distances are constructed internally.}
 
 \item{normalization}{Row normalization: \code{"none"}, \code{"sum"}, or
 \code{"max"}. The latter two require nonnegative rows with positive mass.
-Supply already-computed distances with \code{normalization = "none"}.}
+Supply already-computed distances with \code{normalization = "none"}.
+Normalization changes coordinates, not the distance definition: Euclidean
+distances on max-normalized profiles are ambient chords, not intrinsic
+paths on the cube surface. Such path distances require a separate metric.}
 
 \item{id}{Unique nonmissing record IDs. Defaults to row numbers as strings.
 Supply persistent IDs to obtain ordering invariant to row permutations.}
@@ -55,6 +60,15 @@ excluded from scoring, but their groups still obey the split.}
 
 \item{selection}{Minimum Brier error, largest size within one standard error
 (\code{"one.se"}), or smallest such size (\code{"locality.one.se"}).}
+
+\item{search}{Neighbor search: \code{"auto"} uses ANN for Euclidean
+coordinates and brute force otherwise; \code{"ann"} explicitly requests
+the ANN kd-tree; \code{"brute"} is the exhaustive reference backend.
+ANN requires Euclidean coordinates, including normalized coordinates.}
+
+\item{eps}{Nonnegative ANN approximation tolerance, default zero (exact).
+Positive values require ANN. The distance approximation guarantee does
+not bound probability error or case stopping ranks after exclusions.}
 }
 \value{
 A \code{neighbor.probability.fit} with selected \code{k},
@@ -80,6 +94,17 @@ If \eqn{T_k} is the rank including the kth case, the estimates are
 is applied. Insufficient reachable people or cases return \code{NA}.
 The number of cases reachable can depend on the query when a participant's
 visits have discordant outcomes.
+
+ANN expands candidate neighborhoods until the requested people or cases
+are available. Exact search completes the boundary before applying the ID
+tie rule. Approximate search sorts retrieved candidates by exact distance;
+for each retrieved participant it also checks all answering visits, keeping
+the closest. It can miss other participants and tied records. Approximate
+boundary diagnostics describe retrieved participants, not a complete shell.
+Available people/cases diagnostics still describe the full training set.
+Trees are reused across queries and sizes, and across participants within
+each CV split. They are rebuilt for each prediction call and are not stored
+in the serializable fit. CV retains one tree per split and repeat.
 
 Tuning averages losses within participant, then across repeats, then across
 participants. Its standard error is the standard deviation of those

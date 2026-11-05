@@ -68,6 +68,23 @@ participant. `predict(fit)` excludes each query participant; new queries need
 and neighborhood diagnostics use the same ordering. Unreachable or insufficient
 neighborhoods return `NA`, without an automatic baseline substitution.
 
+For Euclidean coordinates, `search = "auto"` uses exact ANN (`eps = 0`).
+`search = "brute"` selects the exhaustive reference implementation. Set
+`search = "ann", eps = 0.1` to request approximate Euclidean neighborhoods;
+the ANN distance tolerance does not bound probability error. Approximate searches
+retain the closest answering visit for each retrieved participant but can miss
+other participants or tied records. Complete tied-shell diagnostics require
+exact search. Chebyshev and precomputed distances always use brute force;
+explicit ANN or positive `eps` requests for those inputs are rejected.
+Max normalization with `metric = "euclidean"` measures ambient chords.
+For surface geodesics on the nonnegative max-normalized simplex, dgraphs
+provides `linf.simplex.distances()`; these are a distinct metric and must not
+be substituted by an ambient ANN search. The current estimator accepts such
+distances through its precomputed-distance interface. A streaming surface
+adapter is still needed for large cohorts.
+Trees are reused within prediction and CV splits, then rebuilt on the next
+prediction call. Fits remain serializable.
+
 ```{r neighbor-probability, eval=FALSE}
 fit <- fit.neighbor.probability(X, y, method = "case_corrected", k = 3,
                                 id = record_id, group = participant_id,
