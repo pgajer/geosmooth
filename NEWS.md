@@ -1,5 +1,9 @@
 # Development
 
+* Add `fit.logistic.trend.filtering()` for order-2 univariate logistic trend
+  filtering with a C++ backend, exact ties, binomial weights, optional covariates
+  and offsets, explicit ridge options, fold-based penalty selection, and
+  stationarity/complementarity diagnostics. Failed fits remain explicit.
 * Add opt-in intrinsic simplex and Euclidean Bernoulli charts to
   `fit.local.likelihood()`, with weighted PCA/PLS, training-fold-only fitting,
   stable ridge optimization and explicit diagnostics/fallbacks. Legacy defaults

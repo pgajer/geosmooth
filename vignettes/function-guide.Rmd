@@ -41,6 +41,7 @@ your first model.
 | Average predictions from overlapping local models | [`fit.malps()`](https://pgajer.github.io/geosmooth/reference/fit.malps.html) | Model-averaged local polynomial smoothing; supports coordinate and graph-geodesic neighborhoods. |
 | Couple local polynomial predictions across overlaps | [`fit.ps.lps()`](https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html) | Prediction-synchronized local polynomial smoothing; experimental R reference implementation. |
 | Fit a locally adaptive trend with a sparse difference penalty | [`fit.lpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.lpl.tf.html) | Local polynomial lifting trend filtering; requires optional package `genlasso`. |
+| Fit a one-dimensional binary or binomial response | `fit.logistic.trend.filtering()` | Order-2 logistic trend filtering with a native C++ solver, explicit penalties, optional covariates/offsets, and convergence diagnostics. |
 | Add synchronization to a lifting trend filter | [`fit.slpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.slpl.tf.html) | Synchronized local polynomial lifting trend filtering; adds a second, quadratic penalty. |
 | Smooth a response already attached to graph vertices | [`fit.metric.graph.lowpass()`](https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html) or [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Choose spectral low-pass smoothing or a graph-difference penalty. Edge-weight meanings differ; see below. |
 | Penalize local second derivatives on a point cloud | [`fit.ssrhe.hessian.regression()`](https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.regression.html) | Hessian-energy regression, following semi-supervised regression using Hessian energy (SSRHE); use `lambda.selection = "cv"` or `"gcv"` to select penalties. |
@@ -239,6 +240,18 @@ require `genlasso`; their supported prediction domain is the training set.
 | [`metric.graph.heat.extend.lower()`](https://pgajer.github.io/geosmooth/reference/metric.graph.heat.extend.lower.html) | Propose a smaller heat time for an external search, subject to resolution safeguards. |
 | [`graph.trend.filtering.operator()`](https://pgajer.github.io/geosmooth/reference/graph.trend.filtering.operator.html) | Construct graph differences or experimental path divided differences. |
 | [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Fit an absolute-value graph-difference penalty; requires `genlasso`. |
+| `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
+
+The univariate logistic trend filter accepts binary observations or binomial
+proportions with trial weights. Supply a `lambda` path explicitly; its units
+refer to predictor locations normalized to the training range. Exact ties share
+the curve while retaining distinct covariates and offsets. Optional cross-validation
+requires `foldid`, which can keep repeated observations from the same subject
+together. Inspect `fit$diagnostics`: iteration limits, detected separation, and
+numerical failures are not successful fits. `predict()` reuses the training
+transformations and holds the curve constant beyond either boundary. Ridge
+stabilization is explicit and defaults to zero. This first backend uses dense
+matrices and checks an estimated workspace bound before allocation.
 
 Graph construction and shortest paths are supplied by `dgraphs`. A graph's
 adjacency list contains 1-based vertex indices; a parallel weight list gives

@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 66 explicit exports: 66 local functions and 0 dgraphs re-exports; 95 S3 registrations are counted separately.
+There are 67 explicit exports: 67 local functions and 0 dgraphs re-exports; 99 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -107,6 +107,16 @@ fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bern
     fallback = c("degree0", "zero", "chart_kernel", "na"), optimizer = c("newton", "optim"),
     max.iter = 50L, tol = 1e-08, return.details = TRUE, chart.geometry = c("legacy", "euclidean",
         "linf.simplex"), unfold.faces = FALSE, intercept.mass = 0.5)
+```
+
+### fit.logistic.trend.filtering
+
+12 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L75).
+
+```r
+fit.logistic.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
+    curve.ridge = 0, lambda.selection = c("fixed", "cv"), foldid = NULL, control = list(),
+    warn = TRUE)
 ```
 
 ### fit.lpl.tf
@@ -764,6 +774,7 @@ S3method(fitted,chart_kernel)
 S3method(fitted,graph.trend.filtering.fit)
 S3method(fitted,harmonic_smoother)
 S3method(fitted,local_likelihood)
+S3method(fitted,logistic.trend.filtering.fit)
 S3method(fitted,lpl_tf)
 S3method(fitted,lps)
 S3method(fitted,malps)
@@ -783,6 +794,7 @@ S3method(normalize.density,numeric)
 S3method(normalize.density,ps_lps)
 S3method(plot,harmonic_smoother)
 S3method(plot,synthetic_dataset)
+S3method(predict,logistic.trend.filtering.fit)
 S3method(predict,lpl_tf)
 S3method(predict,lps)
 S3method(predict,malps)
@@ -792,6 +804,7 @@ S3method(print,density_fit)
 S3method(print,graph.trend.filtering.fit)
 S3method(print,harmonic_smoother)
 S3method(print,local_likelihood)
+S3method(print,logistic.trend.filtering.fit)
 S3method(print,lpl_tf)
 S3method(print,lpl_tf_operator)
 S3method(print,lps)
@@ -824,6 +837,7 @@ S3method(refit,ssrhe.hessian.l1.fit)
 S3method(residuals,chart_kernel)
 S3method(residuals,graph.trend.filtering.fit)
 S3method(residuals,local_likelihood)
+S3method(residuals,logistic.trend.filtering.fit)
 S3method(residuals,lpl_tf)
 S3method(residuals,lps)
 S3method(residuals,malps)

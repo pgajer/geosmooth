@@ -56,6 +56,8 @@ reference:
   - select.masked.graph.field
   - graph.trend.filtering.operator
   - fit.graph.trend.filtering
+  - fit.logistic.trend.filtering
+  - predict.logistic.trend.filtering.fit
 - title: "Hessian-energy regression"
   contents:
   - ssrhe.hessian.operator

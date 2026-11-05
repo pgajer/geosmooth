@@ -1,0 +1,305 @@
+#' Fit Order-2 Logistic Trend Filtering
+#'
+#' Fits a piecewise-quadratic logit curve with an L1 penalty on its third
+#' divided differences. An R interface calls a native C++ damped-Newton
+#' logarithmic-barrier solver. No Python or external optimizer is required.
+#'
+#' @param x Finite numeric predictor, with at least four distinct values.
+#' @param y Numeric response in `[0, 1]`. Binary observations use unit weights;
+#'   binomial proportions use trial counts as weights.
+#' @param lambda Nonnegative penalties, or `Inf` for the quadratic limit.
+#'   Required explicitly: no data-dependent default penalty is assumed.
+#' @param weights Positive observation weights, default one.
+#' @param covariates Optional finite numeric matrix of additional predictors,
+#'   without an intercept. Columns are centered and scaled on training data.
+#' @param offset Optional finite vector added to the linear predictor.
+#' @param nuisance.ridge,curve.ridge Nonnegative explicit ridge penalties,
+#'   default zero. See Details for their precise scaling.
+#' @param lambda.selection `"fixed"` returns the supplied path without selecting
+#'   a penalty; `"cv"` selects minimum held-out weighted binomial log loss.
+#' @param foldid Integer fold labels, required for `lambda.selection="cv"`.
+#'   Supply the same label for observations that must be held out together.
+#' @param control Named list overriding `tolerance=1e-9`,
+#'   `gap.tolerance=1e-10`, `max.iterations=1000L`, or
+#'   `max.workspace.bytes=1024^3`. Tolerances apply to mean weighted loss.
+#' @param warn Logical; warn when a path fit fails convergence checks.
+#'
+#' @details Predictor locations are normalized to `[0,1]` using the training
+#'   range. Lambda refers to third divided differences on that normalized
+#'   scale, not on the original units of x. The minimized objective is
+#'   \deqn{\sum_i w_i[\log(1+\exp(\eta_i))-y_i\eta_i]
+#'   +\lambda\|D^{(3)}f\|_1
+#'   +\frac{r_z}{2}\|\gamma\|^2
+#'   +\frac{r_f}{2\sum_i w_i}\sum_i w_i(f_i-\bar f_w)^2.}
+#'   Here eta is the curve plus standardized covariates and offset, gamma
+#'   contains standardized covariate coefficients, and the curve includes an
+#'   unpenalized intercept. Third differences annihilate quadratic polynomials.
+#'   The falling-factorial basis is scaled internally without changing the
+#'   penalty. Exact ties share a curve value but retain their own likelihood
+#'   contributions, covariates, and offsets. No jittering or approximate thinning
+#'   is performed. Extra covariates can be confounded with the curve; without
+#'   identifying constraints, their individual coefficients are not effects
+#'   identifiable separately from the curve.
+#'
+#'   Convergence requires finite arithmetic, small stationarity residual,
+#'   dual feasibility and small L1 complementarity. The reported dual vector
+#'   lies in `[-1,1]`; complementarity checks whether it is also an approximate
+#'   subgradient at the returned coefficients. This is an approximate KKT check,
+#'   not a separately computed primal-dual objective gap. Iteration limits and
+#'   numerical failures remain explicit. Separation can prevent a finite
+#'   minimizer, including in the unpenalized quadratic component. The classical
+#'   Gaussian trend-filtering minimax result is not a guarantee for this model.
+#'
+#'   The initial native backend uses dense basis and Newton matrices. Its
+#'   conservative workspace estimate is checked before allocation; it is
+#'   intended for moderate numbers of distinct predictor values. The estimate
+#'   is a solver workspace guard, not a process-wide memory limit.
+#'
+#'   CV recomputes training normalization, centering, and scaling in each fold.
+#'   A candidate with any failed training fit is ineligible for selection.
+#'   All fits are refitted on the complete training data. Prediction outside
+#'   its range uses the nearest boundary curve value; covariates and offsets
+#'   continue to contribute normally. This boundary policy is not extrapolation
+#'   of a quadratic polynomial.
+#'
+#' @return An object of class `logistic.trend.filtering.fit`, with `fits`,
+#'   `lambda`, `diagnostics`, training transformations, optional `cv.table` and
+#'   `selected.index`. Failed fits are preserved for diagnosis but standard
+#'   fitted/prediction methods return NA for them unless explicitly permitted.
+#' @examples
+#' x <- seq(0, 1, length.out = 40)
+#' y <- rep(c(0, 1, 0, 1, 1), 8)
+#' model <- fit.logistic.trend.filtering(x, y, lambda = c(1, 0.1))
+#' predict(model, seq(0, 1, length.out = 10), lambda.index = 2)
+#' @export
+fit.logistic.trend.filtering <- function(
+    x, y, lambda, weights = NULL, covariates = NULL, offset = NULL,
+    nuisance.ridge = 0, curve.ridge = 0,
+    lambda.selection = c("fixed", "cv"), foldid = NULL,
+    control = list(), warn = TRUE) {
+    call <- match.call()
+    lambda.selection <- match.arg(lambda.selection)
+    scalar <- function(v, name, positive = FALSE) {
+        if (!is.numeric(v) || length(v) != 1L || !is.finite(v) ||
+            if (positive) v <= 0 else v < 0)
+            stop(name, " must be a finite ", if (positive) "positive" else "nonnegative",
+                 " scalar.", call. = FALSE)
+        v
+    }
+    defaults <- list(tolerance = 1e-9, gap.tolerance = 1e-10,
+                     max.iterations = 1000L, max.workspace.bytes = 1024^3)
+    if (!is.list(control) || (length(control) &&
+        (is.null(names(control)) || any(!names(control) %in% names(defaults)) ||
+         anyDuplicated(names(control))))) stop("Unknown or unnamed control fields.", call. = FALSE)
+    control <- utils::modifyList(defaults, control)
+    for (nm in names(control)) scalar(control[[nm]], nm, TRUE)
+    if (control$max.iterations != floor(control$max.iterations) ||
+        control$max.iterations > .Machine$integer.max)
+        stop("max.iterations must be a positive integer.", call. = FALSE)
+    if (!is.logical(warn) || length(warn) != 1L || is.na(warn))
+        stop("warn must be TRUE or FALSE.", call. = FALSE)
+    scalar(nuisance.ridge, "nuisance.ridge"); scalar(curve.ridge, "curve.ridge")
+    if (!is.numeric(x) || !is.null(dim(x)) || length(x) < 4L || any(!is.finite(x)))
+        stop("x must be a finite numeric vector with at least four observations.", call. = FALSE)
+    n <- length(x)
+    if (!is.numeric(y) || !is.null(dim(y)) || length(y) != n ||
+        any(!is.finite(y)) || any(y < 0 | y > 1))
+        stop("y must be a finite numeric vector in [0, 1], with length(x) entries.", call. = FALSE)
+    if (!is.numeric(lambda) || !length(lambda) || anyNA(lambda) ||
+        any(lambda < 0) || any(is.nan(lambda)))
+        stop("lambda must contain nonnegative numbers or Inf.", call. = FALSE)
+    weights <- if (is.null(weights)) rep(1, n) else weights
+    offset.used <- !is.null(offset)
+    offset <- if (is.null(offset)) numeric(n) else offset
+    for (nm in c("weights", "offset")) {
+        v <- get(nm)
+        if (!is.numeric(v) || !is.null(dim(v)) || length(v) != n || any(!is.finite(v)))
+            stop(nm, " must be a finite numeric vector with length(x) entries.", call. = FALSE)
+    }
+    if (any(weights <= 0) || !is.finite(sum(weights)))
+        stop("weights must be positive with a finite sum.", call. = FALSE)
+    if (is.null(covariates)) covariates <- matrix(numeric(), n, 0L)
+    if (!is.matrix(covariates) || !is.numeric(covariates) ||
+        nrow(covariates) != n || any(!is.finite(covariates)))
+        stop("covariates must be a finite numeric matrix with length(x) rows.", call. = FALSE)
+    knots <- sort(unique(x))
+    if (length(knots) < 4L || !is.finite(diff(range(x))))
+        stop("x needs at least four distinct values and a finite range.", call. = FALSE)
+    lo <- min(x); span <- max(x) - lo; knots <- (knots - lo)/span
+    if (any(diff(knots) <= 0))
+        stop("Distinct x values collapsed during normalization.", call. = FALSE)
+    p <- length(knots) + ncol(covariates)
+    workspace <- 8 * (4 * as.double(n) * p + 12 * as.double(p)^2 +
+                         length(lambda) * (3 * as.double(n) + 3 * p))
+    if (!is.finite(workspace) || workspace > control$max.workspace.bytes)
+        stop("Dense solver workspace estimate exceeds max.workspace.bytes.", call. = FALSE)
+    u <- (x - lo)/span; w <- weights/sum(weights)
+    H <- .logistic.tf.basis(u, knots)
+    center <- as.vector(crossprod(w, H))
+    H <- sweep(H, 2L, center)
+    scales <- sqrt(colSums(H^2 * w))
+    if (any(!is.finite(scales)) || any(scales <= 0))
+        stop("Degenerate falling-factorial basis.", call. = FALSE)
+    H <- sweep(H, 2L, scales, "/")
+    zcenter <- as.vector(crossprod(w, covariates))
+    Z <- sweep(covariates, 2L, zcenter)
+    zscale <- sqrt(colSums(Z^2 * w))
+    if (any(!is.finite(zcenter)) || any(!is.finite(zscale)))
+        stop("Nonfinite covariate centering or scaling; rescale covariates first.", call. = FALSE)
+    if (any(zscale <= 0)) stop("covariates must not contain constant columns.", call. = FALSE)
+    Z <- sweep(Z, 2L, zscale, "/")
+    A <- cbind(1, Z, H); nz <- ncol(Z)
+    Q <- matrix(0, p, p)
+    if (nz) Q[1L + seq_len(nz), 1L + seq_len(nz)] <- diag(nuisance.ridge, nz)
+    hi <- (nz + 2L):p
+    Q[hi, hi] <- curve.ridge * crossprod(H, H * w)
+    penalty <- c(numeric(nz + 3L), 1/scales[-c(1L, 2L)])
+    if (any(!is.finite(A)) || any(!is.finite(Q)) || any(!is.finite(penalty)))
+        stop("Nonfinite transformed design or penalty.", call. = FALSE)
+    if (sum(weights * y) == 0 || sum(weights * (1-y)) == 0) {
+        stop("No finite unpenalized intercept: y contains only one outcome.", call. = FALSE)
+    }
+    # Fit stronger penalties first for warm starts, but preserve caller order.
+    ord <- order(lambda, decreasing = TRUE)
+    fits <- logistic_tf_native(A, Q, as.numeric(y), as.numeric(weights),
+        as.numeric(offset), penalty, as.numeric(lambda[ord]),
+        control$tolerance, control$gap.tolerance, as.integer(control$max.iterations))
+    fits <- fits[order(ord)]
+    diagnostics <- do.call(rbind, lapply(seq_along(fits), function(i) {
+        f <- fits[[i]]
+        data.frame(lambda = lambda[i], converged = f$converged, status = f$status,
+            objective = f$objective, stationarity = f$stationarity,
+            complementarity = f$complementarity, dual.feasibility = f$dual.feasibility,
+            iterations = f$iterations, barrier.stages = f$barrier.stages,
+            barrier.parameter = f$barrier.parameter, backtracks = f$backtracks,
+            max.damping = f$max.damping, max.abs.eta = f$max.abs.eta)
+    }))
+    out <- list(call = call, x = x, y = y, weights = weights, offset = offset,
+        covariates = covariates, offset.used = offset.used, lambda = lambda,
+        fits = fits, diagnostics = diagnostics, selected.index = NULL,
+        cv.table = NULL, control = control, nuisance.ridge = nuisance.ridge,
+        curve.ridge = curve.ridge, workspace.estimate.bytes = workspace,
+        design = list(lo = lo, span = span, knots = knots, center = center,
+            scales = scales, zcenter = zcenter, zscale = zscale))
+    class(out) <- "logistic.trend.filtering.fit"
+    if (lambda.selection == "cv") {
+        if (!is.numeric(foldid) || length(foldid) != n || anyNA(foldid) ||
+            any(!is.finite(foldid)) || any(foldid != floor(foldid)) ||
+            length(unique(foldid)) < 2L)
+            stop("CV requires finite integer foldid with at least two folds.", call. = FALSE)
+        folds <- sort(unique(foldid))
+        scores <- matrix(NA_real_, length(folds), length(lambda))
+        fold.status <- character(length(folds))
+        for (k in seq_along(folds)) {
+            test <- foldid == folds[k]; train <- !test
+            ff <- tryCatch(fit.logistic.trend.filtering(x[train], y[train], lambda,
+                weights[train], covariates[train, , drop = FALSE], offset[train],
+                nuisance.ridge, curve.ridge, control = control, warn = FALSE),
+                error = function(e) e)
+            if (inherits(ff, "error")) { fold.status[k] <- conditionMessage(ff); next }
+            eta <- stats::predict(ff, x[test], covariates = covariates[test, , drop = FALSE],
+                offset = offset[test], type = "link", lambda.index = seq_along(lambda))
+            eta <- matrix(eta, nrow = sum(test))
+            loss <- pmax(eta, 0) - y[test] * eta + log1p(exp(-abs(eta)))
+            scores[k, ] <- colSums(loss * weights[test])
+            fold.status[k] <- if (all(ff$diagnostics$converged)) "complete" else "nonconverged candidates"
+        }
+        cv.loss <- colSums(scores)/sum(weights)
+        valid <- is.finite(cv.loss) & diagnostics$converged
+        out$cv.table <- data.frame(lambda = lambda, log.loss = cv.loss, eligible = valid)
+        out$cv.fold.loss.sums <- scores; out$cv.fold.status <- fold.status; out$foldid <- foldid
+        if (any(valid)) out$selected.index <- which.min(ifelse(valid, cv.loss, Inf))
+        else if (warn) warning("No lambda passed every CV fold and the full fit.", call. = FALSE)
+    }
+    if (warn && any(!diagnostics$converged))
+        warning(sum(!diagnostics$converged), " lambda fit(s) failed convergence checks; inspect diagnostics.", call. = FALSE)
+    out
+}
+
+.logistic.tf.basis <- function(u, knots) {
+    H <- cbind(u, u^2)
+    for (j in 3L:(length(knots)-1L))
+        H <- cbind(H, 0.5 * (u - knots[j-1L]) * (u - knots[j]) * (u > knots[j]))
+    H
+}
+
+#' Predict from Logistic Trend Filtering
+#' @param object A `logistic.trend.filtering.fit` object.
+#' @param newdata Finite numeric predictor locations; default training locations.
+#' @param covariates Additional predictor matrix, with the training column order.
+#' @param offset Offset vector, required for new locations if used during fitting.
+#' @param type `"response"` for probabilities or `"link"` for logits.
+#' @param lambda.index Path indices; defaults to the CV selection if available,
+#'   otherwise all supplied penalties.
+#' @param allow.unconverged Explicitly allow predictions from failed fits.
+#' @param ... Reserved for compatibility with generic methods.
+#' @return A numeric vector for one path index, otherwise a matrix. Attributes
+#'   `outside.range` and `lambda` identify boundary predictions and penalties.
+#' @export
+predict.logistic.trend.filtering.fit <- function(
+    object, newdata = NULL, covariates = NULL, offset = NULL,
+    type = c("response", "link"), lambda.index = NULL,
+    allow.unconverged = FALSE, ...) {
+    type <- match.arg(type); training <- is.null(newdata)
+    if (training) {
+        newdata <- object$x
+        if (is.null(covariates)) covariates <- object$covariates
+        if (is.null(offset)) offset <- object$offset
+    }
+    if (!is.numeric(newdata) || !is.null(dim(newdata)) || any(!is.finite(newdata)))
+        stop("newdata must be a finite numeric vector.", call. = FALSE)
+    n <- length(newdata); nz <- length(object$design$zscale)
+    if (is.null(covariates)) covariates <- matrix(numeric(), n, 0L)
+    if (!is.matrix(covariates) || !is.numeric(covariates) ||
+        nrow(covariates) != n || ncol(covariates) != nz || any(!is.finite(covariates)))
+        stop("covariates must match training columns and newdata rows.", call. = FALSE)
+    if (is.null(offset)) {
+        if (object$offset.used && !training) stop("Supply offset for newdata.", call. = FALSE)
+        offset <- numeric(n)
+    }
+    if (!is.numeric(offset) || length(offset) != n || any(!is.finite(offset)))
+        stop("offset must be finite with one entry per newdata row.", call. = FALSE)
+    if (is.null(lambda.index)) lambda.index <- if (!is.null(object$selected.index))
+        object$selected.index else seq_along(object$lambda)
+    if (!is.numeric(lambda.index) || !length(lambda.index) || anyNA(lambda.index) ||
+        any(!is.finite(lambda.index)) || any(lambda.index != floor(lambda.index)) ||
+        any(lambda.index < 1 | lambda.index > length(object$lambda)))
+        stop("Invalid lambda.index.", call. = FALSE)
+    if (!is.logical(allow.unconverged) || length(allow.unconverged) != 1L || is.na(allow.unconverged))
+        stop("allow.unconverged must be TRUE or FALSE.", call. = FALSE)
+    d <- object$design; u <- (newdata - d$lo)/d$span
+    outside <- u < 0 | u > 1
+    H <- sweep(sweep(.logistic.tf.basis(pmin(1, pmax(0, u)), d$knots), 2L, d$center), 2L, d$scales, "/")
+    Z <- sweep(sweep(covariates, 2L, d$zcenter), 2L, d$zscale, "/")
+    A <- cbind(1, Z, H)
+    ans <- vapply(lambda.index, function(j) {
+        if (!object$fits[[j]]$converged && !allow.unconverged) return(rep(NA_real_, n))
+        eta <- as.vector(A %*% object$fits[[j]]$coefficients + offset)
+        if (type == "response") stats::plogis(eta) else eta
+    }, numeric(n))
+    ans <- matrix(ans, nrow = n, ncol = length(lambda.index))
+    colnames(ans) <- paste0("lambda=", object$lambda[lambda.index])
+    if (length(lambda.index) == 1L) ans <- as.vector(ans)
+    attr(ans, "outside.range") <- outside; attr(ans, "lambda") <- object$lambda[lambda.index]
+    ans
+}
+
+#' @rdname predict.logistic.trend.filtering.fit
+#' @export
+fitted.logistic.trend.filtering.fit <- function(object, ...) stats::predict(object, ...)
+
+#' @rdname predict.logistic.trend.filtering.fit
+#' @export
+residuals.logistic.trend.filtering.fit <- function(object, ...) object$y - stats::fitted(object, ...)
+
+#' @param x A fitted logistic trend-filtering object.
+#' @rdname predict.logistic.trend.filtering.fit
+#' @method print logistic.trend.filtering.fit
+#' @export
+print.logistic.trend.filtering.fit <- function(x, ...) {
+    cat("Order-2 logistic trend filtering (native C++)\n")
+    cat(length(x$x), "observations;", length(x$design$knots), "distinct locations\n")
+    print(x$diagnostics[, c("lambda", "converged", "status", "stationarity", "complementarity")], row.names = FALSE)
+    if (!is.null(x$selected.index)) cat("Selected lambda:", x$lambda[x$selected.index], "\n")
+    invisible(x)
+}

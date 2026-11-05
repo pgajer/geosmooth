@@ -96,6 +96,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// logistic_tf_native
+Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
+RcppExport SEXP _geosmooth_logistic_tf_native(SEXP designSEXP, SEXP ridgeSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type design(designSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge(ridgeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offsets(offsetsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type penalty_scale(penalty_scaleSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambdas(lambdasSEXP);
+    Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(logistic_tf_native(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_kernel_local_polynomial_cv_coordinates
 NumericVector rcpp_kernel_local_polynomial_cv_coordinates(const NumericMatrix& X, const NumericVector& y, const IntegerVector& foldid, const IntegerVector& support_size, const IntegerVector& degree, const CharacterVector& kernel);
 RcppExport SEXP _geosmooth_rcpp_kernel_local_polynomial_cv_coordinates(SEXP XSEXP, SEXP ySEXP, SEXP foldidSEXP, SEXP support_sizeSEXP, SEXP degreeSEXP, SEXP kernelSEXP) {
@@ -346,6 +366,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_harmonic_smoother", (DL_FUNC) &_geosmooth_rcpp_harmonic_smoother, 9},
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
     {"_geosmooth_rcpp_local_second_order_svd_chart", (DL_FUNC) &_geosmooth_rcpp_local_second_order_svd_chart, 12},
+    {"_geosmooth_logistic_tf_native", (DL_FUNC) &_geosmooth_logistic_tf_native, 10},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile, 7},

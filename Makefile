@@ -1,4 +1,4 @@
-.PHONY: clean build check check-fast install document attrs test test-all test-lps test-ps-lps test-od test-graph test-ssrhe test-validation test-migration
+.PHONY: clean build check check-fast install document attrs test test-all test-lps test-ps-lps test-od test-graph test-ssrhe test-validation test-migration test-logistic-tf
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
@@ -29,6 +29,9 @@ test-all:
 
 test-lps:
 	Rscript scripts/run_test_group.R lps
+
+test-logistic-tf:
+	Rscript scripts/run_test_group.R logistic-tf
 
 test-ps-lps:
 	Rscript scripts/run_test_group.R ps-lps
