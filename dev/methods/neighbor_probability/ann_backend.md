@@ -81,6 +81,64 @@ Reproduction uses `scripts/prepare_neighbor_agp_timing.py` followed by
 `scripts/benchmark_neighbor_agp_ann.R`. Both require explicit data/output paths;
 they are not invoked by package tests. Each run requires a new output directory.
 
+## Measured pilot results (November 5, 2026)
+
+All 27,648 probabilities from exact ANN matched brute force exactly (12
+method/outcome/normalization cells, each with 128 queries and 18 sizes).
+Three repeated evaluations also reproduced every backend's predictions.
+The table gives median prediction seconds over three runs, including tree
+construction, for the complete 128-by-18 probability path. Fit preparation
+(normalization, validation and ID hashing) took 0.170–0.346 seconds separately.
+
+| Normalization | Outcome | Estimator | Brute (s) | Exact ANN (s) | eps 0.1 (s) | eps 0.5 (s) | Exact speedup |
+|---|---|---|---:|---:|---:|---:|---:|
+| Sum | Allergies | `knn` | 11.627 | 0.388 | 0.515 | 0.408 | 30.0x |
+| Sum | Allergies | `case_raw` | 11.709 | 0.467 | 0.610 | 0.482 | 25.1x |
+| Sum | Allergies | `case_corrected` | 11.448 | 0.543 | 0.805 | 0.528 | 21.1x |
+| Sum | IBD | `knn` | 11.582 | 0.426 | 0.478 | 0.425 | 27.2x |
+| Sum | IBD | `case_raw` | 11.645 | 4.948 | 6.583 | 5.768 | 2.4x |
+| Sum | IBD | `case_corrected` | 11.394 | 4.768 | 6.180 | 5.459 | 2.4x |
+| Max (ambient) | Allergies | `knn` | 11.584 | 0.992 | 1.045 | 0.879 | 11.7x |
+| Max (ambient) | Allergies | `case_raw` | 11.540 | 1.040 | 1.116 | 0.974 | 11.1x |
+| Max (ambient) | Allergies | `case_corrected` | 11.799 | 1.098 | 1.119 | 1.331 | 10.7x |
+| Max (ambient) | IBD | `knn` | 11.467 | 0.884 | 0.923 | 0.828 | 13.0x |
+| Max (ambient) | IBD | `case_raw` | 11.464 | 4.761 | 5.624 | 4.933 | 2.4x |
+| Max (ambient) | IBD | `case_corrected` | 11.593 | 4.754 | 5.683 | 5.049 | 2.4x |
+
+Exact speedups ranged from 2.35x to 30.0x in these ambient Euclidean tests.
+The smaller gain for nearest-case IBD is consistent with needing to retrieve
+more responding neighbors to reach the requested number of cases. This is a
+runtime interpretation, not an assessment of prediction accuracy. Costs for
+larger k grids, CV, state-specific references and intrinsic surface distances
+were not measured.
+
+At eps = 0.1, 0.622% of probabilities changed, with mean absolute difference
+0.00002785 and maximum 0.05714 relative to exact search. At eps = 0.5, 11.806%
+changed, with mean absolute difference 0.0006782 and maximum 0.16340. These
+summaries pool equally sized grids across the 12 cells; correlated k values
+are not independent observations. Approximation did not consistently improve
+runtime. Use eps = 0 for the proposed Euclidean analysis.
+
+The complete pilot, including preparation and validation assertions, took
+712.07 seconds elapsed on the shared host. Maximum resident memory reported
+by `/usr/bin/time -l` was 918,929,408 bytes (0.856 GiB); no swaps were reported.
+The optimized C++ source fingerprint in the run manifest matches the feature
+implementation. Timings are specific to this workload and concurrent host load.
+
+The same 1,476 checks passed after integration with the banded logistic backend
+and from the canonical source tree. A temporary installed-package check passed
+exact/approximate predictions, serialization and both help examples. The API
+guide audit passed. These are targeted feature checks, not a full package or
+CRAN check.
+
+Local evidence is retained in
+[the run manifest](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/plan.json),
+[raw timings](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/timings.tsv),
+[error summaries](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/errors.tsv), and
+[the resource log](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/run.log).
+`scripts/summarize_neighbor_agp_ann.py OUTPUT` regenerates the aggregate table
+without reading individual labels or predictions. Full AGP fits remain unrun.
+
 ## Max-normalized surface geometry: decision before AGP estimation
 
 The user has requested intrinsic geometry for the max-normalized analysis.
