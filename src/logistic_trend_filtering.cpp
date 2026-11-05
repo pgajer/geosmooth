@@ -27,11 +27,20 @@ Evaluation evaluate(const MatrixXd& A, const MatrixXd& Q, const VectorXd& y,
     Evaluation e;
     e.eta = A*b + offset;
     VectorXd residual(y.size()); e.curvature.resize(y.size());
-    e.value = 0.5 * b.dot(Q*b);
+    // Compensated accumulation keeps the objective accurate enough for
+    // near-converged Newton line searches on large Bernoulli samples.
+    // Otherwise O(n) rounding can exceed the true Newton decrease and
+    // repeatedly reject a valid step while stationarity still exceeds tol.
+    double total=0.5*b.dot(Q*b), correction=0;
+    auto add=[&](double value) {
+        double next=total+value;
+        correction+=std::abs(total)>=std::abs(value) ? (total-next)+value : (value-next)+total;
+        total=next;
+    };
     for (int i=0; i<y.size(); ++i) {
         double p = sigmoid(e.eta[i]);
         // This form avoids cancellation for y=1 and very large positive eta.
-        e.value += w[i] * ((1-y[i])*softplus(e.eta[i]) + y[i]*softplus(-e.eta[i]));
+        add(w[i] * ((1-y[i])*softplus(e.eta[i]) + y[i]*softplus(-e.eta[i])));
         residual[i] = w[i] * (p-y[i]);
         double z = std::exp(-std::abs(e.eta[i]));
         e.curvature[i] = w[i] * z / ((1+z)*(1+z));
@@ -40,10 +49,11 @@ Evaluation evaluate(const MatrixXd& A, const MatrixXd& Q, const VectorXd& y,
     if (barrier) {
         for (int j=0; j<b.size(); ++j) if (penalty[j]>0) {
             double s = std::hypot(mu, penalty[j]*b[j]);
-            e.value += s - mu*std::log(mu+s);
+            add(s - mu*std::log(mu+s));
             e.gradient[j] += penalty[j] * (penalty[j]*b[j]/(mu+s));
         }
     }
+    e.value=total+correction;
     return e;
 }
 

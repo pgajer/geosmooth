@@ -171,3 +171,11 @@ The benchmark host was an Apple M4 Max with 64 GiB physical RAM; each benchmark
 used one numerical thread, within this task's three-thread/6-GiB allocation.
 Windows checks, the entire existing test suite and new clinical AGP analyses
 are outside these completed comparisons. Gaussian minimax guarantees are not asserted for this model.
+
+## AGP permutation failure correction
+
+The November 5 AGP pilot exposed ill-conditioned normal-equation projections
+and roundoff-stalled quadratic initialization. The corrected implementation uses
+scaled banded QR for projection and compensated dense objective sums, preserving
+the objective and convergence gates. See [root causes, regression fixtures and
+validation](projection_failure_report.md).

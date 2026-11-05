@@ -3,7 +3,10 @@
 The structured backend is now available and selected automatically for large
 knot sets. See the [banded backend report](banded_backend_report.md) for current
 usage, dense comparisons, the five difficult cases and measured scaling results.
-The sections below preserve the original dense-reference implementation record.
+The [AGP numerical correction report](projection_failure_report.md) documents
+the subsequent projection and initialization fixes, exact failed-shuffle replays
+and regression checks. The sections below preserve the original dense-reference
+implementation record.
 
 ## Purpose and implementation
 

@@ -122,3 +122,27 @@ test_that("tied binary data do not stall when likelihood changes reach roundoff"
     penalty <- c(numeric(5), .001/n/d$scales[-c(1, 2)])
     expect_lt(max(abs(grad+penalty*f$dual)), 1e-8)
 })
+
+
+test_that("clustered terminal knots use a stable compact projection", {
+    # The old normal-equation projection threw before returning this path.
+    # These are synthetic fractional outcomes; no private AGP data are used.
+    x <- c(seq(0, .8, length.out = 24), .9, .90001, .90002, 1)
+    y <- .2 + .5*sin(4*x)^2
+    lambda <- c(Inf, .001, 0)
+    dense <- fit.logistic.trend.filtering(x, y, lambda, backend = "dense")
+    banded <- fit.logistic.trend.filtering(x, y, lambda, backend = "banded")
+    expect_true(all(banded$diagnostics$converged))
+    expect_lte(max(banded$diagnostics$stationarity), banded$control$tolerance)
+    expect_lte(max(banded$diagnostics$complementarity), banded$control$gap.tolerance)
+    expect_equal(as.numeric(fitted(banded)), as.numeric(fitted(dense)), tolerance = 2e-6)
+    expect_lt(max(abs(banded$diagnostics$objective-dense$diagnostics$objective)), 1e-7)
+    # Exercise nonuniform weights, row order and exact predictor ties as well.
+    ix <- rev(rep(seq_along(x), 2))
+    weighted <- fit.logistic.trend.filtering(x[ix], y[ix], lambda,
+        weights = rep(c(1, 3), each = length(x)), backend = "banded")
+    reference <- fit.logistic.trend.filtering(x[ix], y[ix], lambda,
+        weights = rep(c(1, 3), each = length(x)), backend = "dense")
+    expect_true(all(weighted$diagnostics$converged))
+    expect_equal(as.numeric(fitted(weighted)), as.numeric(fitted(reference)), tolerance = 2e-6)
+})

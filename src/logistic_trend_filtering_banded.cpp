@@ -199,10 +199,51 @@ struct Basis {
         Vec out=Vec::Zero(d);for(int j=0;j<d;++j) for(int k=0;k<std::min(4,d-j);++k) out[j]+=transform[j][k]*v[j+k];return out;
     }
     Vec project(const Vec& values,const Vec& weights) const {
-        Band h(d);
-        for(int i=0;i<int(rows.size());++i) for(auto a:rows[i]) for(auto b:rows[i]) if(a.first>=b.first) h.add(a.first,b.first,weights[i]*a.second*b.second);
-        if(!h.factor()) Rcpp::stop("Singular compact-basis projection.");
-        return h.solve(transpose(weights.cwiseProduct(values)));
+        // The trailing truncated quadratics can be nearly parallel when active
+        // knots cluster. Normal equations square that condition number and
+        // can produce nonpositive LDL pivots even for a full-rank design.
+        // Scaled, row-wise Givens QR solves the same weighted least-squares
+        // projection without a Gram matrix, ridge, or column deletion.
+        // Visit rows in nondecreasing right support so rotations cannot fill
+        // outside the four stored upper diagonals (O(n+d) workspace).
+        std::vector<std::array<Real,4>> r(d);
+        Vec rhs=Vec::Zero(d),scale=Vec::Zero(d);
+        for(int i=0;i<int(rows.size());++i) for(auto a:rows[i]) scale[a.first]+=weights[i]*a.second*a.second;
+        for(int j=0;j<d;++j) {
+            scale[j]=std::sqrt(scale[j]);
+            if(!(scale[j]>0)) Rcpp::stop("Singular compact-basis projection.");
+        }
+        std::vector<int> order(rows.size());std::iota(order.begin(),order.end(),0);
+        std::stable_sort(order.begin(),order.end(),[&](int a,int b) {
+            int left=rows[a].empty() ? -1 : rows[a].back().first;
+            int right=rows[b].empty() ? -1 : rows[b].back().first;
+            return left<right;
+        });
+        for(int i:order) {
+            if(rows[i].empty()) continue;
+            int first=rows[i].front().first,last=rows[i].back().first;
+            if(last-first>3) Rcpp::stop("Structured projection exceeded its bandwidth.");
+            std::array<Real,4> v{};Real root=std::sqrt(weights[i]),target=root*values[i];
+            for(auto a:rows[i]) v[a.first-first]=root*a.second/scale[a.first];
+            for(int j=first;j<=last;++j) {
+                Real entry=v[j-first];if(entry==0)continue;
+                Real norm=std::hypot(r[j][0],entry),co=r[j][0]/norm,si=entry/norm;
+                r[j][0]=norm;
+                for(int k=j+1;k<=last;++k) {
+                    Real before=r[j][k-j];
+                    r[j][k-j]=co*before+si*v[k-first];
+                    v[k-first]=-si*before+co*v[k-first];
+                }
+                Real before=rhs[j];rhs[j]=co*before+si*target;target=-si*before+co*target;
+            }
+        }
+        Vec c=rhs;
+        for(int j=d-1;j>=0;--j) {
+            if(!(r[j][0]>0) || !std::isfinite(r[j][0])) Rcpp::stop("Singular compact-basis projection.");
+            for(int k=j+1;k<std::min(d,j+4);++k)c[j]-=r[j][k-j]*c[k];
+            c[j]/=r[j][0];
+        }
+        return c.cwiseQuotient(scale);
     }
 };
 

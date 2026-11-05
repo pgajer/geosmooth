@@ -1,5 +1,11 @@
 # Development
 
+* Stabilize logistic trend-filtering fits with clustered active knots using a
+  scaled banded QR projection instead of normal equations. Use compensated
+  objective sums in the dense solver and shared quadratic initialization to
+  prevent roundoff-induced line-search stalls. Preserve the objective and
+  convergence tolerances.
+
 * Add `assess.logistic.trend.filtering()` for a global permutation test of
   constant binary probability and separate nested-CV log-loss/Brier improvement.
   It repeats tuning, uses outcome-independent folds, retains failed replicates

@@ -146,3 +146,21 @@ test_that("tied predictors retain distinct covariates and offsets", {
     expect_equal(as.numeric(fitted(f)), as.numeric(fitted(g)), tolerance = 1e-7)
     expect_gt(diff(range(fitted(f)[1:3])), .1)
 })
+
+
+test_that("large Bernoulli sums do not stall the quadratic initializer", {
+    # Three predictor groups have known finite fitted probabilities. Ordinary
+    # objective summation previously exhausted 1,000 Newton iterations here.
+    x <- rep(c(-1, 0, 1), each = 2000)
+    y <- c(rep(0, 1885), rep(1, 115), rep(0, 1700), rep(1, 300),
+           rep(0, 1400), rep(1, 600))
+    A <- cbind(1, scale(cbind(x, x*x)))
+    f <- geosmooth:::logistic_tf_native(A, matrix(0, 3, 3), y,
+        rep(1, length(y)), numeric(length(y)), numeric(3), Inf,
+        1e-9, 1e-10, 1000L)[[1]]
+    expect_true(f$converged)
+    expect_lt(f$iterations, 20L)
+    expect_lte(f$stationarity, 1e-9)
+    expect_equal(as.numeric(tapply(f$fitted.values, x, mean)),
+        c(115, 300, 600)/2000, tolerance = 1e-9)
+})
