@@ -17,17 +17,26 @@
 #' @param distances Optional square, nonnegative training dissimilarity matrix
 #'   in record order. Positive infinity denotes an unreachable record.
 #'   No graph or powered path distances are constructed internally.
-#' @param metric Coordinate distance, \code{"euclidean"} or \code{"chebyshev"}.
+#' @param metric Coordinate distance: \code{"euclidean"}, \code{"chebyshev"}, or
+#'   \code{"linf.simplex"}. The last computes exact intrinsic Euclidean-length
+#'   paths on the nonnegative max-normalized surface, using dgraphs' C++ solver.
+#'   Paths can cross intermediate faces; this is not Chebyshev distance.
 #' @param normalization Row normalization: \code{"none"}, \code{"sum"}, or
 #'   \code{"max"}. The latter two require nonnegative rows with positive mass.
 #'   Supply already-computed distances with \code{normalization = "none"}.
 #'   Normalization changes coordinates, not the distance definition: Euclidean
 #'   distances on max-normalized profiles are ambient chords, not intrinsic
-#'   paths on the cube surface. Such path distances require a separate metric.
+#'   paths on the cube surface. Use \code{metric = "linf.simplex"} for those
+#'   paths, with \code{normalization = "max"}. Alternatively, \code{"none"}
+#'   requires nonnegative rows whose maxima equal one within
+#'   \code{sqrt(.Machine$double.eps)}; admitted rows are divided by their maxima.
+#'   Sum normalization is rejected for intrinsic coordinate input.
 #' @param search Neighbor search: \code{"auto"} uses ANN for Euclidean
 #'   coordinates and brute force otherwise; \code{"ann"} explicitly requests
 #'   the ANN kd-tree; \code{"brute"} is the exhaustive reference backend.
-#'   ANN requires Euclidean coordinates, including normalized coordinates.
+#'   ANN requires ambient Euclidean coordinates, including normalized
+#'   coordinates. Intrinsic surface search always exhausts eligible candidates
+#'   using one query's workspace, with no all-pairs distance matrix.
 #' @param eps Nonnegative ANN approximation tolerance, default zero (exact).
 #'   Positive values require ANN. The distance approximation guarantee does
 #'   not bound probability error or case stopping ranks after exclusions.
@@ -60,9 +69,19 @@
 #' the closest. It can miss other participants and tied records. Approximate
 #' boundary diagnostics describe retrieved participants, not a complete shell.
 #' Available people/cases diagnostics still describe the full training set.
+#' Intrinsic surface search prepares sparse training profiles once per
+#' prediction call or CV split and streams a complete eligible distance row
+#' for each query. It uses dgraphs' shared intrinsic solver directly, without
+#' constructing a sample graph, limiting paths to endpoint faces, or truncating
+#' candidate neighbors. All three estimators share the same participant and
+#' tie rules. Per-pair worst-case work is quadratic in the number of features
+#' present in either profile. Distance workspace is linear in training records.
+#'
 #' Trees are reused across queries and sizes, and across participants within
 #' each CV split. They are rebuilt for each prediction call and are not stored
-#' in the serializable fit. CV retains one tree per split and repeat.
+#' in the serializable fit. CV retains one tree or sparse intrinsic profile
+#' cache per split and repeat; a new prediction call rebuilds its cache.
+#' Native caches are released on return or error from prediction or tuning.
 #'
 #' Tuning averages losses within participant, then across repeats, then across
 #' participants. Its standard error is the standard deviation of those
@@ -79,7 +98,8 @@
 #'
 #' @return A \code{neighbor.probability.fit} with selected \code{k},
 #'   \code{method}, \code{backend = "C++"}, candidate scores, folds, and the
-#'   training data needed for prediction. No training predictions are computed
+#'   \code{metric}, \code{distance.backend}, and training data needed for
+#'   prediction. No training predictions are computed
 #'   during fitting; \code{predict(fit)} computes leave-participant-out values.
 #' @examples
 #' X <- matrix(0:11, ncol = 1)
@@ -89,11 +109,16 @@
 #' tuned <- fit.neighbor.probability(X, y, method = "knn",
 #'                                   foldid = rep(1:3, 4), k.grid = 1:4)
 #' tuned$cv.table
+#' # Intrinsic surface neighbors can differ from ambient Euclidean neighbors.
+#' profiles <- rbind(c(0, 1, 0, 0), c(1, 1, 1, 1))
+#' surface <- fit.neighbor.probability(profiles, c(1, 0), k = 1,
+#'     metric = "linf.simplex", normalization = "max")
+#' predict(surface, rbind(c(1, 0, 0, 0)))
 #' @export
 fit.neighbor.probability <- function(
     X = NULL, y, method = c("knn", "case_raw", "case_corrected"),
     k = NULL, k.grid = NULL, distances = NULL,
-    metric = c("euclidean", "chebyshev"),
+    metric = c("euclidean", "chebyshev", "linf.simplex"),
     normalization = c("none", "sum", "max"),
     id = NULL, group = NULL, foldid = NULL,
     selection = c("min", "one.se", "locality.one.se"),
@@ -122,7 +147,7 @@ fit.neighbor.probability <- function(
     if (is.null(X) == is.null(distances))
         stop("Supply exactly one of 'X' and 'distances'.")
     if (!is.null(X)) {
-        X <- .neighbor.coordinates(X, normalization)
+        X <- .neighbor.coordinates(X, normalization, metric)
         if (nrow(X) != n) stop("nrow(X) must equal length(y).")
     } else {
         if (normalization != "none")
@@ -145,6 +170,8 @@ fit.neighbor.probability <- function(
                    priority = priority, method = method, metric = metric,
                    normalization = normalization, backend = "C++",
                    search = search, eps = eps,
+                   distance.backend = if (is.null(X)) "precomputed" else
+                       if (metric == "linf.simplex") "dgraphs" else "geosmooth",
                    tie.rule = "nearest-cases-v1| + SHA-256; ID collision tie",
                    selection = selection, k = NULL, cv.table = NULL,
                    foldid = NULL, call = match.call())
@@ -178,8 +205,16 @@ fit.neighbor.probability <- function(
         k.grid <- seq.int(lo, cap)
     }
     sizes <- .neighbor.sizes(k.grid, method)
-    indices <- lapply(splits, function(repeat.splits)
-        lapply(repeat.splits, function(t) .neighbor.index(object, t)))
+    indices <- list()
+    on.exit({
+        for (repeat.indices in indices) for (index in repeat.indices)
+            .neighbor.release(index, object$metric)
+    }, add = TRUE)
+    for (r in seq_along(splits)) {
+        indices[[r]] <- setNames(vector("list", length(splits[[r]])), names(splits[[r]]))
+        for (f in names(splits[[r]]))
+            indices[[r]][f] <- list(.neighbor.index(object, splits[[r]][[f]]))
+    }
     total <- total2 <- numeric(length(sizes))
     valid <- rep(TRUE, length(sizes))
     people <- unique(group[observed])
@@ -264,7 +299,7 @@ predict.neighbor.probability.fit <- function(
     } else {
         if (!is.null(distances) || is.null(newdata))
             stop("A coordinate fit requires 'newdata'.")
-        query <- .neighbor.coordinates(newdata, object$normalization)
+        query <- .neighbor.coordinates(newdata, object$normalization, object$metric)
         if (ncol(query) != ncol(object$X)) stop("Query feature count differs from training.")
         nq <- nrow(query)
         distance <- NULL
@@ -283,6 +318,8 @@ predict.neighbor.probability.fit <- function(
                             if (object$method == "knn") "insufficient_people" else "insufficient_cases")
     result$k <- sizes
     result$method <- object$method
+    result$metric <- object$metric
+    result$distance.backend <- object$distance.backend
     result$search <- if (is.null(object$search)) "brute" else object$search
     result$eps <- if (is.null(object$eps)) 0 else object$eps
     result$boundary.complete <- result$eps == 0
@@ -297,14 +334,25 @@ predict.neighbor.probability.fit <- function(
 }
 
 .neighbor.index <- function(object, train) {
-    if (!identical(object$search, "ann") || !length(train)) return(NULL)
+    if (is.null(object$X) || !length(train)) return(NULL)
+    if (identical(object$metric, "linf.simplex"))
+        return(rcpp_neighbor_intrinsic_index(object$X, as.integer(train - 1L)))
+    if (!identical(object$search, "ann")) return(NULL)
     rcpp_neighbor_ann_index(object$X, as.integer(train - 1L), object$priority,
                             as.integer(object$group.code), object$y)
 }
 
+.neighbor.release <- function(index, metric) {
+    if (!is.null(index)) rcpp_neighbor_release_index(index, identical(metric, "linf.simplex"))
+    invisible(NULL)
+}
+
 .neighbor.call <- function(object, query, distance, query.group, train, sizes,
                            diagnostics, index = NULL) {
-    if (is.null(index)) index <- .neighbor.index(object, train)
+    if (is.null(index)) {
+        index <- .neighbor.index(object, train)
+        on.exit(.neighbor.release(index, object$metric), add = TRUE)
+    }
     empty <- matrix(numeric(), 0L, 0L)
     rcpp_neighbor_probability(
         if (is.null(object$X)) empty else object$X,
@@ -313,7 +361,7 @@ predict.neighbor.probability.fit <- function(
         object$y, as.integer(train - 1L), as.integer(object$group.code),
         as.integer(query.group), as.integer(object$priority), sizes,
         match(object$method, c("knn", "case_raw", "case_corrected")) - 1L,
-        match(object$metric, c("euclidean", "chebyshev")) - 1L,
+        match(object$metric, c("euclidean", "chebyshev", "linf.simplex")) - 1L,
         is.null(object$X), diagnostics, index,
         if (is.null(object$eps)) 0 else object$eps)
 }
@@ -326,10 +374,20 @@ predict.neighbor.probability.fit <- function(
     x
 }
 
-.neighbor.coordinates <- function(X, normalization) {
+.neighbor.coordinates <- function(X, normalization, metric = "euclidean") {
     if (!is.matrix(X) || !is.numeric(X) || ncol(X) < 1L || nrow(X) < 1L ||
         any(!is.finite(X))) stop("Coordinates must be a finite numeric matrix.")
     storage.mode(X) <- "double"
+    if (metric == "linf.simplex") {
+        if (normalization == "sum")
+            stop("Intrinsic surface distances require normalization = 'max' or already max-normalized coordinates.")
+        if (any(X < 0)) stop("Intrinsic surface coordinates must be nonnegative.")
+        scale <- apply(X, 1L, max)
+        if (any(scale <= 0)) stop("Intrinsic surface rows must have positive maxima.")
+        if (normalization == "none" && any(abs(scale - 1) > sqrt(.Machine$double.eps)))
+            stop("Intrinsic surface coordinates must be max-normalized; use normalization = 'max'.")
+        return(X / scale)
+    }
     if (normalization != "none") {
         if (any(X < 0)) stop("Row normalization requires nonnegative coordinates.")
         scale <- if (normalization == "sum") rowSums(X) else apply(X, 1L, max)

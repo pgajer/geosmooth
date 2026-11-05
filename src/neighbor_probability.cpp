@@ -1,5 +1,6 @@
 #include <Rcpp.h>
 #include <ANN/ANN.h>
+#include <dgraphs/linf_simplex_distance.hpp>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -59,6 +60,34 @@ struct NeighborAnnIndex {
         if (--live_trees == 0) annClose();
     }
 };
+dgraphs_simplex::Row surface_row(const NumericMatrix& X, int i) {
+    dgraphs_simplex::Row row;
+    double maximum = 0;
+    for (int c = 0; c < X.ncol(); ++c) {
+        const double value = X(i,c);
+        if (!R_finite(value) || value < 0) stop("Invalid intrinsic surface coordinates.");
+        maximum = std::max(maximum, value);
+    }
+    if (maximum != 1) stop("Native intrinsic coordinates must be max-normalized.");
+    for (int c = 0; c < X.ncol(); ++c) if (X(i,c) > 0) {
+        row.id.push_back(c);
+        row.value.push_back(X(i,c));
+    }
+    return row;
+}
+struct NeighborIntrinsicIndex {
+    std::vector<dgraphs_simplex::Row> points;
+    std::vector<int> training;
+    int dimension;
+    NeighborIntrinsicIndex(const NumericMatrix& X, const IntegerVector& train)
+        : points(X.nrow()), training(train.begin(), train.end()), dimension(X.ncol()) {
+        for (int j : train) {
+            if (j < 0 || j >= X.nrow()) stop("Invalid intrinsic training row.");
+            if (j % 128 == 0) checkUserInterrupt();
+            points[j] = surface_row(X, j);
+        }
+    }
+};
 void validate_training(const NumericVector& y, const IntegerVector& train,
                        const IntegerVector& group, const IntegerVector& priority) {
     int n = y.size();
@@ -84,6 +113,21 @@ SEXP rcpp_neighbor_ann_index(const NumericMatrix& X, const IntegerVector& train,
     return ptr;
 }
 
+// [[Rcpp::export]]
+SEXP rcpp_neighbor_intrinsic_index(const NumericMatrix& X, const IntegerVector& train) {
+    if (X.nrow() < 1 || X.ncol() < 1 || train.size() < 1)
+        stop("Invalid intrinsic training dimensions.");
+    XPtr<NeighborIntrinsicIndex> ptr(new NeighborIntrinsicIndex(X, train), true);
+    return ptr;
+}
+
+// [[Rcpp::export]]
+void rcpp_neighbor_release_index(SEXP neighbor_index, bool intrinsic) {
+    if (Rf_isNull(neighbor_index)) return;
+    if (intrinsic) XPtr<NeighborIntrinsicIndex>(neighbor_index).release();
+    else XPtr<NeighborAnnIndex>(neighbor_index).release();
+}
+
 // One query neighborhood at a time; no all-pairs coordinate distance matrix.
 // [[Rcpp::export]]
 List rcpp_neighbor_probability(const NumericMatrix& X,
@@ -96,10 +140,10 @@ List rcpp_neighbor_probability(const NumericMatrix& X,
                                const IntegerVector& priority,
                                const IntegerVector& sizes,
                                int method, int metric, bool precomputed,
-                               bool diagnostics, SEXP ann_index, double eps) {
+                               bool diagnostics, SEXP neighbor_index, double eps) {
     const int n = y.size(), nq = query_group.size(), nk = sizes.size();
     validate_training(y, train, group, priority);
-    if (method < 0 || method > 2 || metric < 0 || metric > 1 || nk < 1 ||
+    if (method < 0 || method > 2 || metric < 0 || metric > 2 || nk < 1 ||
         !R_finite(eps) || eps < 0 || !R_finite((1 + eps) * (1 + eps)))
         stop("Invalid native neighbor arguments.");
     if (precomputed) {
@@ -114,13 +158,23 @@ List rcpp_neighbor_probability(const NumericMatrix& X,
     int ng = *std::max_element(group.begin(), group.end());
     for (int g : query_group) if (g < 0 || g > ng) stop("Invalid native query group.");
     NeighborAnnIndex* index = nullptr;
-    if (!Rf_isNull(ann_index)) {
-        XPtr<NeighborAnnIndex> ptr(ann_index);
+    NeighborIntrinsicIndex* surface = nullptr;
+    if (!Rf_isNull(neighbor_index) && metric == 2 && !precomputed) {
+        XPtr<NeighborIntrinsicIndex> ptr(neighbor_index);
+        surface = ptr.get();
+        if (!surface || surface->dimension != X.ncol() ||
+            surface->points.size() != static_cast<size_t>(n) ||
+            !std::equal(train.begin(), train.end(), surface->training.begin(), surface->training.end()))
+            stop("Invalid intrinsic index.");
+    } else if (!Rf_isNull(neighbor_index)) {
+        XPtr<NeighborAnnIndex> ptr(neighbor_index);
         index = ptr.get();
         if (!index || precomputed || metric != 0 || index->dimension != X.ncol() ||
             index->rows.size() != static_cast<size_t>(train.size()))
             stop("Invalid ANN index.");
     }
+    if (metric == 2 && !precomputed && train.size() && !surface)
+        stop("Intrinsic coordinate search needs a prepared dgraphs index.");
     if (eps > 0 && !index && train.size()) stop("Positive eps requires ANN.");
     std::unique_ptr<TrainingGroups> brute_groups;
     if (!index) brute_groups.reset(new TrainingGroups(train, group, y, ng));
@@ -149,11 +203,16 @@ List rcpp_neighbor_probability(const NumericMatrix& X,
     for (int q = 0; q < nq; ++q) {
         checkUserInterrupt();
         const int excluded = query_group[q];
+        dgraphs_simplex::Row surface_query;
+        if (surface) surface_query = surface_row(query, q);
         auto dist = [&](int j) {
             double d = 0;
             if (precomputed) {
                 d = distance(q, j);
                 if (ISNAN(d) || d < 0) stop("Invalid native distance.");
+            } else if (surface) {
+                d = dgraphs_simplex::solve(surface_query, surface->points[j]).distance;
+                if (!R_finite(d)) stop("Nonfinite intrinsic distance from dgraphs.");
             } else {
                 for (int c = 0; c < X.ncol(); ++c) {
                     const double delta = query(q,c) - X(j,c);
@@ -193,7 +252,11 @@ List rcpp_neighbor_probability(const NumericMatrix& X,
         };
         ordered.clear();
         if (!index) {
-            for (int j : train) append(j);
+            int evaluated = 0;
+            for (int j : train) {
+                if ((++evaluated % 128) == 0) checkUserInterrupt();
+                append(j);
+            }
             searched[q] = ordered.size();
             sort_people();
         } else {

@@ -145,8 +145,16 @@ rcpp_neighbor_ann_index <- function(X, train, priority, group, y) {
     .Call(`_geosmooth_rcpp_neighbor_ann_index`, X, train, priority, group, y)
 }
 
-rcpp_neighbor_probability <- function(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, ann_index, eps) {
-    .Call(`_geosmooth_rcpp_neighbor_probability`, X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, ann_index, eps)
+rcpp_neighbor_intrinsic_index <- function(X, train) {
+    .Call(`_geosmooth_rcpp_neighbor_intrinsic_index`, X, train)
+}
+
+rcpp_neighbor_release_index <- function(neighbor_index, intrinsic) {
+    invisible(.Call(`_geosmooth_rcpp_neighbor_release_index`, neighbor_index, intrinsic))
+}
+
+rcpp_neighbor_probability <- function(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, neighbor_index, eps) {
+    .Call(`_geosmooth_rcpp_neighbor_probability`, X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, neighbor_index, eps)
 }
 
 rcpp_ps_lps_local_pca_supports <- function(X, support_size, chart_dim_by_anchor, kernel) {

@@ -198,13 +198,13 @@ fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse
 
 ### fit.neighbor.probability
 
-14 arguments. Source: [R/neighbor_probability.R](../../../R/neighbor_probability.R#L93).
+14 arguments. Source: [R/neighbor_probability.R](../../../R/neighbor_probability.R#L118).
 
 ```r
 fit.neighbor.probability(X = NULL, y, method = c("knn", "case_raw", "case_corrected"), k = NULL, k.grid = NULL,
-    distances = NULL, metric = c("euclidean", "chebyshev"), normalization = c("none", "sum",
-        "max"), id = NULL, group = NULL, foldid = NULL, selection = c("min", "one.se", "locality.one.se"),
-    search = c("auto", "ann", "brute"), eps = 0)
+    distances = NULL, metric = c("euclidean", "chebyshev", "linf.simplex"), normalization = c("none",
+        "sum", "max"), id = NULL, group = NULL, foldid = NULL, selection = c("min", "one.se",
+        "locality.one.se"), search = c("auto", "ann", "brute"), eps = 0)
 ```
 
 ### fit.ps.lps

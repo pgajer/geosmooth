@@ -1,5 +1,11 @@
 # Development
 
+* Add streamed intrinsic surface distances to all three neighbor probability
+  estimators with `metric = "linf.simplex"`. Reuse the dgraphs C++ solver through
+  LinkingTo, cache sparse training profiles per prediction/CV split, and retain
+  only one query neighborhood at a time. Preserve participant exclusions and
+  tie rules; reject ANN and positive epsilon for intrinsic distances.
+
 * Add a compact, banded C++ backend for order-2 logistic trend filtering.
   Automatic selection avoids full dense knot matrices above 256 locations or
   when the dense workspace limit is exceeded. Full-knot KKT checks preserve the

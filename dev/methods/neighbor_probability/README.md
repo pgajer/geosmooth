@@ -16,8 +16,11 @@ the closest answering visit is selected before its label is inspected. This
 policy, and participant-balanced CV, extend the one-person-per-record study.
 Insufficient reachable people or cases give NA without an implicit fallback.
 
-Coordinate metrics are Euclidean and Chebyshev, with optional per-row sum or
-maximum normalization. Precomputed dissimilarities permit externally prepared
+Coordinate metrics are Euclidean, Chebyshev and the intrinsic Euclidean-length
+metric on the max-normalized surface. The latter reuses dgraphs' C++ solver
+with one query neighborhood in memory. Ambient metrics allow per-row sum or
+maximum normalization; intrinsic input uses maximum normalization or already
+max-normalized profiles. Precomputed dissimilarities permit externally prepared
 geodesic/Fermat distances; the estimator does not construct or tune such paths.
 Tuning supports explicit grouped fold vectors or repeated-fold matrices and
 minimum-error, smoother one-SE and locality one-SE rules. Report tuning as
@@ -92,3 +95,9 @@ The [ANN backend and timing record](ann_backend.md) describes exact Euclidean
 search, opt-in approximation, additional validation, and the bounded AGP pilot.
 It also records the separate intrinsic surface metric required for the proposed
 max-normalized analysis.
+
+## Intrinsic surface extension
+
+The [intrinsic backend and timing record](intrinsic_backend.md) documents the
+streamed dgraphs implementation, exhaustive-reference checks and a bounded
+64-query AGP pilot. Full AGP predictions and tuning remain unrun.

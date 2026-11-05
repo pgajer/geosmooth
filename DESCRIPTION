@@ -62,7 +62,8 @@ Language: en-US
 Roxygen: list(markdown = TRUE)
 SystemRequirements: GNU make
 LinkingTo:
-    Rcpp
+    Rcpp,
+    dgraphs (>= 0.3.0.9000)
 Depends:
     R (>= 3.5.0)
 Imports:

@@ -7,9 +7,23 @@ root <- normalizePath(".")
 stopifnot(file.exists(file.path(root, "src", "neighbor_probability.cpp")))
 dependency <- file.path(dirname(root), "dgraphs")
 if (!dir.exists(dependency)) stop("Local authoritative dgraphs source is required.")
+# LinkingTo must use the authoritative dgraphs header, not an older installation.
+lib <- file.path(root, "tmp", "neighbor-validation", "library")
+dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+.libPaths(c(lib, .libPaths()))
+Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
+header <- "include/dgraphs/linf_simplex_distance.hpp"
+installed.header <- system.file(header, package = "dgraphs", lib.loc = lib)
+source.header <- file.path(dependency, "inst", header)
+if (!nzchar(installed.header) ||
+    unname(tools::md5sum(installed.header)) != unname(tools::md5sum(source.header))) {
+    status <- system2(file.path(R.home("bin"), "R"), c("CMD", "INSTALL", "--no-docs",
+        "--no-multiarch", shQuote(paste0("--library=", lib)), shQuote(dependency)))
+    if (status != 0L) stop("Installing the local dgraphs build dependency failed.")
+}
 pkgload::load_all(dependency, recompile = FALSE, quiet = TRUE)
 Rcpp::compileAttributes(root)
-pkgbuild::compile_dll(root, debug = FALSE, force = FALSE, quiet = FALSE)
+pkgbuild::compile_dll(root, debug = FALSE, force = identical(Sys.getenv("NEIGHBOR_FORCE_BUILD"), "true"), quiet = FALSE)
 roxygen2::roxygenise(root, load = function(path) {
     pkgload::load_all(path, recompile = FALSE, quiet = TRUE)
     asNamespace("geosmooth")
@@ -20,6 +34,7 @@ summaries <- list()
 for (file in c("test-neighbor-probability.R",
                "test-neighbor-documentation.R",
                "test-neighbor-ann.R",
+               "test-neighbor-intrinsic.R",
                "test-geosmooth-native-naming.R")) {
     result <- testthat::test_file(file.path("tests", "testthat", file),
                                  reporter = "summary", stop_on_failure = TRUE)

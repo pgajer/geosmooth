@@ -11,7 +11,7 @@ fit.neighbor.probability(
   k = NULL,
   k.grid = NULL,
   distances = NULL,
-  metric = c("euclidean", "chebyshev"),
+  metric = c("euclidean", "chebyshev", "linf.simplex"),
   normalization = c("none", "sum", "max"),
   id = NULL,
   group = NULL,
@@ -40,14 +40,21 @@ use every size up to the minimum feasible training count across folds.}
 in record order. Positive infinity denotes an unreachable record.
 No graph or powered path distances are constructed internally.}
 
-\item{metric}{Coordinate distance, \code{"euclidean"} or \code{"chebyshev"}.}
+\item{metric}{Coordinate distance: \code{"euclidean"}, \code{"chebyshev"}, or
+\code{"linf.simplex"}. The last computes exact intrinsic Euclidean-length
+paths on the nonnegative max-normalized surface, using dgraphs' C++ solver.
+Paths can cross intermediate faces; this is not Chebyshev distance.}
 
 \item{normalization}{Row normalization: \code{"none"}, \code{"sum"}, or
 \code{"max"}. The latter two require nonnegative rows with positive mass.
 Supply already-computed distances with \code{normalization = "none"}.
 Normalization changes coordinates, not the distance definition: Euclidean
 distances on max-normalized profiles are ambient chords, not intrinsic
-paths on the cube surface. Such path distances require a separate metric.}
+paths on the cube surface. Use \code{metric = "linf.simplex"} for those
+paths, with \code{normalization = "max"}. Alternatively, \code{"none"}
+requires nonnegative rows whose maxima equal one within
+\code{sqrt(.Machine$double.eps)}; admitted rows are divided by their maxima.
+Sum normalization is rejected for intrinsic coordinate input.}
 
 \item{id}{Unique nonmissing record IDs. Defaults to row numbers as strings.
 Supply persistent IDs to obtain ordering invariant to row permutations.}
@@ -64,7 +71,9 @@ excluded from scoring, but their groups still obey the split.}
 \item{search}{Neighbor search: \code{"auto"} uses ANN for Euclidean
 coordinates and brute force otherwise; \code{"ann"} explicitly requests
 the ANN kd-tree; \code{"brute"} is the exhaustive reference backend.
-ANN requires Euclidean coordinates, including normalized coordinates.}
+ANN requires ambient Euclidean coordinates, including normalized
+coordinates. Intrinsic surface search always exhausts eligible candidates
+using one query's workspace, with no all-pairs distance matrix.}
 
 \item{eps}{Nonnegative ANN approximation tolerance, default zero (exact).
 Positive values require ANN. The distance approximation guarantee does
@@ -73,7 +82,8 @@ not bound probability error or case stopping ranks after exclusions.}
 \value{
 A \code{neighbor.probability.fit} with selected \code{k},
 \code{method}, \code{backend = "C++"}, candidate scores, folds, and the
-training data needed for prediction. No training predictions are computed
+\code{metric}, \code{distance.backend}, and training data needed for
+prediction. No training predictions are computed
 during fitting; \code{predict(fit)} computes leave-participant-out values.
 }
 \description{
@@ -102,9 +112,19 @@ for each retrieved participant it also checks all answering visits, keeping
 the closest. It can miss other participants and tied records. Approximate
 boundary diagnostics describe retrieved participants, not a complete shell.
 Available people/cases diagnostics still describe the full training set.
+Intrinsic surface search prepares sparse training profiles once per
+prediction call or CV split and streams a complete eligible distance row
+for each query. It uses dgraphs' shared intrinsic solver directly, without
+constructing a sample graph, limiting paths to endpoint faces, or truncating
+candidate neighbors. All three estimators share the same participant and
+tie rules. Per-pair worst-case work is quadratic in the number of features
+present in either profile. Distance workspace is linear in training records.
+
 Trees are reused across queries and sizes, and across participants within
 each CV split. They are rebuilt for each prediction call and are not stored
-in the serializable fit. CV retains one tree per split and repeat.
+in the serializable fit. CV retains one tree or sparse intrinsic profile
+cache per split and repeat; a new prediction call rebuilds its cache.
+Native caches are released on return or error from prediction or tuning.
 
 Tuning averages losses within participant, then across repeats, then across
 participants. Its standard error is the standard deviation of those
@@ -127,4 +147,9 @@ predict(fit, newdata = matrix(c(1.5, 5.5), ncol = 1))
 tuned <- fit.neighbor.probability(X, y, method = "knn",
                                   foldid = rep(1:3, 4), k.grid = 1:4)
 tuned$cv.table
+# Intrinsic surface neighbors can differ from ambient Euclidean neighbors.
+profiles <- rbind(c(0, 1, 0, 0), c(1, 1, 1, 1))
+surface <- fit.neighbor.probability(profiles, c(1, 0), k = 1,
+    metric = "linf.simplex", normalization = "max")
+predict(surface, rbind(c(1, 0, 0, 0)))
 }

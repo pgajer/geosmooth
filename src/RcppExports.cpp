@@ -322,9 +322,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_neighbor_intrinsic_index
+SEXP rcpp_neighbor_intrinsic_index(const NumericMatrix& X, const IntegerVector& train);
+RcppExport SEXP _geosmooth_rcpp_neighbor_intrinsic_index(SEXP XSEXP, SEXP trainSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type train(trainSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_neighbor_intrinsic_index(X, train));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_neighbor_release_index
+void rcpp_neighbor_release_index(SEXP neighbor_index, bool intrinsic);
+RcppExport SEXP _geosmooth_rcpp_neighbor_release_index(SEXP neighbor_indexSEXP, SEXP intrinsicSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type neighbor_index(neighbor_indexSEXP);
+    Rcpp::traits::input_parameter< bool >::type intrinsic(intrinsicSEXP);
+    rcpp_neighbor_release_index(neighbor_index, intrinsic);
+    return R_NilValue;
+END_RCPP
+}
 // rcpp_neighbor_probability
-List rcpp_neighbor_probability(const NumericMatrix& X, const NumericMatrix& query, const NumericMatrix& distance, const NumericVector& y, const IntegerVector& train, const IntegerVector& group, const IntegerVector& query_group, const IntegerVector& priority, const IntegerVector& sizes, int method, int metric, bool precomputed, bool diagnostics, SEXP ann_index, double eps);
-RcppExport SEXP _geosmooth_rcpp_neighbor_probability(SEXP XSEXP, SEXP querySEXP, SEXP distanceSEXP, SEXP ySEXP, SEXP trainSEXP, SEXP groupSEXP, SEXP query_groupSEXP, SEXP prioritySEXP, SEXP sizesSEXP, SEXP methodSEXP, SEXP metricSEXP, SEXP precomputedSEXP, SEXP diagnosticsSEXP, SEXP ann_indexSEXP, SEXP epsSEXP) {
+List rcpp_neighbor_probability(const NumericMatrix& X, const NumericMatrix& query, const NumericMatrix& distance, const NumericVector& y, const IntegerVector& train, const IntegerVector& group, const IntegerVector& query_group, const IntegerVector& priority, const IntegerVector& sizes, int method, int metric, bool precomputed, bool diagnostics, SEXP neighbor_index, double eps);
+RcppExport SEXP _geosmooth_rcpp_neighbor_probability(SEXP XSEXP, SEXP querySEXP, SEXP distanceSEXP, SEXP ySEXP, SEXP trainSEXP, SEXP groupSEXP, SEXP query_groupSEXP, SEXP prioritySEXP, SEXP sizesSEXP, SEXP methodSEXP, SEXP metricSEXP, SEXP precomputedSEXP, SEXP diagnosticsSEXP, SEXP neighbor_indexSEXP, SEXP epsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -341,9 +364,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type metric(metricSEXP);
     Rcpp::traits::input_parameter< bool >::type precomputed(precomputedSEXP);
     Rcpp::traits::input_parameter< bool >::type diagnostics(diagnosticsSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type ann_index(ann_indexSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type neighbor_index(neighbor_indexSEXP);
     Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_neighbor_probability(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, ann_index, eps));
+    rcpp_result_gen = Rcpp::wrap(rcpp_neighbor_probability(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics, neighbor_index, eps));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -468,6 +491,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
     {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
     {"_geosmooth_rcpp_neighbor_ann_index", (DL_FUNC) &_geosmooth_rcpp_neighbor_ann_index, 5},
+    {"_geosmooth_rcpp_neighbor_intrinsic_index", (DL_FUNC) &_geosmooth_rcpp_neighbor_intrinsic_index, 2},
+    {"_geosmooth_rcpp_neighbor_release_index", (DL_FUNC) &_geosmooth_rcpp_neighbor_release_index, 2},
     {"_geosmooth_rcpp_neighbor_probability", (DL_FUNC) &_geosmooth_rcpp_neighbor_probability, 15},
     {"_geosmooth_rcpp_ps_lps_local_pca_supports", (DL_FUNC) &_geosmooth_rcpp_ps_lps_local_pca_supports, 4},
     {"_geosmooth_rcpp_ps_lps_prepare_sync_rows", (DL_FUNC) &_geosmooth_rcpp_ps_lps_prepare_sync_rows, 3},

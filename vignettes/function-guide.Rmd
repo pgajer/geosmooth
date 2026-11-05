@@ -74,21 +74,27 @@ For Euclidean coordinates, `search = "auto"` uses exact ANN (`eps = 0`).
 the ANN distance tolerance does not bound probability error. Approximate searches
 retain the closest answering visit for each retrieved participant but can miss
 other participants or tied records. Complete tied-shell diagnostics require
-exact search. Chebyshev and precomputed distances always use brute force;
-explicit ANN or positive `eps` requests for those inputs are rejected.
-Max normalization with `metric = "euclidean"` measures ambient chords.
-For surface geodesics on the nonnegative max-normalized simplex, dgraphs
-provides `linf.simplex.distances()`; these are a distinct metric and must not
-be substituted by an ambient ANN search. The current estimator accepts such
-distances through its precomputed-distance interface. A streaming surface
-adapter is still needed for large cohorts.
-Trees are reused within prediction and CV splits, then rebuilt on the next
-prediction call. Fits remain serializable.
+exact search. Chebyshev, intrinsic surface and precomputed distances always
+use exhaustive candidate search; explicit ANN or positive `eps` requests for
+those inputs are rejected.
+
+For surface geodesics on the nonnegative max-normalized simplex, use
+`metric = "linf.simplex", normalization = "max"`. This streams exact distances
+from dgraphs' shared C++ solver, allowing intermediate faces. It prepares sparse
+training profiles once per prediction call or CV split and keeps one query's
+neighborhood in memory. No all-pairs distance matrix or sample graph is needed.
+With `normalization = "none"`, rows must already be max-normalized within
+`sqrt(.Machine$double.eps)`; admitted rows are divided by their maxima.
+`normalization = "sum"` is rejected for this metric.
+Max normalization with `metric = "euclidean"` still measures ambient chords,
+which can produce different neighbors. Cached trees or sparse profiles are
+reused within prediction and CV splits, then rebuilt on the next prediction
+call. Fits remain serializable.
 
 ```{r neighbor-probability, eval=FALSE}
 fit <- fit.neighbor.probability(X, y, method = "case_corrected", k = 3,
                                 id = record_id, group = participant_id,
-                                normalization = "max", metric = "chebyshev")
+                                normalization = "max", metric = "linf.simplex")
 predict(fit, newdata = query_X, query.group = query_participant_id,
         type = "diagnostics")
 ```

@@ -161,11 +161,11 @@ identified if retained as a comparison. Keep the historical max-Chebyshev
 geometry distinct. Existing map coordinates can display new probabilities but
 do not redefine the metric used to estimate them.
 
-The current probability interface can consume externally supplied surface
-distances, but its precomputed training interface requires a square matrix.
-Do not allocate a full AGP matrix. The next implementation step is a streamed
-query-to-training distance adapter using dgraphs' exact solver, retaining missing
-response handling, participant exclusions and the frozen tie rule. A fixed kNN
+At the time of this ANN pilot, the precomputed surface-distance interface
+required a square training matrix. The subsequently implemented
+[streamed intrinsic backend](intrinsic_backend.md) now uses dgraphs' exact
+solver directly, retaining missing response handling, participant exclusions
+and the frozen tie rule without an all-pairs matrix. A fixed kNN
 graph can truncate before the kth eligible case and cannot silently replace
 that adapter. Any later acceleration using Euclidean lower bounds must certify
 that omitted candidates cannot change the intrinsic neighborhood. Positive ANN
