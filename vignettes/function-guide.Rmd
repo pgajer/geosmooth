@@ -287,25 +287,6 @@ require `genlasso`; their supported prediction domain is the training set.
 | [`metric.graph.heat.extend.lower()`](https://pgajer.github.io/geosmooth/reference/metric.graph.heat.extend.lower.html) | Propose a smaller heat time for an external search, subject to resolution safeguards. |
 | [`graph.trend.filtering.operator()`](https://pgajer.github.io/geosmooth/reference/graph.trend.filtering.operator.html) | Construct graph differences or experimental path divided differences. |
 | [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Fit an absolute-value graph-difference penalty; requires `genlasso`. |
-| `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
-
-The [logistic trend-filtering vignette](logistic-trend-filtering.html) walks
-through synthetic probabilities, trial weights and held-out Pima predictions.
-
-The univariate logistic trend filter accepts binary observations or binomial
-proportions with trial weights. Supply a `lambda` path explicitly; its units
-refer to predictor locations normalized to the training range. Exact ties share
-the curve while retaining distinct covariates and offsets. Optional cross-validation
-requires `foldid`, which can keep repeated observations from the same subject
-together. Inspect `fit$diagnostics`: iteration limits, detected separation, and
-numerical failures are not successful fits. `predict()` reuses the training
-transformations and holds the curve constant beyond either boundary. Ridge
-stabilization is explicit and defaults to zero. `backend="auto"` selects the
-banded C++ backend above 256 distinct locations or when the dense workspace
-estimate exceeds its guard. The banded solver and predictor avoid full dense
-knot matrices; every stopping check scans all knot coefficients, without
-thinning. `backend="dense"` retains the small-problem reference solver. Both
-backends check an estimated workspace bound before allocation.
 
 Graph construction and shortest paths are supplied by `dgraphs`. A graph's
 adjacency list contains 1-based vertex indices; a parallel weight list gives
@@ -352,6 +333,30 @@ For example, `metric.graph.lowpass.operator(list(2L, integer()), list(1, numeric
 is rejected because the edge has no reciprocal entry. Do not repair directed
 or zero-length input silently. Resolve its scientific meaning before choosing a
 supported undirected positive-length graph.
+
+### One-dimensional logistic trend filtering
+
+| Function | Purpose |
+|---|---|
+| `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
+
+The [logistic trend-filtering vignette](logistic-trend-filtering.html) walks
+through synthetic probabilities, trial weights and held-out Pima predictions.
+
+The univariate logistic trend filter accepts binary observations or binomial
+proportions with trial weights. Supply a `lambda` path explicitly; its units
+refer to predictor locations normalized to the training range. Exact ties share
+the curve while retaining distinct covariates and offsets. Optional cross-validation
+requires `foldid`, which can keep repeated observations from the same subject
+together. Inspect `fit$diagnostics`: iteration limits, detected separation, and
+numerical failures are not successful fits. `predict()` reuses the training
+transformations and holds the curve constant beyond either boundary. Ridge
+stabilization is explicit and defaults to zero. `backend="auto"` selects the
+banded C++ backend above 256 distinct locations or when the dense workspace
+estimate exceeds its guard. The banded solver and predictor avoid full dense
+knot matrices; every stopping check scans all knot coefficients, without
+thinning. `backend="dense"` retains the small-problem reference solver. Both
+backends check an estimated workspace bound before allocation.
 
 ### Hessian-energy regression
 

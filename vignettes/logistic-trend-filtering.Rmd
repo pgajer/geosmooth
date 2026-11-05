@@ -634,6 +634,45 @@ curve. This vignette supports reproducible fitting and assessment, not a claim
 of universal superiority. No confidence band is supplied that would ignore
 penalty and knot selection.
 
+## What would a 95% uncertainty band mean?
+
+The current fitter returns point estimates and convergence diagnostics, not
+standard errors or posterior draws. The Wilson intervals in the Pima figures
+describe observed bin proportions; they are not confidence bands for the
+trend-filtering curve.
+
+A **pointwise 95% interval** concerns the probability at one prespecified
+predictor value. A **simultaneous 95% band** aims to cover the entire curve
+over a specified domain; taking pointwise intervals at many locations does
+not produce such a band. A region average, contrast between regions, or
+location of an adaptive knot is another inferential target and needs its own
+uncertainty calculation.
+
+One practical extension is a bootstrap of the complete fitting procedure,
+including penalty selection in each replicate. Independent observations may
+be resampled individually; repeated observations should be resampled by
+participant, and each participant's copies must remain together in tuning
+folds. Binomial trial weights and any covariates or offsets must retain their
+sampling meaning. Failed fits and their frequency must be reported rather
+than silently dropped. Penalization bias and unstable knot selection can make
+ordinary bootstrap intervals miscalibrated. Before describing them as 95%
+confidence intervals, assess pointwise and simultaneous coverage separately
+on simulations with known truth, including sparse predictor regions, strong
+curvature and near-separation. A fixed-lambda bootstrap answers a different
+question from one that repeats tuning.
+
+Bayesian credible intervals require an explicit probability model and priors,
+for example a binomial likelihood with shrinkage on third divided differences
+and proper priors on the unpenalized quadratic component and any covariates.
+Posterior sampling, smoothing-scale uncertainty and sampler diagnostics are
+additional work; optimizing the current penalized objective does not supply
+posterior draws. [Bayesian trend filtering](https://vnminin.github.io/papers/Faulkner2015.pdf)
+provides a precedent for binomial models. Its credible intervals express
+posterior uncertainty under the chosen model, without automatically guaranteeing
+95% frequentist coverage. Likewise, the
+[Gaussian generalized-lasso selective-inference results](https://www.stat.cmu.edu/~ryantibs/papers/genlasinf.pdf)
+do not directly supply confidence bands for this cross-validated logistic fit.
+
 ## Reusable analysis helpers
 
 These helpers implement the comparisons and figures above. In particular,
