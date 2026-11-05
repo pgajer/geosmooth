@@ -57,6 +57,29 @@ have their own [experimental section](#experimental-transport-methods).
 
 ## A first regression fit
 
+For binary outcomes, `fit.neighbor.probability()` offers `method = "knn"`,
+`"case_raw"` and `"case_corrected"` through one C++ backend. Supply fixed `k`
+or participant-safe `foldid` for Brier tuning. Here `k` counts people for kNN
+and cases for the two stopping rules. IDs determine distance ties; group IDs
+exclude all visits of a held-out person. Missing answers never become controls.
+For repeated records the closest answering visit represents each training
+participant. `predict(fit)` excludes each query participant; new queries need
+`query.group` when they belong to an existing participant. Probability paths
+and neighborhood diagnostics use the same ordering. Unreachable or insufficient
+neighborhoods return `NA`, without an automatic baseline substitution.
+
+```{r neighbor-probability, eval=FALSE}
+fit <- fit.neighbor.probability(X, y, method = "case_corrected", k = 3,
+                                id = record_id, group = participant_id,
+                                normalization = "max", metric = "chebyshev")
+predict(fit, newdata = query_X, query.group = query_participant_id,
+        type = "diagnostics")
+```
+
+This estimator has a nonlinear, response-dependent neighborhood when stopping
+at cases. Shared linear-smoother operations such as `smoother.matrix()` are not
+provided. Use external grouped outer folds to assess a tuned model.
+
 Use `X` with one observation per row and a response `y` of matching length.
 A local chart is a coordinate system fitted near an observation, often using
 principal component analysis (PCA). Start in the supplied coordinates before
@@ -179,6 +202,7 @@ their detailed help lives in dgraphs.
 
 | Function | Purpose |
 |---|---|
+| `fit.neighbor.probability()` | Fit C++ ordinary kNN, raw nearest-case or corrected nearest-case binary estimators, with deterministic ties and grouped tuning. |
 | [`fit.lps()`](https://pgajer.github.io/geosmooth/reference/fit.lps.html) | Fit and tune local polynomial regression, including supported Gaussian and binary response modes. |
 | [`fit.malps()`](https://pgajer.github.io/geosmooth/reference/fit.malps.html) | Fit and optionally tune a model-averaged collection of local polynomial models. |
 | [`fit.ps.lps()`](https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html) | Fit experimental local polynomial models whose predictions are synchronized on overlaps. |

@@ -1,0 +1,321 @@
+#' Nearest-Person and Nearest-Case Binary Probability Estimators
+#'
+#' Fit one of three estimators through a shared, single-threaded C++ backend.
+#' Ordinary nearest neighbors counts people; nearest-case estimators stop at
+#' the requested number of cases. Coordinates are processed one query at a
+#' time without constructing an all-pairs distance matrix.
+#'
+#' @param X Numeric matrix with one training record per row. Supply either
+#'   \code{X} or \code{distances}.
+#' @param y Binary responses, with \code{NA} for unanswered outcomes.
+#' @param method \code{"knn"}, \code{"case_raw"}, or \code{"case_corrected"}.
+#' @param k Fixed positive integer neighborhood size. Counts people for
+#'   \code{"knn"} and cases for the other methods. Corrected sizes must be at
+#'   least two. Omit for cross-validation using \code{foldid}.
+#' @param k.grid Optional candidate sizes for cross-validation. If omitted,
+#'   use every size up to the minimum feasible training count across folds.
+#' @param distances Optional square, nonnegative training dissimilarity matrix
+#'   in record order. Positive infinity denotes an unreachable record.
+#'   No graph or powered path distances are constructed internally.
+#' @param metric Coordinate distance, \code{"euclidean"} or \code{"chebyshev"}.
+#' @param normalization Row normalization: \code{"none"}, \code{"sum"}, or
+#'   \code{"max"}. The latter two require nonnegative rows with positive mass.
+#'   Supply already-computed distances with \code{normalization = "none"}.
+#' @param id Unique nonmissing record IDs. Defaults to row numbers as strings.
+#'   Supply persistent IDs to obtain ordering invariant to row permutations.
+#' @param group Nonmissing participant IDs, defaulting to \code{id}.
+#' @param foldid Optional fold vector or matrix (one repeat per column).
+#'   Every participant must stay in one fold per repeat. Missing outcomes are
+#'   excluded from scoring, but their groups still obey the split.
+#' @param selection Minimum Brier error, largest size within one standard error
+#'   (\code{"one.se"}), or smallest such size (\code{"locality.one.se"}).
+#'
+#' @details
+#' Rank answering training records by distance, then by the SHA-256 hash of
+#' \code{paste0("nearest-cases-v1|", id)}. Hash collisions use ID order. Keep only
+#' the closest answering record per participant, before inspecting its outcome.
+#' Exclude the query's entire participant when its group is supplied.
+#'
+#' If \eqn{T_k} is the rank including the kth case, the estimates are
+#' \eqn{K^{-1}\sum_{j=1}^K y_{(j)}}, \eqn{k/T_k}, and
+#' \eqn{(k-1)/(T_k-1)}. No clipping, pseudocount or automatic baseline fallback
+#' is applied. Insufficient reachable people or cases return \code{NA}.
+#' The number of cases reachable can depend on the query when a participant's
+#' visits have discordant outcomes.
+#'
+#' Tuning averages losses within participant, then across repeats, then across
+#' participants. Its standard error is the standard deviation of those
+#' participant losses divided by the square root of the number of people.
+#' Candidates with any unsupported validation prediction are unselectable.
+#' Numerical ties within \code{1e-14} favor larger sizes for minimum-error
+#' selection. The tuning score is not an independent performance estimate;
+#' use external participant-held outer folds for assessment.
+#'
+#' This implementation matches the sPTB study's prediction arithmetic and
+#' minimum-error tuning when there is one record per participant, the same
+#' distances, IDs and folds. The repeated-record policy is an explicit extension.
+#' At a tied distance the prefix can split a tied shell, as in that study.
+#'
+#' @return A \code{neighbor.probability.fit} with selected \code{k},
+#'   \code{method}, \code{backend = "C++"}, candidate scores, folds, and the
+#'   training data needed for prediction. No training predictions are computed
+#'   during fitting; \code{predict(fit)} computes leave-participant-out values.
+#' @examples
+#' X <- matrix(0:11, ncol = 1)
+#' y <- rep(c(0, 1, 1), 4)
+#' fit <- fit.neighbor.probability(X, y, method = "case_corrected", k = 2)
+#' predict(fit, newdata = matrix(c(1.5, 5.5), ncol = 1))
+#' tuned <- fit.neighbor.probability(X, y, method = "knn",
+#'                                   foldid = rep(1:3, 4), k.grid = 1:4)
+#' tuned$cv.table
+#' @export
+fit.neighbor.probability <- function(
+    X = NULL, y, method = c("knn", "case_raw", "case_corrected"),
+    k = NULL, k.grid = NULL, distances = NULL,
+    metric = c("euclidean", "chebyshev"),
+    normalization = c("none", "sum", "max"),
+    id = NULL, group = NULL, foldid = NULL,
+    selection = c("min", "one.se", "locality.one.se")) {
+
+    method <- match.arg(method)
+    metric <- match.arg(metric)
+    normalization <- match.arg(normalization)
+    selection <- match.arg(selection)
+    if (!(is.numeric(y) || is.logical(y)) || !is.null(dim(y)) || !length(y) ||
+        any(is.nan(y)) || any(!is.na(y) & (!is.finite(y) | !y %in% c(0, 1))))
+        stop("'y' must be a binary vector with NA for missing responses.")
+    y <- as.numeric(y)
+    n <- length(y)
+    if (all(is.na(y))) stop("At least one observed response is required.")
+    if (is.null(X) == is.null(distances))
+        stop("Supply exactly one of 'X' and 'distances'.")
+    if (!is.null(X)) {
+        X <- .neighbor.coordinates(X, normalization)
+        if (nrow(X) != n) stop("nrow(X) must equal length(y).")
+    } else {
+        if (normalization != "none")
+            stop("Precomputed distances require normalization = 'none'.")
+        distances <- .neighbor.distances(distances, n)
+        if (nrow(distances) != n) stop("Training distances must be square.")
+    }
+    if (is.null(id)) id <- as.character(seq_len(n))
+    id <- .neighbor.ids(id, n, "id")
+    if (anyDuplicated(id)) stop("'id' must contain unique record IDs.")
+    if (is.null(group)) group <- id
+    group <- .neighbor.ids(group, n, "group")
+    hashes <- vapply(id, function(s) digest::digest(
+        paste0("nearest-cases-v1|", s), algo = "sha256", serialize = FALSE), "")
+    order.id <- order(hashes, id, method = "radix")
+    priority <- integer(n)
+    priority[order.id] <- seq_len(n) - 1L
+    object <- list(X = X, distances = distances, y = y, id = id, group = group,
+                   group.code = match(group, unique(group)),
+                   priority = priority, method = method, metric = metric,
+                   normalization = normalization, backend = "C++",
+                   tie.rule = "nearest-cases-v1| + SHA-256; ID collision tie",
+                   selection = selection, k = NULL, cv.table = NULL,
+                   foldid = NULL, call = match.call())
+    class(object) <- "neighbor.probability.fit"
+    if (!is.null(k)) {
+        k <- .neighbor.sizes(k, method)
+        if (length(k) != 1L) stop("Fixed 'k' must be scalar; use predict(k = ...) for a path.")
+        if (!is.null(k.grid) || !is.null(foldid))
+            stop("Choose fixed 'k' or cross-validation, not both.")
+        object$k <- k
+        return(object)
+    }
+    if (is.null(foldid)) stop("Supply fixed 'k' or participant-safe 'foldid'.")
+    folds <- .neighbor.folds(foldid, group)
+    object$foldid <- folds
+    observed <- which(!is.na(y))
+    splits <- lapply(seq_len(ncol(folds)), function(r) {
+        out <- lapply(unique(folds[, r]), function(f) {
+            observed[folds[observed, r] != f]
+        })
+        names(out) <- unique(folds[, r])
+        out
+    })
+    if (is.null(k.grid)) {
+        cap <- min(vapply(unlist(splits, recursive = FALSE), function(t) {
+            if (method == "knn") length(unique(group[t]))
+            else length(unique(group[t[y[t] == 1]]))
+        }, 0L))
+        lo <- if (method == "case_corrected") 2L else 1L
+        if (cap < lo) stop("Insufficient training people/cases in at least one fold.")
+        k.grid <- seq.int(lo, cap)
+    }
+    sizes <- .neighbor.sizes(k.grid, method)
+    total <- total2 <- numeric(length(sizes))
+    valid <- rep(TRUE, length(sizes))
+    people <- unique(group[observed])
+    # Stream participant loss vectors; do not store an n-by-candidate CV matrix.
+    for (h in people) {
+        q <- observed[group[observed] == h]
+        loss <- numeric(length(sizes))
+        for (r in seq_len(ncol(folds))) {
+            train <- splits[[r]][[folds[q[1L], r]]]
+            pred <- .neighbor.at.rows(object, q, train, sizes, FALSE)$probability
+            loss <- loss + colMeans((pred - y[q])^2) / ncol(folds)
+        }
+        valid <- valid & is.finite(loss)
+        loss[!is.finite(loss)] <- 0
+        total <- total + loss
+        total2 <- total2 + loss^2
+    }
+    np <- length(people)
+    score <- total / np
+    se <- if (np > 1L) sqrt(pmax(0, (total2 - total^2 / np) / (np - 1L)) / np) else
+        rep(Inf, length(sizes))
+    score[!valid] <- Inf
+    se[!valid] <- Inf
+    if (!any(is.finite(score))) stop("No candidate has complete finite validation predictions.")
+    best <- max(which(score <= min(score) + 1e-14))
+    eligible <- if (selection == "min") best else
+        which(is.finite(score) & score <= score[best] + se[best] + 1e-14)
+    chosen <- if (selection == "locality.one.se") min(eligible) else max(eligible)
+    object$k <- sizes[chosen]
+    object$cv.table <- data.frame(k = sizes, brier = score, se = se,
+                                  valid = valid, selected = seq_along(sizes) == chosen)
+    object$cv.people <- np
+    object
+}
+
+#' Predict Nearest-Person Binary Probabilities
+#'
+#' @param object A fitted \code{\link{fit.neighbor.probability}} object.
+#' @param newdata Query coordinate matrix. With no query data, predict at the
+#'   stored training rows while excluding each query's whole participant.
+#' @param distances Query-by-training distance matrix for a precomputed fit.
+#'   Columns must retain the original training record order.
+#' @param query.group Optional participant IDs for query rows. Matching training
+#'   participants are excluded. Omit only for genuinely new participants.
+#' @param k One or more requested sizes; defaults to the fitted size.
+#' @param type Return a probability matrix or a list including matrices of
+#'   neighbor counts, case counts, radii and boundary-tie diagnostics.
+#' @param ... Reserved; additional arguments are rejected.
+#' @return A query-by-size matrix, or a diagnostic list with that matrix as
+#'   \code{probability}. Unsupported estimates remain \code{NA}.
+#'   \code{boundary.ties} counts distances within \code{1e-12} of the cutoff;
+#'   ordering itself uses exact distance ties. Diagnoses count distinct people.
+#' @examples
+#' X <- matrix(0:5, ncol = 1)
+#' f <- fit.neighbor.probability(X, c(1, 0, 1, 0, 0, 1), k = 2)
+#' predict(f) # leave-participant-out, not resubstitution
+#' predict(f, matrix(2.5, ncol = 1), type = "diagnostics")
+#' @export
+predict.neighbor.probability.fit <- function(
+    object, newdata = NULL, distances = NULL, query.group = NULL,
+    k = object$k, type = c("response", "diagnostics"), ...) {
+    if (length(list(...))) stop("Unused prediction arguments.")
+    type <- match.arg(type)
+    sizes <- .neighbor.sizes(k, object$method)
+    precomputed <- is.null(object$X)
+    training.query <- is.null(newdata) && is.null(distances)
+    if (training.query) {
+        query <- object$X
+        distance <- object$distances
+        nq <- length(object$y)
+        if (is.null(query.group)) query.group <- object$group
+    } else if (precomputed) {
+        if (!is.null(newdata) || is.null(distances))
+            stop("A precomputed fit requires query-by-training 'distances'.")
+        distance <- .neighbor.distances(distances, length(object$y))
+        nq <- nrow(distance)
+        query <- NULL
+    } else {
+        if (!is.null(distances) || is.null(newdata))
+            stop("A coordinate fit requires 'newdata'.")
+        query <- .neighbor.coordinates(newdata, object$normalization)
+        if (ncol(query) != ncol(object$X)) stop("Query feature count differs from training.")
+        nq <- nrow(query)
+        distance <- NULL
+    }
+    group.code <- integer(nq)
+    if (!is.null(query.group)) {
+        query.group <- .neighbor.ids(query.group, nq, "query.group")
+        group.code <- match(query.group, unique(object$group), nomatch = 0L)
+    }
+    result <- .neighbor.call(object, query, distance, group.code,
+                             which(!is.na(object$y)), sizes, type == "diagnostics")
+    colnames(result$probability) <- as.character(sizes)
+    if (training.query) rownames(result$probability) <- object$id
+    if (type == "response") return(result$probability)
+    result$status <- ifelse(is.finite(result$probability), "ok",
+                            if (object$method == "knn") "insufficient_people" else "insufficient_cases")
+    result$k <- sizes
+    result$method <- object$method
+    result
+}
+
+.neighbor.at.rows <- function(object, rows, train, sizes, diagnostics) {
+    .neighbor.call(object,
+                   if (!is.null(object$X)) object$X[rows, , drop = FALSE] else NULL,
+                   if (!is.null(object$distances)) object$distances[rows, , drop = FALSE] else NULL,
+                   object$group.code[rows], train, sizes, diagnostics)
+}
+
+.neighbor.call <- function(object, query, distance, query.group, train, sizes, diagnostics) {
+    empty <- matrix(numeric(), 0L, 0L)
+    rcpp_neighbor_probability(
+        if (is.null(object$X)) empty else object$X,
+        if (is.null(query)) empty else query,
+        if (is.null(distance)) empty else distance,
+        object$y, as.integer(train - 1L), as.integer(object$group.code),
+        as.integer(query.group), as.integer(object$priority), sizes,
+        match(object$method, c("knn", "case_raw", "case_corrected")) - 1L,
+        match(object$metric, c("euclidean", "chebyshev")) - 1L,
+        is.null(object$X), diagnostics)
+}
+
+.neighbor.ids <- function(x, n, name) {
+    if (!is.atomic(x) || !is.null(dim(x)) || length(x) != n || anyNA(x))
+        stop("'", name, "' must contain one nonmissing ID per row.")
+    x <- enc2utf8(as.character(x))
+    if (any(!nzchar(x))) stop("'", name, "' cannot contain empty IDs.")
+    x
+}
+
+.neighbor.coordinates <- function(X, normalization) {
+    if (!is.matrix(X) || !is.numeric(X) || ncol(X) < 1L || nrow(X) < 1L ||
+        any(!is.finite(X))) stop("Coordinates must be a finite numeric matrix.")
+    storage.mode(X) <- "double"
+    if (normalization != "none") {
+        if (any(X < 0)) stop("Row normalization requires nonnegative coordinates.")
+        scale <- if (normalization == "sum") rowSums(X) else apply(X, 1L, max)
+        if (any(!is.finite(scale) | scale <= 0))
+            stop("Normalized rows must have finite positive mass.")
+        X <- X / scale
+    }
+    X
+}
+
+.neighbor.distances <- function(D, n) {
+    if (!is.matrix(D) || !is.numeric(D) || ncol(D) != n || nrow(D) < 1L ||
+        anyNA(D) || any(D < 0))
+        stop("Distances must be a nonnegative numeric query-by-training matrix; Inf is allowed.")
+    storage.mode(D) <- "double"
+    D
+}
+
+.neighbor.sizes <- function(k, method) {
+    lo <- if (method == "case_corrected") 2L else 1L
+    if (!is.numeric(k) || !length(k) || any(!is.finite(k)) ||
+        any(k != floor(k) | k < lo | k > .Machine$integer.max))
+        stop("'k' must contain integers >= ", lo, ".")
+    sort(unique(as.integer(k)))
+}
+
+.neighbor.folds <- function(folds, group) {
+    if (!is.atomic(folds) || anyNA(folds)) stop("Fold IDs must be nonmissing.")
+    if (is.null(dim(folds))) folds <- matrix(folds, ncol = 1L)
+    if (!is.matrix(folds) || nrow(folds) != length(group) || ncol(folds) < 1L)
+        stop("'foldid' must have one row per training record.")
+    folds <- matrix(as.character(folds), nrow(folds), ncol(folds))
+    if (any(!nzchar(folds))) stop("Fold IDs cannot be empty.")
+    for (r in seq_len(ncol(folds))) {
+        if (length(unique(folds[,r])) < 2L) stop("Each repeat requires at least two folds.")
+        if (any(vapply(split(folds[,r], group), function(v) length(unique(v)) != 1L, TRUE)))
+            stop("A participant cannot cross folds.")
+    }
+    folds
+}

@@ -4,6 +4,12 @@
   filtering with a C++ backend, exact ties, binomial weights, optional covariates
   and offsets, explicit ridge options, fold-based penalty selection, and
   stationarity/complementarity diagnostics. Failed fits remain explicit.
+* Add `fit.neighbor.probability()` with C++ ordinary kNN, raw nearest-case
+  and stopping-rule corrected estimators. Shared prediction paths use
+  participant exclusions, closest answering visits, deterministic ID ties,
+  missing-label handling and grouped Brier selection. Validate against the
+  original sPTB Python prediction and minimum-error tuning code.
+
 * Add opt-in intrinsic simplex and Euclidean Bernoulli charts to
   `fit.local.likelihood()`, with weighted PCA/PLS, training-fold-only fitting,
   stable ridge optimization and explicit diagnostics/fallbacks. Legacy defaults

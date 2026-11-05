@@ -66,6 +66,10 @@ install: build
 	R CMD INSTALL $(TARBALL)
 
 .PHONY: website
+.PHONY: test-neighbors
+test-neighbors:
+	Rscript scripts/validate_neighbor_probability.R
+
 website:
 	Rscript scripts/build_website.R
 	python3 scripts/check_website.py

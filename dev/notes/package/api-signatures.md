@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 67 explicit exports: 67 local functions and 0 dgraphs re-exports; 99 S3 registrations are counted separately.
+There are 68 explicit exports: 68 local functions and 0 dgraphs re-exports; 100 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -194,6 +194,16 @@ fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse
     dense.fallback = c("auto", "never", "always"), verbose = FALSE, eta.search = c("fixed",
         "guarded.gcv"), eta.expansion.factor = 3, eta.max.expansions = 3L, eta.identity.departure = 0.01,
     eta.truncation.tol = 1e-04)
+```
+
+### fit.neighbor.probability
+
+12 arguments. Source: [R/neighbor_probability.R](../../../R/neighbor_probability.R#L72).
+
+```r
+fit.neighbor.probability(X = NULL, y, method = c("knn", "case_raw", "case_corrected"), k = NULL, k.grid = NULL,
+    distances = NULL, metric = c("euclidean", "chebyshev"), normalization = c("none", "sum",
+        "max"), id = NULL, group = NULL, foldid = NULL, selection = c("min", "one.se", "locality.one.se"))
 ```
 
 ### fit.ps.lps
@@ -798,6 +808,7 @@ S3method(predict,logistic.trend.filtering.fit)
 S3method(predict,lpl_tf)
 S3method(predict,lps)
 S3method(predict,malps)
+S3method(predict,neighbor.probability.fit)
 S3method(predict,slpl_tf)
 S3method(print,chart_kernel)
 S3method(print,density_fit)

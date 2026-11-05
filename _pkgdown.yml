@@ -21,6 +21,8 @@ reference:
   - model-summary
 - title: "Local regression and prediction synchronization"
   contents:
+  - fit.neighbor.probability
+  - predict.neighbor.probability.fit
   - fit.lps
   - fit.malps
   - fit.ps.lps

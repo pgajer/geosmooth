@@ -258,6 +258,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_neighbor_probability
+List rcpp_neighbor_probability(const NumericMatrix& X, const NumericMatrix& query, const NumericMatrix& distance, const NumericVector& y, const IntegerVector& train, const IntegerVector& group, const IntegerVector& query_group, const IntegerVector& priority, const IntegerVector& sizes, int method, int metric, bool precomputed, bool diagnostics);
+RcppExport SEXP _geosmooth_rcpp_neighbor_probability(SEXP XSEXP, SEXP querySEXP, SEXP distanceSEXP, SEXP ySEXP, SEXP trainSEXP, SEXP groupSEXP, SEXP query_groupSEXP, SEXP prioritySEXP, SEXP sizesSEXP, SEXP methodSEXP, SEXP metricSEXP, SEXP precomputedSEXP, SEXP diagnosticsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type query(querySEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type distance(distanceSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type train(trainSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type query_group(query_groupSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type priority(prioritySEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type sizes(sizesSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type metric(metricSEXP);
+    Rcpp::traits::input_parameter< bool >::type precomputed(precomputedSEXP);
+    Rcpp::traits::input_parameter< bool >::type diagnostics(diagnosticsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_neighbor_probability(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_ps_lps_local_pca_supports
 List rcpp_ps_lps_local_pca_supports(const NumericMatrix& X, const int support_size, const IntegerVector& chart_dim_by_anchor, const std::string& kernel);
 RcppExport SEXP _geosmooth_rcpp_ps_lps_local_pca_supports(SEXP XSEXP, SEXP support_sizeSEXP, SEXP chart_dim_by_anchorSEXP, SEXP kernelSEXP) {
@@ -375,6 +398,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_neighbor_probe, 3},
     {"_geosmooth_rcpp_metric_graph_lowpass_operator", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_operator, 10},
     {"_geosmooth_rcpp_metric_graph_lowpass_spectrum", (DL_FUNC) &_geosmooth_rcpp_metric_graph_lowpass_spectrum, 16},
+    {"_geosmooth_rcpp_neighbor_probability", (DL_FUNC) &_geosmooth_rcpp_neighbor_probability, 13},
     {"_geosmooth_rcpp_ps_lps_local_pca_supports", (DL_FUNC) &_geosmooth_rcpp_ps_lps_local_pca_supports, 4},
     {"_geosmooth_rcpp_ps_lps_prepare_sync_rows", (DL_FUNC) &_geosmooth_rcpp_ps_lps_prepare_sync_rows, 3},
     {"_geosmooth_rcpp_ps_lps_rhs_matrix", (DL_FUNC) &_geosmooth_rcpp_ps_lps_rhs_matrix, 2},

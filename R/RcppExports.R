@@ -129,6 +129,10 @@ rcpp_metric_graph_lowpass_spectrum <- function(s_adj_list, s_weight_list, s_cond
     .Call(`_geosmooth_rcpp_metric_graph_lowpass_spectrum`, s_adj_list, s_weight_list, s_conductance_rule, s_conductance_epsilon, s_conductance_alpha, s_conductance_sigma, s_sigma_rule, s_sigma_quantile, s_local_k, s_laplacian_type, s_n_eigenpairs, s_eigen_solver, s_dense_eigen_threshold, s_dense_fallback_threshold, s_dense_fallback, s_verbose)
 }
 
+rcpp_neighbor_probability <- function(X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics) {
+    .Call(`_geosmooth_rcpp_neighbor_probability`, X, query, distance, y, train, group, query_group, priority, sizes, method, metric, precomputed, diagnostics)
+}
+
 rcpp_ps_lps_local_pca_supports <- function(X, support_size, chart_dim_by_anchor, kernel) {
     .Call(`_geosmooth_rcpp_ps_lps_local_pca_supports`, X, support_size, chart_dim_by_anchor, kernel)
 }
