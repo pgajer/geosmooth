@@ -64,6 +64,13 @@ invalid inputs and all three selection rules. The current focused suite has
 947 passing expectations, zero failures and zero warnings. This is correctness
 evidence, not evidence of predictive value on microbiome outcomes.
 
+A temporary installed-package check also passed the probability and
+documentation tests, native symbol loading, and execution of both new help
+examples. The feature commit includes the previously committed logistic
+trend-filtering implementation as its parent; the new neighbor code does not
+alter that estimator. The companion AGP documents count 17 estimators through
+15 fitting entry points, since this interface represents three methods.
+
 ## QA limits
 
 A separate run of the existing package-wide exported-example test fails for
