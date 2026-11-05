@@ -1,5 +1,11 @@
 # Development
 
+* Add `assess.logistic.trend.filtering()` for a global permutation test of
+  constant binary probability and separate nested-CV log-loss/Brier improvement.
+  It repeats tuning, uses outcome-independent folds, retains failed replicates
+  and restricts shuffling to independent unit-weight binary observations without
+  covariates or offsets.
+
 * Add a reproducible logistic trend-filtering vignette with synthetic truth,
   training-only penalty selection, binomial trial weights and held-out Pima
   classification/calibration examples.

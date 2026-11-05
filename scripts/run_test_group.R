@@ -31,7 +31,8 @@ group.files <- list(
         )
     ),
     lps = grep("^test-(ge7-lps-api|lps-)", all.files, value = TRUE),
-    "logistic-tf" = c("test-logistic-trend-filtering.R", "test-logistic-trend-filtering-banded.R"),
+    "logistic-tf" = c("test-logistic-trend-filtering.R", "test-logistic-trend-filtering-banded.R",
+                      "test-logistic-trend-filtering-assessment.R"),
     "ps-lps" = "test-ps-lps.R",
     od = grep("^test-state-density-od", all.files, value = TRUE),
     graph = grep(

@@ -634,6 +634,98 @@ curve. This vignette supports reproducible fitting and assessment, not a claim
 of universal superiority. No confidence band is supplied that would ignore
 penalty and knot selection.
 
+## Does the probability vary with the predictor?
+
+The global question is whether all observed predictor locations share one
+unknown binary probability. The null estimate is the sample event rate. This
+differs from asking where the curve departs from a constant, and rejecting
+constancy does not by itself establish nonlinearity: linear logistic regression
+can also describe a nonconstant probability.
+
+`assess.logistic.trend.filtering()` takes a fitted object and performs two
+separate assessments. It retunes the supplied, prespecified penalty path on
+new outcome-independent folds, then repeats this complete procedure after
+each outcome permutation. Its statistic is twice the ordinary binomial
+log-likelihood improvement over the constant, truncated at zero for numerical
+roundoff. The returned `fit` is this newly tuned fit; the input object's fold
+labels and selected penalty are not reused. This avoids conditioning on folds
+that may have been stratified using the observed outcomes.
+
+Separately, nested CV estimates prediction loss: outer test outcomes enter
+neither penalty selection nor the outer-training event rate used as the
+constant baseline. Improvement means constant loss minus smoother loss.
+Positive values favor the smoother. These are predictive assessment scores,
+not confidence intervals or a second significance test.
+
+The following fixed examples use independent binary observations without
+covariates, offsets or weights. One has constant probability 0.35; the other
+has a localized probability peak. The predictor, penalty path and all solver
+settings are specified before generating outcomes. There are 160 observations
+per example. We use 99 permutations to keep routine builds short, giving
+p-value resolution 0.01; the assessment function defaults to 999. These two
+examples illustrate the outputs, not average false-positive rates or power.
+
+```{r global-assessment}
+assessment_examples <- list()
+for (j in 1:2) {
+    set.seed(9400L+j)
+    x <- seq(0, 1, length.out=160)
+    probability <- if (j == 1) rep(.35, length(x)) else
+        plogis(-2+4.8*exp(-((x-.4)/.15)^2))
+    y <- rbinom(length(x), 1, probability)
+    fit <- fit.logistic.trend.filtering(x, y, lambda=c(Inf, .1, .01, .001),
+                                       backend="banded")
+    assessment_examples[[j]] <- assess.logistic.trend.filtering(fit,
+        permutations=99, inner.folds=3, outer.folds=5, seed=9500L+j)
+}
+names(assessment_examples) <- c("Constant truth", "Localized peak")
+assessment_scores <- do.call(rbind, lapply(names(assessment_examples), function(name) {
+    a <- assessment_examples[[name]]
+    stopifnot(a$status == "complete", a$prediction$status == "complete")
+    data.frame(Example=name, `Permutation p-value`=a$p.value,
+        `Log-loss improvement`=unname(a$prediction$improvement["log.loss"]),
+        `Brier improvement`=unname(a$prediction$improvement["brier"]), check.names=FALSE)
+}))
+knitr::kable(assessment_scores, row.names=FALSE, digits=4)
+```
+
+The constant-truth example has permutation p-value
+**`r sprintf("%.2f", assessment_examples[[1]]$p.value)`** and nested-CV log-loss
+improvement **`r sprintf("%.4f", assessment_examples[[1]]$prediction$improvement["log.loss"])`**.
+The localized-peak example has p-value
+**`r sprintf("%.2f", assessment_examples[[2]]$p.value)`** and log-loss improvement
+**`r sprintf("%.4f", assessment_examples[[2]]$prediction$improvement["log.loss"])`**.
+The p-value measures evidence against constancy under exchangeability; the
+prediction gain measures whether that pattern helps on held-out observations.
+
+```{r permutation-comparison, fig.height=3.8, fig.cap="Each histogram shows likelihood improvements after randomly shuffling outcomes while retaining predictor locations and the event count. The orange line marks the observed statistic. The horizontal scales include the observed statistic, so an unusually large improvement can lie far beyond the shuffled results.", fig.alt="Two histograms compare shuffled-outcome likelihood improvements with the observed improvement for constant truth and a localized peak."}
+old_par <- par(mfrow=c(1, 2), mar=c(4, 4, 2, .5))
+for (name in names(assessment_examples)) {
+    a <- assessment_examples[[name]]
+    hist(a$permutations$statistic, breaks=10, col="grey85", border="white",
+         xlim=range(c(0, a$statistic, a$permutations$statistic)), main=name,
+         xlab="Likelihood improvement statistic", ylab="Permutation count")
+    abline(v=a$statistic, col="#D55E00", lwd=2)
+}
+par(old_par)
+```
+
+Inspect `assessment$permutations`, `assessment$permutation.diagnostics` and
+`assessment$prediction$diagnostics` for numerical failures. If any permutation
+cannot select a valid fit, `p.value` is unavailable; `p.value.bounds` shows the
+range obtained by counting each missing statistic at either extreme. That
+range is not a confidence interval. Incomplete outer predictions similarly
+leave the smoother's overall prediction scores unavailable. Failed fits are
+not dropped and denominators are not reduced to successful replicates.
+
+Unrestricted outcome shuffling is not valid for repeated participants,
+dependent observations or confounder-adjusted null hypotheses. The assessment
+rejects nonbinary responses, nonunit weights, covariates and offsets; callers
+must establish independence. A path or predictor chosen after inspecting
+outcomes is an additional selection step that this assessment does not repeat.
+This workflow uses an outcome permutation under the null, rather than a
+bootstrap intended to estimate uncertainty around the fitted alternative.
+
 ## What would a 95% uncertainty band mean?
 
 The current fitter returns point estimates and convergence diagnostics, not

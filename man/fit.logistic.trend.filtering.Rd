@@ -122,3 +122,7 @@ y <- rep(c(0, 1, 0, 1, 1), 8)
 model <- fit.logistic.trend.filtering(x, y, lambda = c(1, 0.1))
 predict(model, seq(0, 1, length.out = 10), lambda.index = 2)
 }
+\seealso{
+\code{\link{assess.logistic.trend.filtering}} for a global constancy test and
+nested-CV predictive improvement for independent binary observations.
+}

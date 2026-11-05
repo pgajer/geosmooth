@@ -80,6 +80,8 @@
 #'   `lambda`, `diagnostics`, training transformations, optional `cv.table` and
 #'   `selected.index`. Failed fits are preserved for diagnosis but standard
 #'   fitted/prediction methods return NA for them unless explicitly permitted.
+#' @seealso \code{\link{assess.logistic.trend.filtering}} for a global constancy test and
+#'   nested-CV predictive improvement for independent binary observations.
 #' @examples
 #' x <- seq(0, 1, length.out = 40)
 #' y <- rep(c(0, 1, 0, 1, 1), 8)

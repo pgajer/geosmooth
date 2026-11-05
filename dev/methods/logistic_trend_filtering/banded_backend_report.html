@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>banded_backend_report.html</title>
+<meta http-equiv="Content-Type" content="application/xhtml+xml;charset=utf-8"/>
+<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'><style> body { box-sizing: border-box; max-width: 740px; width: 100%; margin: 40px auto; padding: 0 10px; } </style><script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script><script src='https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js'></script><script>document.addEventListener('DOMContentLoaded', () => { document.body.classList.add('markdown-body'); document.querySelectorAll('pre[lang] > code').forEach((code) => { code.classList.add(code.parentElement.lang); }); document.querySelectorAll('pre > code').forEach((code) => { hljs.highlightBlock(code); }); });</script>
+</head>
+
+<body>
+
+<h1 id="banded-order-2-logistic-trend-filtering">Banded order-2 logistic
+trend filtering</h1>
+<h2 id="purpose-and-use">Purpose and use</h2>
+<p>This backend supports one-dimensional nonlinear outcome analyses with
+thousands of observations, including analyses within merged AGP
+community-state groups. One-dimensional refers to the scalar predictor,
+not sample count; this is not multivariate graph smoothing. Linear
+covariates and offsets remain available.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fit.logistic.trend.filtering</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    marker, binary_outcome, <span class="at">lambda =</span> <span class="fu">c</span>(<span class="dv">1</span>, .<span class="dv">1</span>, .<span class="dv">01</span>, .<span class="dv">001</span>),</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">backend =</span> <span class="st">&quot;banded&quot;</span>, <span class="at">lambda.selection =</span> <span class="st">&quot;cv&quot;</span>, <span class="at">foldid =</span> subject_fold</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span>diagnostics</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span>cv.table</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(fit, new_marker)</span></code></pre></div>
+<p>The example path is explicit, not a universal tuning recommendation.
+<code>backend="auto"</code> chooses banded above 256 distinct predictor
+values or when the dense workspace estimate exceeds its guard.
+<code>backend="dense"</code> retains the small-problem reference. Both
+minimize the same summed weighted binomial likelihood plus the L1
+third-difference penalty and optional nuisance/centered- curve ridge, on
+the same normalized predictor locations. No jitter, binning, knot
+thinning or additional estimator ridge was introduced. Exact ties retain
+observation-level covariates/offsets. CV and boundary predictions
+preserve the existing contracts.</p>
+<h2 id="structure-and-diagnostics">Structure and diagnostics</h2>
+<p>The falling-factorial basis is a quadratic polynomial plus functions
+<code>0.5*(u-t[j-1])*(u-t[j])*I(u&gt;t[j])</code>. Four consecutive
+functions have quadratic polynomial tails. Cancelling their three
+polynomial coefficients yields a locally supported column. These columns
+and boundary functions give an invertible reparameterization of the
+working-set span, with a fixed-bandwidth curve Hessian. A small Schur
+complement handles nuisance predictors and curve centering. A Newton
+step updates all working-set coefficients jointly.</p>
+<p>Every stopping check evaluates the gradient for <strong>all original
+knot coefficients</strong>, using shifted suffix moments. Omitted
+coefficients are exactly zero; violating knots are admitted and can
+leave at orthant boundaries. An inexact restricted solve is allowed when
+omitted-knot violations are much larger, but final acceptance always
+uses the unchanged global KKT gates.</p>
+<p>Default acceptance requires finite values, mean-loss stationarity
+&lt;=1e-9, L1 dual feasibility and complementarity &lt;=1e-10. These are
+approximate KKT conditions, not a separately computed dual objective gap
+or a proof of finite MLE existence. Null-space separation detection is
+retained; a pure outcome at a free knot also supplies a witness for zero
+penalty without curve ridge. Iteration limits and numerical failures
+remain explicit, and ordinary prediction returns NA for failed fits.</p>
+<p>Compensated likelihood/penalty sums and a machine-precision
+line-search allowance prevent rounding-scale objective changes from
+stalling Newton steps. Neither changes the estimator or final
+tolerances. Diagnostics record backend, working knots and initialization
+iterations; each fit also records the last line-search step and
+directional derivative. Initialization uses the dense solver only on
+three polynomial columns and optional covariates, never the full knot
+basis.</p>
+<p>Storage is linear in observations and knots for fixed covariate count
+and path length. Fitting and prediction avoid observation-by-full-knot
+and full-knot- square dense arrays. Runtime still depends on working-set
+changes, sorted suffix scans, covariate count and convergence. Difficult
+weak penalties can exhaust the budget. The workspace guard estimates
+solver allocations, not RSS.</p>
+<h2 id="frozen-reference-comparisons">Frozen reference comparisons</h2>
+<p>The original 30 ZAPPS/PreSSMat immune-marker datasets were each
+fitted at the same seven penalties (1 through 0.001), with identical
+rows, zero extra ridge and no retuning. Agreement required maximum
+probability difference &lt;=0.001 (0.1 percentage point), absolute
+objective difference per observation &lt;=1e-5, and successful
+convergence.</p>
+<p>All <strong>210/210 dense/banded comparisons pass</strong> and all
+210 banded fits converge. Maximum probability difference is
+3.09966496e-08; maximum absolute objective difference per observation is
+9.98933577e-11. Maximum stationarity is 8.85486538e-10, with zero
+complementarity. Independent reconstruction using the saved glmgen
+difference operator changes the summed objective by at most
+8.399373e-07. On the saved 150-point prediction grids, maximum
+difference from the original custom implementation is 1.21007794e-05,
+below the same 0.001 gate.</p>
+<p>All five original lambda=0.001 disputes pass against dense. Corrected
+glmgen remains an imperfect independent reference; reproducing its
+discrepancies is not the desired outcome.</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th>Dataset / marker</th>
+<th style="text-align: right;">Banded vs dense maximum probability
+difference (percentage points)</th>
+<th style="text-align: right;">Banded vs corrected glmgen (percentage
+points)</th>
+<th style="text-align: right;">Banded stationarity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ZAPPS union / IL-6</td>
+<td style="text-align: right;">1.00274e-06</td>
+<td style="text-align: right;">0.3587083</td>
+<td style="text-align: right;">7.37257e-17</td>
+</tr>
+<tr>
+<td>PreSSMat Li Lc / IL-1a</td>
+<td style="text-align: right;">5.289243e-07</td>
+<td style="text-align: right;">0.1175587</td>
+<td style="text-align: right;">4.97737e-14</td>
+</tr>
+<tr>
+<td>PreSSMat Li Lc / IL-1b</td>
+<td style="text-align: right;">1.437286e-07</td>
+<td style="text-align: right;">3.257049</td>
+<td style="text-align: right;">9.35991e-17</td>
+</tr>
+<tr>
+<td>ZAPPS Li Gv / IL-6</td>
+<td style="text-align: right;">1.059653e-07</td>
+<td style="text-align: right;">2.802567</td>
+<td style="text-align: right;">3.07806e-12</td>
+</tr>
+<tr>
+<td>ZAPPS Li Gv / MIP-3a</td>
+<td style="text-align: right;">7.034116e-07</td>
+<td style="text-align: right;">0.7095655</td>
+<td style="text-align: right;">2.03824e-10</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>30/30 saved adjusted full-data fits</strong> also pass,
+preserving the original age/assay transformations and explicit ridge
+settings. Maximum probability difference is 1.33193121e-06; maximum
+absolute objective difference per observation is 6.98646528e-13. These
+results do not repair or replace original failed/unsupported
+nested-validation attempts.</p>
+<h2 id="measured-synthetic-scaling">Measured synthetic scaling</h2>
+<p>Each optimized installed-package run used one thread and four fixed
+penalties (1, 0.1, 0.01, 0.001). Uniform scalar locations and a
+sinusoidal probability curve define the smooth binary examples.
+Additional cases have rare outcomes or 100 exact predictor values, with
+two covariates, offsets and explicit ridge. Prediction uses an equally
+sized new grid. Seeds, generated data, source/DLL hashes, sessions and
+raw <code>/usr/bin/time -l</code> logs are preserved.</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th style="text-align: right;">Observations</th>
+<th style="text-align: right;">Distinct predictor values</th>
+<th style="text-align: right;">Converged</th>
+<th style="text-align: right;">Fit time (s)</th>
+<th style="text-align: right;">Prediction (s)</th>
+<th style="text-align: right;">Process peak RSS (MiB)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Smooth binary</td>
+<td style="text-align: right;">1,000</td>
+<td style="text-align: right;">1,000</td>
+<td style="text-align: right;">4/4</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">104.5</td>
+</tr>
+<tr>
+<td>Smooth binary</td>
+<td style="text-align: right;">4,000</td>
+<td style="text-align: right;">4,000</td>
+<td style="text-align: right;">4/4</td>
+<td style="text-align: right;">0.131</td>
+<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">106.8</td>
+</tr>
+<tr>
+<td>Smooth binary</td>
+<td style="text-align: right;">24,000</td>
+<td style="text-align: right;">24,000</td>
+<td style="text-align: right;">4/4</td>
+<td style="text-align: right;">1.117</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">127.1</td>
+</tr>
+<tr>
+<td>Rare binary, adjusted</td>
+<td style="text-align: right;">4,000</td>
+<td style="text-align: right;">4,000</td>
+<td style="text-align: right;">4/4</td>
+<td style="text-align: right;">0.140</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">108.7</td>
+</tr>
+<tr>
+<td>Exact ties, adjusted</td>
+<td style="text-align: right;">4,000</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">4/4</td>
+<td style="text-align: right;">0.077</td>
+<td style="text-align: right;">0.002</td>
+<td style="text-align: right;">108.2</td>
+</tr>
+</tbody>
+</table>
+<p>All 20 fits passed the same KKT gates and all predictions were
+finite. These are measured synthetic examples, not actual AGP analyses
+or worst-case runtime guarantees. Concurrent AGP embedding workers were
+present. The user authorized up to three threads and 6 GiB for this
+task; each worker used one thread.</p>
+<h2 id="preserved-failures-and-tests">Preserved failures and tests</h2>
+<p>The initial tied-data stress test correctly returned iteration-limit
+failures at weak penalties. Admission-timing changes improved one fit
+but left another stalled. Independent reconstruction confirmed a correct
+Newton direction with expected objective improvement at
+summation-rounding scale. Compensated sums and the rounding allowance
+resolved the same case without changing its inputs, seed, penalties,
+ridge or final KKT gates. Failed/intermediate attempts remain separate
+from accepted <code>scaling-verified</code> results.</p>
+<p>All 93 focused assertions pass. The tied-data regression
+independently reconstructs the global gradient, including omitted knots.
+Other tests cover weighted binomial equivalence, covariates/offsets,
+exact and near ties, off-grid prediction, CV isolation, separation,
+iteration failure, automatic backend selection and workspace
+guarding.</p>
+<h2 id="evidence-and-reproduction">Evidence and reproduction</h2>
+<ul>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/comparison.csv">Dense/banded
+comparison table</a></li>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/summary.json">Comparison
+summary</a></li>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/hashes.csv">Input/source/DLL
+hashes</a></li>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/adjusted-verified/comparison.csv">Adjusted
+comparison</a></li>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/scaling-verified">Scaling
+runs</a></li>
+<li><a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105">Development
+and failure evidence</a></li>
+<li><a href="sparse_backend_plan.md">Implementation plan</a></li>
+</ul>
+<p>Compile optimized once from the package root, or install the current
+source in an isolated library. Run
+<code>scripts/validate_logistic_trend_filtering_banded.R</code> with the
+frozen reference root and a new output directory; its optional third
+argument selects that library. The adjusted validator accepts
+<code>banded</code> as its fourth argument. The benchmark runner takes
+sample size, scenario and a new output directory plus an optional
+library. Wrap it in <code>/usr/bin/time -l</code> for process RSS. Never
+overwrite previous outputs. <code>make test-logistic-tf</code> runs both
+test files. Neither backend requires Python or a glmgen runtime.</p>
+<p>The final <code>make check-fast</code> completed with zero errors,
+zero warnings and one NOTE about public documentation links not yet
+available on the deployed site. It built and rebuilt the vignettes and
+checked installation, compiled code, namespace/S3 registration and
+documentation. Examples and package tests are excluded by that fast
+target; the 93 focused assertions and numerical reference checks were
+run separately against the final optimized isolated installation. API
+coverage checks pass for 68 exports and 100 S3 registrations. The full
+source/input/DLL hash manifest was rechecked: all 187 entries match. <a
+href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/qa-verified">Final
+QA logs</a> preserve those checks and the final build/install
+evidence.</p>
+<p>The benchmark host was an Apple M4 Max with 64 GiB physical RAM; each
+benchmark used one numerical thread, within this task’s
+three-thread/6-GiB allocation. Windows checks, the entire existing test
+suite and new clinical AGP analyses are outside these completed
+comparisons. Gaussian minimax guarantees are not asserted for this
+model.</p>
+
+</body>
+</html>

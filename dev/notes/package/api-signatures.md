@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 68 explicit exports: 68 local functions and 0 dgraphs re-exports; 100 S3 registrations are counted separately.
+There are 69 explicit exports: 69 local functions and 0 dgraphs re-exports; 101 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -18,6 +18,15 @@ Defaults are unevaluated source expressions. The guide is checked for exactly on
 apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel", "tikhonov", "cubic_spline", "gaussian",
     "exponential", "butterworth"), block.size = NULL, truncation.tol = 1e-04, unresolved.action = c("warn",
     "error", "allow"), exact.zero = TRUE)
+```
+
+### assess.logistic.trend.filtering
+
+7 arguments. Source: [R/logistic_trend_filtering_assessment.R](../../../R/logistic_trend_filtering_assessment.R#L97).
+
+```r
+assess.logistic.trend.filtering(object, permutations = 999L, inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE,
+    warn = TRUE)
 ```
 
 ### bootstrap.malps
@@ -111,7 +120,7 @@ fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bern
 
 ### fit.logistic.trend.filtering
 
-13 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L89).
+13 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L91).
 
 ```r
 fit.logistic.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
@@ -816,6 +825,7 @@ S3method(print,density_fit)
 S3method(print,graph.trend.filtering.fit)
 S3method(print,harmonic_smoother)
 S3method(print,local_likelihood)
+S3method(print,logistic.trend.filtering.assessment)
 S3method(print,logistic.trend.filtering.fit)
 S3method(print,lpl_tf)
 S3method(print,lpl_tf_operator)
