@@ -57,6 +57,18 @@ logistic_tf_native <- function(design, ridge, response, weights, offsets, penalt
     .Call(`_geosmooth_logistic_tf_native`, design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations)
 }
 
+logistic_tf_structured_geometry <- function(u, knots, weights) {
+    .Call(`_geosmooth_logistic_tf_structured_geometry`, u, knots, weights)
+}
+
+logistic_tf_banded_predict <- function(knots, active, coefficients, u) {
+    .Call(`_geosmooth_logistic_tf_banded_predict`, knots, active, coefficients, u)
+}
+
+logistic_tf_banded_native <- function(u, knots, nuisance, response, weights, offsets, lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations) {
+    .Call(`_geosmooth_logistic_tf_banded_native`, u, knots, nuisance, response, weights, offsets, lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations)
+}
+
 #' Kernel local polynomial CV RMSE for ambient coordinates
 #'
 #' Internal C++ backend for `fit.lps()`.

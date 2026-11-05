@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 # Validate saved full-data adjusted objectives, without repeating clinical CV.
 args <- commandArgs(TRUE)
-if (length(args) != 3L) stop("Usage: Rscript scripts/validate_logistic_trend_filtering_adjusted.R REFERENCE_ROOT NEW_OUTPUT_DIR CHECK_LIBRARY")
+if (!length(args) %in% 3:4) stop("Usage: Rscript scripts/validate_logistic_trend_filtering_adjusted.R REFERENCE_ROOT NEW_OUTPUT_DIR CHECK_LIBRARY [BACKEND]")
+backend <- if (length(args) == 4L) match.arg(args[4], c("dense", "banded")) else "dense"
 reference <- normalizePath(args[1], mustWork = TRUE); output <- args[2]
 if (dir.exists(output)) stop("Preserve existing validation; use a new directory.")
 dir.create(output, recursive = TRUE)
@@ -43,7 +44,7 @@ for (i in seq_len(nrow(tasks))) {
         as.vector(H[, seq_along(f$beta), drop = FALSE] %*% vec(f$beta))
     lambda <- if (f$kind == "quadratic") Inf else f$lambda_
     fit <- fit.logistic.trend.filtering(d$value, d$y, lambda, covariates = z,
-        nuisance.ridge = .16, curve.ridge = .04, warn = FALSE)
+        nuisance.ridge = .16, curve.ridge = .04, warn = FALSE, backend = backend)
     difference <- max(abs(as.numeric(fitted(fit)) - plogis(custom.eta)))
     objective.difference <- (fit$fits[[1]]$objective - f$objective)/nrow(d)
     rows[[i]] <- data.frame(key = key, original.validation.status = old$status,
@@ -56,7 +57,7 @@ for (i in seq_len(nrow(tasks))) {
     cat(key, ":", fit$fits[[1]]$status, "\n"); flush.console()
 }
 r <- do.call(rbind, rows)
-jsonlite::write_json(list(fits = nrow(r), converged = sum(r$converged), agreement = sum(r$agreement),
+jsonlite::write_json(list(backend = backend, fits = nrow(r), converged = sum(r$converged), agreement = sum(r$agreement),
     max.probability.difference = max(r$probability.difference),
     max.objective.difference.per.observation = max(abs(r$objective.difference.per.observation)),
     scope = "Saved selected full-data adjusted fits only; original nested-validation failures remain unchanged."),

@@ -16,7 +16,8 @@ fit.logistic.trend.filtering(
   lambda.selection = c("fixed", "cv"),
   foldid = NULL,
   control = list(),
-  warn = TRUE
+  warn = TRUE,
+  backend = c("auto", "dense", "banded")
 )
 }
 \arguments{
@@ -49,6 +50,11 @@ Supply the same label for observations that must be held out together.}
 \code{max.workspace.bytes=1024^3}. Tolerances apply to mean weighted loss.}
 
 \item{warn}{Logical; warn when a path fit fails convergence checks.}
+
+\item{backend}{Native solver: \code{"auto"} uses \code{"banded"} above 256 distinct
+locations or when the dense workspace estimate exceeds its limit, and
+\code{"dense"} otherwise. The banded backend uses compact working
+sets and checks every knot; it does not thin the predictor locations.}
 }
 \value{
 An object of class \code{logistic.trend.filtering.fit}, with \code{fits},
@@ -58,8 +64,8 @@ fitted/prediction methods return NA for them unless explicitly permitted.
 }
 \description{
 Fits a piecewise-quadratic logit curve with an L1 penalty on its third
-divided differences. An R interface calls a native C++ damped-Newton
-logarithmic-barrier solver. No Python or external optimizer is required.
+divided differences. An R interface calls native C++ dense or banded
+solvers. No Python or external optimizer is required.
 }
 \details{
 Predictor locations are normalized to \verb{[0,1]} using the training
@@ -72,8 +78,14 @@ scale, not on the original units of x. The minimized objective is
 Here eta is the curve plus standardized covariates and offset, gamma
 contains standardized covariate coefficients, and the curve includes an
 unpenalized intercept. Third differences annihilate quadratic polynomials.
-The falling-factorial basis is scaled internally without changing the
-penalty. Exact ties share a curve value but retain their own likelihood
+Both backends preserve the falling-factorial penalty exactly. The dense
+solver uses a scaled global basis and a logarithmic barrier. The banded
+solver uses locally supported linear combinations of the same functions,
+a fully corrective working set, banded curve Hessians, and a small Schur
+complement for covariates/centering. Every stopping check scans all knots;
+omitted working-set coefficients remain exactly zero and violating knots
+are admitted until the global KKT checks pass. It does not approximate the
+penalty or restrict the permitted knot locations. Exact ties share a curve value but retain their own likelihood
 contributions, covariates, and offsets. No jittering or approximate thinning
 is performed. Extra covariates can be confounded with the curve; without
 identifying constraints, their individual coefficients are not effects
@@ -88,10 +100,14 @@ numerical failures remain explicit. Separation can prevent a finite
 minimizer, including in the unpenalized quadratic component. The classical
 Gaussian trend-filtering minimax result is not a guarantee for this model.
 
-The initial native backend uses dense basis and Newton matrices. Its
-conservative workspace estimate is checked before allocation; it is
-intended for moderate numbers of distinct predictor values. The estimate
-is a solver workspace guard, not a process-wide memory limit.
+The dense backend is intended for moderate knot counts. The banded backend
+avoids observation-by-full-knot and full-knot-square arrays during fitting
+and prediction. Its storage is linear in observations and knots for a fixed
+number of covariates and penalties; computation also depends on working-set
+changes and Newton convergence. The conservative workspace estimate is
+checked before allocation. It is a solver workspace guard, not a process-
+wide memory limit. The quadratic initialization uses the dense solver only
+on the three polynomial columns and optional covariates.
 
 CV recomputes training normalization, centering, and scaling in each fold.
 A candidate with any failed training fit is ineligible for selection.

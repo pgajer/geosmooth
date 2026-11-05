@@ -1,5 +1,10 @@
 # Native order-2 logistic trend filtering
 
+The structured backend is now available and selected automatically for large
+knot sets. See the [banded backend report](banded_backend_report.md) for current
+usage, dense comparisons, the five difficult cases and measured scaling results.
+The sections below preserve the original dense-reference implementation record.
+
 ## Purpose and implementation
 
 `fit.logistic.trend.filtering()` adds a one-dimensional piecewise-quadratic
@@ -26,7 +31,7 @@ The lambda=Inf limit is quadratic, not linear. Extrapolation holds the curve
 at its boundary value while retaining the supplied covariate and offset effects.
 Ridge defaults to zero and changes the objective when explicitly enabled.
 
-The native solver uses a scaled falling-factorial basis and a profiled
+The dense reference solver uses a scaled falling-factorial basis and a profiled
 logarithmic barrier for the L1 epigraph. It applies damped Newton steps with
 line search, diagonal equilibration, and warm starts along decreasing lambda.
 Newton damping stabilizes the numerical solve without adding an estimator ridge.
@@ -43,7 +48,7 @@ is rejected as `separation_detected`. Not finding such a direction is not a
 proof that separation is absent. Finite iteration budgets, singular systems,
 and nonfinite arithmetic have separate failure statuses.
 
-This initial implementation uses dense matrices. A conservative, configurable
+The initial dense reference implementation uses dense matrices. A conservative, configurable
 workspace estimate (default ceiling 1 GiB) is checked before allocation; it is
 not a process-wide memory limit. The backend is intended for moderate knot
 counts, not unrestricted large-data fitting. No runtime superiority claim is made.
@@ -192,10 +197,10 @@ Raising the guard does not solve the computation problem. Nuisance columns add
 to p. Exact ties reduce the knot count; arbitrary rounding or knot thinning
 would change the estimator and was not introduced here.
 
-For full continuous-predictor AGP fits, the next implementation should retain
+The initial recommendation for full continuous-predictor AGP fits was to retain
 the exact objective and convergence checks while using the sparse third-
 difference operator and structured/banded linear algebra or an appropriate
-operator-splitting solver. Retain this dense implementation as the small-problem
+operator-splitting solver. The banded backend now implements that recommendation; retain the dense implementation as the small-problem
 reference and validate the scalable solver against it and the frozen difficult
 cases. This recommendation does not imply that the existing multidimensional
 or graph smoothers in geosmooth share this dense backend.

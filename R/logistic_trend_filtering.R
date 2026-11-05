@@ -1,8 +1,8 @@
 #' Fit Order-2 Logistic Trend Filtering
 #'
 #' Fits a piecewise-quadratic logit curve with an L1 penalty on its third
-#' divided differences. An R interface calls a native C++ damped-Newton
-#' logarithmic-barrier solver. No Python or external optimizer is required.
+#' divided differences. An R interface calls native C++ dense or banded
+#' solvers. No Python or external optimizer is required.
 #'
 #' @param x Finite numeric predictor, with at least four distinct values.
 #' @param y Numeric response in `[0, 1]`. Binary observations use unit weights;
@@ -23,6 +23,10 @@
 #'   `gap.tolerance=1e-10`, `max.iterations=1000L`, or
 #'   `max.workspace.bytes=1024^3`. Tolerances apply to mean weighted loss.
 #' @param warn Logical; warn when a path fit fails convergence checks.
+#' @param backend Native solver: `"auto"` uses `"banded"` above 256 distinct
+#'   locations or when the dense workspace estimate exceeds its limit, and
+#'   `"dense"` otherwise. The banded backend uses compact working
+#'   sets and checks every knot; it does not thin the predictor locations.
 #'
 #' @details Predictor locations are normalized to `[0,1]` using the training
 #'   range. Lambda refers to third divided differences on that normalized
@@ -34,8 +38,14 @@
 #'   Here eta is the curve plus standardized covariates and offset, gamma
 #'   contains standardized covariate coefficients, and the curve includes an
 #'   unpenalized intercept. Third differences annihilate quadratic polynomials.
-#'   The falling-factorial basis is scaled internally without changing the
-#'   penalty. Exact ties share a curve value but retain their own likelihood
+#'   Both backends preserve the falling-factorial penalty exactly. The dense
+#'   solver uses a scaled global basis and a logarithmic barrier. The banded
+#'   solver uses locally supported linear combinations of the same functions,
+#'   a fully corrective working set, banded curve Hessians, and a small Schur
+#'   complement for covariates/centering. Every stopping check scans all knots;
+#'   omitted working-set coefficients remain exactly zero and violating knots
+#'   are admitted until the global KKT checks pass. It does not approximate the
+#'   penalty or restrict the permitted knot locations. Exact ties share a curve value but retain their own likelihood
 #'   contributions, covariates, and offsets. No jittering or approximate thinning
 #'   is performed. Extra covariates can be confounded with the curve; without
 #'   identifying constraints, their individual coefficients are not effects
@@ -50,10 +60,14 @@
 #'   minimizer, including in the unpenalized quadratic component. The classical
 #'   Gaussian trend-filtering minimax result is not a guarantee for this model.
 #'
-#'   The initial native backend uses dense basis and Newton matrices. Its
-#'   conservative workspace estimate is checked before allocation; it is
-#'   intended for moderate numbers of distinct predictor values. The estimate
-#'   is a solver workspace guard, not a process-wide memory limit.
+#'   The dense backend is intended for moderate knot counts. The banded backend
+#'   avoids observation-by-full-knot and full-knot-square arrays during fitting
+#'   and prediction. Its storage is linear in observations and knots for a fixed
+#'   number of covariates and penalties; computation also depends on working-set
+#'   changes and Newton convergence. The conservative workspace estimate is
+#'   checked before allocation. It is a solver workspace guard, not a process-
+#'   wide memory limit. The quadratic initialization uses the dense solver only
+#'   on the three polynomial columns and optional covariates.
 #'
 #'   CV recomputes training normalization, centering, and scaling in each fold.
 #'   A candidate with any failed training fit is ineligible for selection.
@@ -76,9 +90,10 @@ fit.logistic.trend.filtering <- function(
     x, y, lambda, weights = NULL, covariates = NULL, offset = NULL,
     nuisance.ridge = 0, curve.ridge = 0,
     lambda.selection = c("fixed", "cv"), foldid = NULL,
-    control = list(), warn = TRUE) {
+    control = list(), warn = TRUE, backend = c("auto", "dense", "banded")) {
     call <- match.call()
     lambda.selection <- match.arg(lambda.selection)
+    backend.requested <- match.arg(backend)
     scalar <- function(v, name, positive = FALSE) {
         if (!is.numeric(v) || length(v) != 1L || !is.finite(v) ||
             if (positive) v <= 0 else v < 0)
@@ -129,18 +144,34 @@ fit.logistic.trend.filtering <- function(
     if (any(diff(knots) <= 0))
         stop("Distinct x values collapsed during normalization.", call. = FALSE)
     p <- length(knots) + ncol(covariates)
-    workspace <- 8 * (4 * as.double(n) * p + 12 * as.double(p)^2 +
-                         length(lambda) * (3 * as.double(n) + 3 * p))
+    dense.workspace <- 8 * (4 * as.double(n) * p + 12 * as.double(p)^2 +
+                               length(lambda) * (3 * as.double(n) + 3 * p))
+    backend <- if (backend.requested == "auto") {
+        if (length(knots) > 256L || dense.workspace > control$max.workspace.bytes) "banded" else "dense"
+    } else backend.requested
+    workspace <- if (backend == "dense") {
+        dense.workspace
+    } else {
+        8 * (as.double(n) * (24 + 8 * ncol(covariates)) +
+                 length(knots) * (64 + 8 * ncol(covariates)) +
+                 16 * as.double(ncol(covariates) + 4)^2 +
+                 length(lambda) * (4 * as.double(n) + 4 * p))
+    }
     if (!is.finite(workspace) || workspace > control$max.workspace.bytes)
-        stop("Dense solver workspace estimate exceeds max.workspace.bytes.", call. = FALSE)
+        stop(backend, " solver workspace estimate exceeds max.workspace.bytes.", call. = FALSE)
     u <- (x - lo)/span; w <- weights/sum(weights)
-    H <- .logistic.tf.basis(u, knots)
-    center <- as.vector(crossprod(w, H))
-    H <- sweep(H, 2L, center)
-    scales <- sqrt(colSums(H^2 * w))
-    if (any(!is.finite(scales)) || any(scales <= 0))
-        stop("Degenerate falling-factorial basis.", call. = FALSE)
-    H <- sweep(H, 2L, scales, "/")
+    if (backend == "dense") {
+        H <- .logistic.tf.basis(u, knots)
+        center <- as.vector(crossprod(w, H))
+        H <- sweep(H, 2L, center)
+        scales <- sqrt(colSums(H^2 * w))
+        if (any(!is.finite(scales)) || any(scales <= 0))
+            stop("Degenerate falling-factorial basis.", call. = FALSE)
+        H <- sweep(H, 2L, scales, "/")
+    } else {
+        geometry <- logistic_tf_structured_geometry(as.numeric(u), as.numeric(knots), as.numeric(weights))
+        center <- geometry$center; scales <- geometry$scales
+    }
     zcenter <- as.vector(crossprod(w, covariates))
     Z <- sweep(covariates, 2L, zcenter)
     zscale <- sqrt(colSums(Z^2 * w))
@@ -148,22 +179,32 @@ fit.logistic.trend.filtering <- function(
         stop("Nonfinite covariate centering or scaling; rescale covariates first.", call. = FALSE)
     if (any(zscale <= 0)) stop("covariates must not contain constant columns.", call. = FALSE)
     Z <- sweep(Z, 2L, zscale, "/")
-    A <- cbind(1, Z, H); nz <- ncol(Z)
-    Q <- matrix(0, p, p)
-    if (nz) Q[1L + seq_len(nz), 1L + seq_len(nz)] <- diag(nuisance.ridge, nz)
-    hi <- (nz + 2L):p
-    Q[hi, hi] <- curve.ridge * crossprod(H, H * w)
-    penalty <- c(numeric(nz + 3L), 1/scales[-c(1L, 2L)])
-    if (any(!is.finite(A)) || any(!is.finite(Q)) || any(!is.finite(penalty)))
-        stop("Nonfinite transformed design or penalty.", call. = FALSE)
+    nz <- ncol(Z)
+    if (backend == "dense") {
+        A <- cbind(1, Z, H)
+        Q <- matrix(0, p, p)
+        if (nz) Q[1L + seq_len(nz), 1L + seq_len(nz)] <- diag(nuisance.ridge, nz)
+        hi <- (nz + 2L):p
+        Q[hi, hi] <- curve.ridge * crossprod(H, H * w)
+        penalty <- c(numeric(nz + 3L), 1/scales[-c(1L, 2L)])
+        if (any(!is.finite(A)) || any(!is.finite(Q)) || any(!is.finite(penalty)))
+            stop("Nonfinite transformed design or penalty.", call. = FALSE)
+    }
     if (sum(weights * y) == 0 || sum(weights * (1-y)) == 0) {
         stop("No finite unpenalized intercept: y contains only one outcome.", call. = FALSE)
     }
     # Fit stronger penalties first for warm starts, but preserve caller order.
     ord <- order(lambda, decreasing = TRUE)
-    fits <- logistic_tf_native(A, Q, as.numeric(y), as.numeric(weights),
-        as.numeric(offset), penalty, as.numeric(lambda[ord]),
-        control$tolerance, control$gap.tolerance, as.integer(control$max.iterations))
+    fits <- if (backend == "dense") {
+        logistic_tf_native(A, Q, as.numeric(y), as.numeric(weights),
+            as.numeric(offset), penalty, as.numeric(lambda[ord]),
+            control$tolerance, control$gap.tolerance, as.integer(control$max.iterations))
+    } else {
+        logistic_tf_banded_native(as.numeric(u), as.numeric(knots), Z,
+            as.numeric(y), as.numeric(weights), as.numeric(offset),
+            as.numeric(lambda[ord]), nuisance.ridge, curve.ridge,
+            control$tolerance, control$gap.tolerance, as.integer(control$max.iterations))
+    }
     fits <- fits[order(ord)]
     diagnostics <- do.call(rbind, lapply(seq_along(fits), function(i) {
         f <- fits[[i]]
@@ -174,7 +215,12 @@ fit.logistic.trend.filtering <- function(
             barrier.parameter = f$barrier.parameter, backtracks = f$backtracks,
             max.damping = f$max.damping, max.abs.eta = f$max.abs.eta)
     }))
-    out <- list(call = call, x = x, y = y, weights = weights, offset = offset,
+    diagnostics$backend <- backend
+    diagnostics$working.knots <- if (backend == "banded")
+        vapply(fits, function(f) length(f$active.knots), integer(1)) else NA_integer_
+    diagnostics$initialization.iterations <- if (backend == "banded")
+        vapply(fits, function(f) as.integer(f$initialization.iterations), integer(1)) else 0L
+    out <- list(call = call, backend = backend, x = x, y = y, weights = weights, offset = offset,
         covariates = covariates, offset.used = offset.used, lambda = lambda,
         fits = fits, diagnostics = diagnostics, selected.index = NULL,
         cv.table = NULL, control = control, nuisance.ridge = nuisance.ridge,
@@ -194,7 +240,7 @@ fit.logistic.trend.filtering <- function(
             test <- foldid == folds[k]; train <- !test
             ff <- tryCatch(fit.logistic.trend.filtering(x[train], y[train], lambda,
                 weights[train], covariates[train, , drop = FALSE], offset[train],
-                nuisance.ridge, curve.ridge, control = control, warn = FALSE),
+                nuisance.ridge, curve.ridge, control = control, warn = FALSE, backend = backend.requested),
                 error = function(e) e)
             if (inherits(ff, "error")) { fold.status[k] <- conditionMessage(ff); next }
             eta <- stats::predict(ff, x[test], covariates = covariates[test, , drop = FALSE],
@@ -269,12 +315,19 @@ predict.logistic.trend.filtering.fit <- function(
         stop("allow.unconverged must be TRUE or FALSE.", call. = FALSE)
     d <- object$design; u <- (newdata - d$lo)/d$span
     outside <- u < 0 | u > 1
-    H <- sweep(sweep(.logistic.tf.basis(pmin(1, pmax(0, u)), d$knots), 2L, d$center), 2L, d$scales, "/")
     Z <- sweep(sweep(covariates, 2L, d$zcenter), 2L, d$zscale, "/")
-    A <- cbind(1, Z, H)
+    banded <- identical(object$backend, "banded")
+    if (!banded) {
+        H <- sweep(sweep(.logistic.tf.basis(pmin(1, pmax(0, u)), d$knots), 2L, d$center), 2L, d$scales, "/")
+        A <- cbind(1, Z, H)
+    }
     ans <- vapply(lambda.index, function(j) {
-        if (!object$fits[[j]]$converged && !allow.unconverged) return(rep(NA_real_, n))
-        eta <- as.vector(A %*% object$fits[[j]]$coefficients + offset)
+        f <- object$fits[[j]]
+        if (!f$converged && !allow.unconverged) return(rep(NA_real_, n))
+        eta <- if (banded) {
+            logistic_tf_banded_predict(d$knots, f$active.knots, f$compact.coefficients,
+                pmin(1, pmax(0, u))) + as.vector(Z %*% f$nuisance.coefficients) + offset
+        } else as.vector(A %*% f$coefficients + offset)
         if (type == "response") stats::plogis(eta) else eta
     }, numeric(n))
     ans <- matrix(ans, nrow = n, ncol = length(lambda.index))
@@ -297,7 +350,8 @@ residuals.logistic.trend.filtering.fit <- function(object, ...) object$y - stats
 #' @method print logistic.trend.filtering.fit
 #' @export
 print.logistic.trend.filtering.fit <- function(x, ...) {
-    cat("Order-2 logistic trend filtering (native C++)\n")
+    cat("Order-2 logistic trend filtering (native C++; ",
+        if (is.null(x$backend)) "dense" else x$backend, ")\n", sep = "")
     cat(length(x$x), "observations;", length(x$design$knots), "distinct locations\n")
     print(x$diagnostics[, c("lambda", "converged", "status", "stationarity", "complementarity")], row.names = FALSE)
     if (!is.null(x$selected.index)) cat("Selected lambda:", x$lambda[x$selected.index], "\n")

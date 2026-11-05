@@ -274,8 +274,12 @@ requires `foldid`, which can keep repeated observations from the same subject
 together. Inspect `fit$diagnostics`: iteration limits, detected separation, and
 numerical failures are not successful fits. `predict()` reuses the training
 transformations and holds the curve constant beyond either boundary. Ridge
-stabilization is explicit and defaults to zero. This first backend uses dense
-matrices and checks an estimated workspace bound before allocation.
+stabilization is explicit and defaults to zero. `backend="auto"` selects the
+banded C++ backend above 256 distinct locations or when the dense workspace
+estimate exceeds its guard. The banded solver and predictor avoid full dense
+knot matrices; every stopping check scans all knot coefficients, without
+thinning. `backend="dense"` retains the small-problem reference solver. Both
+backends check an estimated workspace bound before allocation.
 
 Graph construction and shortest paths are supplied by `dgraphs`. A graph's
 adjacency list contains 1-based vertex indices; a parallel weight list gives

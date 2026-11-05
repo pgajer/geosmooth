@@ -1,5 +1,9 @@
 # Development
 
+* Add a compact, banded C++ backend for order-2 logistic trend filtering.
+  Automatic selection avoids full dense knot matrices above 256 locations or
+  when the dense workspace limit is exceeded. Full-knot KKT checks preserve the
+  objective without thinning; prediction also uses the compact representation.
 * Add `fit.logistic.trend.filtering()` for order-2 univariate logistic trend
   filtering with a C++ backend, exact ties, binomial weights, optional covariates
   and offsets, explicit ridge options, fold-based penalty selection, and

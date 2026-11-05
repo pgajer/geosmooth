@@ -111,12 +111,12 @@ fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bern
 
 ### fit.logistic.trend.filtering
 
-12 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L75).
+13 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L89).
 
 ```r
 fit.logistic.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
     curve.ridge = 0, lambda.selection = c("fixed", "cv"), foldid = NULL, control = list(),
-    warn = TRUE)
+    warn = TRUE, backend = c("auto", "dense", "banded"))
 ```
 
 ### fit.lpl.tf
