@@ -10,6 +10,11 @@
 #' @param weights Positive observation weights; normalized to sum to one.
 #' @return A list with vertex fitted values, support flags, observation weights,
 #'   objective, and relative linear-system residual.
+#' @examples
+#' op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+#'                                    list(1, c(1, 1), 1))
+#' fit <- fit.masked.graph.field(op, vertex = c(1, 3), y = c(2, 8), lambda = 0.5)
+#' fit$fitted
 #' @export
 fit.masked.graph.field <- function(operator, vertex, y, lambda, weights = NULL) {
     L <- .field.laplacian(operator)
@@ -136,6 +141,13 @@ fit.masked.graph.field <- function(operator, vertex, y, lambda, weights = NULL) 
 #' @return Outer predictions, baseline predictions, scores on supported cases,
 #'   coverage, tuning records, fold assignments and final full-data field.
 #'   Scores do not account for selecting a graph after comparing graphs.
+#' @examples
+#' op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+#'                                    list(1, c(1, 1), 1))
+#' cv <- cv.masked.graph.field(op, rep(c(1, 3), 6), 1:12, letters[1:12],
+#'     lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+#' cv$coverage
+#' cv$final$fitted
 #' @export
 cv.masked.graph.field <- function(operator, vertex, y, group,
     lambdas = 10^seq(-6, 2, length.out = 17), outer.folds = 5L,
@@ -193,6 +205,14 @@ cv.masked.graph.field <- function(operator, vertex, y, group,
 #' @return Named graph results, each containing named study results or an explicit
 #'   error record. Retains per-observation predictions for common-support scoring.
 #' @usage compare.masked.graph.fields(operators, studies, workers = 1L, ...)
+#' @examples
+#' op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+#'                                    list(1, c(1, 1), 1))
+#' studies <- list(example = list(vertex = rep(c(1, 3), 6), y = 1:12,
+#'                                group = letters[1:12]))
+#' comparison <- compare.masked.graph.fields(list(path = op), studies,
+#'     workers = 1, lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+#' comparison$path$example$coverage
 #' @export compare.masked.graph.fields
 compare.masked.graph.fields <- function(operators, studies, workers = 1L, ...) {
     if (!length(operators) || is.null(names(operators)) || anyDuplicated(names(operators)) ||
@@ -230,6 +250,16 @@ compare.masked.graph.fields <- function(operators, studies, workers = 1L, ...) {
 #' @return Selected graph per outer fold, outer predictions and coverage,
 #'   participant-balanced MSE, final graph name, and its final fitted field.
 #' @usage select.masked.graph.field(comparison, study)
+#' @examples
+#' op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+#'                                    list(1, c(1, 1), 1))
+#' studies <- list(example = list(vertex = rep(c(1, 3), 6), y = 1:12,
+#'                                group = letters[1:12]))
+#' comparison <- compare.masked.graph.fields(list(path = op), studies,
+#'     lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+#' selected <- select.masked.graph.field(comparison, "example")
+#' selected$final.graph
+#' selected$coverage
 #' @export select.masked.graph.field
 select.masked.graph.field <- function(comparison, study) {
     fits <- lapply(comparison, function(x) x[[study]])
@@ -272,6 +302,10 @@ select.masked.graph.field <- function(comparison, study) {
 #' @param group Nonmissing participant identifiers for the observations.
 #' @return A data frame with nearest.observation.hops (Inf if unreachable),
 #'   local.participants and component.supported for each vertex.
+#' @examples
+#' op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+#'                                    list(1, c(1, 1), 1))
+#' support.masked.graph.field(op, vertex = c(1, 3), group = c("a", "b"))
 #' @export
 support.masked.graph.field <- function(operator, vertex, group) {
     n <- nrow(.field.laplacian(operator))

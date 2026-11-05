@@ -51,3 +51,11 @@ A numeric vector for one path index, otherwise a matrix. Attributes
 \description{
 Predict from Logistic Trend Filtering
 }
+\examples{
+x <- seq(0, 1, length.out = 24)
+fit <- fit.logistic.trend.filtering(x, rep(c(0, 1), 12), lambda = Inf)
+predict(fit, c(0.25, 0.75))
+head(fitted(fit))
+head(residuals(fit))
+print(fit)
+}

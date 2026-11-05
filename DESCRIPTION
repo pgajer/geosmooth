@@ -82,6 +82,7 @@ Suggests:
     grip (>= 0.2.0.9001),
     knitr,
     rmarkdown,
+    splines,
     testthat (>= 3.0.0),
     waldo,
     withr

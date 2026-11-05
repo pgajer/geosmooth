@@ -32,7 +32,7 @@ bootstrap.malps(object, B = 200L, weight.type = c("bayesian", "multinomial"), y 
 
 ### compare.masked.graph.fields
 
-4 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L197).
+4 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L217).
 
 ```r
 compare.masked.graph.fields(operators, studies, workers = 1L, ...)
@@ -48,7 +48,7 @@ compare.synthetic.dataset(x, y, tolerance = c(1e-12, 1e-10))
 
 ### cv.masked.graph.field
 
-10 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L140).
+10 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L152).
 
 ```r
 cv.masked.graph.field(operator, vertex, y, group, lambdas = 10^seq(-6, 2, length.out = 17), outer.folds = 5L,
@@ -173,7 +173,7 @@ fit.malps(X, y, graph = NULL, adj.list = NULL, weight.list = NULL, graph.stage =
 
 ### fit.masked.graph.field
 
-5 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L14).
+5 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L19).
 
 ```r
 fit.masked.graph.field(operator, vertex, y, lambda, weights = NULL)
@@ -508,7 +508,7 @@ refit(object, y, ...)
 
 ### select.masked.graph.field
 
-2 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L234).
+2 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L264).
 
 ```r
 select.masked.graph.field(comparison, study)
@@ -564,7 +564,7 @@ ssrhe.support.grid(n, tangent.dim, derivative.order = 2L, support.buffer = 2L, m
 
 ### support.masked.graph.field
 
-3 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L276).
+3 arguments. Source: [R/masked_graph_fields.R](../../../R/masked_graph_fields.R#L310).
 
 ```r
 support.masked.graph.field(operator, vertex, group)

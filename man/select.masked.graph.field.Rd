@@ -21,3 +21,14 @@ predictions. Only graphs with full inner-fold prediction coverage compete;
 unsupported outer predictions remain NA. Candidate vertex identities and
 ordering must agree. Final graph selection uses full-data inner CV.
 }
+\examples{
+op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+                                   list(1, c(1, 1), 1))
+studies <- list(example = list(vertex = rep(c(1, 3), 6), y = 1:12,
+                               group = letters[1:12]))
+comparison <- compare.masked.graph.fields(list(path = op), studies,
+    lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+selected <- select.masked.graph.field(comparison, "example")
+selected$final.graph
+selected$coverage
+}

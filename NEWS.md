@@ -1,5 +1,9 @@
 # Development
 
+* Add a reproducible logistic trend-filtering vignette with synthetic truth,
+  training-only penalty selection, binomial trial weights and held-out Pima
+  classification/calibration examples.
+
 * Add streamed intrinsic surface distances to all three neighbor probability
   estimators with `metric = "linf.simplex"`. Reuse the dgraphs C++ solver through
   LinkingTo, cache sparse training profiles per prediction/CV split, and retain

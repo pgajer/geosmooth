@@ -231,12 +231,12 @@ their detailed help lives in dgraphs.
 | [`fit.ps.lps()`](https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html) | Fit experimental local polynomial models whose predictions are synchronized on overlaps. |
 | [`fit.chart.kernel()`](https://pgajer.github.io/geosmooth/reference/fit.chart.kernel.html) | Fit a chart-kernel field, with optional reference-measure quadrature weights. |
 | [`fit.local.likelihood()`](https://pgajer.github.io/geosmooth/reference/fit.local.likelihood.html) | Fit local density or Bernoulli likelihood models; returns a fitted field. |
-| [`unfold.simplex.chart()`](https://pgajer.github.io/geosmooth/reference/unfold.simplex.chart.html) | Certify and unfold a local one/two-face simplex neighborhood before constructing charts. |
-| [`fit.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/fit.masked.graph.field.html) | Fit a graph field from partially observed responses. |
-| [`support.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/support.masked.graph.field.html) | Identify graph components supported by observed responses. |
-| [`cv.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/cv.masked.graph.field.html) | Assess masked fields using participant-grouped nested cross-validation. |
-| [`compare.masked.graph.fields()`](https://pgajer.github.io/geosmooth/reference/compare.masked.graph.fields.html) | Compare candidate graph fields with independent workers. |
-| [`select.masked.graph.field()`](https://pgajer.github.io/geosmooth/reference/select.masked.graph.field.html) | Assemble nested graph-selection predictions from inner-fold choices. |
+| `unfold.simplex.chart()` | Certify and unfold a local one/two-face simplex neighborhood before constructing charts. |
+| `fit.masked.graph.field()` | Fit a graph field from partially observed responses. |
+| `support.masked.graph.field()` | Identify graph components supported by observed responses. |
+| `cv.masked.graph.field()` | Assess masked fields using participant-grouped nested cross-validation. |
+| `compare.masked.graph.fields()` | Compare candidate graph fields with independent workers. |
+| `select.masked.graph.field()` | Assemble nested graph-selection predictions from inner-fold choices. |
 
 ### Model assessment and uncertainty
 
@@ -288,6 +288,9 @@ require `genlasso`; their supported prediction domain is the training set.
 | [`graph.trend.filtering.operator()`](https://pgajer.github.io/geosmooth/reference/graph.trend.filtering.operator.html) | Construct graph differences or experimental path divided differences. |
 | [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Fit an absolute-value graph-difference penalty; requires `genlasso`. |
 | `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
+
+The [logistic trend-filtering vignette](logistic-trend-filtering.html) walks
+through synthetic probabilities, trial weights and held-out Pima predictions.
 
 The univariate logistic trend filter accepts binary observations or binomial
 proportions with trial weights. Supply a `lambda` path explicitly; its units

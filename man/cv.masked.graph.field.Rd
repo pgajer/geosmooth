@@ -48,3 +48,11 @@ Select smoothing within outer training folds, predict held-out groups, and
 finally tune and refit on all observations. Graph construction is label-free
 and fixed (transductive prediction). Unsupported predictions remain NA.
 }
+\examples{
+op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+                                   list(1, c(1, 1), 1))
+cv <- cv.masked.graph.field(op, rep(c(1, 3), 6), 1:12, letters[1:12],
+    lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+cv$coverage
+cv$final$fitted
+}

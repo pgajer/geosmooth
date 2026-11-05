@@ -12,7 +12,7 @@ for (topic in c(exports, method.names, "geosmooth", "geosmooth-package", "model-
         stop("Missing installed help: ", topic)
 }
 index <- utils::vignette(package = "geosmooth", lib.loc = library.path)$results
-expected <- c("function-guide", "synthetic-datasets")
+expected <- c("function-guide", "synthetic-datasets", "logistic-trend-filtering")
 stopifnot(all(expected %in% index[, "Item"]))
 for (name in expected) {
     path <- file.path(library.path, "geosmooth", "doc", paste0(name, ".html"))
@@ -24,4 +24,4 @@ for (name in expected) {
     stopifnot(all(grepl('alt="[^"]+"', images)))
 }
 cat("Installed help resolves for", length(exports), "exports and", nrow(methods),
-    "methods; both guides and their labeled figures are available offline.\n")
+    "methods;", length(expected), "guides and their labeled figures are available offline.\n")

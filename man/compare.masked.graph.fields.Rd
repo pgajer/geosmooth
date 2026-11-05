@@ -25,3 +25,12 @@ Runs one candidate graph per process, with dynamically scheduled jobs and no
 nested fold parallelism. On Unix, forked workers inherit the loaded package
 sources. Run from Rscript, not a GUI or multithreaded parent process.
 }
+\examples{
+op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+                                   list(1, c(1, 1), 1))
+studies <- list(example = list(vertex = rep(c(1, 3), 6), y = 1:12,
+                               group = letters[1:12]))
+comparison <- compare.masked.graph.fields(list(path = op), studies,
+    workers = 1, lambdas = c(0.01, 1), outer.folds = 3, inner.folds = 2)
+comparison$path$example$coverage
+}

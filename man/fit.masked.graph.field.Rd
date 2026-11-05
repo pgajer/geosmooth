@@ -26,3 +26,9 @@ Estimate a conditional mean by weighted least squares with an unnormalized
 graph Laplacian penalty. Repeated observations at a vertex remain separate.
 Unobserved components return NA rather than an arbitrary constant.
 }
+\examples{
+op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+                                   list(1, c(1, 1), 1))
+fit <- fit.masked.graph.field(op, vertex = c(1, 3), y = c(2, 8), lambda = 0.5)
+fit$fitted
+}

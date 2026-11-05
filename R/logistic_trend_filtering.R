@@ -281,6 +281,13 @@ fit.logistic.trend.filtering <- function(
 #' @param ... Reserved for compatibility with generic methods.
 #' @return A numeric vector for one path index, otherwise a matrix. Attributes
 #'   `outside.range` and `lambda` identify boundary predictions and penalties.
+#' @examples
+#' x <- seq(0, 1, length.out = 24)
+#' fit <- fit.logistic.trend.filtering(x, rep(c(0, 1), 12), lambda = Inf)
+#' predict(fit, c(0.25, 0.75))
+#' head(fitted(fit))
+#' head(residuals(fit))
+#' print(fit)
 #' @export
 predict.logistic.trend.filtering.fit <- function(
     object, newdata = NULL, covariates = NULL, offset = NULL,

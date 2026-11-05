@@ -211,7 +211,7 @@ fit.neighbor.probability <- function(
             .neighbor.release(index, object$metric)
     }, add = TRUE)
     for (r in seq_along(splits)) {
-        indices[[r]] <- setNames(vector("list", length(splits[[r]])), names(splits[[r]]))
+        indices[[r]] <- stats::setNames(vector("list", length(splits[[r]])), names(splits[[r]]))
         for (f in names(splits[[r]]))
             indices[[r]][f] <- list(.neighbor.index(object, splits[[r]][[f]]))
     }

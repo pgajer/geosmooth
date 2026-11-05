@@ -23,3 +23,8 @@ distinct measured participants at each vertex and its immediate neighbors.
 These are descriptive support measures, not uncertainty intervals or a
 guarantee of transportability. Vertex order follows the supplied operator.
 }
+\examples{
+op <- metric.graph.lowpass.operator(list(2L, c(1L, 3L), 2L),
+                                   list(1, c(1, 1), 1))
+support.masked.graph.field(op, vertex = c(1, 3), group = c("a", "b"))
+}
