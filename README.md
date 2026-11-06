@@ -115,6 +115,12 @@ Choose by the structure of your data and the penalty you need:
   The [observed-data heat guide](https://pgajer.github.io/geosmooth/articles/verified-heat-fallback.html)
   covers missing responses, numerical cross-checks, and unresolved tuning choices.
 
+- **One-dimensional Gaussian trend filtering**: `fit.gaussian.trend.filtering()`
+  fits continuous outcomes with an order-2 piecewise-quadratic curve.
+  `assess.gaussian.trend.filtering()` retunes on each outcome permutation,
+  compares held-out MSE/MAE with a training-only mean, and reports absolute
+  deviation and total variation. The permutation null requires exchangeability;
+  constant mean alone under arbitrary heteroskedasticity is insufficient.
 - **One-dimensional logistic trend filtering**: `fit.logistic.trend.filtering()`
   fits a binary outcome over a continuous predictor. The
   [assessment function](https://pgajer.github.io/geosmooth/reference/assess.logistic.trend.filtering.html)

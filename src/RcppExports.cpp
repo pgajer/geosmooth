@@ -116,6 +116,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gaussian_tf_native
+Rcpp::List gaussian_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
+RcppExport SEXP _geosmooth_gaussian_tf_native(SEXP designSEXP, SEXP ridgeSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type design(designSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge(ridgeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offsets(offsetsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type penalty_scale(penalty_scaleSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambdas(lambdasSEXP);
+    Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gaussian_tf_native(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
+    return rcpp_result_gen;
+END_RCPP
+}
 // logistic_tf_structured_geometry
 Rcpp::List logistic_tf_structured_geometry(Rcpp::NumericVector u, Rcpp::NumericVector knots, Rcpp::NumericVector weights);
 RcppExport SEXP _geosmooth_logistic_tf_structured_geometry(SEXP uSEXP, SEXP knotsSEXP, SEXP weightsSEXP) {
@@ -162,6 +182,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
     Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
     rcpp_result_gen = Rcpp::wrap(logistic_tf_banded_native(u, knots, nuisance, response, weights, offsets, lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gaussian_tf_banded_native
+Rcpp::List gaussian_tf_banded_native(Rcpp::NumericVector u, Rcpp::NumericVector knots, Rcpp::NumericMatrix nuisance, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector lambdas, double nuisance_ridge, double curve_ridge, double tolerance, double gap_tolerance, int max_iterations);
+RcppExport SEXP _geosmooth_gaussian_tf_banded_native(SEXP uSEXP, SEXP knotsSEXP, SEXP nuisanceSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP lambdasSEXP, SEXP nuisance_ridgeSEXP, SEXP curve_ridgeSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type u(uSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type knots(knotsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type nuisance(nuisanceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offsets(offsetsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambdas(lambdasSEXP);
+    Rcpp::traits::input_parameter< double >::type nuisance_ridge(nuisance_ridgeSEXP);
+    Rcpp::traits::input_parameter< double >::type curve_ridge(curve_ridgeSEXP);
+    Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gaussian_tf_banded_native(u, knots, nuisance, response, weights, offsets, lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -479,9 +521,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_geosmooth_rcpp_local_pca_chart", (DL_FUNC) &_geosmooth_rcpp_local_pca_chart, 9},
     {"_geosmooth_rcpp_local_second_order_svd_chart", (DL_FUNC) &_geosmooth_rcpp_local_second_order_svd_chart, 12},
     {"_geosmooth_logistic_tf_native", (DL_FUNC) &_geosmooth_logistic_tf_native, 10},
+    {"_geosmooth_gaussian_tf_native", (DL_FUNC) &_geosmooth_gaussian_tf_native, 10},
     {"_geosmooth_logistic_tf_structured_geometry", (DL_FUNC) &_geosmooth_logistic_tf_structured_geometry, 3},
     {"_geosmooth_logistic_tf_banded_predict", (DL_FUNC) &_geosmooth_logistic_tf_banded_predict, 4},
     {"_geosmooth_logistic_tf_banded_native", (DL_FUNC) &_geosmooth_logistic_tf_banded_native, 12},
+    {"_geosmooth_gaussian_tf_banded_native", (DL_FUNC) &_geosmooth_gaussian_tf_banded_native, 12},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_coordinates, 6},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca, 7},
     {"_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile", (DL_FUNC) &_geosmooth_rcpp_kernel_local_polynomial_cv_local_pca_profile, 7},

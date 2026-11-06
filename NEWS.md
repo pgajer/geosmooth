@@ -1,5 +1,14 @@
 # Development
 
+* Add `fit.gaussian.trend.filtering()` and
+  `assess.gaussian.trend.filtering()` for continuous outcomes with order-2
+  trend filtering. Native dense and banded solvers use squared-error loss;
+  the assessment retunes on every permutation, retains failed replicates,
+  reports nested-CV MSE/MAE improvement, and supports optional absolute-deviation
+  and total-variation tests with Holm adjustment. Randomization requires
+  exchangeable outcomes under a common-distribution null, not just equal means
+  with arbitrary heteroskedasticity. Existing logistic behavior is preserved.
+
 * Extend `assess.logistic.trend.filtering()` with participant-averaged absolute
   probability deviation and total probability variation, including interior
   turning points. Keep likelihood as the default test; optional shape tests

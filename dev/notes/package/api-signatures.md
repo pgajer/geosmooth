@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the API review](api-review-2026-09-14.md).
 
-There are 69 explicit exports: 69 local functions and 0 dgraphs re-exports; 101 S3 registrations are counted separately.
+There are 71 explicit exports: 71 local functions and 0 dgraphs re-exports; 106 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -18,6 +18,15 @@ Defaults are unevaluated source expressions. The guide is checked for exactly on
 apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel", "tikhonov", "cubic_spline", "gaussian",
     "exponential", "butterworth"), block.size = NULL, truncation.tol = 1e-04, unresolved.action = c("warn",
     "error", "allow"), exact.zero = TRUE, numerical.policy = NULL)
+```
+
+### assess.gaussian.trend.filtering
+
+8 arguments. Source: [R/gaussian_trend_filtering_assessment.R](../../../R/gaussian_trend_filtering_assessment.R#L97).
+
+```r
+assess.gaussian.trend.filtering(object, permutations = 999L, inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE,
+    warn = TRUE, additional.tests = character())
 ```
 
 ### assess.logistic.trend.filtering
@@ -85,6 +94,16 @@ fit.chart.kernel(X, y, X.eval = NULL, support.size = min(15L, nrow(X)), kernel =
 ```r
 fit.density(X, weights = NULL, method = c("empirical", "graph_random_walk"), graph = NULL, graph.control = list(),
     density.control = list(), return.details = TRUE, ...)
+```
+
+### fit.gaussian.trend.filtering
+
+13 arguments. Source: [R/gaussian_trend_filtering.R](../../../R/gaussian_trend_filtering.R#L57).
+
+```r
+fit.gaussian.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
+    curve.ridge = 0, lambda.selection = c("fixed", "cv"), foldid = NULL, control = list(),
+    warn = TRUE, backend = c("auto", "dense", "banded"))
 ```
 
 ### fit.graph.trend.filtering
@@ -794,6 +813,7 @@ Use the corresponding generic; these registrations are not additional explicit e
 ```r
 S3method(as.data.frame,synthetic_dataset)
 S3method(fitted,chart_kernel)
+S3method(fitted,gaussian.trend.filtering.fit)
 S3method(fitted,graph.trend.filtering.fit)
 S3method(fitted,harmonic_smoother)
 S3method(fitted,local_likelihood)
@@ -817,6 +837,7 @@ S3method(normalize.density,numeric)
 S3method(normalize.density,ps_lps)
 S3method(plot,harmonic_smoother)
 S3method(plot,synthetic_dataset)
+S3method(predict,gaussian.trend.filtering.fit)
 S3method(predict,logistic.trend.filtering.fit)
 S3method(predict,lpl_tf)
 S3method(predict,lps)
@@ -825,6 +846,8 @@ S3method(predict,neighbor.probability.fit)
 S3method(predict,slpl_tf)
 S3method(print,chart_kernel)
 S3method(print,density_fit)
+S3method(print,gaussian.trend.filtering.assessment)
+S3method(print,gaussian.trend.filtering.fit)
 S3method(print,graph.trend.filtering.fit)
 S3method(print,harmonic_smoother)
 S3method(print,local_likelihood)
@@ -860,6 +883,7 @@ S3method(refit,slpl_tf)
 S3method(refit,ssrhe.hessian.fit)
 S3method(refit,ssrhe.hessian.l1.fit)
 S3method(residuals,chart_kernel)
+S3method(residuals,gaussian.trend.filtering.fit)
 S3method(residuals,graph.trend.filtering.fit)
 S3method(residuals,local_likelihood)
 S3method(residuals,logistic.trend.filtering.fit)

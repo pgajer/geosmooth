@@ -31,6 +31,7 @@ reference:
   - unfold.simplex.chart
 - title: "Model assessment and uncertainty"
   contents:
+  - assess.gaussian.trend.filtering
   - assess.logistic.trend.filtering
   - lps.grouped.foldid
   - lps.nested.cv
@@ -59,8 +60,10 @@ reference:
   - select.masked.graph.field
   - graph.trend.filtering.operator
   - fit.graph.trend.filtering
-- title: "One-dimensional logistic trend filtering"
+- title: "One-dimensional Gaussian and logistic trend filtering"
   contents:
+  - fit.gaussian.trend.filtering
+  - predict.gaussian.trend.filtering.fit
   - fit.logistic.trend.filtering
   - predict.logistic.trend.filtering.fit
 - title: "Hessian-energy regression"

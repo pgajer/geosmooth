@@ -41,6 +41,7 @@ your first model.
 | Average predictions from overlapping local models | [`fit.malps()`](https://pgajer.github.io/geosmooth/reference/fit.malps.html) | Model-averaged local polynomial smoothing; supports coordinate and graph-geodesic neighborhoods. |
 | Couple local polynomial predictions across overlaps | [`fit.ps.lps()`](https://pgajer.github.io/geosmooth/reference/fit.ps.lps.html) | Prediction-synchronized local polynomial smoothing; experimental R reference implementation. |
 | Fit a locally adaptive trend with a sparse difference penalty | [`fit.lpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.lpl.tf.html) | Local polynomial lifting trend filtering; requires optional package `genlasso`. |
+| Fit a one-dimensional continuous response | `fit.gaussian.trend.filtering()` | Order-2 Gaussian trend filtering with squared-error loss, explicit penalties and convergence diagnostics. |
 | Fit a one-dimensional binary or binomial response | `fit.logistic.trend.filtering()` | Order-2 logistic trend filtering with a native C++ solver, explicit penalties, optional covariates/offsets, and convergence diagnostics. |
 | Add synchronization to a lifting trend filter | [`fit.slpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.slpl.tf.html) | Synchronized local polynomial lifting trend filtering; adds a second, quadratic penalty. |
 | Smooth a response already attached to graph vertices | [`fit.metric.graph.lowpass()`](https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html) or [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Choose spectral low-pass smoothing or a graph-difference penalty. Edge-weight meanings differ; see below. |
@@ -243,6 +244,7 @@ their detailed help lives in dgraphs.
 | Function | Purpose |
 |---|---|
 | `assess.logistic.trend.filtering()` | Test constant binary probability by retuned outcome permutations and measure nested-CV improvement over a training-only constant. Summarize absolute probability deviation and total variation; optionally test them using the same fits, with Holm adjustment. Requires independent unit-weight binary observations without covariates or offsets. |
+| `assess.gaussian.trend.filtering()` | Assess continuous outcomes with retuned squared-error permutation tests, optional absolute-deviation/total-variation tests and nested-CV MSE/MAE improvement. Requires independent unit-weight observations without covariates or offsets, exchangeable under a common-distribution null. |
 | [`lps.grouped.foldid()`](https://pgajer.github.io/geosmooth/reference/lps.grouped.foldid.html) | Assign whole groups of observations to validation folds. |
 | [`lps.nested.cv()`](https://pgajer.github.io/geosmooth/reference/lps.nested.cv.html) | Assess a tuned local polynomial smoother using outer and inner validation folds. |
 | [`lps.backend.diagnostics()`](https://pgajer.github.io/geosmooth/reference/lps.backend.diagnostics.html) | Inspect the computational backend, chart dimensions, and selected controls. |
@@ -346,11 +348,36 @@ directed or zero-length input before constructing an undirected graph. A zero
 conductance denotes no connection; a zero length is invalid for the length
 transformation.
 
-### One-dimensional logistic trend filtering
+### One-dimensional Gaussian and logistic trend filtering
 
 | Function | Purpose |
 |---|---|
 | `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
+| `fit.gaussian.trend.filtering()` | Fit a univariate piecewise-quadratic mean curve with squared-error loss using the same order-2 geometry and native C++ solvers. |
+
+For continuous outcomes, fit an explicit penalty path and assess both association
+and held-out prediction:
+
+```{r gaussian-trend-filtering-assessment}
+x.continuous <- seq(0, 1, length.out = 40)
+y.continuous <- sin(2*pi*x.continuous) + 0.2*cos(seq_along(x.continuous))
+gaussian.fit <- fit.gaussian.trend.filtering(
+  x.continuous, y.continuous, lambda = c(Inf, 0.01), backend = "banded")
+# Nine permutations keep this API example short; use more for inference.
+gaussian.assessment <- assess.gaussian.trend.filtering(
+  gaussian.fit, permutations = 9, inner.folds = 3, outer.folds = 3, seed = 42,
+  additional.tests = c("absolute.deviation", "total.variation"))
+gaussian.assessment$tests
+gaussian.assessment$prediction$scores
+```
+
+The global statistic is residual sum-of-squares reduction from the sample mean.
+Its permutations repeat tuning and require exchangeable outcomes under the null;
+equal means with arbitrary predictor-dependent variances are insufficient.
+Nested CV separately compares the smoother with outer-training means, using MSE
+and MAE on the same held-out rows. Curve summaries are in response units.
+The example demonstrates the workflow; it is not a calibration or power study.
+`lambda=Inf` gives a quadratic curve, while the assessment baseline is constant.
 
 The [logistic trend-filtering vignette](logistic-trend-filtering.html) walks
 through synthetic probabilities, trial weights and held-out Pima predictions.

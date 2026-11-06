@@ -13,6 +13,10 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix, Rcpp::NumericMatrix,
     Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector,
     Rcpp::NumericVector, Rcpp::NumericVector, double, double, int);
 
+Rcpp::List gaussian_tf_native(Rcpp::NumericMatrix, Rcpp::NumericMatrix,
+    Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector,
+    Rcpp::NumericVector, Rcpp::NumericVector, double, double, int);
+
 namespace ltf_banded {
 using Real = long double;
 using Vec = Eigen::Matrix<Real,Eigen::Dynamic,1>;
@@ -249,14 +253,21 @@ struct Basis {
 
 struct Eval { Real objective,mean; Vec eta,probability,residual,curvegradient,curvature; };
 Eval evaluate(const Vec& curve,const Mat& Z,const Vec& gamma,const Vec& offset,
-              const Vec& y,const Vec& w,Real nr,Real cr,const Vec& theta,Real lambda) {
+              const Vec& y,const Vec& w,Real nr,Real cr,const Vec& theta,Real lambda,bool gaussian) {
     Eval e; int n=y.size();e.eta=curve+Z*gamma+offset;e.mean=w.dot(curve);
     e.probability.resize(n);e.residual.resize(n);e.curvature.resize(n);
     Sum objective;objective.add(nr*gamma.squaredNorm()/2);
     for(int i=0;i<n;++i) {
-        e.probability[i]=prob(double(e.eta[i]));e.residual[i]=w[i]*(e.probability[i]-y[i]);
-        Real z=std::exp(-std::abs(e.eta[i]));e.curvature[i]=w[i]*z/((1+z)*(1+z));
-        objective.add(w[i]*((1-y[i])*sp(e.eta[i])+y[i]*sp(-e.eta[i])));
+        if (gaussian) {
+            e.probability[i]=e.eta[i];
+            Real difference=e.eta[i]-y[i];
+            e.residual[i]=w[i]*difference;e.curvature[i]=w[i];
+            objective.add(w[i]*difference*difference/2);
+        } else {
+            e.probability[i]=prob(double(e.eta[i]));e.residual[i]=w[i]*(e.probability[i]-y[i]);
+            Real z=std::exp(-std::abs(e.eta[i]));e.curvature[i]=w[i]*z/((1+z)*(1+z));
+            objective.add(w[i]*((1-y[i])*sp(e.eta[i])+y[i]*sp(-e.eta[i])));
+        }
         objective.add(cr*w[i]*(curve[i]-e.mean)*(curve[i]-e.mean)/2);
     }
     e.curvegradient=e.residual+cr*w.cwiseProduct((curve.array()-e.mean).matrix());
@@ -347,10 +358,9 @@ Rcpp::NumericVector logistic_tf_banded_predict(Rcpp::NumericVector knots,Rcpp::I
     Vec c(coefficients.size());for(int j=0;j<c.size();++j)c[j]=coefficients[j];return numeric(B.values(c));
 }
 
-// [[Rcpp::export]]
-Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector knots,Rcpp::NumericMatrix nuisance,
+Rcpp::List univariate_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector knots,Rcpp::NumericMatrix nuisance,
     Rcpp::NumericVector response,Rcpp::NumericVector weights,Rcpp::NumericVector offsets,Rcpp::NumericVector lambdas,
-    double nuisance_ridge,double curve_ridge,double tolerance,double gap_tolerance,int max_iterations) {
+    double nuisance_ridge,double curve_ridge,double tolerance,double gap_tolerance,int max_iterations,bool gaussian) {
     using namespace ltf_banded;
     int n=u.size(),m=knots.size(),q=nuisance.ncol(),p=m+q;
     std::vector<double> xx=Rcpp::as<std::vector<double>>(u),kk=Rcpp::as<std::vector<double>>(knots);
@@ -366,7 +376,8 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
     for(int j=0;j<q;++j)initialQ(j+1,j+1)=nuisance_ridge;
     for(int j=0;j<2;++j)for(int k=0;k<2;++k)for(int i=0;i<n;++i)
         initialQ(q+1+j,q+1+k)+=curve_ridge*double(w[i])*initialA(i,q+1+j)*initialA(i,q+1+k);
-    Rcpp::List initlist=logistic_tf_native(initialA,initialQ,response,weights,offsets,
+    auto initialize = gaussian ? gaussian_tf_native : logistic_tf_native;
+    Rcpp::List initlist=initialize(initialA,initialQ,response,weights,offsets,
         Rcpp::NumericVector(q+3),Rcpp::NumericVector::create(R_PosInf),tolerance,gap_tolerance,max_iterations);
     Rcpp::List init=initlist[0];Rcpp::NumericVector initb=init["coefficients"];
     Vec curve(n),gamma(q);
@@ -383,7 +394,7 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
         bool canfit=Rcpp::as<bool>(init["converged"]);
         std::string status=canfit ? "iteration_limit" : Rcpp::as<std::string>(init["status"]);
         int separated_knot=-1;
-        if(lambda==0 && curve_ridge==0) {
+        if(!gaussian && lambda==0 && curve_ridge==0) {
             std::vector<Real> lo(m,1),hi(m,0);
             for(int i=0;i<n;++i) {
                 int at=std::lower_bound(kk.begin(),kk.end(),xx[i])-kk.begin();
@@ -393,13 +404,13 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
             if(separated_knot>=0) {canfit=false;status="separation_detected";}
         }
         bool converged=false,rebuild=true;Vec c,theta;Basis B(kk,active,xx);c=B.project(curve,w);
-        Eval e=evaluate(B.values(c),Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,B.coefficients(c),lambda);
+        Eval e=evaluate(B.values(c),Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,B.coefficients(c),lambda,gaussian);
         Diagnostic diag;
         for(;iterations<max_iterations && canfit;++iterations) {
             if(iterations%10==0)Rcpp::checkUserInterrupt();
             if(rebuild) {B=Basis(kk,active,xx);c=B.project(curve,w);rebuild=false;}
             theta=B.coefficients(c);curve=B.values(c);
-            e=evaluate(curve,Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,theta,lambda);
+            e=evaluate(curve,Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,theta,lambda,gaussian);
             Vec fullg=geometry.gradient(e.curvegradient),zg=Z.transpose()*e.residual+(nuisance_ridge/mass)*gamma;
             diag=diagnose(geometry,fullg,zg,theta,active,signs,lambda);
             if(!std::isfinite(e.objective) || !fullg.allFinite() || !zg.allFinite()) {status="nonfinite_arithmetic";break;}
@@ -434,7 +445,7 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
             lastslope=slope;
             for(int ls=0;ls<60;++ls) {
                 Vec nextc=c+step*dc,nextgamma=gamma+step*dg;
-                Eval next=evaluate(B.values(nextc),Z,nextgamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,B.coefficients(nextc),lambda);
+                Eval next=evaluate(B.values(nextc),Z,nextgamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,B.coefficients(nextc),lambda,gaussian);
                 Real rounding=16*std::numeric_limits<Real>::epsilon()*std::max(Real(1),std::abs(e.objective));
                 if(std::isfinite(next.objective) && next.objective<=e.objective+1e-4*step*slope+rounding) {
                     c=nextc;gamma=nextgamma;curve=B.values(c);accepted=true;break;
@@ -447,7 +458,7 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
         }
         if(rebuild) {B=Basis(kk,active,xx);c=B.project(curve,w);}
         theta=B.coefficients(c);curve=B.values(c);
-        e=evaluate(curve,Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,theta,lambda);
+        e=evaluate(curve,Z,gamma,off,y,w,nuisance_ridge/mass,curve_ridge/mass,theta,lambda,gaussian);
         Vec fullg=geometry.gradient(e.curvegradient),zg=Z.transpose()*e.residual+(nuisance_ridge/mass)*gamma;
         diag=diagnose(geometry,fullg,zg,theta,active,signs,lambda);
         converged=converged && e.eta.allFinite() && std::isfinite(e.objective) && diag.stationarity<=tolerance && diag.complementarity<=gap_tolerance;
@@ -481,4 +492,24 @@ Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector k
             Rcpp::_["last.line.search.step"]=double(laststep),Rcpp::_["last.directional.derivative"]=double(lastslope));
     }
     return fits;
+}
+
+// [[Rcpp::export]]
+Rcpp::List logistic_tf_banded_native(Rcpp::NumericVector u, Rcpp::NumericVector knots,
+    Rcpp::NumericMatrix nuisance, Rcpp::NumericVector response,
+    Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector lambdas,
+    double nuisance_ridge, double curve_ridge, double tolerance,
+    double gap_tolerance, int max_iterations) {
+    return univariate_tf_banded_native(u, knots, nuisance, response, weights, offsets,
+        lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations, false);
+}
+
+// [[Rcpp::export]]
+Rcpp::List gaussian_tf_banded_native(Rcpp::NumericVector u, Rcpp::NumericVector knots,
+    Rcpp::NumericMatrix nuisance, Rcpp::NumericVector response,
+    Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector lambdas,
+    double nuisance_ridge, double curve_ridge, double tolerance,
+    double gap_tolerance, int max_iterations) {
+    return univariate_tf_banded_native(u, knots, nuisance, response, weights, offsets,
+        lambdas, nuisance_ridge, curve_ridge, tolerance, gap_tolerance, max_iterations, true);
 }

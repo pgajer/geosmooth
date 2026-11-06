@@ -23,7 +23,7 @@ struct Evaluation {
 // equivalent summed-loss lambda and ridge parameters.
 Evaluation evaluate(const MatrixXd& A, const MatrixXd& Q, const VectorXd& y,
                     const VectorXd& w, const VectorXd& offset, const VectorXd& b,
-                    const VectorXd& penalty, double mu, bool barrier) {
+                    const VectorXd& penalty, double mu, bool barrier, bool gaussian = false) {
     Evaluation e;
     e.eta = A*b + offset;
     VectorXd residual(y.size()); e.curvature.resize(y.size());
@@ -38,6 +38,13 @@ Evaluation evaluate(const MatrixXd& A, const MatrixXd& Q, const VectorXd& y,
         total=next;
     };
     for (int i=0; i<y.size(); ++i) {
+        if (gaussian) {
+            double difference = e.eta[i] - y[i];
+            add(0.5 * w[i] * difference * difference);
+            residual[i] = w[i] * difference;
+            e.curvature[i] = w[i];
+            continue;
+        }
         double p = sigmoid(e.eta[i]);
         // This form avoids cancellation for y=1 and very large positive eta.
         add(w[i] * ((1-y[i])*softplus(e.eta[i]) + y[i]*softplus(-e.eta[i])));
@@ -102,12 +109,12 @@ VectorXd recession_direction(const MatrixXd& A, const MatrixXd& Q,
 }
 }
 
-// [[Rcpp::export]]
-Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge,
+// Shared loss-family implementation; exported wrappers keep the binary API stable.
+Rcpp::List univariate_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge,
                              Rcpp::NumericVector response, Rcpp::NumericVector weights,
                              Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale,
                              Rcpp::NumericVector lambdas, double tolerance,
-                             double gap_tolerance, int max_iterations) {
+                             double gap_tolerance, int max_iterations, bool gaussian) {
     const int n=design.nrow(), p=design.ncol();
     Eigen::Map<MatrixXd> fullA(design.begin(), n, p);
     Eigen::Map<MatrixXd> fullQ(ridge.begin(), p, p);
@@ -116,7 +123,7 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
     double mass=raww.sum(); VectorXd w=raww/mass;
     VectorXd warm=VectorXd::Zero(p);
     double prevalence=w.dot(y);
-    warm[0]=std::log(prevalence/(1-prevalence))-w.dot(off);
+    warm[0]=(gaussian ? prevalence : std::log(prevalence/(1-prevalence)))-w.dot(off);
     Rcpp::List fits(lambdas.size());
     for (int li=0; li<lambdas.size(); ++li) {
         Rcpp::checkUserInterrupt();
@@ -138,13 +145,13 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
         int iterations=0, stages=0, backtracks=0;
         bool converged=false;
         std::string status="iteration_limit";
-        VectorXd recession=recession_direction(A,Q,y,w,off,penalty);
+        VectorXd recession = gaussian ? VectorXd::Zero(q).eval() : recession_direction(A,Q,y,w,off,penalty);
         bool separated=recession.cwiseAbs().maxCoeff()>0;
         if(separated) status="separation_detected";
         while(!separated && iterations<max_iterations) {
             ++iterations;
             if (iterations%10==0) Rcpp::checkUserInterrupt();
-            Evaluation e=evaluate(A,Q,y,w,off,b,penalty,mu,np>0);
+            Evaluation e=evaluate(A,Q,y,w,off,b,penalty,mu,np>0,gaussian);
             if (!std::isfinite(e.value) || !e.gradient.allFinite() || !b.allFinite()) {
                 status="nonfinite_arithmetic"; break;
             }
@@ -186,7 +193,7 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
             bool accepted=false;
             for(int ls=0;ls<60;++ls) {
                 VectorXd candidate=b+step*direction;
-                double next=evaluate(A,Q,y,w,off,candidate,penalty,mu,np>0).value;
+                double next=evaluate(A,Q,y,w,off,candidate,penalty,mu,np>0,gaussian).value;
                 // Allow only rounding-level slack, and still require the KKT
                 // checks above before declaring convergence.
                 if(std::isfinite(next) && next<=e.value+1e-4*step*slope+1e-15*std::max(1.0,std::abs(e.value))) {
@@ -197,7 +204,7 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
             if(!accepted) { status="line_search_failed"; break; }
             if(b.cwiseAbs().maxCoeff()>1e12) { status="unbounded_or_ill_conditioned"; break; }
         }
-        Evaluation final=evaluate(A,Q,y,w,off,b,penalty,mu,false);
+        Evaluation final=evaluate(A,Q,y,w,off,b,penalty,mu,false,gaussian);
         objective=final.value;
         VectorXd dual=VectorXd::Zero(q);
         complementarity=0;
@@ -213,7 +220,7 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
             dual.allFinite() && dual.cwiseAbs().maxCoeff()<=1 &&
             stationarity<=tolerance && complementarity<=gap_tolerance;
         VectorXd probability(n);
-        for(int i=0;i<n;++i) probability[i]=sigmoid(final.eta[i]);
+        for(int i=0;i<n;++i) probability[i]=gaussian ? final.eta[i] : sigmoid(final.eta[i]);
         VectorXd full=VectorXd::Zero(p),fulldual=VectorXd::Zero(p);
         for(int j=0;j<q;++j) { full[keep[j]]=b[j]; fulldual[keep[j]]=dual[j]; }
         if(converged) warm=full;
@@ -237,4 +244,22 @@ Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ri
             Rcpp::_["max.damping"]=max_damping,Rcpp::_["max.abs.eta"]=max_eta);
     }
     return fits;
+}
+
+// [[Rcpp::export]]
+Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge,
+    Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets,
+    Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas,
+    double tolerance, double gap_tolerance, int max_iterations) {
+    return univariate_tf_native(design, ridge, response, weights, offsets,
+        penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations, false);
+}
+
+// [[Rcpp::export]]
+Rcpp::List gaussian_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge,
+    Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets,
+    Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas,
+    double tolerance, double gap_tolerance, int max_iterations) {
+    return univariate_tf_native(design, ridge, response, weights, offsets,
+        penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations, true);
 }

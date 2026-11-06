@@ -21,6 +21,11 @@
 #'   \item{Lifting trend filters}{Use \code{\link{fit.lpl.tf}} or
 #'     \code{\link{fit.slpl.tf}} for residual penalties with optional
 #'     prediction synchronization.}
+#'   \item{Univariate trend filters}{Use \code{\link{fit.gaussian.trend.filtering}}
+#'     for continuous responses or \code{\link{fit.logistic.trend.filtering}}
+#'     for binary responses. Assess association and prediction with
+#'     \code{\link{assess.gaussian.trend.filtering}} or
+#'     \code{\link{assess.logistic.trend.filtering}}, respectively.}
 #'   \item{Graph smoothing}{Use \code{\link{fit.metric.graph.lowpass}} for
 #'     spectral smoothing or \code{\link{fit.graph.trend.filtering}} for
 #'     graph-difference penalties.}
