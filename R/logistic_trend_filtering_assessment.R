@@ -19,6 +19,10 @@
 #'   restored. Realized folds, permutation seeds and RNG kind are returned.
 #' @param predictive Whether to run nested CV in addition to the global test.
 #' @param warn Warn if the observed fit, any permutation, or an outer fit fails.
+#' @param additional.tests Character vector selecting optional permutation tests:
+#'   `"absolute.deviation"`, `"total.variation"`, or both. Default `character()`
+#'   tests likelihood improvement only. Both curve summaries are always returned
+#'   for the observed fit. Specify the tests before inspecting outcomes.
 #'
 #' @details The null is a common unknown Bernoulli probability at all observed
 #'   predictor locations. The constant estimate is the sample event rate, not
@@ -38,6 +42,31 @@
 #'   with a chi-squared distribution. Lambda order determines selection ties.
 #'   Changing the path after inspecting the assessment invalidates the stated
 #'   test unless that additional selection is included in the randomization.
+#'
+#'   Absolute deviation is `mean(abs(p.hat(x) - mean(y)))`, evaluated at all
+#'   observed predictor locations, including repeats. It averages over sampled
+#'   observations, not uniformly over the predictor domain. A value of 0.04
+#'   means an average absolute departure of four percentage points. Total
+#'   variation is the sum of absolute probability changes along the fitted
+#'   curve over `[min(x), max(x)]`. It includes every knot and interior turning
+#'   point of the piecewise quadratic logit, up to floating-point precision;
+#'   it is not a coarse-grid approximation or the trend-filtering penalty.
+#'   For a monotone curve it equals the endpoint probability difference in
+#'   absolute value; an oscillating curve can have total variation above one.
+#'   These are descriptive summaries of the newly tuned fit, not uncertainty
+#'   intervals or bias-corrected population effect estimates.
+#'
+#'   Optional tests use the same selected fits, folds and permutations as the
+#'   likelihood test, with large values indicating departure from constancy.
+#'   No additional model fits or random draws are needed. Each statistic has
+#'   its own inclusive comparison tolerance and failure bounds. `tests`
+#'   reports individual p-values and Holm-adjusted p-values across likelihood
+#'   and the requested additional tests. Holm adjustment remains valid under
+#'   dependence; it does not adjust across other predictors or outcomes.
+#'   If any requested test is incomplete, all Holm values are unavailable.
+#'   Choosing the smallest unadjusted p-value after inspecting several tests
+#'   does not preserve the stated test level. The legacy scalar fields always
+#'   describe the unadjusted likelihood test, regardless of `additional.tests`.
 #'
 #'   Outcomes are shuffled uniformly with the predictor fixed, preserving the
 #'   total event count. With B successful permutations the Monte Carlo p-value
@@ -73,6 +102,14 @@
 #'   `p.value`, `p.value.bounds`, `status`, `null.probability`, the newly tuned
 #'   observed `fit`, permutation statistics and diagnostic records, optional
 #'   nested-CV `prediction`, realized `folds`, seeds and solver settings.
+#'   `curve.summaries` is a named vector with `absolute.deviation` and
+#'   `total.variation`; `curve.summary.details` records their conventions and
+#'   any calculation failure. `tests` has one row per requested test, including
+#'   likelihood, with statistics, status, completed/failed permutation counts,
+#'   exceedances, comparison tolerances, raw p-values, lower/upper failure bounds
+#'   and `p.value.holm`. `permutation.statistics` contains a `replicate` column
+#'   and one column per tested statistic. The original `permutations` table
+#'   retains its likelihood-only schema.
 #'   `prediction$scores` contains model losses; `prediction$improvement`
 #'   contains baseline-minus-smoother gains; `prediction$predictions` and
 #'   `prediction$diagnostics` retain row-level and fold-level evidence.
@@ -93,9 +130,16 @@
 #'     inner.folds = 3, outer.folds = 3, seed = 42)
 #' print(assessment)
 #' assessment$prediction$improvement
+#' assessment$curve.summaries
+#' # Optional tests reuse the fits within an assessment run:
+#' shape <- assess.logistic.trend.filtering(fit, permutations = 9,
+#'     inner.folds = 3, seed = 42, predictive = FALSE,
+#'     additional.tests = c("absolute.deviation", "total.variation"))
+#' shape$tests
 #' @export
 assess.logistic.trend.filtering <- function(object, permutations = 999L,
-    inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE, warn = TRUE) {
+    inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE, warn = TRUE,
+    additional.tests = character()) {
     call <- match.call()
     if (!inherits(object, "logistic.trend.filtering.fit"))
         stop("object must be a logistic.trend.filtering.fit.", call. = FALSE)
@@ -113,6 +157,13 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
     inner.folds <- integer.scalar(inner.folds, "inner.folds", 2L)
     outer.folds <- integer.scalar(outer.folds, "outer.folds", 2L)
     seed <- integer.scalar(seed, "seed", 0L)
+    choices <- c("absolute.deviation", "total.variation")
+    if (!is.character(additional.tests) || anyNA(additional.tests) ||
+        any(!additional.tests %in% choices) || anyDuplicated(additional.tests))
+        stop("additional.tests must contain unique names from 'absolute.deviation' and 'total.variation'.",
+             call. = FALSE)
+    # Canonical ordering makes family membership independent of argument order.
+    additional.tests <- choices[choices %in% additional.tests]
     for (name in c("predictive", "warn")) {
         value <- get(name)
         if (!is.logical(value) || length(value) != 1L || is.na(value))
@@ -142,13 +193,15 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
     }
     set.seed(streams[3L])
     permutation.seeds <- sample.int(.Machine$integer.max, permutations, replace = TRUE)
-    observed <- .logistic.tf.assessment.refit(object, object$y, seq_len(n), tuning)
+    observed <- .logistic.tf.assessment.refit(object, object$y, seq_len(n), tuning,
+                                            summarize = TRUE)
     reference <- observed$record$statistic
     records <- vector("list", permutations)
     for (b in seq_len(permutations)) {
         set.seed(permutation.seeds[b])
         shuffled <- object$y[sample.int(n)]
-        result <- .logistic.tf.assessment.refit(object, shuffled, seq_len(n), tuning)
+        result <- .logistic.tf.assessment.refit(object, shuffled, seq_len(n), tuning,
+                                               summarize = length(additional.tests) > 0L)
         records[[b]] <- result$record
     }
     statistics <- vapply(records, `[[`, numeric(1), "statistic")
@@ -161,15 +214,34 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
           upper = (1 + exceedances + missing)/(permutations + 1)) else c(lower = NA_real_, upper = NA_real_)
     status <- if (!is.finite(reference)) "observed_fit_failed" else
         if (missing) "incomplete_permutations" else "complete"
+    permutation.statistics <- data.frame(replicate = seq_len(permutations),
+                                         likelihood = statistics)
+    references <- c(likelihood = reference, observed$record$curve.summaries[additional.tests])
+    for (name in additional.tests)
+        permutation.statistics[[name]] <- vapply(records, function(r)
+            unname(r$curve.summaries[name]), numeric(1))
+    tests <- do.call(rbind, lapply(names(references), function(name)
+        .logistic.tf.assessment.test(name, unname(references[name]),
+                                    permutation.statistics[[name]])))
+    tests$p.value.holm <- if (all(tests$status == "complete"))
+        stats::p.adjust(tests$p.value, method = "holm") else rep(NA_real_, nrow(tests))
     prediction <- if (predictive)
         .logistic.tf.assessment.prediction(object, outer, inner) else NULL
-    if (warn && (status != "complete" || (predictive && prediction$status != "complete")))
-        warning("Assessment has failed fits; inspect status, permutation diagnostics and prediction diagnostics. No failed replicate is discarded.",
+    if (warn && (any(tests$status != "complete") ||
+        any(!is.finite(observed$record$curve.summaries)) ||
+        (predictive && prediction$status != "complete")))
+        warning("Assessment has failed fits or curve summaries; inspect tests, curve.summary.details, permutation diagnostics and prediction diagnostics. No failed replicate is discarded.",
                 call. = FALSE)
     out <- list(call = call, statistic = reference,
         p.value = if (status == "complete") unname(bounds["upper"]) else NA_real_,
         p.value.bounds = bounds, status = status, null.probability = mean(object$y),
         fit = observed$fit, observed = observed$record,
+        curve.summaries = observed$record$curve.summaries,
+        curve.summary.details = list(domain = range(object$x),
+            absolute.deviation.measure = "empirical observations, including repeated predictors",
+            total.variation.method = "piecewise quadratic turning points on the probability scale",
+            message = observed$record$curve.summary.message),
+        tests = tests, permutation.statistics = permutation.statistics,
         permutations = data.frame(replicate = seq_len(permutations), statistic = statistics,
             selected.lambda = vapply(records, `[[`, numeric(1), "selected.lambda"),
             eligible.candidates = vapply(records, `[[`, integer(1), "eligible.candidates"),
@@ -185,9 +257,62 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
             control = object$control, nuisance.ridge = object$nuisance.ridge,
             curve.ridge = object$curve.ridge, inner.folds = inner.folds,
             outer.folds = if (predictive) outer.folds else NULL,
+            additional.tests = additional.tests, adjustment = "holm",
             null = "Independent Bernoulli observations with a common probability"))
     class(out) <- "logistic.trend.filtering.assessment"
     out
+}
+
+# Keep the same failure policy and conservative tie rule for every statistic.
+.logistic.tf.assessment.test <- function(name, reference, statistics) {
+    valid <- is.finite(statistics)
+    tolerance <- if (is.finite(reference)) 1e-10 * max(1, abs(reference)) else NA_real_
+    r <- if (is.finite(reference)) sum(statistics[valid] >= reference-tolerance) else NA_integer_
+    missing <- sum(!valid); B <- length(statistics)
+    status <- if (!is.finite(reference)) "observed_statistic_failed" else
+        if (missing) "incomplete_permutations" else "complete"
+    data.frame(test = name, statistic = reference, status = status,
+        requested = B, completed = sum(valid), failed = missing, exceedances = r,
+        comparison.tolerance = tolerance, resolution = 1/(B+1),
+        p.value = if (status == "complete") (1+r)/(B+1) else NA_real_,
+        p.value.lower = (1+r)/(B+1), p.value.upper = (1+r+missing)/(B+1))
+}
+
+# A continuous quadratic logit is monotone on either side of its vertex.
+# Interpolate in interval-relative coordinates to avoid unscaling potentially
+# ill-conditioned global falling-factorial coefficients. Summing probability
+# changes at endpoints and vertices gives total variation without a grid.
+.logistic.tf.assessment.variation <- function(fit) {
+    knots <- sort(unique(fit$x))
+    left <- head(knots, -1L); right <- utils::tail(knots, -1L)
+    midpoint <- left + (right-left)/2
+    eta <- as.numeric(stats::predict(fit, c(knots, midpoint), type = "link"))
+    if (any(!is.finite(eta))) stop("Nonfinite logit in total-variation calculation.")
+    m <- length(knots)
+    y0 <- eta[seq_len(m-1L)]; y1 <- eta[seq_len(m-1L)+1L]
+    ym <- eta[m+seq_len(m-1L)]
+    fraction <- (midpoint-left)/(right-left)
+    # When no representable midpoint exists, the endpoints are the only
+    # distinct evaluable locations. No division by a zero interval fraction.
+    usable <- fraction > 0 & fraction < 1
+    a <- b <- numeric(m-1L)
+    a[usable] <- ((ym[usable]-y0[usable])/fraction[usable] -
+                     (y1[usable]-y0[usable]))/(fraction[usable]-1)
+    b[usable] <- y1[usable]-y0[usable]-a[usable]
+    vertex <- rep(NA_real_, m-1L)
+    curved <- usable & a != 0
+    vertex[curved] <- -b[curved]/(2*a[curved])
+    inside <- which(is.finite(vertex) & vertex > 0 & vertex < 1)
+    p0 <- stats::plogis(y0); p1 <- stats::plogis(y1)
+    change <- abs(p1-p0)
+    if (length(inside)) {
+        v <- vertex[inside]
+        pv <- stats::plogis(y0[inside] + v*(b[inside]+v*a[inside]))
+        change[inside] <- abs(pv-p0[inside]) + abs(p1[inside]-pv)
+    }
+    if (any(!is.finite(a)) || any(!is.finite(b)) || any(!is.finite(change)))
+        stop("Nonfinite arithmetic in total-variation calculation.")
+    sum(change)
 }
 
 .logistic.tf.assessment.folds <- function(x, k) {
@@ -203,7 +328,7 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
     ifelse(y == 1, pmax(-eta, 0), pmax(eta, 0)) + log1p(exp(-abs(eta)))
 }
 
-.logistic.tf.assessment.refit <- function(object, y, rows, folds) {
+.logistic.tf.assessment.refit <- function(object, y, rows, folds, summarize = FALSE) {
     fit <- tryCatch(fit.logistic.trend.filtering(object$x[rows], y[rows], object$lambda,
         lambda.selection = "cv", foldid = folds, backend = object$backend,
         nuisance.ridge = object$nuisance.ridge, curve.ridge = object$curve.ridge,
@@ -211,7 +336,9 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
     record <- list(status = "fit_error", statistic = NA_real_, selected.lambda = NA_real_,
         selected.index = NA_integer_, eligible.candidates = 0L, message = NULL,
         diagnostics = NULL, cv.table = NULL, cv.fold.status = NULL,
-        cv.fold.loss.sums = NULL)
+        cv.fold.loss.sums = NULL,
+        curve.summaries = c(absolute.deviation = NA_real_, total.variation = NA_real_),
+        curve.summary.message = NULL)
     if (inherits(fit, "error")) {
         record$message <- conditionMessage(fit)
         return(list(fit = NULL, record = record))
@@ -232,6 +359,15 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
             record$selected.lambda <- fit$lambda[fit$selected.index]
             record$selected.index <- fit$selected.index
             record$status <- "complete"
+            if (summarize) {
+                record$curve.summaries["absolute.deviation"] <-
+                    mean(abs(stats::plogis(eta)-mean(yy)))
+                variation <- tryCatch(.logistic.tf.assessment.variation(fit),
+                                      error = function(e) e)
+                if (inherits(variation, "error"))
+                    record$curve.summary.message <- conditionMessage(variation)
+                else record$curve.summaries["total.variation"] <- variation
+            }
         } else record$status <- "nonfinite_prediction"
     }
     list(fit = fit, record = record)
@@ -296,6 +432,15 @@ print.logistic.trend.filtering.assessment <- function(x, ...) {
         x$permutation.summary$requested, "completed\n")
     if (x$status == "incomplete_permutations")
         cat("Possible p-value range:", paste(format(x$p.value.bounds), collapse = " to "), "\n")
+    if (!is.null(x$curve.summaries)) {
+        cat("Observed probability-curve summaries:\n")
+        print(x$curve.summaries)
+    }
+    if (!is.null(x$tests) && nrow(x$tests) > 1L) {
+        cat("Requested tests (Holm adjustment across these statistics only):\n")
+        print(x$tests[, c("test", "statistic", "status", "p.value", "p.value.holm")],
+              row.names = FALSE)
+    }
     if (!is.null(x$prediction)) {
         cat("Nested-CV prediction:", x$prediction$status, "\n")
         print(x$prediction$scores, row.names = FALSE)

@@ -12,7 +12,8 @@ assess.logistic.trend.filtering(
   outer.folds = 5L,
   seed = 1L,
   predictive = TRUE,
-  warn = TRUE
+  warn = TRUE,
+  additional.tests = character()
 )
 
 \method{print}{logistic.trend.filtering.assessment}(x, ...)
@@ -39,6 +40,11 @@ restored. Realized folds, permutation seeds and RNG kind are returned.}
 
 \item{warn}{Warn if the observed fit, any permutation, or an outer fit fails.}
 
+\item{additional.tests}{Character vector selecting optional permutation tests:
+\code{"absolute.deviation"}, \code{"total.variation"}, or both. Default \code{character()}
+tests likelihood improvement only. Both curve summaries are always returned
+for the observed fit. Specify the tests before inspecting outcomes.}
+
 \item{x}{A \code{logistic.trend.filtering.assessment} to print.}
 
 \item{...}{Reserved for generic compatibility.}
@@ -48,6 +54,14 @@ A \code{logistic.trend.filtering.assessment} list containing \code{statistic},
 \code{p.value}, \code{p.value.bounds}, \code{status}, \code{null.probability}, the newly tuned
 observed \code{fit}, permutation statistics and diagnostic records, optional
 nested-CV \code{prediction}, realized \code{folds}, seeds and solver settings.
+\code{curve.summaries} is a named vector with \code{absolute.deviation} and
+\code{total.variation}; \code{curve.summary.details} records their conventions and
+any calculation failure. \code{tests} has one row per requested test, including
+likelihood, with statistics, status, completed/failed permutation counts,
+exceedances, comparison tolerances, raw p-values, lower/upper failure bounds
+and \code{p.value.holm}. \code{permutation.statistics} contains a \code{replicate} column
+and one column per tested statistic. The original \code{permutations} table
+retains its likelihood-only schema.
 \code{prediction$scores} contains model losses; \code{prediction$improvement}
 contains baseline-minus-smoother gains; \code{prediction$predictions} and
 \code{prediction$diagnostics} retain row-level and fold-level evidence.
@@ -77,6 +91,31 @@ constant. It is not a penalized-objective difference and is not compared
 with a chi-squared distribution. Lambda order determines selection ties.
 Changing the path after inspecting the assessment invalidates the stated
 test unless that additional selection is included in the randomization.
+
+Absolute deviation is \code{mean(abs(p.hat(x) - mean(y)))}, evaluated at all
+observed predictor locations, including repeats. It averages over sampled
+observations, not uniformly over the predictor domain. A value of 0.04
+means an average absolute departure of four percentage points. Total
+variation is the sum of absolute probability changes along the fitted
+curve over \verb{[min(x), max(x)]}. It includes every knot and interior turning
+point of the piecewise quadratic logit, up to floating-point precision;
+it is not a coarse-grid approximation or the trend-filtering penalty.
+For a monotone curve it equals the endpoint probability difference in
+absolute value; an oscillating curve can have total variation above one.
+These are descriptive summaries of the newly tuned fit, not uncertainty
+intervals or bias-corrected population effect estimates.
+
+Optional tests use the same selected fits, folds and permutations as the
+likelihood test, with large values indicating departure from constancy.
+No additional model fits or random draws are needed. Each statistic has
+its own inclusive comparison tolerance and failure bounds. \code{tests}
+reports individual p-values and Holm-adjusted p-values across likelihood
+and the requested additional tests. Holm adjustment remains valid under
+dependence; it does not adjust across other predictors or outcomes.
+If any requested test is incomplete, all Holm values are unavailable.
+Choosing the smallest unadjusted p-value after inspecting several tests
+does not preserve the stated test level. The legacy scalar fields always
+describe the unadjusted likelihood test, regardless of \code{additional.tests}.
 
 Outcomes are shuffled uniformly with the predictor fixed, preserving the
 total event count. With B successful permutations the Monte Carlo p-value
@@ -118,6 +157,12 @@ assessment <- assess.logistic.trend.filtering(fit, permutations = 9,
     inner.folds = 3, outer.folds = 3, seed = 42)
 print(assessment)
 assessment$prediction$improvement
+assessment$curve.summaries
+# Optional tests reuse the fits within an assessment run:
+shape <- assess.logistic.trend.filtering(fit, permutations = 9,
+    inner.folds = 3, seed = 42, predictive = FALSE,
+    additional.tests = c("absolute.deviation", "total.variation"))
+shape$tests
 }
 \references{
 Ojala and Garriga (2010). Permutation Tests for Studying Classifier Performance.

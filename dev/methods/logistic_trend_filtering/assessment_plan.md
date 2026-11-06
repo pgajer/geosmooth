@@ -126,3 +126,44 @@ backend; full builds used the previously validated private dgraphs library,
 sequential Makevars and -O2 -g0. This was correctness validation, not a runtime
 benchmark. No native source was changed, and no bootstrap confidence band,
 Bayesian posterior or adjusted/grouped permutation test is claimed.
+
+## Probability-curve summaries and optional tests (2026-11-06)
+
+Authorized extension: retain the likelihood test and predictive assessment,
+add absolute-deviation and total-variation summaries, and optionally test those
+summaries through the existing complete refit-and-permute procedure.
+
+Conventions: absolute deviation averages over observations, preserving tied
+predictor multiplicities; total variation covers the whole observed predictor
+range on the probability scale. Recover each quadratic logit segment from its
+endpoints and midpoint in local coordinates, then include its interior vertex.
+No coarse-grid approximation, bootstrap t-test, new fitting objective or native
+backend change. Both observed summaries are always returned. Optional tests
+share folds, seeds and selected fits, with per-statistic failure bounds and
+Holm adjustment across the requested family including likelihood. Existing
+scalar fields and the original permutation table keep their likelihood meaning.
+
+Validation plan: analytic constant/monotone/interior-turning-point curves;
+independent fine-grid variation and participant-average calculations; tied
+predictors; permutation-statistic reconstruction; unchanged default likelihood
+and nested-CV results; dense/banded agreement; failure/tie/argument checks;
+conditional-null enumeration for each statistic and the Holm family. Update
+help, grouped guide, vignette and NEWS. Run targeted tests followed by a full
+package check. This is implementation validation, not a general power study.
+
+Resource check found no competing numerical workloads. Use one compute thread
+and the earlier 1 GiB validation allocation. Reuse the verified optimized
+backend for targeted tests (source and DLL hashes matched the projection-fix
+record), followed by an optimized package build. Evidence directory:
+`/Users/pgajer/.codex/private/geosmooth/assessment-shape-20261106/`.
+Status: implementation and validation complete. The
+focused group passed 342 expectations and the full package suite passed 14,031
+expectations (one intentional tarball/source-runner skip). Full `make check`
+had no errors or warnings and one environment note about V8 being hidden by
+the overridden user-library path. Restoring that path and rerunning the
+documentation checks, including PDF/HTML manuals and math rendering, finished
+Status: OK. The original complete test and vignette results were retained.
+An independent comparison against the pre-extension source found identical
+legacy likelihood results, fitted objects, folds, seeds and prediction outputs.
+Default and extended runs both used 13 assessment refits in the comparison.
+See [the validation record](shape_assessment_validation.md) for scope and evidence.

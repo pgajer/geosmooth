@@ -645,7 +645,7 @@ can also describe a nonconstant probability.
 `assess.logistic.trend.filtering()` takes a fitted object and performs two
 separate assessments. It retunes the supplied, prespecified penalty path on
 new outcome-independent folds, then repeats this complete procedure after
-each outcome permutation. Its statistic is twice the ordinary binomial
+each outcome permutation. Its default statistic is twice the ordinary binomial
 log-likelihood improvement over the constant, truncated at zero for numerical
 roundoff. The returned `fit` is this newly tuned fit; the input object's fold
 labels and selected penalty are not reused. This avoids conditioning on folds
@@ -664,6 +664,8 @@ settings are specified before generating outcomes. There are 160 observations
 per example. We use 99 permutations to keep routine builds short, giving
 p-value resolution 0.01; the assessment function defaults to 999. These two
 examples illustrate the outputs, not average false-positive rates or power.
+We also prespecify the two optional shape tests below; all three tests share
+the same fitted models and permutations.
 
 ```{r global-assessment}
 assessment_examples <- list()
@@ -676,7 +678,8 @@ for (j in 1:2) {
     fit <- fit.logistic.trend.filtering(x, y, lambda=c(Inf, .1, .01, .001),
                                        backend="banded")
     assessment_examples[[j]] <- assess.logistic.trend.filtering(fit,
-        permutations=99, inner.folds=3, outer.folds=5, seed=9500L+j)
+        permutations=99, inner.folds=3, outer.folds=5, seed=9500L+j,
+        additional.tests=c("absolute.deviation", "total.variation"))
 }
 names(assessment_examples) <- c("Constant truth", "Localized peak")
 assessment_scores <- do.call(rbind, lapply(names(assessment_examples), function(name) {
@@ -698,6 +701,75 @@ The localized-peak example has p-value
 The p-value measures evidence against constancy under exchangeability; the
 prediction gain measures whether that pattern helps on held-out observations.
 
+### How large is the fitted departure from constancy?
+
+Every assessment returns `curve.summaries`, even when only the default
+likelihood test is requested. With fitted probabilities $\hat p(x_i)$ and
+sample event rate $\bar y$, absolute deviation is
+
+$$
+\delta_0 = \frac{1}{n}\sum_{i=1}^n |\hat p(x_i)-\bar y|.
+$$
+
+This averages over participants, including multiple participants at the same
+predictor value. It does not give equal weight to sparsely and densely sampled
+parts of a uniformly spaced grid. For example, $\delta_0=0.04$ means an average
+absolute probability difference of four percentage points. It summarizes the
+fitted curve; sampling noise and smoothing bias still affect it.
+
+Total variation measures accumulated rises and falls across the entire
+observed predictor range. Let $s_1,\ldots,s_K$ be the ordered endpoints, knots
+and interior turning points of the fitted curve. Then
+
+$$
+\delta_1 = \sum_{j=2}^K |\hat p(s_j)-\hat p(s_{j-1})|.
+$$
+
+The logit is quadratic between knots, so its interior turning points can be
+located algebraically. The implementation evaluates each segment's endpoints
+and midpoint to recover that quadratic in local coordinates. Since the
+logistic transformation is monotone, the probability curve has the same
+turning points. This avoids missing an interior peak on a coarse grid.
+A monotone curve's total variation equals its absolute endpoint difference;
+several rises and falls can accumulate to a value above one. Total variation
+is sensitive to small oscillations and is distinct from the order-2 penalty.
+
+```{r probability-shape-summaries}
+shape_scores <- do.call(rbind, lapply(names(assessment_examples), function(name) {
+    a <- assessment_examples[[name]]
+    data.frame(Example=name,
+        `Mean absolute deviation`=unname(a$curve.summaries["absolute.deviation"]),
+        `Total variation`=unname(a$curve.summaries["total.variation"]),
+        check.names=FALSE)
+}))
+knitr::kable(shape_scores, row.names=FALSE, digits=4)
+```
+
+The `additional.tests` argument requests permutation tests for either or both
+summaries. Each shuffle repeats tuning exactly as for likelihood, then computes
+the requested summaries from that selected fit. Larger values are compared
+with the permutation distribution using inclusive exceedances and the same
+plus-one p-value rule. This adds curve evaluation but no extra model fits.
+No t-test is applied to simulated bootstrap or permutation differences.
+
+```{r probability-shape-tests}
+shape_tests <- do.call(rbind, lapply(names(assessment_examples), function(name) {
+    tt <- assessment_examples[[name]]$tests
+    stopifnot(all(tt$status == "complete"))
+    data.frame(Example=name, Statistic=tt$test,
+        `Individual p-value`=tt$p.value, `Holm p-value`=tt$p.value.holm,
+        check.names=FALSE)
+}))
+knitr::kable(shape_tests, row.names=FALSE, digits=3)
+```
+
+The Holm column adjusts across the three statistics within each assessment.
+It does not adjust across the two examples or a wider family of outcomes and
+phylotypes. The scalar `p.value` remains the individual likelihood p-value for
+backward compatibility. Prespecify the tests; choosing the smallest individual
+p-value after inspecting the table would ignore multiple testing. These
+examples do not establish that one statistic has greater power than another.
+
 ```{r permutation-comparison, fig.height=3.8, fig.cap="Each histogram shows likelihood improvements after randomly shuffling outcomes while retaining predictor locations and the event count. The orange line marks the observed statistic. The horizontal scales include the observed statistic, so an unusually large improvement can lie far beyond the shuffled results.", fig.alt="Two histograms compare shuffled-outcome likelihood improvements with the observed improvement for constant truth and a localized peak."}
 old_par <- par(mfrow=c(1, 2), mar=c(4, 4, 2, .5))
 for (name in names(assessment_examples)) {
@@ -717,6 +789,13 @@ range obtained by counting each missing statistic at either extreme. That
 range is not a confidence interval. Incomplete outer predictions similarly
 leave the smoother's overall prediction scores unavailable. Failed fits are
 not dropped and denominators are not reduced to successful replicates.
+For optional tests, inspect `tests` and `permutation.statistics`. Missing
+statistics leave the affected individual p-value unavailable, with lower and
+upper failure bounds. If any requested test is incomplete, the whole Holm
+column is unavailable. A curve-summary arithmetic failure is recorded in
+`curve.summary.details` or the corresponding permutation diagnostic; it does
+not erase an otherwise available likelihood statistic. Neither the summaries
+nor their tests provide pointwise or simultaneous confidence bands.
 
 Unrestricted outcome shuffling is not valid for repeated participants,
 dependent observations or confounder-adjusted null hypotheses. The assessment

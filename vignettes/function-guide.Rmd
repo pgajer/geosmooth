@@ -242,7 +242,7 @@ their detailed help lives in dgraphs.
 
 | Function | Purpose |
 |---|---|
-| `assess.logistic.trend.filtering()` | Test constant binary probability by retuned outcome permutations and measure nested-CV improvement over a training-only constant. Requires independent unit-weight binary observations without covariates or offsets. |
+| `assess.logistic.trend.filtering()` | Test constant binary probability by retuned outcome permutations and measure nested-CV improvement over a training-only constant. Summarize absolute probability deviation and total variation; optionally test them using the same fits, with Holm adjustment. Requires independent unit-weight binary observations without covariates or offsets. |
 | [`lps.grouped.foldid()`](https://pgajer.github.io/geosmooth/reference/lps.grouped.foldid.html) | Assign whole groups of observations to validation folds. |
 | [`lps.nested.cv()`](https://pgajer.github.io/geosmooth/reference/lps.nested.cv.html) | Assess a tuned local polynomial smoother using outer and inner validation folds. |
 | [`lps.backend.diagnostics()`](https://pgajer.github.io/geosmooth/reference/lps.backend.diagnostics.html) | Inspect the computational backend, chart dimensions, and selected controls. |

@@ -8,6 +8,11 @@ the subsequent projection and initialization fixes, exact failed-shuffle replays
 and regression checks. The sections below preserve the original dense-reference
 implementation record.
 
+For global constancy testing, see the [assessment record](assessment_plan.md)
+and [probability-summary validation](shape_assessment_validation.md). The latter
+covers participant-averaged absolute deviation, total probability variation,
+optional permutation tests and Holm adjustment.
+
 ## Purpose and implementation
 
 `fit.logistic.trend.filtering()` adds a one-dimensional piecewise-quadratic

@@ -1,5 +1,11 @@
 # Development
 
+* Extend `assess.logistic.trend.filtering()` with participant-averaged absolute
+  probability deviation and total probability variation, including interior
+  turning points. Keep likelihood as the default test; optional shape tests
+  reuse the same retuned permutation fits and report individual and Holm-adjusted
+  p-values, complete diagnostics and failure bounds.
+
 * Stabilize logistic trend-filtering fits with clustered active knots using a
   scaled banded QR projection instead of normal equations. Use compensated
   objective sums in the dense solver and shared quadratic initialization to

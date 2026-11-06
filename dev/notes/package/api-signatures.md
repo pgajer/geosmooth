@@ -22,11 +22,11 @@ apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel
 
 ### assess.logistic.trend.filtering
 
-7 arguments. Source: [R/logistic_trend_filtering_assessment.R](../../../R/logistic_trend_filtering_assessment.R#L97).
+8 arguments. Source: [R/logistic_trend_filtering_assessment.R](../../../R/logistic_trend_filtering_assessment.R#L140).
 
 ```r
 assess.logistic.trend.filtering(object, permutations = 999L, inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE,
-    warn = TRUE)
+    warn = TRUE, additional.tests = character())
 ```
 
 ### bootstrap.malps
