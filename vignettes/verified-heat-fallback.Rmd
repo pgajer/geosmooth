@@ -66,12 +66,12 @@ pseudoinverse of its own normalized heat complement. With $Q$ the component
 constant orthonormal basis, it solves
 
 $$\begin{pmatrix}P_{OO}&Q_O\\Q_O^T&0\end{pmatrix}
-  \begin{pmatrix}K_{\rm ref}\\C\end{pmatrix}
+  \begin{pmatrix}K_{\mathrm{ref}}\\C\end{pmatrix}
   =\begin{pmatrix}I_q\\0\end{pmatrix}.$$
 
 It predicts unobserved responses with
-$(P_{UO}K_{\rm ref}+Q_U C)y_O$ and observed responses with
-$(I-s_{\rm ref}K_{\rm ref})y_O$. Thus the two routes eliminate different
+$(P_{UO}K_{\mathrm{ref}}+Q_U C)y_O$ and observed responses with
+$(I-s_{\mathrm{ref}}K_{\mathrm{ref}})y_O$. Thus the two routes eliminate different
 blocks. When all responses are observed the reference simply applies its own
 heat operator; neither block solve is necessary.
 
@@ -86,8 +86,8 @@ observed-vertex mask:
 | Maximum entry of error preserving the component nullspace, either operator | $10^{-7}$ |
 | Maximum prediction difference for centered, training-RMS-scaled responses | $10^{-7}$ |
 | Absolute effective-degrees-of-freedom difference | $10^{-7}$ |
-| Standardized-response GCV difference | $10^{-10}+10^{-7}|\operatorname{GCV}_{\rm ref}|$ |
-| Final original-unit GCV difference used for tuning | $10^{-10}+10^{-7}|\operatorname{GCV}^{\rm original}_{\rm ref}|$ |
+| Standardized-response GCV difference | $10^{-10}+10^{-7}|\operatorname{GCV}_{\mathrm{ref}}|$ |
+| Final original-unit GCV difference used for tuning | $10^{-10}+10^{-7}|\operatorname{GCV}^{\mathrm{original}}_{\mathrm{ref}}|$ |
 
 For a solve $BX=C$, its scaled residual is
 $\max|BX-C|/\max(1,\max|C|,\|B\|_\infty\max|X|)$.
@@ -105,7 +105,7 @@ constant within each component. Since $Kc_O=0$ and the prediction operator $T$
 preserves those component constants, the package computes
 
 $$\widehat f=c+\sigma Tz,\qquad
-\operatorname{GCV}_{\rm original}=\sigma^2\operatorname{GCV}(z).$$
+\operatorname{GCV}_{\mathrm{original}}=\sigma^2\operatorname{GCV}(z).$$
 
 These are algebraic identities, not a change of regression model. The same
 observed component means and scale are used for the independent calculation.

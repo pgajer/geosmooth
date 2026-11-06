@@ -4,7 +4,8 @@
 estimation on data represented as coordinate matrices or weighted graphs. It
 includes local polynomial smoothing, model-averaged local polynomial smoothing,
 local polynomial lifting trend filtering, synchronized local polynomial lifting
-trend filtering, graph low-pass filtering, and Hessian-energy regression.
+trend filtering, one-dimensional logistic trend filtering, graph low-pass
+filtering, and Hessian-energy regression.
 
 ![Noisy observations along a sine curve; the solid blue fitted response follows the dashed orange synthetic truth.](man/figures/first-fit.png)
 
@@ -43,14 +44,14 @@ compilation toolchain.
 install.packages("pak")
 pak::pkg_install(c(
   "pgajer/ivue@a952ab6816636a19f2038ba0709181608b71770d",
-  "pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c",
+  "pgajer/dgraphs@833c76f1737d8b4d16c44a1d3ffa9785978750a2",
   "pgajer/grip@07dc145c89ff31b399a7e4c0b8e1b86f391fc08b",
   "pgajer/geosmooth"
 ))
 vignette("function-guide", package = "geosmooth")
 ```
 
-Development CI uses those same dependency revisions. The separate **CRAN dependency
+The package-check and website workflows use those dependency revisions. The separate **CRAN dependency
 check** workflow installs dependencies exclusively from CRAN and must pass
 before submission. A compatible dgraphs release is still a prerequisite for
 releasing geosmooth 0.2.0. The pinned dgraphs revision includes the R-devel
@@ -107,9 +108,21 @@ Choose by the structure of your data and the penalty you need:
   overlapping local predictions.
 
 - **Graph low-pass**: `fit.metric.graph.lowpass()` smooths a response on an
-  undirected graph with positive edge lengths. The
+  undirected graph with positive edge lengths or supplied nonnegative
+  conductances. The
   [graph workflow](https://pgajer.github.io/geosmooth/articles/function-guide.html#from-a-constructed-graph-to-a-fitted-response)
   explains vertex alignment, length-to-conductance conversion, and basis reuse.
+  The [observed-data heat guide](https://pgajer.github.io/geosmooth/articles/verified-heat-fallback.html)
+  covers missing responses, numerical cross-checks, and unresolved tuning choices.
+
+- **One-dimensional logistic trend filtering**: `fit.logistic.trend.filtering()`
+  fits a binary outcome over a continuous predictor. The
+  [assessment function](https://pgajer.github.io/geosmooth/reference/assess.logistic.trend.filtering.html)
+  tests constancy by permutation and measures predictive improvement.
+  Likelihood remains the default test; absolute-deviation and total-variation
+  summaries have optional permutation tests with Holm adjustment. The
+  [logistic trend-filtering guide](https://pgajer.github.io/geosmooth/articles/logistic-trend-filtering.html)
+  illustrates fitting and assessment on synthetic and Pima data.
 
 - **SSRHE**: SSRHE-style Hessian-energy smoothing,
   `fit.ssrhe.hessian.regression()` and

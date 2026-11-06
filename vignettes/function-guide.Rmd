@@ -335,14 +335,16 @@ The printed GCV score is a tuning criterion, not held-out predictive error.
 |---|---|---|
 | Coordinate neighborhoods | Distances in the supplied coordinate units | Rescaling coordinates changes supports. |
 | Graph-geodesic neighborhoods | Sums of edge lengths along paths | Unreachable vertices have infinite distance; support rules must handle connectivity. |
-| Metric low-pass smoothing | Positive lengths transformed to conductances | Reciprocal edges and matching lengths are required; zero lengths are rejected. |
+| Metric low-pass, `weight.type = "length"` (default) | Positive lengths transformed to conductances | Reciprocal edges and matching lengths are required; zero lengths are rejected. |
+| Metric low-pass, `weight.type = "conductance"` | Supplied nonnegative connection strengths | Reciprocal weights must agree; zero-weight edges are removed and positive weights are used unchanged. |
 | Recursive graph differences | Conductance-like weights | Greater weight penalizes differences more strongly. |
 | Path divided differences | Edge lengths | The operator uses metric spacing, not conductance. |
 
 For example, `metric.graph.lowpass.operator(list(2L, integer()), list(1, numeric()))`
-is rejected because the edge has no reciprocal entry. Do not repair directed
-or zero-length input silently. Resolve its scientific meaning before choosing a
-supported undirected positive-length graph.
+is rejected because the edge has no reciprocal entry. Resolve the meaning of
+directed or zero-length input before constructing an undirected graph. A zero
+conductance denotes no connection; a zero length is invalid for the length
+transformation.
 
 ### One-dimensional logistic trend filtering
 

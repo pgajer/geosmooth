@@ -12,11 +12,16 @@ class Page(HTMLParser):
     def __init__(self, path):
         super().__init__()
         self.links, self.ids = [], set()
+        self.unrendered_math = 0
         self.feed(path.read_text())
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if 'id' in attrs:
             self.ids.add(attrs['id'])
+        # This site renders equations as MathML. Pandoc leaves a math span
+        # containing raw TeX when conversion fails (for example, with \\rm).
+        if tag == 'span' and 'math' in attrs.get('class', '').split():
+            self.unrendered_math += 1
         for key in ('href', 'src'):
             if key in attrs:
                 self.links.append(attrs[key])
@@ -24,6 +29,8 @@ class Page(HTMLParser):
 pages = {p.resolve(): Page(p) for p in root.rglob('*.html')}
 errors = []
 for path, page in pages.items():
+    if page.unrendered_math:
+        errors.append(f'{path.relative_to(root)}: {page.unrendered_math} unrendered TeX equations')
     for link in page.links:
         if link.startswith(('https://rdrr.io/pkg/dgraphs/', 'https://rdrr.io/cran/dgraphs/')):
             errors.append(f'{path.relative_to(root)}: unavailable development-dependency help {link}')
