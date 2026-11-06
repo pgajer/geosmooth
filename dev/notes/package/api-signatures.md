@@ -12,12 +12,12 @@ Defaults are unevaluated source expressions. The guide is checked for exactly on
 
 ### apply.metric.graph.lowpass.path
 
-8 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L560).
+9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L622).
 
 ```r
 apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel", "tikhonov", "cubic_spline", "gaussian",
     "exponential", "butterworth"), block.size = NULL, truncation.tol = 1e-04, unresolved.action = c("warn",
-    "error", "allow"), exact.zero = TRUE)
+    "error", "allow"), exact.zero = TRUE, numerical.policy = NULL)
 ```
 
 ### assess.logistic.trend.filtering
@@ -190,7 +190,7 @@ fit.masked.graph.field(operator, vertex, y, lambda, weights = NULL)
 
 ### fit.metric.graph.lowpass
 
-25 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L888).
+28 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L1016).
 
 ```r
 fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse.length.power", "exp.length",
@@ -202,7 +202,8 @@ fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse
     eigen.solver = c("auto", "sparse", "dense"), dense.eigen.threshold = 200L, dense.fallback.threshold = 5000L,
     dense.fallback = c("auto", "never", "always"), verbose = FALSE, eta.search = c("fixed",
         "guarded.gcv"), eta.expansion.factor = 3, eta.max.expansions = 3L, eta.identity.departure = 0.01,
-    eta.truncation.tol = 1e-04)
+    eta.truncation.tol = 1e-04, weight.type = c("length", "conductance"), spectrum = c("partial",
+        "full"), numerical.policy = c("conservative", "verified.fallback"))
 ```
 
 ### fit.neighbor.probability
@@ -417,7 +418,7 @@ materialize.synthetic.instance(instance.id, validate = TRUE)
 
 ### metric.graph.heat.eta.grid
 
-6 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L275).
+6 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L333).
 
 ```r
 metric.graph.heat.eta.grid(basis, rule = c("spectral_guarded", "w1_inverse_spectrum"), n.initial = 40L, include.zero = FALSE,
@@ -426,7 +427,7 @@ metric.graph.heat.eta.grid(basis, rule = c("spectral_guarded", "w1_inverse_spect
 
 ### metric.graph.heat.extend.lower
 
-9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L386).
+9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L444).
 
 ```r
 metric.graph.heat.extend.lower(basis, eta.grid, endpoint.status = c("active", "inactive", "unresolved"), expansion.factor = 3,
@@ -436,7 +437,7 @@ metric.graph.heat.extend.lower(basis, eta.grid, endpoint.status = c("active", "i
 
 ### metric.graph.lowpass.basis
 
-16 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L141).
+19 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L176).
 
 ```r
 metric.graph.lowpass.basis(adj.list, weight.list, conductance.rule = c("inverse.length.power", "exp.length",
@@ -445,19 +446,21 @@ metric.graph.lowpass.basis(adj.list, weight.list, conductance.rule = c("inverse.
     conductance.sigma.quantile = 0.75, conductance.local.k = 5L, laplacian.type = c("unnormalized",
         "symmetric.normalized"), n.eigenpairs = 50L, eigen.solver = c("auto", "sparse", "dense"),
     dense.eigen.threshold = 200L, dense.fallback.threshold = 5000L, dense.fallback = c("auto",
-        "never", "always"), verbose = FALSE)
+        "never", "always"), verbose = FALSE, weight.type = c("length", "conductance"), spectrum = c("partial",
+        "full"), numerical.policy = c("conservative", "verified.fallback"))
 ```
 
 ### metric.graph.lowpass.operator
 
-12 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L62).
+13 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L67).
 
 ```r
 metric.graph.lowpass.operator(adj.list, weight.list, conductance.rule = c("inverse.length.power", "exp.length",
     "exp.length.squared", "self.tuned.gaussian"), conductance.epsilon = 1e-08, conductance.alpha = 1,
     conductance.sigma = NULL, conductance.sigma.rule = c("edge.quantile", "median", "local.k"),
     conductance.sigma.quantile = 0.75, conductance.local.k = 5L, laplacian.type = c("unnormalized",
-        "symmetric.normalized"), return.sparse = TRUE, verbose = FALSE)
+        "symmetric.normalized"), return.sparse = TRUE, verbose = FALSE, weight.type = c("length",
+        "conductance"))
 ```
 
 ### normalize.density

@@ -133,3 +133,4 @@ articles:
   - local-simplex-charts
   - pca-pls-chart-comparison
   - logistic-trend-filtering
+  - verified-heat-fallback

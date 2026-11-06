@@ -281,8 +281,8 @@ require `genlasso`; their supported prediction domain is the training set.
 | Function | Purpose |
 |---|---|
 | [`fit.metric.graph.lowpass()`](https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html) | Select a graph-spectral smoothing parameter by GCV and fit a response. |
-| [`metric.graph.lowpass.operator()`](https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.operator.html) | Convert metric edge lengths to conductances and construct a graph Laplacian. |
-| [`metric.graph.lowpass.basis()`](https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.basis.html) | Construct and retain graph eigenvectors for repeated smoothing. |
+| [`metric.graph.lowpass.operator()`](https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.operator.html) | Construct a graph Laplacian from edge lengths or explicit conductances. |
+| [`metric.graph.lowpass.basis()`](https://pgajer.github.io/geosmooth/reference/metric.graph.lowpass.basis.html) | Construct and retain a partial or complete graph spectrum for repeated smoothing. |
 | [`apply.metric.graph.lowpass.path()`](https://pgajer.github.io/geosmooth/reference/apply.metric.graph.lowpass.path.html) | Apply a supplied basis over a parameter grid; retain the candidate fits. |
 | [`metric.graph.heat.eta.grid()`](https://pgajer.github.io/geosmooth/reference/metric.graph.heat.eta.grid.html) | Choose heat-time candidates using spectral information. |
 | [`metric.graph.heat.extend.lower()`](https://pgajer.github.io/geosmooth/reference/metric.graph.heat.extend.lower.html) | Propose a smaller heat time for an external search, subject to resolution safeguards. |
@@ -292,14 +292,23 @@ require `genlasso`; their supported prediction domain is the training set.
 Graph construction and shortest paths are supplied by `dgraphs`. A graph's
 adjacency list contains 1-based vertex indices; a parallel weight list gives
 the corresponding edge values. **Check their meaning for the chosen method:**
-metric low-pass smoothing interprets them as lengths and converts them to
-conductances. Recursive graph trend filtering uses conductance-like weights,
+metric low-pass smoothing defaults to lengths and converts them to
+conductances; use `weight.type = "conductance"` for supplied connection
+strengths. Recursive graph trend filtering uses conductance-like weights,
 whereas its path divided-difference option uses lengths. Conductance measures
 connection strength; it is not the same quantity as distance.
 
 Heat time (`eta`) controls the amount of spectral smoothing. A truncated basis
 can fail to resolve small positive heat times; use the returned spectral
 diagnostics when constructing or extending a path yourself.
+
+Full-spectrum heat smoothing also supports missing responses, provided each
+connected component has an observed response. The
+[observed-data heat guide](verified-heat-fallback.html) explains this objective
+and the opt-in `numerical.policy = "verified.fallback"` cross-checks. Automatic
+tuning under that policy refuses structurally flat paths and score differences
+that cannot be resolved numerically. Its resolution bands are numerical
+diagnostics, not confidence intervals.
 
 #### From a constructed graph to a fitted response
 

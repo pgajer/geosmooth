@@ -14,13 +14,15 @@
   n.cores = 1L,
   block.size = NULL,
   verbose = FALSE,
+  numerical.policy = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{A \code{"metric.graph.lowpass.fit"} object.}
 
-\item{y}{Numeric vector or matrix with one row per graph vertex.}
+\item{y}{Numeric vector or matrix with one row per graph vertex.
+Each column may have its own \code{NA} mask for complete-basis heat filtering.}
 
 \item{per.column.gcv}{Logical. If \code{TRUE}, select eta independently for
 each response column using the cached eigenbasis.}
@@ -37,6 +39,9 @@ enable parallel execution. Per-column GCV results report
 \item{block.size}{Optional block size for fixed-eta multi-column refits.}
 
 \item{verbose}{Logical progress flag.}
+
+\item{numerical.policy}{NULL inherits the fitted object's policy; otherwise
+\code{"conservative"} or \code{"verified.fallback"}.}
 
 \item{...}{Additional arguments are not currently supported.}
 }
