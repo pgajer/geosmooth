@@ -9,17 +9,25 @@ NEWS and function help describe changed names, behavior and migration.
 
 The geosmooth 0.2.0 source archive was built and checked on 2026-11-07 using
 R-devel (2026-06-24 r90190) on macOS arm64: 0 errors, 0 warnings, 0 notes.
-The test suite recorded 16,417 passing expectations, no failures or warnings,
+The test suite recorded 16,485 passing expectations, no failures or warnings,
 and one expected skip: the source-tree runner contract is unavailable inside
 the built archive. Examples, vignette rebuilds, and PDF/HTML manual checks
 passed. This check used development dependencies.
 
-The checked numerical sources and tests were published in commit
-`f3c66e7218f8dfee07b8cb0d84595dec8e19caf9`. The
-[QA record](https://github.com/pgajer/trend_filtering/blob/e07b761/development/logistic_tf_stagnation/status/qa.json)
-and accompanying provenance record preserve the check results and source hashes.
-All 175 recorded package-source hashes still match on 2026-11-07. Subsequent
-website and repository-documentation changes are not a new full package check.
+The checked graph-heat repair and regression tests are in commit
+`0569572b7c81f8393c236eddd30bfd631f764f10`. The
+[validation record](dev/methods/metric_graph_lowpass/heat_agreement_2026-11-07.md)
+and accompanying JSON record preserve numerical comparisons, source hashes and
+platform results. Subsequent validation-report and CRAN-draft changes are
+excluded from the package archive and are not a new full package check.
+
+The [platform matrix for that revision](https://github.com/pgajer/geosmooth/actions/runs/42376015873)
+completed successfully on Windows release, Intel macOS release, and Ubuntu
+release, oldrel-1 and devel. Each reported Status: OK, with no test failures
+or warnings. Intel macOS and all Ubuntu jobs recorded 16,485 passing
+expectations and the expected source-tree-only skip. Windows recorded 16,484
+passing expectations and two expected skips: the same source-tree-only check
+and the existing Windows exclusion for a graph-parallelism test.
 
 ## Submission prerequisites
 
@@ -31,13 +39,11 @@ older grip 0.2.0 signatures; the required grip update is therefore also necessar
 After compatible releases are available, use their actual released version
 bounds and repeat the final archive checks without development overrides.
 
-The [platform check of f3c66e7](https://github.com/pgajer/geosmooth/actions/runs/42368766551)
-failed a heat-smoother numerical-agreement test on Windows and Intel macOS;
-the three Ubuntu configurations passed. The failure is the nine-vertex
-weak-chain case in `test-metric-graph-lowpass-tuning-resolution.R`.
-The affected code and test are unchanged in this documentation cleanup.
-That failure requires resolution and clean platform checks before submission;
-the local result does not establish cross-platform readiness.
+The earlier Windows/Intel macOS graph-heat numerical-agreement failure is
+resolved by evaluating the observed Schur complement through its residual
+factor, with unchanged acceptance tolerances. The successful platform matrix
+above still uses pinned development dependencies; a final CRAN-only archive
+check remains necessary after compatible dependency releases are available.
 
 ## Previous review fixes retained
 

@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-07",
+  "base_commit": "7cd4b006781fcb048eb3be15856d625ecd812104",
+  "candidate_commit": "0569572b7c81f8393c236eddd30bfd631f764f10",
+  "comparison_count": 60,
+  "old_analytic_error_max": 9.627067376616338e-08,
+  "current_analytic_error_max": 4.440892098500626e-16,
+  "agreement_budget_max": 0.16221247608283976,
+  "original_formula_regression_failures": 10,
+  "graph_test_count": 1178,
+  "graph_test_files": 15,
+  "graph_fail": 0,
+  "graph_warn": 0,
+  "graph_skip": 0,
+  "ci_run": "https://github.com/pgajer/geosmooth/actions/runs/42376015873",
+  "ci_status": "success",
+  "local_package_check": {
+    "status": "OK",
+    "errors": 0,
+    "warnings": 0,
+    "notes": 0,
+    "test_fail": 0,
+    "test_warn": 0,
+    "test_skip": 1,
+    "test_pass": 16485,
+    "archive_sha256": "6fa7c639f9d6da439b0f3c8dd749c0bda3cde79fc285bc988d58571132a40553",
+    "source_revision": "0569572b7c81f8393c236eddd30bfd631f764f10"
+  },
+  "platforms": [
+    {
+      "platform": "ubuntu-latest (release)",
+      "conclusion": "success",
+      "package_check": "OK",
+      "fail": 0,
+      "warn": 0,
+      "skip": 1,
+      "pass": 16485,
+      "url": "https://github.com/pgajer/geosmooth/actions/runs/42376015873/job/128413636543",
+      "log_sha256": "7c7e17224e1f02cc989386bf63bd73cbbcb8d49f0c71315dc0f207b2622751c0"
+    },
+    {
+      "platform": "windows-2022 (release)",
+      "conclusion": "success",
+      "package_check": "OK",
+      "fail": 0,
+      "warn": 0,
+      "skip": 2,
+      "pass": 16484,
+      "url": "https://github.com/pgajer/geosmooth/actions/runs/42376015873/job/128413636655",
+      "log_sha256": "37fbc0b05891ffa83e7cb9cff01274a3340f596a394fb0cc13b4513d86ee90b9"
+    },
+    {
+      "platform": "ubuntu-latest (oldrel-1)",
+      "conclusion": "success",
+      "package_check": "OK",
+      "fail": 0,
+      "warn": 0,
+      "skip": 1,
+      "pass": 16485,
+      "url": "https://github.com/pgajer/geosmooth/actions/runs/42376015873/job/128413636669",
+      "log_sha256": "b5296863688a7c78c9e681ef0ad6e01ab03acf26e9e38ee96c4b53c3f3c612e6"
+    },
+    {
+      "platform": "macos-15-intel (release)",
+      "conclusion": "success",
+      "package_check": "OK",
+      "fail": 0,
+      "warn": 0,
+      "skip": 1,
+      "pass": 16485,
+      "url": "https://github.com/pgajer/geosmooth/actions/runs/42376015873/job/128413636674",
+      "log_sha256": "85cfdb982f48b35587e31c7160c38a23d2f7e2daa89901c06c27e5f6702a31db"
+    },
+    {
+      "platform": "ubuntu-latest (devel)",
+      "conclusion": "success",
+      "package_check": "OK",
+      "fail": 0,
+      "warn": 0,
+      "skip": 1,
+      "pass": 16485,
+      "url": "https://github.com/pgajer/geosmooth/actions/runs/42376015873/job/128413636758",
+      "log_sha256": "6a95f68644c5dcd3e3b27dc8a1a127038aa5fda308dd987b9719f19b62e94739"
+    }
+  ],
+  "source_sha256": {
+    "R/metric_graph_verified_heat.R": "c34560ae42e9f029ebee0f344682368cda7cae0e8e04ad5175ffdc86fc17eb1e",
+    "tests/testthat/test-metric-graph-lowpass-tuning-resolution.R": "4fb11b6bb17241ee0a97f1530dbf2a9536a35d8f9ecfce41b01f1ad15100a776",
+    "vignettes/verified-heat-fallback.Rmd": "ee557ec2c240e497f7594c2db80d1f4c6a791a1cc77920d6e85d0c94c8af80ed",
+    "NEWS.md": "474ba1a41a2dfb58aef5aec7096ae77a7a77607123acc68532dfd7c6cc22fcd2"
+  },
+  "evidence_sha256": {
+    "scripts/validate_graph_heat_agreement.R": "8079a3d0217bf8e7c9522c444676b7a48acda6cf81ea2e7d8445118e917840e4",
+    "dev/methods/metric_graph_lowpass/heat_agreement_2026-11-07.csv": "c1a7557c738eff1eca1d686b8ec7ae0a361c86e439ca1a3bbffd9423d85a4fb3"
+  }
+}
