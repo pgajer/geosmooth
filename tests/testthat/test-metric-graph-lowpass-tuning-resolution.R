@@ -122,7 +122,9 @@ test_that("weak-chain residual energy retains analytic GCV across conductance sc
             expect_true(all(p$numerical$diagnostics[[name]] <= limits[[name]]), info=name)
         }
         if (is.null(baseline)) baseline <- p else {
-            expect_equal(p$fitted.values[,,1],baseline$fitted.values[,,1],tolerance=1e-7)
+            # Column labels are physical times and therefore rescale too.
+            expect_equal(unname(p$fitted.values[,,1]),
+                         unname(baseline$fitted.values[,,1]),tolerance=1e-7)
             expect_equal(p$effective.df,baseline$effective.df,tolerance=1e-7)
         }
     }
