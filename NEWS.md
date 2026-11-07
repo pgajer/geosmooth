@@ -1,4 +1,4 @@
-# Development
+# geosmooth (development version)
 
 * Fix binary trend-filtering stagnation in both native backends. The banded
   solver projects inactive-knot duals in the same centered coordinates used

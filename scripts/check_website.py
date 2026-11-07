@@ -11,7 +11,7 @@ site = 'https://pgajer.github.io/geosmooth/'
 class Page(HTMLParser):
     def __init__(self, path):
         super().__init__()
-        self.links, self.ids = [], set()
+        self.links, self.ids, self.text = [], set(), []
         self.unrendered_math = 0
         self.feed(path.read_text())
     def handle_starttag(self, tag, attrs):
@@ -25,6 +25,8 @@ class Page(HTMLParser):
         for key in ('href', 'src'):
             if key in attrs:
                 self.links.append(attrs[key])
+    def handle_data(self, text):
+        self.text.append(text)
 
 pages = {p.resolve(): Page(p) for p in root.rglob('*.html')}
 errors = []
@@ -49,6 +51,18 @@ for path, page in pages.items():
         elif target.fragment and resolved in pages and unquote(target.fragment) not in pages[resolved].ids:
             errors.append(f'{path.relative_to(root)}: missing fragment {link}')
 
+# pkgdown silently omits sections with unrecognized version headings, such as
+# a bare "Development". Check the rendered news as well as links and exports.
+news_path = root / 'news/index.html'
+news_headings = re.findall(r'^# (.+)$', Path('NEWS.md').read_text(), re.M)
+if news_path not in pages:
+    errors.append('news/index.html: missing changelog')
+else:
+    news_text = ' '.join(' '.join(pages[news_path].text).split())
+    for heading in news_headings:
+        if ' '.join(heading.split()) not in news_text:
+            errors.append(f'news/index.html: missing source section {heading!r}')
+
 exports = re.findall(r'^export\(([^)]+)\)', Path('NAMESPACE').read_text(), re.M)
 aliases = {}
 for rd in Path('man').glob('*.Rd'):
@@ -65,4 +79,4 @@ if 'Functions A–Z' not in alphabetical or 'Shared model operations' in alphabe
     errors.append('Alphabetical index did not replace the task groups')
 if errors:
     raise SystemExit('\n'.join(errors))
-print(f'Validated {len(pages)} HTML pages and reference links for all {len(exports)} exports.')
+print(f'Validated {len(pages)} HTML pages, all {len(exports)} exports, and {len(news_headings)} changelog sections.')
