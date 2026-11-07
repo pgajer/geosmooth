@@ -63,11 +63,11 @@ Roxygen: list(markdown = TRUE)
 SystemRequirements: GNU make
 LinkingTo:
     Rcpp,
-    dgraphs (>= 0.3.0.9000)
+    dgraphs (>= 0.4.0)
 Depends:
-    R (>= 3.5.0)
+    R (>= 4.1.0)
 Imports:
-    dgraphs (>= 0.3.0.9000),
+    dgraphs (>= 0.4.0),
     digest,
     jsonlite,
     MASS,
@@ -79,7 +79,7 @@ Imports:
     utils
 Suggests:
     genlasso,
-    grip (>= 0.2.0.9001),
+    grip (>= 0.3.0),
     knitr,
     rmarkdown,
     splines,

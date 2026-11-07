@@ -1,4 +1,4 @@
-# A release prerequisite, separate from development CI's pinned source override.
+# A prerequisite for package checks and website builds using CRAN dependencies.
 # Run from the package root. Never substitutes installed development packages.
 desc <- read.dcf("DESCRIPTION")[1L, ]
 fields <- intersect(c("Depends", "Imports", "LinkingTo", "Suggests"), names(desc))

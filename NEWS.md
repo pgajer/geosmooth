@@ -1,4 +1,6 @@
-# geosmooth (development version)
+# geosmooth 0.2.0
+
+## Trend filtering and graph methods
 
 * Stabilize verified graph-heat GCV on weakly connected graphs by evaluating
   the observed Schur complement as a residual-factor crossproduct. This avoids
@@ -86,7 +88,6 @@
   and density fits are unchanged.
 * Add `unfold.simplex.chart()` for conservative one/two-face certificates.
   Corner, tie and multi-face supports are not forced into a chart.
-* Require dgraphs >= 0.3.0.9000 for its general intrinsic distance API.
 - Graph low-pass operators, bases and fits accept `weight.type = "conductance"`
   for direct symmetric nonnegative affinities. Zero-weight edges are removed;
   positive conductances are not transformed or clipped. Length remains the default.
@@ -106,8 +107,6 @@
   formulations and explicit numerical diagnostics. Automatic tuning refuses
   structurally flat paths and unresolved competing minima; prescribed times
   remain available. Numerical resolution bands are not statistical intervals.
-
-# geosmooth 0.2.0
 
 ## Solver reliability
 
@@ -179,7 +178,7 @@
 
 ## API changes
 
-This release reduces the explicit public API from 93 to 60 exported functions.
+This release has 71 explicit public exports, compared with 93 in version 0.1.0.
 The 35 retired names are replaced by dependency-qualified calls, a unified
 fitter, or two S3 generics.
 
@@ -220,11 +219,14 @@ fitter, or two S3 generics.
 
 ## Dependencies
 
-- Delegate reusable synthetic geometry and point generation to dgraphs
-  (>= 0.2.1.9000).
+- Require R >= 4.1.0, matching the minimum required by dgraphs.
+- Require dgraphs >= 0.4.0 in both Imports and LinkingTo for synthetic geometry,
+  point generation, intrinsic simplex distances and their C++ header interface.
   Statistical recipes, responses, dataset identities and legacy G4 remain
   here. Geometry Lab and maintained geometry reference tools now live in
   the dgraphs development tree.
+- Require grip >= 0.3.0 for the optional GRIP and edge-KK layout methods,
+  which use the dot-delimited argument interface. Grip remains in Suggests.
 
 ## Documentation
 

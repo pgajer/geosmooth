@@ -33,31 +33,26 @@ install.packages("geosmooth")
 help("geosmooth-package", package = "geosmooth")
 ```
 
-The development version (0.2.0) includes the guides below and requires a
-newer dgraphs than CRAN currently supplies. Its optional GRIP and edge-KK
-embeddings also require the current dot-delimited grip API. Install the tested
-dependency revisions explicitly; installing from changing main branches is not
-an equivalent dependency specification. A source installation needs an R
-compilation toolchain.
+The 0.2.0 release candidate includes the guides below and requires R >= 4.1.0
+and dgraphs >= 0.4.0. Its optional GRIP and edge-KK embeddings require
+grip >= 0.3.0. These dependency releases must be available before the candidate
+can complete CRAN-only validation. A source installation needs an R compilation
+toolchain.
+
+Once those dependencies are published on CRAN, install the candidate with:
 
 ```r
 install.packages("pak")
-pak::pkg_install(c(
-  "pgajer/ivue@a952ab6816636a19f2038ba0709181608b71770d",
-  "pgajer/dgraphs@833c76f1737d8b4d16c44a1d3ffa9785978750a2",
-  "pgajer/grip@07dc145c89ff31b399a7e4c0b8e1b86f391fc08b",
-  "pgajer/geosmooth"
-))
+pak::pkg_install("pgajer/geosmooth")
 vignette("function-guide", package = "geosmooth")
 ```
 
-The package-check and website workflows use those dependency revisions. The separate **CRAN dependency
-check** workflow installs dependencies exclusively from CRAN and must pass
-before submission. A compatible dgraphs release is still a prerequisite for
-releasing geosmooth 0.2.0. The pinned dgraphs revision includes the R-devel
-synthetic RNG-state compatibility fix. The grip API used by the optional
-embeddings must also be available on CRAN before release. The development
-checks do not establish CRAN-only release readiness.
+The package-check and website workflows now resolve dependencies from CRAN.
+Their next builds and the final **CRAN dependency check** remain pending until
+dgraphs >= 0.4.0 and grip >= 0.3.0 are published. Earlier successful checks used
+development dependencies and do not establish CRAN-only release readiness.
+See [the submission draft](https://github.com/pgajer/geosmooth/blob/main/cran-comments.md) for the recorded status and
+remaining validation.
 
 ## Quick Start
 

@@ -30,15 +30,16 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: "release"
+          use-public-rspm: false
+
+      - name: Check CRAN versions without development overrides
+        run: Rscript scripts/check_cran_dependencies.R
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
             any::pkgload
             any::testthat
-            github::pgajer/ivue@a952ab6816636a19f2038ba0709181608b71770d
-            github::pgajer/dgraphs@e7cde950dd86a411f1d41e707392789d33f5617c
-            github::pgajer/grip@07dc145c89ff31b399a7e4c0b8e1b86f391fc08b
 
       - name: Run Tier-0 execution-artifact harness
         run: bash dev/methods/lps/ci/run_tier0_execution_artifact.sh
