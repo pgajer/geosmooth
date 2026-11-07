@@ -53,6 +53,12 @@
 #'   An incomplete family has no Holm p-values. This adjustment does not cover
 #'   additional predictors or outcomes. Choose tests and penalties in advance.
 #'
+#'   Nested CV inherits the input fit's `cv.penalty.scale`. Under
+#'   `"training_mass"`, outer training fits scale the reference lambda grid
+#'   and ridge penalties by their sample-size fraction; inner folds apply
+#'   their own training fraction. Full-data observed and permutation refits
+#'   retain the reference grid. Older saved objects without this field use
+#'   `"none"` to preserve their earlier convention.
 #'   Nested CV tunes using only each outer training set. Its constant baseline
 #'   is that set's sample mean. Pooled mean squared error (`mse`) and mean
 #'   absolute error (`mae`) use the same held-out rows; improvements are

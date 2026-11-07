@@ -5,9 +5,11 @@
     nuisance.ridge = 0, curve.ridge = 0,
     lambda.selection = c("fixed", "cv"), foldid = NULL,
     control = list(), warn = TRUE, backend = c("auto", "dense", "banded"),
-    family = "binomial", call = NULL) {
+    family = "binomial", call = NULL,
+    cv.penalty.scale = c("training_mass", "none")) {
     gaussian <- identical(family, "gaussian")
     lambda.selection <- match.arg(lambda.selection)
+    cv.penalty.scale <- match.arg(cv.penalty.scale)
     backend.requested <- match.arg(backend)
     scalar <- function(v, name, positive = FALSE) {
         if (!is.numeric(v) || length(v) != 1L || !is.finite(v) ||
@@ -141,7 +143,8 @@
     out <- list(call = call, backend = backend, x = x, y = y, weights = weights, offset = offset,
         covariates = covariates, offset.used = offset.used, lambda = lambda,
         fits = fits, diagnostics = diagnostics, selected.index = NULL,
-        cv.table = NULL, control = control, nuisance.ridge = nuisance.ridge,
+        cv.table = NULL, cv.penalty.scale = cv.penalty.scale,
+        control = control, nuisance.ridge = nuisance.ridge,
         curve.ridge = curve.ridge, workspace.estimate.bytes = workspace,
         design = list(lo = lo, span = span, knots = knots, center = center,
             scales = scales, zcenter = zcenter, zscale = zscale))
@@ -155,11 +158,18 @@
         folds <- sort(unique(foldid))
         scores <- matrix(NA_real_, length(folds), length(lambda))
         fold.status <- character(length(folds))
+        factors <- numeric(length(folds))
+        fold.lambda <- matrix(NA_real_, length(folds), length(lambda))
         for (k in seq_along(folds)) {
             test <- foldid == folds[k]; train <- !test
-            ff <- tryCatch(.fit.univariate.trend.filtering(x[train], y[train], lambda,
+            factors[k] <- .tf.cv.penalty.factor(sum(weights[train]), sum(weights),
+                                                cv.penalty.scale)
+            fold.lambda[k, ] <- lambda * factors[k]
+            ff <- tryCatch(.fit.univariate.trend.filtering(x[train], y[train], fold.lambda[k, ],
                 weights[train], covariates[train, , drop = FALSE], offset[train],
-                nuisance.ridge, curve.ridge, control = control, warn = FALSE, backend = backend.requested, family = family),
+                nuisance.ridge * factors[k], curve.ridge * factors[k],
+                control = control, warn = FALSE, backend = backend.requested,
+                family = family, cv.penalty.scale = cv.penalty.scale),
                 error = function(e) e)
             if (inherits(ff, "error")) { fold.status[k] <- conditionMessage(ff); next }
             eta <- stats::predict(ff, x[test], covariates = covariates[test, , drop = FALSE],
@@ -175,6 +185,10 @@
         out$cv.table <- data.frame(lambda = lambda, log.loss = cv.loss, eligible = valid)
         if (gaussian) names(out$cv.table)[2L] <- "mse"
         out$cv.fold.loss.sums <- scores; out$cv.fold.status <- fold.status; out$foldid <- foldid
+        out$cv.fold.lambda <- fold.lambda
+        out$cv.fold.penalty.factors <- stats::setNames(factors, folds)
+        out$cv.fold.ridge <- data.frame(fold = folds,
+            nuisance.ridge = nuisance.ridge * factors, curve.ridge = curve.ridge * factors)
         if (any(valid)) out$selected.index <- which.min(ifelse(valid, cv.loss, Inf))
         else if (warn) warning("No lambda passed every CV fold and the full fit.", call. = FALSE)
     }

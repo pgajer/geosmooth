@@ -46,7 +46,7 @@ s3 <- grep("^S3method[(]", ns, value = TRUE)
 out <- c(
   "# geosmooth API signature appendix", "",
   "Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.",
-  "Companion to [the API review](api-review-2026-09-14.md).", "",
+  "Companion to [the function guide](../../../vignettes/function-guide.Rmd).", "",
   sprintf("There are %d explicit exports: %d local functions and %d dgraphs re-exports; %d S3 registrations are counted separately.",
           length(exports), length(definitions), length(reexports), length(s3)), "",
   "Counts below include `...` as one argument and exclude arguments forwarded through it.",

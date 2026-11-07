@@ -17,7 +17,8 @@ fit.gaussian.trend.filtering(
   foldid = NULL,
   control = list(),
   warn = TRUE,
-  backend = c("auto", "dense", "banded")
+  backend = c("auto", "dense", "banded"),
+  cv.penalty.scale = c("training_mass", "none")
 )
 }
 \arguments{
@@ -55,12 +56,19 @@ Supply the same label for observations that must be held out together.}
 locations or when the dense workspace estimate exceeds its limit, and
 \code{"dense"} otherwise. The banded backend uses compact working
 sets and checks every knot; it does not thin the predictor locations.}
+
+\item{cv.penalty.scale}{\code{"training_mass"} (default) multiplies each fold's
+lambda and ridge penalties by its training/full weight-sum ratio. This
+preserves their coefficients relative to mean loss. \code{"none"} retains
+the earlier same-numerical-penalty convention. Fixed-path fits are unchanged.}
 }
 \value{
 A \code{gaussian.trend.filtering.fit} containing \code{order=2L}, the original
 data, penalty path, \code{fits}, convergence \code{diagnostics}, training \code{design},
 and, when requested, \code{cv.table} with MSE and eligibility, fold-level loss
 sums and status, and \code{selected.index}. A fixed path has no selected index.
+\code{cv.penalty.scale}, \code{cv.fold.lambda}, \code{cv.fold.penalty.factors}, and
+\code{cv.fold.ridge} record the actual convention and training penalties.
 Standard prediction returns NA for unconverged candidates.
 }
 \description{
@@ -89,7 +97,11 @@ supported for fitting; \code{\link{assess.gaussian.trend.filtering}} supports on
 independent, unit-weight observations without adjustment.
 
 Every CV split recomputes its training-only predictor range, knots and
-transformations. Selection requires convergence on the full data and all
+transformations. The default \code{cv.penalty.scale="training_mass"} scales
+lambda and ridge penalties by the training/full weight-sum ratio; \code{"none"}
+retains the earlier raw-penalty convention. This holds the mean-loss
+coefficients constant, not a common raw-coordinate operator across splits.
+Selection requires convergence on the full data and all
 folds. Equal CV scores select the first supplied lambda. Predictions
 outside the training range hold the curve at the nearest boundary;
 covariates and offsets continue to contribute. The banded backend scans

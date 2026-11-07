@@ -24,7 +24,8 @@ fit.graph.trend.filtering(
   rtol = 1e-07,
   btol = 1e-07,
   eps = 1e-04,
-  verbose = FALSE
+  verbose = FALSE,
+  cv.penalty.scale = c("training_mass", "none")
 )
 }
 \arguments{
@@ -90,6 +91,11 @@ vertex.}
 
 \item{verbose}{Logical. If \code{TRUE}, pass verbose output to
 \pkg{genlasso}.}
+
+\item{cv.penalty.scale}{\code{"training_mass"} (default) multiplies fold
+lambda by the training/full observation-count ratio, keeping the penalty
+coefficient on the mean-loss scale. \code{"none"} retains the earlier
+same-numerical-lambda convention. Fixed-lambda fits are unchanged.}
 }
 \value{
 A list of class \code{"graph.trend.filtering.fit"} containing fitted

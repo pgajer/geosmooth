@@ -1,5 +1,14 @@
 # Development
 
+* Correct trend-filtering CV penalty scaling: local-polynomial, graph, Gaussian
+  1D and logistic 1D fits now default to `cv.penalty.scale="training_mass"`.
+  Each fold scales lambda (and explicit 1D ridge penalties) by its training/full
+  weight-sum ratio. `"none"` retains the earlier raw-penalty convention.
+  Actual fold penalties are recorded; fixed-lambda objectives are unchanged.
+  Nested assessments preserve the selected convention and scale outer-training
+  candidate grids consistently. Older saved objects without this setting retain
+  the legacy convention. LPL-TF requires every fold to succeed for selection.
+
 * Add `fit.gaussian.trend.filtering()` and
   `assess.gaussian.trend.filtering()` for continuous outcomes with order-2
   trend filtering. Native dense and banded solvers use squared-error loss;

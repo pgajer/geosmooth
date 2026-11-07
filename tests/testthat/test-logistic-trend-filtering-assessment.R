@@ -50,9 +50,9 @@ test_that("nested CV uses training-only baselines, tuning and transformations", 
         expect_equal(unique(p$constant.probability[!train]), mean(fit$y[train]))
         inner <- a$folds$inner[[k]]
         expect_identical(as.integer(names(inner)), which(train))
-        ff <- fit.logistic.trend.filtering(fit$x[train], fit$y[train], fit$lambda,
+        ff <- fit.logistic.trend.filtering(fit$x[train], fit$y[train], fit$lambda * mean(train),
             lambda.selection = "cv", foldid = unname(inner), backend = fit$backend,
-            curve.ridge = fit$curve.ridge, control = fit$control)
+            curve.ridge = fit$curve.ridge * mean(train), control = fit$control)
         expect_equal(as.numeric(predict(ff, fit$x[!train])), p$probability[!train], tolerance = 1e-10)
         expect_equal(ff$cv.table, a$prediction$diagnostics[[k]]$cv.table)
         expect_equal(range(fit$x[train]), a$prediction$diagnostics[[k]]$training.range)

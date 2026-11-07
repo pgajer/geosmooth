@@ -131,6 +131,12 @@ statistic as a nonexceedance/exceedance. These bounds are not a confidence
 interval. An observed-fit failure leaves both bounds unavailable.
 
 Predictive assessment uses separate outer folds. Each outer training set
+inherits the input fit's \code{cv.penalty.scale}. Under \code{"training_mass"},
+its lambda grid and ridge penalties are multiplied by the outer/full
+sample-size ratio, and its inner folds apply their own training ratio.
+Observed and permuted full-data refits use the same unscaled reference
+grid. Older saved fits without this field retain \code{"none"} for reproduction.
+Each outer training set
 tunes the path using only its inner folds and predicts its outer test set.
 The constant predictor is that outer training set's event rate. Both use
 identical test observations. Pooled mean natural-log loss and Brier score

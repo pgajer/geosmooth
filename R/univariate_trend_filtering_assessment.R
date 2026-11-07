@@ -134,6 +134,7 @@
         seeds = list(seed = seed, streams = streams, permutations = permutation.seeds,
                      rng.kind = RNGkind()),
         settings = list(lambda = object$lambda, backend = object$backend,
+            cv.penalty.scale = object$cv.penalty.scale %||% "none",
             control = object$control, nuisance.ridge = object$nuisance.ridge,
             curve.ridge = object$curve.ridge, inner.folds = inner.folds,
             outer.folds = if (predictive) outer.folds else NULL,

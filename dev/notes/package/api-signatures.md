@@ -1,7 +1,7 @@
 # geosmooth API signature appendix
 
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
-Companion to [the API review](api-review-2026-09-14.md).
+Companion to [the function guide](../../../vignettes/function-guide.Rmd).
 
 There are 71 explicit exports: 71 local functions and 0 dgraphs re-exports; 106 S3 registrations are counted separately.
 
@@ -22,7 +22,7 @@ apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel
 
 ### assess.gaussian.trend.filtering
 
-8 arguments. Source: [R/gaussian_trend_filtering_assessment.R](../../../R/gaussian_trend_filtering_assessment.R#L97).
+8 arguments. Source: [R/gaussian_trend_filtering_assessment.R](../../../R/gaussian_trend_filtering_assessment.R#L103).
 
 ```r
 assess.gaussian.trend.filtering(object, permutations = 999L, inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE,
@@ -31,7 +31,7 @@ assess.gaussian.trend.filtering(object, permutations = 999L, inner.folds = 5L, o
 
 ### assess.logistic.trend.filtering
 
-8 arguments. Source: [R/logistic_trend_filtering_assessment.R](../../../R/logistic_trend_filtering_assessment.R#L140).
+8 arguments. Source: [R/logistic_trend_filtering_assessment.R](../../../R/logistic_trend_filtering_assessment.R#L146).
 
 ```r
 assess.logistic.trend.filtering(object, permutations = 999L, inner.folds = 5L, outer.folds = 5L, seed = 1L, predictive = TRUE,
@@ -98,24 +98,26 @@ fit.density(X, weights = NULL, method = c("empirical", "graph_random_walk"), gra
 
 ### fit.gaussian.trend.filtering
 
-13 arguments. Source: [R/gaussian_trend_filtering.R](../../../R/gaussian_trend_filtering.R#L57).
+14 arguments. Source: [R/gaussian_trend_filtering.R](../../../R/gaussian_trend_filtering.R#L63).
 
 ```r
 fit.gaussian.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
     curve.ridge = 0, lambda.selection = c("fixed", "cv"), foldid = NULL, control = list(),
-    warn = TRUE, backend = c("auto", "dense", "banded"))
+    warn = TRUE, backend = c("auto", "dense", "banded"), cv.penalty.scale = c("training_mass",
+        "none"))
 ```
 
 ### fit.graph.trend.filtering
 
-20 arguments. Source: [R/graph_trend_filtering.R](../../../R/graph_trend_filtering.R#L213).
+21 arguments. Source: [R/graph_trend_filtering.R](../../../R/graph_trend_filtering.R#L217).
 
 ```r
 fit.graph.trend.filtering(adj.list, weight.list = NULL, y, order = 0L, lambda.grid = NULL, lambda.selection = c("cv",
     "fixed"), weight.rule = c("conductance", "sqrt.conductance", "unit"), operator.family = c("graph.laplacian.recursive",
     "path.divided.difference"), path.family = c("branch.continuation", "all.simple"), path.weighting = c("unit",
     "anchor.mean"), n.lambda = 40L, nfolds = 5L, foldid = NULL, maxsteps = 2000L, minlam = 0,
-    approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, verbose = FALSE)
+    approx = FALSE, rtol = 1e-07, btol = 1e-07, eps = 1e-04, verbose = FALSE, cv.penalty.scale = c("training_mass",
+        "none"))
 ```
 
 ### fit.local.likelihood
@@ -139,17 +141,18 @@ fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bern
 
 ### fit.logistic.trend.filtering
 
-13 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L91).
+14 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L101).
 
 ```r
 fit.logistic.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
     curve.ridge = 0, lambda.selection = c("fixed", "cv"), foldid = NULL, control = list(),
-    warn = TRUE, backend = c("auto", "dense", "banded"))
+    warn = TRUE, backend = c("auto", "dense", "banded"), cv.penalty.scale = c("training_mass",
+        "none"))
 ```
 
 ### fit.lpl.tf
 
-27 arguments. Source: [R/lpl_tf.R](../../../R/lpl_tf.R#L349).
+28 arguments. Source: [R/lpl_tf.R](../../../R/lpl_tf.R#L353).
 
 ```r
 fit.lpl.tf(X = NULL, y, operator = NULL, adj.list = NULL, weight.list = NULL, graph = NULL,
@@ -157,7 +160,7 @@ fit.lpl.tf(X = NULL, y, operator = NULL, adj.list = NULL, weight.list = NULL, gr
     operator.grid = NULL, foldid = NULL, cv.folds = 5L, cv.loss = c("mse", "rmse", "mae"),
     cv.seed = NULL, cv.repeats = 1L, solver = c("genlasso"), selection = c("min", "one.se"),
     n.lambda = 80L, maxsteps = 2000L, minlam = 0, approx = FALSE, rtol = 1e-07, btol = 1e-07,
-    eps = 1e-04, verbose = FALSE, ...)
+    eps = 1e-04, verbose = FALSE, cv.penalty.scale = c("training_mass", "none"), ...)
 ```
 
 ### fit.lps

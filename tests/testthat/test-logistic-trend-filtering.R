@@ -96,7 +96,7 @@ test_that("CV uses independent training transformations and rejects failed folds
     expect_identical(m$selected.index, which.min(m$cv.table$log.loss))
     for (k in 1:3) {
         take <- folds != k
-        f <- fit.logistic.trend.filtering(x[take], y[take], lambda)
+        f <- fit.logistic.trend.filtering(x[take], y[take], lambda * mean(take))
         eta <- predict(f, x[!take], type = "link")
         loss <- colSums(pmax(eta, 0) - y[!take]*eta + log1p(exp(-abs(eta))))
         expect_equal(unname(m$cv.fold.loss.sums[k, ]), unname(loss), tolerance = 1e-8)

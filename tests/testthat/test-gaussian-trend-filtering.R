@@ -91,7 +91,8 @@ test_that("CV scores use every held-out observation and training-only geometry",
     scores <- matrix(NA_real_,4,2)
     for (k in 1:4) {
         train <- folds!=k
-        ff <- fit.gaussian.trend.filtering(x[train],y[train],fit$lambda,
+        ff <- fit.gaussian.trend.filtering(x[train],y[train],
+            fit$lambda * sum(w[train])/sum(w),
             weights=w[train],backend="banded")
         pred <- predict(ff,x[!train])
         scores[k,] <- colSums((y[!train]-pred)^2*w[!train])

@@ -76,7 +76,7 @@ test_that("banded CV isolates training and failures remain explicit", {
     expect_true(all(f$cv.table$eligible))
     for (k in 1:3) {
         tr <- folds != k
-        b <- fit.logistic.trend.filtering(x[tr], y[tr], lambda, backend = "banded")
+        b <- fit.logistic.trend.filtering(x[tr], y[tr], lambda * mean(tr), backend = "banded")
         eta <- predict(b, x[!tr], type = "link")
         loss <- colSums(pmax(eta, 0)-y[!tr]*eta+log1p(exp(-abs(eta))))
         expect_equal(as.numeric(loss), as.numeric(f$cv.fold.loss.sums[k, ]), tolerance = 1e-8)

@@ -327,6 +327,10 @@ print.lpl_tf_operator <- function(x, ...) {
 #'   are deterministic even when this is \code{NULL}.
 #' @param cv.repeats Number of CV repeats. The current implementation supports
 #'   only one repeat.
+#' @param cv.penalty.scale \code{"training_mass"} (default) scales fold lambda
+#'   by the training/full weight-sum ratio, preserving its coefficient relative
+#'   to mean loss. \code{"none"} uses the earlier unchanged numerical lambda.
+#'   All folds must have finite predictions for a candidate to be eligible.
 #' @param solver Solver backend. The current implementation supports only
 #'   \code{"genlasso"}.
 #' @param selection Lambda selection rule, \code{"min"} or \code{"one.se"}.
@@ -373,12 +377,14 @@ fit.lpl.tf <- function(
     btol = 1e-7,
     eps = 1e-4,
     verbose = FALSE,
+    cv.penalty.scale = c("training_mass", "none"),
     ...) {
 
     if (!requireNamespace("genlasso", quietly = TRUE)) {
         stop("Package 'genlasso' is required for fit.lpl.tf().", call. = FALSE)
     }
     lambda.selection <- match.arg(lambda.selection)
+    cv.penalty.scale <- match.arg(cv.penalty.scale)
     cv.loss <- match.arg(cv.loss)
     solver <- match.arg(solver)
     selection <- match.arg(selection)
@@ -429,6 +435,7 @@ fit.lpl.tf <- function(
                 cv.loss = cv.loss,
                 cv.seed = cv.seed,
                 cv.repeats = cv.repeats,
+                cv.penalty.scale = cv.penalty.scale,
                 solver = solver,
                 selection = selection,
                 n.lambda = n.lambda,
@@ -497,6 +504,7 @@ fit.lpl.tf <- function(
         loss = loss.internal,
         selection = selection,
         solver.args = solver.args,
+        cv.penalty.scale = cv.penalty.scale,
         verbose = verbose
     )
     runtime <- proc.time()[["elapsed"]] - start
@@ -541,6 +549,7 @@ fit.lpl.tf <- function(
         cv.loss.internal = loss.internal,
         cv.folds = cv.folds,
         cv.repeats = cv.repeats,
+        cv.penalty.scale = cv.penalty.scale,
         selection = selection,
         n.lambda = n.lambda,
         beta.grid = raw.fit$beta.grid,
@@ -601,6 +610,7 @@ refit.lpl_tf <- function(object, y, lambda = NULL, reuse.lambda = TRUE,
         lambda = lambda,
         lambda.selection = "fixed",
         solver = object$solver$requested %||% "genlasso",
+        cv.penalty.scale = object$cv.penalty.scale %||% "none",
         verbose = verbose
     )
 }
@@ -709,7 +719,9 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
                                       loss,
                                       selection,
                                       solver.args,
-                                      verbose = FALSE) {
+                                      verbose = FALSE,
+                                      cv.penalty.scale = c("training_mass", "none")) {
+    cv.penalty.scale <- match.arg(cv.penalty.scale)
     if (is.null(operator$A)) {
         stop("operator must contain A.", call. = FALSE)
     }
@@ -761,7 +773,8 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
             loss = loss,
             selection = selection,
             solver.args = solver.args,
-            use.svd = D.info$svd
+            use.svd = D.info$svd,
+            cv.penalty.scale = cv.penalty.scale
         )
         selected.idx <- cv$selected.idx
     } else {
@@ -897,24 +910,33 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
 }
 
 .lpl.tf.cv <- function(y, weights, D, D.fallback = NULL, lambda.grid, fold.id,
-                       loss, selection, solver.args, use.svd = FALSE) {
+                       loss, selection, solver.args, use.svd = FALSE,
+                       cv.penalty.scale = c("training_mass", "none")) {
+    cv.penalty.scale <- match.arg(cv.penalty.scale)
     n <- length(y)
     folds <- sort(unique(fold.id[fold.id > 0L]))
     cv.errors <- matrix(NA_real_, nrow = length(folds), ncol = length(lambda.grid))
     rownames(cv.errors) <- paste0("Fold", folds)
     colnames(cv.errors) <- format(signif(lambda.grid, 6), scientific = TRUE)
+    factors <- numeric(length(folds))
+    fold.lambda <- cv.errors
 
     for (ii in seq_along(folds)) {
         fold <- folds[ii]
         test <- which(fold.id == fold)
         train.weights <- weights
         train.weights[test] <- 0
+        factors[ii] <- .tf.cv.penalty.factor(sum(train.weights), sum(weights),
+                                             cv.penalty.scale)
+        fold.lambda[ii, ] <- lambda.grid * factors[ii]
+        fold.args <- solver.args
+        fold.args$minlam <- solver.args$minlam * factors[ii]
         path.info <- tryCatch(
             .lpl.tf.genlasso.path(
                 y = y,
                 weights = train.weights,
                 D = D,
-                solver.args = solver.args,
+                solver.args = fold.args,
                 use.svd = use.svd,
                 D.fallback = D.fallback
             ),
@@ -923,7 +945,7 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
         if (is.null(path.info)) {
             next
         }
-        beta <- .ssrhe.hessian.l1.coef.matrix(path.info$path, lambda.grid, n)
+        beta <- .ssrhe.hessian.l1.coef.matrix(path.info$path, fold.lambda[ii, ], n)
         beta.test <- beta[test, , drop = FALSE]
         finite.pred <- colSums(is.finite(beta.test)) == nrow(beta.test)
         target <- matrix(y[test], nrow = length(test), ncol = length(lambda.grid))
@@ -937,10 +959,10 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
         cv.errors[ii, ] <- fold.error
     }
 
-    mean.error <- colMeans(cv.errors, na.rm = TRUE)
+    mean.error <- colMeans(cv.errors)
     mean.error[!is.finite(mean.error)] <- Inf
     se <- apply(cv.errors, 2L, function(x) {
-        x <- x[is.finite(x)]
+        if (any(!is.finite(x))) return(Inf)
         if (length(x) < 2L) return(Inf)
         stats::sd(x) / sqrt(length(x))
     })
@@ -958,6 +980,9 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
     }
     list(
         fold.id = fold.id,
+        cv.penalty.scale = cv.penalty.scale,
+        fold.penalty.factors = stats::setNames(factors, folds),
+        fold.lambda = fold.lambda,
         lambda.grid = lambda.grid,
         fold.errors = cv.errors,
         mean.error = mean.error,
@@ -1271,10 +1296,10 @@ predict.lpl_tf <- function(object, newdata = NULL, type = c("response"),
     }
     out <- cv
     out$fold.errors <- sqrt(out$fold.errors)
-    out$mean.error <- colMeans(out$fold.errors, na.rm = TRUE)
+    out$mean.error <- colMeans(out$fold.errors)
     out$mean.error[!is.finite(out$mean.error)] <- Inf
     out$se <- apply(out$fold.errors, 2L, function(x) {
-        x <- x[is.finite(x)]
+        if (any(!is.finite(x))) return(Inf)
         if (length(x) < 2L) return(Inf)
         stats::sd(x) / sqrt(length(x))
     })

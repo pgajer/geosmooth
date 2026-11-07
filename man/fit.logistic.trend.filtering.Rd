@@ -17,7 +17,8 @@ fit.logistic.trend.filtering(
   foldid = NULL,
   control = list(),
   warn = TRUE,
-  backend = c("auto", "dense", "banded")
+  backend = c("auto", "dense", "banded"),
+  cv.penalty.scale = c("training_mass", "none")
 )
 }
 \arguments{
@@ -55,10 +56,17 @@ Supply the same label for observations that must be held out together.}
 locations or when the dense workspace estimate exceeds its limit, and
 \code{"dense"} otherwise. The banded backend uses compact working
 sets and checks every knot; it does not thin the predictor locations.}
+
+\item{cv.penalty.scale}{\code{"training_mass"} (default) multiplies each fold's
+lambda and ridge penalties by its training/full weight-sum ratio. This
+preserves their coefficients relative to mean loss. \code{"none"} retains
+the earlier same-numerical-penalty convention. Fixed-path fits are unchanged.}
 }
 \value{
 An object of class \code{logistic.trend.filtering.fit}, with \code{fits},
 \code{lambda}, \code{diagnostics}, training transformations, optional \code{cv.table} and
+\code{cv.fold.lambda}, \code{cv.fold.penalty.factors}, \code{cv.fold.ridge}, the selected
+\code{cv.penalty.scale}, and
 \code{selected.index}. Failed fits are preserved for diagnosis but standard
 fitted/prediction methods return NA for them unless explicitly permitted.
 }
@@ -110,6 +118,10 @@ wide memory limit. The quadratic initialization uses the dense solver only
 on the three polynomial columns and optional covariates.
 
 CV recomputes training normalization, centering, and scaling in each fold.
+With the default \code{cv.penalty.scale="training_mass"}, the penalty
+coefficients relative to weighted mean loss are held constant. The
+predictor range and standardized covariates still belong to each training
+split; scaling does not hold a common raw-coordinate operator fixed.
 A candidate with any failed training fit is ineligible for selection.
 All fits are refitted on the complete training data. Prediction outside
 its range uses the nearest boundary curve value; covariates and offsets

@@ -82,6 +82,12 @@
 #'   interval. An observed-fit failure leaves both bounds unavailable.
 #'
 #'   Predictive assessment uses separate outer folds. Each outer training set
+#'   inherits the input fit's `cv.penalty.scale`. Under `"training_mass"`,
+#'   its lambda grid and ridge penalties are multiplied by the outer/full
+#'   sample-size ratio, and its inner folds apply their own training ratio.
+#'   Observed and permuted full-data refits use the same unscaled reference
+#'   grid. Older saved fits without this field retain `"none"` for reproduction.
+#'   Each outer training set
 #'   tunes the path using only its inner folds and predicts its outer test set.
 #'   The constant predictor is that outer training set's event rate. Both use
 #'   identical test observations. Pooled mean natural-log loss and Brier score
@@ -219,14 +225,18 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
 
 .univariate.tf.assessment.refit <- function(object, y, rows, folds, summarize, gaussian) {
     fitter <- if (gaussian) fit.gaussian.trend.filtering else fit.logistic.trend.filtering
-    fit <- tryCatch(fitter(object$x[rows], y[rows], object$lambda,
+    convention <- object$cv.penalty.scale %||% "none"
+    factor <- .tf.cv.penalty.factor(length(rows), length(object$y), convention)
+    fit <- tryCatch(fitter(object$x[rows], y[rows], object$lambda * factor,
         lambda.selection = "cv", foldid = folds, backend = object$backend,
-        nuisance.ridge = object$nuisance.ridge, curve.ridge = object$curve.ridge,
+        nuisance.ridge = object$nuisance.ridge * factor,
+        curve.ridge = object$curve.ridge * factor, cv.penalty.scale = convention,
         control = object$control, warn = FALSE), error = function(e) e)
     record <- list(status = "fit_error", statistic = NA_real_, selected.lambda = NA_real_,
         selected.index = NA_integer_, eligible.candidates = 0L, message = NULL,
         diagnostics = NULL, cv.table = NULL, cv.fold.status = NULL,
-        cv.fold.loss.sums = NULL,
+        cv.fold.loss.sums = NULL, cv.penalty.scale = convention,
+        reference.penalty.factor = factor, cv.fold.lambda = NULL,
         curve.summaries = c(absolute.deviation = NA_real_, total.variation = NA_real_),
         curve.summary.message = NULL)
     if (inherits(fit, "error")) {
@@ -238,6 +248,7 @@ assess.logistic.trend.filtering <- function(object, permutations = 999L,
     record$cv.table <- fit$cv.table
     record$cv.fold.status <- fit$cv.fold.status
     record$cv.fold.loss.sums <- fit$cv.fold.loss.sums
+    record$cv.fold.lambda <- fit$cv.fold.lambda
     record$eligible.candidates <- as.integer(sum(fit$cv.table$eligible))
     record$status <- "no_eligible_candidate"
     if (!is.null(fit$selected.index)) {

@@ -397,6 +397,15 @@ knot matrices; every stopping check scans all knot coefficients, without
 thinning. `backend="dense"` retains the small-problem reference solver. Both
 backends check an estimated workspace bound before allocation.
 
+Gaussian, logistic, local-polynomial lifting and graph trend-filtering CV use
+`cv.penalty.scale="training_mass"` by default: fold penalties scale with the
+training/full data-loss mass. This holds their coefficient relative to mean
+loss constant. Set `"none"` explicitly for the earlier same-numerical-penalty
+convention. One-dimensional fits also scale explicit ridge penalties and record
+the actual fold settings. The assessment functions propagate this convention
+through outer and inner training sets; older saved fits without the setting
+retain the legacy convention. Fixed-penalty objectives are unchanged.
+
 ### Hessian-energy regression
 
 | Function | Purpose |

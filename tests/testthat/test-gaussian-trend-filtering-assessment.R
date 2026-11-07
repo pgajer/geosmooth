@@ -56,7 +56,7 @@ test_that("Gaussian nested CV preserves outer outcome isolation and scores all r
         train <- a$folds$outer!=k
         expect_equal(unique(p$constant.mean[!train]),mean(fit$y[train]))
         expect_identical(as.integer(names(a$folds$inner[[k]])),which(train))
-        ff <- fit.gaussian.trend.filtering(fit$x[train],fit$y[train],fit$lambda,
+        ff <- fit.gaussian.trend.filtering(fit$x[train],fit$y[train],fit$lambda * mean(train),
             lambda.selection="cv",foldid=unname(a$folds$inner[[k]]),backend=fit$backend)
         pred <- predict(ff,fit$x[!train])
         expect_equal(p$mean[!train],as.numeric(pred))

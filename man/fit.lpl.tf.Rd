@@ -31,6 +31,7 @@ fit.lpl.tf(
   btol = 1e-07,
   eps = 1e-04,
   verbose = FALSE,
+  cv.penalty.scale = c("training_mass", "none"),
   ...
 )
 }
@@ -89,6 +90,11 @@ only one repeat.}
 \item{maxsteps, minlam, approx, rtol, btol, eps}{Genlasso controls.}
 
 \item{verbose}{Logical.}
+
+\item{cv.penalty.scale}{\code{"training_mass"} (default) scales fold lambda
+by the training/full weight-sum ratio, preserving its coefficient relative
+to mean loss. \code{"none"} uses the earlier unchanged numerical lambda.
+All folds must have finite predictions for a candidate to be eligible.}
 
 \item{...}{Additional arguments passed to \code{\link{lpl.tf.operator}} when
 the operator is built internally.}

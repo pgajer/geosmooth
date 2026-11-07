@@ -70,6 +70,16 @@ lambda_path <- c(Inf, 10^seq(0, -4, by=-0.5))
 spline_df <- c(3L, 5L, 7L)
 ```
 
+By default, `cv.penalty.scale="training_mass"` multiplies each fold's
+lambda and explicit ridge coefficients by its training/full weight-sum ratio.
+The fitting loss is a sum, so this preserves the penalty coefficient relative
+to mean loss. For example, four-fifths of the observations with unit weights
+use four-fifths of the reference penalty. The selected full-data fit uses the
+original supplied penalty. `cv.penalty.scale="none"` reproduces the earlier
+unchanged-numerical-penalty convention. Training ranges and covariate
+transformations are still recomputed within folds. Inspect `cv.fold.lambda`,
+`cv.fold.penalty.factors`, and `cv.fold.ridge` to see the actual fold settings.
+
 The examples have independent observations, so the five folds are stratified
 by training outcome and assigned at the observation level. Repeated specimens
 from one person should instead share a fold label. Splitting must reflect the

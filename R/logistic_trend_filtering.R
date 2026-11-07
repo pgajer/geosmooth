@@ -19,6 +19,10 @@
 #'   a penalty; `"cv"` selects minimum held-out weighted binomial log loss.
 #' @param foldid Integer fold labels, required for `lambda.selection="cv"`.
 #'   Supply the same label for observations that must be held out together.
+#' @param cv.penalty.scale `"training_mass"` (default) multiplies each fold's
+#'   lambda and ridge penalties by its training/full weight-sum ratio. This
+#'   preserves their coefficients relative to mean loss. `"none"` retains
+#'   the earlier same-numerical-penalty convention. Fixed-path fits are unchanged.
 #' @param control Named list overriding `tolerance=1e-9`,
 #'   `gap.tolerance=1e-10`, `max.iterations=1000L`, or
 #'   `max.workspace.bytes=1024^3`. Tolerances apply to mean weighted loss.
@@ -70,6 +74,10 @@
 #'   on the three polynomial columns and optional covariates.
 #'
 #'   CV recomputes training normalization, centering, and scaling in each fold.
+#'   With the default `cv.penalty.scale="training_mass"`, the penalty
+#'   coefficients relative to weighted mean loss are held constant. The
+#'   predictor range and standardized covariates still belong to each training
+#'   split; scaling does not hold a common raw-coordinate operator fixed.
 #'   A candidate with any failed training fit is ineligible for selection.
 #'   All fits are refitted on the complete training data. Prediction outside
 #'   its range uses the nearest boundary curve value; covariates and offsets
@@ -78,6 +86,8 @@
 #'
 #' @return An object of class `logistic.trend.filtering.fit`, with `fits`,
 #'   `lambda`, `diagnostics`, training transformations, optional `cv.table` and
+#'   `cv.fold.lambda`, `cv.fold.penalty.factors`, `cv.fold.ridge`, the selected
+#'   `cv.penalty.scale`, and
 #'   `selected.index`. Failed fits are preserved for diagnosis but standard
 #'   fitted/prediction methods return NA for them unless explicitly permitted.
 #' @seealso \code{\link{assess.logistic.trend.filtering}} for a global constancy test and
@@ -92,10 +102,11 @@ fit.logistic.trend.filtering <- function(
     x, y, lambda, weights = NULL, covariates = NULL, offset = NULL,
     nuisance.ridge = 0, curve.ridge = 0,
     lambda.selection = c("fixed", "cv"), foldid = NULL,
-    control = list(), warn = TRUE, backend = c("auto", "dense", "banded")) {
+    control = list(), warn = TRUE, backend = c("auto", "dense", "banded"),
+    cv.penalty.scale = c("training_mass", "none")) {
     .fit.univariate.trend.filtering(x, y, lambda, weights, covariates, offset,
         nuisance.ridge, curve.ridge, lambda.selection, foldid, control, warn, backend,
-        family = "binomial", call = match.call())
+        family = "binomial", call = match.call(), cv.penalty.scale = cv.penalty.scale)
 }
 
 .logistic.tf.basis <- function(u, knots) {

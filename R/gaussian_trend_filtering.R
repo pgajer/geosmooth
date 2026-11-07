@@ -30,7 +30,11 @@
 #'   independent, unit-weight observations without adjustment.
 #'
 #'   Every CV split recomputes its training-only predictor range, knots and
-#'   transformations. Selection requires convergence on the full data and all
+#'   transformations. The default `cv.penalty.scale="training_mass"` scales
+#'   lambda and ridge penalties by the training/full weight-sum ratio; `"none"`
+#'   retains the earlier raw-penalty convention. This holds the mean-loss
+#'   coefficients constant, not a common raw-coordinate operator across splits.
+#'   Selection requires convergence on the full data and all
 #'   folds. Equal CV scores select the first supplied lambda. Predictions
 #'   outside the training range hold the curve at the nearest boundary;
 #'   covariates and offsets continue to contribute. The banded backend scans
@@ -42,6 +46,8 @@
 #'   data, penalty path, `fits`, convergence `diagnostics`, training `design`,
 #'   and, when requested, `cv.table` with MSE and eligibility, fold-level loss
 #'   sums and status, and `selected.index`. A fixed path has no selected index.
+#'   `cv.penalty.scale`, `cv.fold.lambda`, `cv.fold.penalty.factors`, and
+#'   `cv.fold.ridge` record the actual convention and training penalties.
 #'   Standard prediction returns NA for unconverged candidates.
 #' @references
 #' Wang, Smola and Tibshirani (2014). The Falling Factorial Basis and Its
@@ -58,10 +64,11 @@ fit.gaussian.trend.filtering <- function(
     x, y, lambda, weights = NULL, covariates = NULL, offset = NULL,
     nuisance.ridge = 0, curve.ridge = 0,
     lambda.selection = c("fixed", "cv"), foldid = NULL,
-    control = list(), warn = TRUE, backend = c("auto", "dense", "banded")) {
+    control = list(), warn = TRUE, backend = c("auto", "dense", "banded"),
+    cv.penalty.scale = c("training_mass", "none")) {
     .fit.univariate.trend.filtering(x, y, lambda, weights, covariates, offset,
         nuisance.ridge, curve.ridge, lambda.selection, foldid, control, warn, backend,
-        family = "gaussian", call = match.call())
+        family = "gaussian", call = match.call(), cv.penalty.scale = cv.penalty.scale)
 }
 
 #' Predict from Gaussian Trend Filtering
