@@ -91,6 +91,43 @@ test_that("the auditor's nine-vertex weak-chain example cannot choose a time", {
     expect_true(all(is.finite(refit(fixed,y)$fitted.values)))
 })
 
+test_that("weak-chain residual energy retains analytic GCV across conductance scales", {
+    # Frozen nine-vertex example, independent of RNG implementation. The fifth
+    # edge is weak. With only two observations GCV is exactly their difference
+    # squared for every positive time, whatever the intervening conductances.
+    w <- c(1.5688437015051022, 1.1511129526188597, 1.6180565424729139,
+           1.3063838336383924, 1e-8, 1.0687164461705834,
+           1.0344469987321645, 1.3884741966612637)
+    n <- length(w) + 1L
+    adj <- lapply(seq_len(n), function(j) as.integer(c(j-1L,j+1L)[c(j>1L,j<n)]))
+    grid <- 10^seq(-3,4,length.out=12)
+    y <- rep(NA_real_,n); y[c(1,n)] <- c(0,1)
+    Y <- cbind(y, 1e6 + 3*y)
+    baseline <- NULL
+    for (factor in c(1, .1, 10, 1e-4, 1e4)) {
+        weights <- lapply(seq_len(n), function(j) factor*w[pmin(j,adj[[j]])])
+        b <- metric.graph.lowpass.basis(adj,weights,weight.type="conductance",
+                                       spectrum="full",numerical.policy="verified.fallback")
+        p <- apply.metric.graph.lowpass.path(b,Y,grid/factor)
+        # This tighter analytic check catches cancellation well before the
+        # candidate/reference agreement budget is exhausted on another platform.
+        expect_equal(p$gcv.scores[,1], rep(1,length(grid)), tolerance=1e-11)
+        expect_equal(p$gcv.scores[,2], rep(9,length(grid)), tolerance=1e-11)
+        expect_equal(p$fitted.values[,,2]-1e6, 3*p$fitted.values[,,1], tolerance=1e-9)
+        expect_true(all(vapply(p$tuning, function(x)
+            identical(x$status,"unresolved_flat_gcv") && !x$selection.allowed,
+            logical(1))))
+        limits <- geosmooth:::.metric.graph.verified.limits()
+        for (name in names(limits)) {
+            expect_true(all(p$numerical$diagnostics[[name]] <= limits[[name]]), info=name)
+        }
+        if (is.null(baseline)) baseline <- p else {
+            expect_equal(p$fitted.values[,,1],baseline$fitted.values[,,1],tolerance=1e-7)
+            expect_equal(p$effective.df,baseline$effective.df,tolerance=1e-7)
+        }
+    }
+})
+
 test_that("fit and refit refuse overlapping contenders even on a nonflat path", {
     n <- 5L
     adj <- lapply(seq_len(n),function(i) as.integer(c(i-1L,i+1L)[c(i>1L,i<n)]))

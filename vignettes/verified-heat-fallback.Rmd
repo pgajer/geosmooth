@@ -47,6 +47,20 @@ Laplacian eigenvalues. The implementation computes the small complements with
 $$X=A_{UU}^{-1}A_{UO},\qquad K=A_{OO}-A_{OU}X,$$
 $$\widehat f_U=-Xy_O,\qquad \widehat f_O=(I-sK)y_O.$$
 
+The implementation evaluates this Schur complement through a residual factor.
+Write $A=F^TF$, with
+$F=\operatorname{diag}(\sqrt{(1-\exp(-t\lambda_i))/s})V^T$ for the checked
+eigenvector matrix $V$. Then
+
+$$R=F_O-F_UX,\qquad K=R^TR.$$
+
+This is the same matrix in exact arithmetic. It avoids subtracting two large,
+nearly equal matrices when the observed vertices are separated by a weak edge.
+That subtraction can corrupt a small residual trace and hence GCV even when
+predictions and the missing-block solve appear accurate. The factor calculation
+adds no ridge or denominator adjustment. The independent bordered reference
+and all acceptance tolerances below remain unchanged.
+
 Scaling cancels from GCV, giving a stable expression even when $t$ is very small:
 
 $$\operatorname{df}=q-s\operatorname{tr}(K),\qquad

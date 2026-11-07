@@ -1,5 +1,11 @@
 # geosmooth (development version)
 
+* Stabilize verified graph-heat GCV on weakly connected graphs by evaluating
+  the observed Schur complement as a residual-factor crossproduct. This avoids
+  cancellation between nearly equal blocks while preserving the model,
+  independent reference calculation, numerical acceptance thresholds and
+  refusal to select a smoothing time from unresolved GCV scores.
+
 * Fix binary trend-filtering stagnation in both native backends. The banded
   solver projects inactive-knot duals in the same centered coordinates used
   by its convergence check. The dense solver evaluates ridge penalties from

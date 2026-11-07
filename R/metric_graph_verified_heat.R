@@ -163,6 +163,10 @@
         }
         A <- tcrossprod(sweep(V, 2L, a / s, `*`), V)
         A <- (A + t(A)) / 2
+        # A = F'F. Retain the square root for an energy-form Schur complement:
+        # subtracting A_OO - A_OU A_UU^{-1} A_UO loses relative accuracy when
+        # the observed residual is tiny compared with either subtractand.
+        F <- if (any(n.obs < n)) sweep(t(V), 1L, sqrt(a / s), `*`) else NULL
         # The alternative route uses (I-H)^+ and an explicit nullspace border.
         P <- NULL
         if (any(n.obs < n)) {
@@ -190,7 +194,11 @@
                 candidate.residual <- max(abs(B %*% X - C)) /
                     max(1, max(abs(C)), max(rowSums(abs(B))) * max(abs(X)))
                 T[U, ] <- -X
-                K <- K - crossprod(C, X)
+                # For the same harmonic extension X, K = R'R with
+                # R = F_O - F_U X. This is the same Schur complement in exact
+                # arithmetic, with no ridge, truncation or changed nullspace.
+                residual.factor <- F[, O, drop = FALSE] - F[, U, drop = FALSE] %*% X
+                K <- crossprod(residual.factor)
                 G <- rbind(cbind(P[O, O, drop = FALSE], Q[O, , drop = FALSE]),
                            cbind(t(Q[O, , drop = FALSE]), matrix(0, nc, nc)))
                 rhs <- rbind(diag(q), matrix(0, nc, q))
