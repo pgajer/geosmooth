@@ -47,5 +47,4 @@ the Tier 0--4 validation agenda is:
 The current LPS validation spine is:
 
 - `~/current_projects/geosmooth/dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex`
-- `~/current_projects/geosmooth/dev/methods/lps/specs/lps_tiers1to4_project_brief_2026-06-11.md`
 - `~/current_projects/geosmooth/dev/methods/lps/audit_contracts/tiers1to4/lps_tiers1to4_contract_2026-06-11.md`

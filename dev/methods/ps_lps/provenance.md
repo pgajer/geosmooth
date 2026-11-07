@@ -40,10 +40,3 @@ are the closest package-facing bridge from exploration to implementation:
 
 - `~/current_projects/geosmooth/dev/notes/cross_method/lps_ps_lps_project_brief_09-06-2026.md`
 - `~/current_projects/geosmooth/dev/notes/cross_method/lps_ps_lps_jasa_style_audit_2026-06-09.md`
-
-The PS-LPS execution history, cache/search audits, and retained split handoffs
-are curated under:
-
-- `~/current_projects/geosmooth/dev/methods/ps_lps/`
-- `~/current_projects/geosmooth/dev/archive/split_handoffs_retained/selected_files/ps_lps_audit_2026-06-05/`
-- `~/current_projects/geosmooth/dev/archive/split_handoffs_retained/selected_files/ps_lps_cache_backend_2026-06-05/`

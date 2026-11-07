@@ -1,7 +1,7 @@
 # geosmooth development workspace
 
-This directory holds development notes, method workspaces, and project-level
-planning material that should not live at the package root.
+This directory holds maintained technical notes, method specifications, and
+reproducible package-development tools.
 
 Standalone scientific documents and report bundles were relocated to sibling
 manuscript workspaces on September 12, 2026. See
@@ -32,9 +32,9 @@ The top-level `trend_filtering` research dashboard is generated at
 program-level map of strategic roadmaps, literature reviews, theory notes,
 method-development histories, and package bridges.
 
-- `notes/`: durable explanations, design notes, plans, and tutorials.
+- `notes/`: durable explanations, design notes, and tutorials.
 - `methods/`: method-specific public development material such as specs,
-  reports, reproducibility scripts, results summaries, and status records.
+  reproducibility scripts and scientific validation summaries.
 - `programs/`: package-facing pointers and implementation slices for active
   cross-method or cross-project program roadmaps whose canonical strategic
   home may live in `trend_filtering`.

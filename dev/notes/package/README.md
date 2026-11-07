@@ -1,4 +1,5 @@
-# Package notes
+# Package technical notes
 
-Use this directory for package-wide design notes, release-readiness notes,
-documentation plans, and QA guidance that are not specific to one smoother.
+This directory contains the generated API signature appendix and maintained
+package design documentation. The installed function guide is the starting point
+for choosing public functions.

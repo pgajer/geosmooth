@@ -15,6 +15,15 @@ vignettes, implementation, tests, fixtures, and binding package-test
 specifications remain here. Package validation tooling remains here unless
 it was solely the runner or renderer for a moved standalone study.
 
+The logistic trend-filtering validation reports remain under
+`dev/methods/logistic_trend_filtering/`, whose README indexes the reports,
+both backends, regression tests and companion studies. Historical LPS/PS-LPS
+experiment scripts remain under `scripts/` to preserve reproducibility; some
+require the original external datasets or local study layout. Their retention
+does not make them package build inputs or current benchmark recommendations.
+Technical specifications are retained according to their scientific content,
+including documents whose historical filenames contain `plan`.
+
 Agent-only reviews, handoffs, prompts, and execution records belong in private
 project storage. New generated figures and reports belong with their source
 study, normally under its `build/` directory. Do not recreate the removed
