@@ -233,6 +233,8 @@ def discover_markdown(root: Path) -> list[dict[str, str]]:
         return []
     entries: list[dict[str, str]] = []
     for path in sorted(root.rglob("*.md")):
+        if not path.is_file():
+            continue
         rel_parts = path.relative_to(root).parts
         if any(part in {"html", ".git"} for part in rel_parts):
             continue
@@ -245,6 +247,8 @@ def discover_tex(root: Path) -> list[dict[str, str]]:
         return []
     entries: list[dict[str, str]] = []
     for path in sorted(root.rglob("*.tex")):
+        if not path.is_file():
+            continue
         rel_parts = path.relative_to(root).parts
         if any(part in {"html", ".git"} for part in rel_parts):
             continue
@@ -262,6 +266,8 @@ def discover_sources(root: Path) -> list[dict[str, str]]:
 def discover_all_dev_markdown() -> list[dict[str, str]]:
     entries: list[dict[str, str]] = []
     for path in sorted(DEV_ROOT.rglob("*.md")):
+        if not path.is_file():
+            continue
         rel_parts = path.relative_to(DEV_ROOT).parts
         if any(part in {"html", ".git"} for part in rel_parts):
             continue
@@ -790,7 +796,7 @@ def build_markdown_page(
       <h1>{html.escape(page_title)}</h1>
       <p class="note-relpath">{html.escape(relative_path)}</p>
       <div class="source-box">
-        <span>Full source path for agent handoff</span>
+        <span>Source file</span>
         <code>{html.escape(absolute_path)}</code>
       </div>
       <p class="generated-small">Generated {html.escape(generated_at)} from canonical Markdown. Do not edit this HTML by hand.</p>
