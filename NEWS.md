@@ -1,5 +1,13 @@
 # Development
 
+* Fix binary trend-filtering stagnation in both native backends. The banded
+  solver projects inactive-knot duals in the same centered coordinates used
+  by its convergence check. The dense solver evaluates ridge penalties from
+  their residual factors and computes line-search objective changes directly.
+  These repairs preserve the objective and convergence tolerances, also in
+  the shared Gaussian solver. Regression tests cover the 17 saved failures
+  and all surrounding penalty paths, with independent optimality checks.
+
 * Correct trend-filtering CV penalty scaling: local-polynomial, graph, Gaussian
   1D and logistic 1D fits now default to `cv.penalty.scale="training_mass"`.
   Each fold scales lambda (and explicit 1D ridge penalties) by its training/full

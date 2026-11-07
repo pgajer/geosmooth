@@ -288,10 +288,16 @@ Diagnostic diagnose(const Geometry& geometry,const Vec& g,const Vec& zg,const Ve
     int at=0;Real worst=0;
     for(int j=2;j<m-1;++j) {
         bool included=at<int(active.size()) && active[at]==j;
+        // The reported KKT equations use centered, scaled columns. Project
+        // the dual in those same coordinates: projecting the raw moment g
+        // instead leaves a spurious center*g[0] residual at inactive knots.
+        // Near convergence that can admit a feasible knot and cycle forever
+        // between adding it and removing it at a zero-length Newton step.
+        Real centered=g[j+1]-geometry.center[j]*g[0];
         Real dual=0;
-        if(lambda>0 && std::isfinite(lambda)) dual=included ? signs[at] : std::max(Real(-1),std::min(Real(1),-g[j+1]/lambda));
+        if(lambda>0 && std::isfinite(lambda)) dual=included ? signs[at] : std::max(Real(-1),std::min(Real(1),-centered/lambda));
         out.dual[j+1]=dual;
-        Real residual=std::isfinite(lambda) ? std::abs((g[j+1]-geometry.center[j]*g[0]+lambda*dual)/geometry.scale[j]) : 0;
+        Real residual=std::isfinite(lambda) ? std::abs((centered+lambda*dual)/geometry.scale[j]) : 0;
         out.stationarity=std::max(out.stationarity,residual);
         if(included) {
             out.active=std::max(out.active,residual);
@@ -367,17 +373,17 @@ Rcpp::List univariate_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector
     Vec y(n),w(n),off(n);Mat Z(n,q);Real mass=std::accumulate(weights.begin(),weights.end(),Real(0));
     for(int i=0;i<n;++i) {y[i]=response[i];w[i]=weights[i]/mass;off[i]=offsets[i];for(int j=0;j<q;++j)Z(i,j)=nuisance(i,j);}
     Geometry geometry(xx,kk,w);
-    Rcpp::NumericMatrix initialA(n,q+3),initialQ(q+3,q+3);
+    Rcpp::NumericMatrix initialA(n,q+3),initialR(q+(curve_ridge>0 ? n : 0),q+3);
     for(int i=0;i<n;++i) {
         initialA(i,0)=1;
         for(int j=0;j<q;++j)initialA(i,j+1)=double(Z(i,j));
         for(int j=0;j<2;++j)initialA(i,q+1+j)=double((std::pow(Real(xx[i]),j+1)-geometry.center[j])/geometry.scale[j]);
     }
-    for(int j=0;j<q;++j)initialQ(j+1,j+1)=nuisance_ridge;
-    for(int j=0;j<2;++j)for(int k=0;k<2;++k)for(int i=0;i<n;++i)
-        initialQ(q+1+j,q+1+k)+=curve_ridge*double(w[i])*initialA(i,q+1+j)*initialA(i,q+1+k);
+    for(int j=0;j<q;++j)initialR(j,j+1)=std::sqrt(nuisance_ridge);
+    if(curve_ridge>0)for(int j=0;j<2;++j)for(int i=0;i<n;++i)
+        initialR(q+i,q+1+j)=std::sqrt(curve_ridge*double(w[i]))*initialA(i,q+1+j);
     auto initialize = gaussian ? gaussian_tf_native : logistic_tf_native;
-    Rcpp::List initlist=initialize(initialA,initialQ,response,weights,offsets,
+    Rcpp::List initlist=initialize(initialA,initialR,response,weights,offsets,
         Rcpp::NumericVector(q+3),Rcpp::NumericVector::create(R_PosInf),tolerance,gap_tolerance,max_iterations);
     Rcpp::List init=initlist[0];Rcpp::NumericVector initb=init["coefficients"];
     Vec curve(n),gamma(q);
@@ -420,7 +426,7 @@ Rcpp::List univariate_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector
             // This changes admission timing, never the final full-knot gate.
             if(diag.active<=std::max(Real(tolerance),Real(.001)*diag.stationarity) && diag.candidate>=0 && lambda>0 && std::isfinite(lambda)) {
                 int at=std::lower_bound(active.begin(),active.end(),diag.candidate)-active.begin();
-                signs.insert(signs.begin()+at,fullg[diag.candidate+1]>0 ? -1 : 1);
+                signs.insert(signs.begin()+at,fullg[diag.candidate+1]-geometry.center[diag.candidate]*fullg[0]>0 ? -1 : 1);
                 active.insert(active.begin()+at,diag.candidate);++additions;rebuild=true;continue;
             }
             Vec penalty=Vec::Zero(B.d);
@@ -429,7 +435,7 @@ Rcpp::List univariate_tf_banded_native(Rcpp::NumericVector u,Rcpp::NumericVector
             if(!direction(B,e,Z,w,gb,zg,nuisance_ridge/mass,curve_ridge/mass,dc,dg,damping)) {
                 if(diag.candidate>=0 && diag.active<100*tolerance && lambda>0 && std::isfinite(lambda)) {
                     int at=std::lower_bound(active.begin(),active.end(),diag.candidate)-active.begin();
-                    signs.insert(signs.begin()+at,fullg[diag.candidate+1]>0 ? -1 : 1);active.insert(active.begin()+at,diag.candidate);++additions;rebuild=true;continue;
+                    signs.insert(signs.begin()+at,fullg[diag.candidate+1]-geometry.center[diag.candidate]*fullg[0]>0 ? -1 : 1);active.insert(active.begin()+at,diag.candidate);++additions;rebuild=true;continue;
                 }
                 status="singular_banded_system";break;
             }

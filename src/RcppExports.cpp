@@ -97,13 +97,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // logistic_tf_native
-Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
-RcppExport SEXP _geosmooth_logistic_tf_native(SEXP designSEXP, SEXP ridgeSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
+Rcpp::List logistic_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge_factor, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
+RcppExport SEXP _geosmooth_logistic_tf_native(SEXP designSEXP, SEXP ridge_factorSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type design(designSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge(ridgeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge_factor(ridge_factorSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type response(responseSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offsets(offsetsSEXP);
@@ -112,18 +112,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
     Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(logistic_tf_native(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
+    rcpp_result_gen = Rcpp::wrap(logistic_tf_native(design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
     return rcpp_result_gen;
 END_RCPP
 }
 // gaussian_tf_native
-Rcpp::List gaussian_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
-RcppExport SEXP _geosmooth_gaussian_tf_native(SEXP designSEXP, SEXP ridgeSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
+Rcpp::List gaussian_tf_native(Rcpp::NumericMatrix design, Rcpp::NumericMatrix ridge_factor, Rcpp::NumericVector response, Rcpp::NumericVector weights, Rcpp::NumericVector offsets, Rcpp::NumericVector penalty_scale, Rcpp::NumericVector lambdas, double tolerance, double gap_tolerance, int max_iterations);
+RcppExport SEXP _geosmooth_gaussian_tf_native(SEXP designSEXP, SEXP ridge_factorSEXP, SEXP responseSEXP, SEXP weightsSEXP, SEXP offsetsSEXP, SEXP penalty_scaleSEXP, SEXP lambdasSEXP, SEXP toleranceSEXP, SEXP gap_toleranceSEXP, SEXP max_iterationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type design(designSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge(ridgeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type ridge_factor(ridge_factorSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type response(responseSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type offsets(offsetsSEXP);
@@ -132,7 +132,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< double >::type gap_tolerance(gap_toleranceSEXP);
     Rcpp::traits::input_parameter< int >::type max_iterations(max_iterationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gaussian_tf_native(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
+    rcpp_result_gen = Rcpp::wrap(gaussian_tf_native(design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations));
     return rcpp_result_gen;
 END_RCPP
 }

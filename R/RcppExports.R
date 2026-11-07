@@ -53,12 +53,12 @@ rcpp_local_second_order_svd_chart <- function(X_support, center, chart_dim, cent
     .Call(`_geosmooth_rcpp_local_second_order_svd_chart`, X_support, center, chart_dim, center_mode, weights, rank_tolerance, rank_absolute_tolerance, curvature_condition_max, curvature_ridge, min_curvature_support, rebase_to_anchor, orient_basis)
 }
 
-logistic_tf_native <- function(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations) {
-    .Call(`_geosmooth_logistic_tf_native`, design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations)
+logistic_tf_native <- function(design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations) {
+    .Call(`_geosmooth_logistic_tf_native`, design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations)
 }
 
-gaussian_tf_native <- function(design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations) {
-    .Call(`_geosmooth_gaussian_tf_native`, design, ridge, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations)
+gaussian_tf_native <- function(design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations) {
+    .Call(`_geosmooth_gaussian_tf_native`, design, ridge_factor, response, weights, offsets, penalty_scale, lambdas, tolerance, gap_tolerance, max_iterations)
 }
 
 logistic_tf_structured_geometry <- function(u, knots, weights) {

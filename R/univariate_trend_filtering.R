@@ -62,7 +62,7 @@
     if (any(diff(knots) <= 0))
         stop("Distinct x values collapsed during normalization.", call. = FALSE)
     p <- length(knots) + ncol(covariates)
-    dense.workspace <- 8 * (4 * as.double(n) * p + 12 * as.double(p)^2 +
+    dense.workspace <- 8 * (6 * as.double(n) * p + 12 * as.double(p)^2 +
                                length(lambda) * (3 * as.double(n) + 3 * p))
     backend <- if (backend.requested == "auto") {
         if (length(knots) > 256L || dense.workspace > control$max.workspace.bytes) "banded" else "dense"
@@ -100,12 +100,15 @@
     nz <- ncol(Z)
     if (backend == "dense") {
         A <- cbind(1, Z, H)
-        Q <- matrix(0, p, p)
-        if (nz) Q[1L + seq_len(nz), 1L + seq_len(nz)] <- diag(nuisance.ridge, nz)
+        # Keep ridge residuals instead of forming their Gram matrix. Large,
+        # cancelling falling-factorial coefficients make b'Qb inaccurate even
+        # when the fitted curve (and its ridge penalty) is well behaved.
+        ridge.factor <- matrix(0, (if (curve.ridge > 0) n else 0L) + nz, p)
+        if (nz) ridge.factor[seq_len(nz), 1L + seq_len(nz)] <- diag(sqrt(nuisance.ridge), nz)
         hi <- (nz + 2L):p
-        Q[hi, hi] <- curve.ridge * crossprod(H, H * w)
+        if (curve.ridge > 0) ridge.factor[nz + seq_len(n), hi] <- H * sqrt(curve.ridge * w)
         penalty <- c(numeric(nz + 3L), 1/scales[-c(1L, 2L)])
-        if (any(!is.finite(A)) || any(!is.finite(Q)) || any(!is.finite(penalty)))
+        if (any(!is.finite(A)) || any(!is.finite(ridge.factor)) || any(!is.finite(penalty)))
             stop("Nonfinite transformed design or penalty.", call. = FALSE)
     }
     if (!gaussian && (sum(weights * y) == 0 || sum(weights * (1-y)) == 0)) {
@@ -115,7 +118,7 @@
     ord <- order(lambda, decreasing = TRUE)
     fits <- if (backend == "dense") {
         native <- if (gaussian) gaussian_tf_native else logistic_tf_native
-        native(A, Q, as.numeric(y), as.numeric(weights),
+        native(A, ridge.factor, as.numeric(y), as.numeric(weights),
             as.numeric(offset), penalty, as.numeric(lambda[ord]),
             control$tolerance, control$gap.tolerance, as.integer(control$max.iterations))
     } else {
