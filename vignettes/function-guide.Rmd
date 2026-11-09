@@ -43,6 +43,7 @@ your first model.
 | Fit a locally adaptive trend with a sparse difference penalty | [`fit.lpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.lpl.tf.html) | Local polynomial lifting trend filtering; requires optional package `genlasso`. |
 | Fit a one-dimensional continuous response | `fit.gaussian.trend.filtering()` | Order-2 Gaussian trend filtering with squared-error loss, explicit penalties and convergence diagnostics. |
 | Fit a one-dimensional binary or binomial response | `fit.logistic.trend.filtering()` | Order-2 logistic trend filtering with a native C++ solver, explicit penalties, optional covariates/offsets, and convergence diagnostics. |
+| Fit adaptive curves along fixed or learned projections | `fit.projection.trend.filtering()` | Gaussian or binomial additive projection models; mean-loss penalties and separate joint-fit and search diagnostics. |
 | Add synchronization to a lifting trend filter | [`fit.slpl.tf()`](https://pgajer.github.io/geosmooth/reference/fit.slpl.tf.html) | Synchronized local polynomial lifting trend filtering; adds a second, quadratic penalty. |
 | Smooth a response already attached to graph vertices | [`fit.metric.graph.lowpass()`](https://pgajer.github.io/geosmooth/reference/fit.metric.graph.lowpass.html) or [`fit.graph.trend.filtering()`](https://pgajer.github.io/geosmooth/reference/fit.graph.trend.filtering.html) | Choose spectral low-pass smoothing or a graph-difference penalty. Edge-weight meanings differ; see below. |
 | Penalize local second derivatives on a point cloud | [`fit.ssrhe.hessian.regression()`](https://pgajer.github.io/geosmooth/reference/fit.ssrhe.hessian.regression.html) | Hessian-energy regression, following semi-supervised regression using Hessian energy (SSRHE); use `lambda.selection = "cv"` or `"gcv"` to select penalties. |
@@ -354,6 +355,8 @@ transformation.
 |---|---|
 | `fit.logistic.trend.filtering()` | Fit a univariate piecewise-quadratic logit curve using the native C++ backend. |
 | `fit.gaussian.trend.filtering()` | Fit a univariate piecewise-quadratic mean curve with squared-error loss using the same order-2 geometry and native C++ solvers. |
+| `fit.projection.trend.filtering()` | Fit centered order-2 curves on fixed directions or learn directions by projection pursuit; supports Gaussian and binomial losses. |
+| `cv.projection.trend.filtering()` | Select component counts and mean-loss penalties using supplied, optionally grouped folds; repeat all direction learning within each training split. |
 
 For continuous outcomes, fit an explicit penalty path and assess both association
 and held-out prediction:

@@ -3,7 +3,7 @@
 Generated from the current source by `Rscript scripts/audit_api_guide.R --write`.
 Companion to [the function guide](../../../vignettes/function-guide.Rmd).
 
-There are 71 explicit exports: 71 local functions and 0 dgraphs re-exports; 106 S3 registrations are counted separately.
+There are 73 explicit exports: 73 local functions and 0 dgraphs re-exports; 112 S3 registrations are counted separately.
 
 Counts below include `...` as one argument and exclude arguments forwarded through it.
 Defaults are unevaluated source expressions. The guide is checked for exactly one catalog row per export.
@@ -71,6 +71,18 @@ compare.synthetic.dataset(x, y, tolerance = c(1e-12, 1e-10))
 ```r
 cv.masked.graph.field(operator, vertex, y, group, lambdas = 10^seq(-6, 2, length.out = 17), outer.folds = 5L,
     inner.folds = 4L, seed = 1L, fold.id = NULL, progress = NULL)
+```
+
+### cv.projection.trend.filtering
+
+18 arguments. Source: [R/projection_trend_filtering_cv.R](../../../R/projection_trend_filtering_cv.R#L41).
+
+```r
+cv.projection.trend.filtering(X, y, foldid, lambda.grid, nterms.grid = c(0L, 1L, 2L), curve.ridge.grid = 0.001,
+    family = c("gaussian", "binomial"), directions = NULL, direction.search = c("learned",
+        "fixed"), weights = NULL, offset = NULL, groups = NULL, preprocessing = c("scale",
+        "isotropic", "none"), seed = 1L, control = list(), backend = c("auto", "dense", "banded"),
+    keep.fits = FALSE, warn = TRUE)
 ```
 
 ### fit.chart.kernel
@@ -237,6 +249,17 @@ fit.neighbor.probability(X = NULL, y, method = c("knn", "case_raw", "case_correc
     distances = NULL, metric = c("euclidean", "chebyshev", "linf.simplex"), normalization = c("none",
         "sum", "max"), id = NULL, group = NULL, foldid = NULL, selection = c("min", "one.se",
         "locality.one.se"), search = c("auto", "ann", "brute"), eps = 0)
+```
+
+### fit.projection.trend.filtering
+
+15 arguments. Source: [R/projection_trend_filtering.R](../../../R/projection_trend_filtering.R#L82).
+
+```r
+fit.projection.trend.filtering(X, y, lambda, family = c("gaussian", "binomial"), directions = NULL, direction.search = c("learned",
+    "fixed"), nterms = NULL, weights = NULL, offset = NULL, curve.ridge = 0.001, preprocessing = c("scale",
+    "isotropic", "none"), seed = 1L, control = list(), backend = c("auto", "dense", "banded"),
+    warn = TRUE)
 ```
 
 ### fit.ps.lps
@@ -826,6 +849,7 @@ S3method(fitted,lps)
 S3method(fitted,malps)
 S3method(fitted,metric.graph.lowpass.fit)
 S3method(fitted,metric.graph.lowpass.refit)
+S3method(fitted,projection.trend.filtering.fit)
 S3method(fitted,ps_lps)
 S3method(fitted,pttf.trend.filtering.fit)
 S3method(fitted,slpl_tf)
@@ -846,6 +870,8 @@ S3method(predict,lpl_tf)
 S3method(predict,lps)
 S3method(predict,malps)
 S3method(predict,neighbor.probability.fit)
+S3method(predict,projection.trend.filtering.cv)
+S3method(predict,projection.trend.filtering.fit)
 S3method(predict,slpl_tf)
 S3method(print,chart_kernel)
 S3method(print,density_fit)
@@ -863,6 +889,7 @@ S3method(print,malps)
 S3method(print,malps_bootstrap)
 S3method(print,metric.graph.lowpass.fit)
 S3method(print,metric.graph.lowpass.refit)
+S3method(print,projection.trend.filtering.fit)
 S3method(print,ps_lps)
 S3method(print,pttf.trend.filtering.fit)
 S3method(print,pttf_operator)
@@ -895,6 +922,7 @@ S3method(residuals,lps)
 S3method(residuals,malps)
 S3method(residuals,metric.graph.lowpass.fit)
 S3method(residuals,metric.graph.lowpass.refit)
+S3method(residuals,projection.trend.filtering.fit)
 S3method(residuals,ps_lps)
 S3method(residuals,pttf.trend.filtering.fit)
 S3method(residuals,slpl_tf)
@@ -914,6 +942,7 @@ S3method(summary,lps)
 S3method(summary,malps)
 S3method(summary,metric.graph.lowpass.fit)
 S3method(summary,metric.graph.lowpass.refit)
+S3method(summary,projection.trend.filtering.fit)
 S3method(summary,ps_lps)
 S3method(summary,pttf.trend.filtering.fit)
 S3method(summary,slpl_tf)

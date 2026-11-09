@@ -66,6 +66,11 @@ reference:
   - predict.gaussian.trend.filtering.fit
   - fit.logistic.trend.filtering
   - predict.logistic.trend.filtering.fit
+- title: "Projection pursuit with trend filtering"
+  contents:
+  - fit.projection.trend.filtering
+  - cv.projection.trend.filtering
+  - predict.projection.trend.filtering.fit
 - title: "Hessian-energy regression"
   contents:
   - ssrhe.hessian.operator
@@ -136,4 +141,5 @@ articles:
   - local-simplex-charts
   - pca-pls-chart-comparison
   - logistic-trend-filtering
+  - projection-trend-filtering
   - verified-heat-fallback

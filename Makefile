@@ -36,6 +36,10 @@ test-logistic-tf:
 test-gaussian-tf:
 	Rscript scripts/run_test_group.R gaussian-tf
 
+.PHONY: test-projection-tf
+test-projection-tf:
+	Rscript scripts/run_test_group.R projection-tf
+
 test-ps-lps:
 	Rscript scripts/run_test_group.R ps-lps
 

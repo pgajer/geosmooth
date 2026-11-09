@@ -35,6 +35,9 @@ group.files <- list(
                       "test-logistic-trend-filtering-stagnation.R",
                       "test-logistic-trend-filtering-assessment.R", "test-trend-filtering-cv-scaling.R"),
     "gaussian-tf" = c("test-gaussian-trend-filtering.R", "test-gaussian-trend-filtering-assessment.R", "test-trend-filtering-cv-scaling.R"),
+    "projection-tf" = c("test-projection-trend-filtering.R",
+                        "test-projection-trend-filtering-search.R",
+                        "test-projection-trend-filtering-cv.R"),
     "ps-lps" = "test-ps-lps.R",
     od = grep("^test-state-density-od", all.files, value = TRUE),
     graph = grep(
