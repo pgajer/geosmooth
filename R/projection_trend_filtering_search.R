@@ -42,7 +42,7 @@
     }
     evaluate <- function(state, u, j, start, stage) {
         calls <<- calls+1L
-        candidate <- tryCatch(.ptf.update(problem, state, j, u), error = identity)
+        candidate <- tryCatch(.ptf.update(problem, state, j, u), error = .ptf.numerical.error)
         if (inherits(candidate, "error")) {
             record(start, stage, j, conditionMessage(candidate), direction = u)
             return(NULL)

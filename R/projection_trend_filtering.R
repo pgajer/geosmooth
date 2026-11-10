@@ -333,6 +333,11 @@ fit.projection.trend.filtering <- function(
 }
 
 .ptf.diagnose <- function(problem, state) {
+    .ptf.observed(problem$observer, "certificate", list(),
+        .ptf.diagnose.core(problem, state), identity)
+}
+
+.ptf.diagnose.core <- function(problem, state) {
     eta <- problem$offset + state$intercept + rowSums(state$terms)
     residual <- problem$w * (if (problem$family == "gaussian") eta-problem$y else
         stats::plogis(eta)-problem$y)
@@ -377,13 +382,19 @@ fit.projection.trend.filtering <- function(
 }
 
 .ptf.update <- function(problem, state, j, u = state$directions[j, ]) {
+    .ptf.observed(problem$observer, "component", list(term = j, direction = u),
+        .ptf.update.core(problem, state, j, u),
+        function(value) list(status = "complete", diagnostics = value$components[[j]]$fit$diagnostics))
+}
+
+.ptf.update.core <- function(problem, state, j, u = state$directions[j, ]) {
     x <- .ptf.projection(problem, u)
     offset <- problem$offset + state$intercept + rowSums(state$terms)-state$terms[, j]
     fit <- .fit.univariate.trend.filtering(x, problem$y,
         problem$lambda*sum(problem$weights), weights = problem$weights, offset = offset,
         curve.ridge = problem$rho*sum(problem$weights), family = problem$family,
         control = problem$control$inner, backend = problem$backend, warn = FALSE,
-        before.fit = problem$before.fit)
+        before.fit = problem$before.fit, observer = problem$observer)
     if (!isTRUE(fit$diagnostics$converged))
         stop("component_solver_", fit$diagnostics$status, call. = FALSE)
     curve <- as.numeric(stats::predict(fit, x, offset = numeric(length(x)), type = "link"))
@@ -396,26 +407,48 @@ fit.projection.trend.filtering <- function(
 }
 
 .ptf.backfit <- function(problem, state) {
+    .ptf.observed(problem$observer, "joint", list(checks = state$checks),
+        .ptf.backfit.core(problem, state), function(value)
+            list(status = value$status, certified = value$converged,
+                 checks = value$checks, completed.sweeps = value$sweeps,
+                 attempted.updates = value$solver.calls))
+}
+
+.ptf.backfit.core <- function(problem, state) {
     check <- .ptf.diagnose(problem, state)
     history <- check$objective; calls <- 0L; status <- "iteration_limit"; sweeps <- 0L
     if (check$converged) status <- "converged"
     else for (s in seq_len(problem$control$max.sweeps)) {
         if (!is.null(problem$counter)) problem$counter$sweeps <- problem$counter$sweeps+1
+        sweep.id <- .ptf.observe.begin(problem$observer, "sweep", list(index = s))
         previous <- state
+        updated <- 0L
         failure <- NULL
         for (j in seq_along(state$components)) {
             calls <- calls + 1L
-            candidate <- tryCatch(.ptf.update(problem, state, j), error = identity)
+            candidate <- tryCatch(.ptf.update(problem, state, j), error = .ptf.numerical.error)
             if (inherits(candidate, "error")) { failure <- conditionMessage(candidate); break }
             state <- candidate
+            updated <- updated+1L
         }
-        if (!is.null(failure)) { state <- previous; status <- failure; break }
+        if (!is.null(failure)) {
+            state <- previous; status <- failure
+            .ptf.observe.end(problem$observer, sweep.id,
+                list(status = "failed", reason = failure, completed.updates = updated,
+                     rollback = TRUE))
+            break
+        }
         check.new <- .ptf.diagnose(problem, state)
         if (!is.finite(check.new$objective) || check.new$objective > utils::tail(history, 1L) +
             problem$control$objective.tolerance*max(1, abs(utils::tail(history, 1L)))) {
-            state <- previous; status <- "objective_increase"; break
+            state <- previous; status <- "objective_increase"
+            .ptf.observe.end(problem$observer, sweep.id,
+                list(status = status, completed.updates = updated, checks = check.new, rollback = TRUE))
+            break
         }
         sweeps <- s; check <- check.new; history <- c(history, check$objective)
+        .ptf.observe.end(problem$observer, sweep.id,
+            list(status = "complete", completed.updates = updated, checks = check, rollback = FALSE))
         if (check$converged) { status <- "converged"; break }
     }
     state$checks <- .ptf.diagnose(problem, state)

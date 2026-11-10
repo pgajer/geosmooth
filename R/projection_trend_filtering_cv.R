@@ -103,14 +103,14 @@ cv.projection.trend.filtering <- function(
                                             "fold", as.character(fold))
             fit <- tryCatch(do.call(fit.projection.trend.filtering,c(list(
                 X=X[train,,drop=FALSE],y=y[train],weights=weights[train],
-                offset=if (is.null(offset)) NULL else offsets[train]),args)),error=identity)
+                offset=if (is.null(offset)) NULL else offsets[train]),args)),error=.ptf.numerical.error)
             if (keep.fits) retained[[candidate]][[paste(r,fold,sep=":")]] <- fit
             status <- if (inherits(fit,"error")) conditionMessage(fit) else fit$status
             valid <- !inherits(fit,"error") && .ptf.eligible(fit)
             loss.sum <- NA_real_
             if (valid) {
                 pred <- tryCatch(as.numeric(stats::predict(fit,X[test,,drop=FALSE],
-                    offset=if (is.null(offset)) NULL else offsets[test],type="link")),error=identity)
+                    offset=if (is.null(offset)) NULL else offsets[test],type="link")),error=.ptf.numerical.error)
                 valid <- !inherits(pred,"error") && length(pred)==sum(test) && all(is.finite(pred))
                 if (valid) {
                     predictions[[r]][test,candidate] <- pred
@@ -153,7 +153,7 @@ cv.projection.trend.filtering <- function(
         fit <- tryCatch(fit.projection.trend.filtering(X,y,spec$lambda,family=family,
             directions=if (spec$nterms==0) NULL else directions,direction.search=direction.search,
             nterms=spec$nterms,weights=weights,offset=offset,curve.ridge=spec$curve.ridge,
-            preprocessing=preprocessing,seed=seed,control=control,backend=backend,warn=FALSE),error=identity)
+            preprocessing=preprocessing,seed=seed,control=control,backend=backend,warn=FALSE),error=.ptf.numerical.error)
         if (inherits(fit,"error") || !.ptf.eligible(fit)) {
             selected <- NULL; status <- "full_refit_failed"
         } else status <- "complete"

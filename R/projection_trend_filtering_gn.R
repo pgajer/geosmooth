@@ -49,7 +49,7 @@
 
 .ptf.gn.trial <- function(problem, state, term, u) {
     problem$counter$evaluations <- problem$counter$evaluations+1
-    trial <- tryCatch(.ptf.update(problem, state, term, u), error = identity)
+    trial <- tryCatch(.ptf.update(problem, state, term, u), error = .ptf.numerical.error)
     if (inherits(trial, "error")) return(list(state = NULL, status = conditionMessage(trial)))
     joint <- .ptf.backfit(problem, trial)
     list(state = if (joint$converged) joint else NULL, status = joint$status)
@@ -59,7 +59,7 @@
     accepted <- 0L; final.mu <- NA_real_; stopping <- "step_limit"
     for (iteration in seq_len(problem$control$gn.max.steps)) {
         fit <- state$components[[term]]$fit; u <- state$directions[term, ]
-        g <- tryCatch(.ptf.curve.slopes(fit), error = identity)
+        g <- tryCatch(.ptf.curve.slopes(fit), error = .ptf.numerical.error)
         if (inherits(g, "error") || any(!is.finite(g))) {
             stopping <- "nonfinite_slope"
             record(start, "refinement", term, stopping, state, u = u)
@@ -78,7 +78,7 @@
         proposal <- tryCatch({
             eq <- .ptf.gn.equations(problem$Z, problem$y, eta, g, problem$w, problem$family)
             list(eq = eq, inc = .ptf.gn.increment(eq$A, eq$b, u))
-        }, error = identity)
+        }, error = .ptf.numerical.error)
         if (inherits(proposal, "error")) {
             stopping <- "proposal_failed"
             record(start, "refinement", term, stopping, state, u = u)
@@ -104,7 +104,7 @@
                     if (any(diff((sort(unique(t))-min(t))/diff(range(t))) <= 0))
                         stop("collapsed_projection")
                     TRUE
-                }, error = identity)
+                }, error = .ptf.numerical.error)
                 if (inherits(geometry, "error")) {
                     record(start, "refinement", term, conditionMessage(geometry), u = proposal,
                            mu = final.mu, fraction = fraction)
@@ -167,7 +167,7 @@
                 if (any(diff((sort(unique(t))-min(t))/diff(range(t))) <= 0))
                     stop("collapsed_projection")
                 TRUE
-            }, error = identity)
+            }, error = .ptf.numerical.error)
             candidate <- NULL; proposals <- 0L; mu <- NA_real_
             if (inherits(geometry, "error")) result <- conditionMessage(geometry) else {
                 admissible <- admissible+1L
@@ -176,7 +176,7 @@
                 expanded$terms <- cbind(expanded$terms, 0)
                 expanded$components <- c(expanded$components, list(NULL))
                 budget$evaluations <- budget$evaluations+1
-                initial <- tryCatch(.ptf.update(problem, expanded, term, u), error = identity)
+                initial <- tryCatch(.ptf.update(problem, expanded, term, u), error = .ptf.numerical.error)
                 if (inherits(initial, "error")) result <- conditionMessage(initial) else
                     if (all(initial$terms[, term] == 0)) {
                         completed <- completed+1L; result <- "flat_start"
@@ -278,6 +278,7 @@
             list(value = anchor, status = "certified")
         }, error = function(e) {
             if (inherits(e, "projection_fit_budget")) stop(e)
+            .ptf.numerical.error(e)
             list(value = NA_real_, status = conditionMessage(e))
         })
         values[j] <- result$value
