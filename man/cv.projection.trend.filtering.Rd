@@ -13,7 +13,7 @@ cv.projection.trend.filtering(
   curve.ridge.grid = 0.001,
   family = c("gaussian", "binomial"),
   directions = NULL,
-  direction.search = c("learned", "fixed"),
+  direction.search = c("learned", "fixed", "gn", "pls"),
   weights = NULL,
   offset = NULL,
   groups = NULL,
@@ -49,7 +49,11 @@ Entries for dropped constant columns must be zero. In learned mode these
 are additional candidates; in fixed mode these are the fitted directions.}
 
 \item{direction.search}{\code{"fixed"} fits supplied directions (coordinate
-directions when omitted); \code{"learned"} selects and refines directions.}
+directions when omitted); \code{"learned"} selects and refines directions
+with pattern search. \code{"gn"} uses multistart damped Gauss--Newton
+proposals; \code{"pls"} uses one covariance start per component with the
+same Gauss--Newton refinement. The latter two modes construct their
+own starts and do not accept supplied directions.}
 
 \item{weights}{Positive finite observation weights, default one.}
 
@@ -62,7 +66,8 @@ they do not automatically change observation weights.}
 \item{preprocessing}{\code{"scale"} centers and scales each nonconstant column;
 \code{"isotropic"} centers and uses a common scale, preserving rotations and
 distance ratios; \code{"none"} leaves retained columns unchanged. All
-transformations use training weights only.}
+transformations use training weights only. The default is \code{"isotropic"}
+for \code{"gn"} and \code{"pls"}, and \code{"scale"} otherwise.}
 
 \item{seed}{Integer random seed. Local randomness leaves the caller's RNG
 state unchanged.}
@@ -73,7 +78,12 @@ state unchanged.}
 Search controls are \code{starts=2}, \code{sparse.directions=8},
 \code{dense.directions=8}, \code{refinement.passes=2}, \code{refinement.proposals=16},
 \code{steps=c(0.25,0.1,0.04,0.01)}, and \code{improvement.tolerance=1e-9}.
-Zero refinement passes select from a fixed candidate bank.}
+Zero refinement passes select from a fixed candidate bank.
+The \code{"gn"} and \code{"pls"} modes instead use \code{gn.max.steps=8} accepted
+proposals and \code{gn.max.fits=40} native fits per start, with
+\code{gn.shared.fits=400} shared fits for previously selected components.
+\code{stream.key=character()} can identify a dataset or representation;
+local start streams also depend on the seed and component number.}
 
 \item{backend}{Univariate solver: \code{"auto"}, \code{"dense"}, or \code{"banded"}.}
 
@@ -88,6 +98,10 @@ candidate-by-split \code{fold.results}, held-out \code{predictions} (logits for
 binomial data), \code{foldid}, optional \code{fold.fits}, \code{selected.index}, \code{fit},
 and \code{status}. \code{selected.index} is NULL if validation or the full refit
 failed; \code{cv.selected.index} retains the validation choice when applicable.
+For Gauss--Newton modes, \code{fold.results} separately records
+\code{numerical.certified}, \code{search.eligible}, \code{cv.eligible},
+\code{search.status}, requested/effective component counts and native-fit
+counts, including when \code{keep.fits=FALSE}.
 }
 \description{
 Select explicit mean-loss penalties and component counts using supplied
@@ -98,7 +112,11 @@ direction selection, refinement and joint fitting.
 Scores pool weighted held-out losses within each repeat and then
 average repeats. Gaussian selection uses MSE; binomial selection uses
 stable log loss from logits. Every required fold must converge and
-predict every held-out row. Equal scores select the first grid row.
+predict every held-out row. Fixed and pattern-search modes select the
+first grid row on equal scores.
+Gauss--Newton modes also require explicit search eligibility and resolve
+equal CV scores by fewer requested components, stronger penalty, then
+grid order. Their random streams are keyed by repeat and fold.
 Penalties already use mean loss, so no additional fold-mass multiplier
 is applied by this wrapper. A final full-data refit is performed only for
 the selected candidate. Its failure is reported without substituting

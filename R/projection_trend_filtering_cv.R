@@ -19,7 +19,11 @@
 #' @details Scores pool weighted held-out losses within each repeat and then
 #'   average repeats. Gaussian selection uses MSE; binomial selection uses
 #'   stable log loss from logits. Every required fold must converge and
-#'   predict every held-out row. Equal scores select the first grid row.
+#'   predict every held-out row. Fixed and pattern-search modes select the
+#'   first grid row on equal scores.
+#'   Gauss--Newton modes also require explicit search eligibility and resolve
+#'   equal CV scores by fewer requested components, stronger penalty, then
+#'   grid order. Their random streams are keyed by repeat and fold.
 #'   Penalties already use mean loss, so no additional fold-mass multiplier
 #'   is applied by this wrapper. A final full-data refit is performed only for
 #'   the selected candidate. Its failure is reported without substituting
@@ -31,6 +35,10 @@
 #'   binomial data), `foldid`, optional `fold.fits`, `selected.index`, `fit`,
 #'   and `status`. `selected.index` is NULL if validation or the full refit
 #'   failed; `cv.selected.index` retains the validation choice when applicable.
+#'   For Gauss--Newton modes, `fold.results` separately records
+#'   `numerical.certified`, `search.eligible`, `cv.eligible`,
+#'   `search.status`, requested/effective component counts and native-fit
+#'   counts, including when `keep.fits=FALSE`.
 #' @examples
 #' X <- matrix(seq(-1, 1, length.out = 24), ncol = 1)
 #' cv <- cv.projection.trend.filtering(X, sin(2*X[,1]),
@@ -41,13 +49,14 @@
 cv.projection.trend.filtering <- function(
     X, y, foldid, lambda.grid, nterms.grid = c(0L, 1L, 2L),
     curve.ridge.grid = 0.001, family = c("gaussian", "binomial"),
-    directions = NULL, direction.search = c("learned", "fixed"),
+    directions = NULL, direction.search = c("learned", "fixed", "gn", "pls"),
     weights = NULL, offset = NULL, groups = NULL,
     preprocessing = c("scale", "isotropic", "none"), seed = 1L,
     control = list(), backend = c("auto", "dense", "banded"),
     keep.fits = FALSE, warn = TRUE) {
     call <- match.call(); family <- match.arg(family)
     direction.search <- match.arg(direction.search)
+    if (missing(preprocessing) && direction.search %in% c("gn", "pls")) preprocessing <- "isotropic"
     preprocessing <- match.arg(preprocessing); backend <- match.arg(backend)
     .ptf.logical(keep.fits,"keep.fits"); .ptf.logical(warn,"warn")
     control <- .ptf.control(control); .ptf.scalar(seed,"seed",integer=TRUE)
@@ -89,12 +98,15 @@ cv.projection.trend.filtering <- function(
         if (keep.fits) retained[[candidate]] <- list()
         for (r in seq_len(ncol(folds))) for (fold in sort(unique(folds[,r]))) {
             test <- folds[,r]==fold; train <- !test
+            if (direction.search %in% c("gn", "pls"))
+                args$control$stream.key <- c(control$stream.key, "repeat", as.character(r),
+                                            "fold", as.character(fold))
             fit <- tryCatch(do.call(fit.projection.trend.filtering,c(list(
                 X=X[train,,drop=FALSE],y=y[train],weights=weights[train],
                 offset=if (is.null(offset)) NULL else offsets[train]),args)),error=identity)
             if (keep.fits) retained[[candidate]][[paste(r,fold,sep=":")]] <- fit
             status <- if (inherits(fit,"error")) conditionMessage(fit) else fit$status
-            valid <- !inherits(fit,"error") && isTRUE(fit$converged)
+            valid <- !inherits(fit,"error") && .ptf.eligible(fit)
             loss.sum <- NA_real_
             if (valid) {
                 pred <- tryCatch(as.numeric(stats::predict(fit,X[test,,drop=FALSE],
@@ -106,9 +118,20 @@ cv.projection.trend.filtering <- function(
                         if (family=="gaussian") 2 else 1
                 } else status <- if (inherits(pred,"error")) conditionMessage(pred) else "nonfinite_predictions"
             }
-            ledger[[length(ledger)+1L]] <- data.frame(candidate=candidate,repeat.id=r,fold=fold,
+            row <- data.frame(candidate=candidate,repeat.id=r,fold=fold,
                 training.mass=sum(weights[train]),validation.mass=sum(weights[test]),
                 loss.sum=loss.sum,converged=valid,status=status)
+            if (direction.search %in% c("gn", "pls")) {
+                failed <- inherits(fit,"error")
+                row$numerical.certified <- !failed && isTRUE(fit$checks$converged)
+                row$search.eligible <- !failed && isTRUE(fit$cv.eligible)
+                row$cv.eligible <- valid
+                row$search.status <- if (failed) status else fit$search.status
+                row$requested.nterms <- spec$nterms
+                row$effective.nterms <- if (failed) NA_integer_ else fit$nterms
+                row$native.fits <- if (failed) NA_real_ else fit$counters$native.fits
+            }
+            ledger[[length(ledger)+1L]] <- row
         }
     }
     ledger <- do.call(rbind,ledger)
@@ -119,6 +142,11 @@ cv.projection.trend.filtering <- function(
     },numeric(1))
     candidates$eligible <- is.finite(candidates$cv.loss)
     choice <- if (any(candidates$eligible)) which.min(ifelse(candidates$eligible,candidates$cv.loss,Inf)) else NULL
+    if (!is.null(choice) && direction.search %in% c("gn", "pls")) {
+        take <- which(candidates$eligible)
+        choice <- take[order(candidates$cv.loss[take], candidates$nterms[take],
+                             -candidates$lambda[take], take)[1L]]
+    }
     fit <- NULL; selected <- choice; status <- "no_eligible_candidate"
     if (!is.null(choice)) {
         spec <- candidates[choice,]
@@ -126,7 +154,7 @@ cv.projection.trend.filtering <- function(
             directions=if (spec$nterms==0) NULL else directions,direction.search=direction.search,
             nterms=spec$nterms,weights=weights,offset=offset,curve.ridge=spec$curve.ridge,
             preprocessing=preprocessing,seed=seed,control=control,backend=backend,warn=FALSE),error=identity)
-        if (inherits(fit,"error") || !isTRUE(fit$converged)) {
+        if (inherits(fit,"error") || !.ptf.eligible(fit)) {
             selected <- NULL; status <- "full_refit_failed"
         } else status <- "complete"
     }

@@ -14,7 +14,11 @@
 #'   Entries for dropped constant columns must be zero. In learned mode these
 #'   are additional candidates; in fixed mode these are the fitted directions.
 #' @param direction.search `"fixed"` fits supplied directions (coordinate
-#'   directions when omitted); `"learned"` selects and refines directions.
+#'   directions when omitted); `"learned"` selects and refines directions
+#'   with pattern search. `"gn"` uses multistart damped Gauss--Newton
+#'   proposals; `"pls"` uses one covariance start per component with the
+#'   same Gauss--Newton refinement. The latter two modes construct their
+#'   own starts and do not accept supplied directions.
 #' @param nterms Number of supplied directions in fixed mode; maximum number
 #'   of components in learned mode. Defaults to the supplied row count, all
 #'   nonconstant coordinates in fixed mode, or two in learned mode. Zero fits
@@ -26,7 +30,8 @@
 #' @param preprocessing `"scale"` centers and scales each nonconstant column;
 #'   `"isotropic"` centers and uses a common scale, preserving rotations and
 #'   distance ratios; `"none"` leaves retained columns unchanged. All
-#'   transformations use training weights only.
+#'   transformations use training weights only. The default is `"isotropic"`
+#'   for `"gn"` and `"pls"`, and `"scale"` otherwise.
 #' @param seed Integer random seed. Local randomness leaves the caller's RNG
 #'   state unchanged.
 #' @param control Named list. `max.sweeps=200`, `tolerance=1e-7`,
@@ -36,6 +41,11 @@
 #'   `dense.directions=8`, `refinement.passes=2`, `refinement.proposals=16`,
 #'   `steps=c(0.25,0.1,0.04,0.01)`, and `improvement.tolerance=1e-9`.
 #'   Zero refinement passes select from a fixed candidate bank.
+#'   The `"gn"` and `"pls"` modes instead use `gn.max.steps=8` accepted
+#'   proposals and `gn.max.fits=40` native fits per start, with
+#'   `gn.shared.fits=400` shared fits for previously selected components.
+#'   `stream.key=character()` can identify a dataset or representation;
+#'   local start streams also depend on the seed and component number.
 #' @param backend Univariate solver: `"auto"`, `"dense"`, or `"banded"`.
 #' @param warn Warn when joint fitting or a terminal search failure makes the
 #'   returned fit ineligible. Failed candidates are retained in `search.history`.
@@ -55,9 +65,30 @@
 #'   Fixed-direction fitting is convex. Backfitting updates a curve with the
 #'   other components supplied as an offset and checks joint stationarity,
 #'   dual feasibility, complementarity and the original objective after each
-#'   sweep. Learned directions use greedy additions and derivative-free
+#'   sweep. The `"learned"` mode uses greedy additions and derivative-free
 #'   tangent proposals, followed by joint refitting. The search is nonconvex;
 #'   its recorded stopping status is not a global optimality certificate.
+#'   Gauss--Newton modes use one-sided derivatives of the falling-factorial
+#'   curve, solve in the tangent space of the unit direction, and accept only
+#'   certified joint-objective improvements. Binomial curvature is floored
+#'   at `1e-6` without changing the likelihood score. All curve fits use the
+#'   original responses and offsets, including for binomial outcomes.
+#'   Use `preprocessing="isotropic"` to preserve the geometry of supplied
+#'   score coordinates. PCA and variance-threshold tuning are not performed
+#'   automatically by this function.
+#'   In `"gn"` mode the ordered starts are coordinate axes, weighted ridge,
+#'   weighted covariance, sliced inverse regression, and twice as many random
+#'   directions as retained coordinates. Sign-equivalent duplicates retain
+#'   their first origin. SIR uses two outcome classes for the first Bernoulli
+#'   component with unit trial weights; otherwise it slices the centered
+#'   working response by weight mass, keeping exact response ties together.
+#'   Both supervised seeds and fitted curves eliminate a weighted intercept.
+#'   A start must obtain a completed joint certificate before it can be
+#'   selected. A per-start limit can retain that certificate; exhaustion of
+#'   the candidate or shared allowance makes the candidate ineligible.
+#'   With q retained coordinates and requested K components, the default
+#'   native-fit caps are `40*K*(3*q+3)+400` for `"gn"` and `40*K+400`
+#'   for `"pls"`. An intercept-only fit makes no native curve-fitting calls.
 #'   Directions with fewer than four distinct projections are ineligible.
 #'   Exact ties are retained. Distinct projected locations that collapse
 #'   during floating-point normalization produce an explicit failed fit;
@@ -72,6 +103,12 @@
 #'   `checks$converged` reports joint numerical optimality; `converged` also
 #'   excludes terminal search failures. Search termination is recorded
 #'   separately in `search.status`. Ordinary predictions are NA for failed fits.
+#'   Gauss--Newton modes additionally return `numerical.certified`,
+#'   `cv.eligible`, `counters`, `curve.diagnostics`, and `search.banks`.
+#'   An interrupted search may preserve a numerical certificate while being
+#'   ineligible for CV. Requested and effective component counts can differ.
+#'   In `counters`, `candidate.fits` counts returned attempts, while
+#'   `completed.candidate.fits` counts eligible, certified results.
 #' @examples
 #' x <- seq(-1, 1, length.out = 24)
 #' X <- cbind(x, cos(3*x))
@@ -81,14 +118,17 @@
 #' @export
 fit.projection.trend.filtering <- function(
     X, y, lambda, family = c("gaussian", "binomial"), directions = NULL,
-    direction.search = c("learned", "fixed"), nterms = NULL,
+    direction.search = c("learned", "fixed", "gn", "pls"), nterms = NULL,
     weights = NULL, offset = NULL, curve.ridge = 0.001,
     preprocessing = c("scale", "isotropic", "none"), seed = 1L,
     control = list(), backend = c("auto", "dense", "banded"), warn = TRUE) {
     call <- match.call()
     family <- match.arg(family); direction.search <- match.arg(direction.search)
+    if (missing(preprocessing) && direction.search %in% c("gn", "pls")) preprocessing <- "isotropic"
     preprocessing <- match.arg(preprocessing); backend <- match.arg(backend)
     control <- .ptf.control(control)
+    if (direction.search %in% c("gn", "pls") && !is.null(directions))
+        stop("gn and pls construct their own starts; omit directions.", call. = FALSE)
     .ptf.scalar(lambda, "lambda", infinite = TRUE)
     .ptf.scalar(curve.ridge, "curve.ridge")
     .ptf.scalar(seed, "seed", integer = TRUE)
@@ -112,7 +152,9 @@ fit.projection.trend.filtering <- function(
         search <- list(history = data.frame(), status = "fixed_directions",
                        starts = data.frame(), solver.calls = state$solver.calls)
     } else {
-        searched <- .ptf.with.seed(seed, .ptf.search(problem, directions, nterms))
+        searched <- if (direction.search %in% c("gn", "pls"))
+            .ptf.gn.search(problem, nterms, seed, direction.search) else
+            .ptf.with.seed(seed, .ptf.search(problem, directions, nterms))
         state <- searched$state; search <- searched$search
     }
     out <- c(list(call = call, family = family, order = 2L, X = problem$X,
@@ -124,6 +166,7 @@ fit.projection.trend.filtering <- function(
     out$nterms <- ncol(state$terms)
     out$search.history <- search$history; out$search.status <- search$status
     out$search.starts <- search$starts; out$solver.calls <- search$solver.calls
+    if (!is.null(search$banks)) out$search.banks <- search$banks
     class(out) <- "projection.trend.filtering.fit"
     if (warn && !out$converged)
         warning("Projection fit failed convergence checks: ", out$status,
@@ -151,19 +194,24 @@ fit.projection.trend.filtering <- function(
         objective.tolerance = 1e-10, inner = list(), starts = 2L,
         sparse.directions = 8L, dense.directions = 8L,
         refinement.passes = 2L, refinement.proposals = 16L,
-        steps = c(.25, .1, .04, .01), improvement.tolerance = 1e-9)
+        steps = c(.25, .1, .04, .01), improvement.tolerance = 1e-9,
+        gn.max.steps = 8L, gn.max.fits = 40L, gn.shared.fits = 400L,
+        stream.key = character())
     if (!is.list(control) || (length(control) && (is.null(names(control)) ||
         any(!names(control) %in% names(defaults)) || anyDuplicated(names(control)))))
         stop("Unknown or unnamed control fields.", call. = FALSE)
     out <- utils::modifyList(defaults, control)
     for (nm in c("max.sweeps", "starts", "sparse.directions", "dense.directions",
-                 "refinement.passes", "refinement.proposals"))
+                 "refinement.passes", "refinement.proposals",
+                 "gn.max.steps", "gn.max.fits", "gn.shared.fits"))
         .ptf.scalar(out[[nm]], nm, integer = TRUE, positive = nm %in% c("max.sweeps", "starts"))
     for (nm in c("tolerance", "gap.tolerance", "objective.tolerance", "improvement.tolerance"))
         .ptf.scalar(out[[nm]], nm, positive = TRUE)
     if (!is.numeric(out$steps) || !length(out$steps) || any(!is.finite(out$steps)) || any(out$steps <= 0))
         stop("steps must be a positive finite numeric vector.", call. = FALSE)
     if (!is.list(out$inner)) stop("inner must be a list.", call. = FALSE)
+    if (!is.character(out$stream.key) || anyNA(out$stream.key))
+        stop("stream.key must be a nonmissing character vector.", call. = FALSE)
     # Validate even when an intercept-only fit never calls the native solver.
     allowed <- c("tolerance", "gap.tolerance", "max.iterations", "max.workspace.bytes")
     if (length(out$inner) && (is.null(names(out$inner)) ||
@@ -334,7 +382,8 @@ fit.projection.trend.filtering <- function(
     fit <- .fit.univariate.trend.filtering(x, problem$y,
         problem$lambda*sum(problem$weights), weights = problem$weights, offset = offset,
         curve.ridge = problem$rho*sum(problem$weights), family = problem$family,
-        control = problem$control$inner, backend = problem$backend, warn = FALSE)
+        control = problem$control$inner, backend = problem$backend, warn = FALSE,
+        before.fit = problem$before.fit)
     if (!isTRUE(fit$diagnostics$converged))
         stop("component_solver_", fit$diagnostics$status, call. = FALSE)
     curve <- as.numeric(stats::predict(fit, x, offset = numeric(length(x)), type = "link"))
@@ -351,6 +400,7 @@ fit.projection.trend.filtering <- function(
     history <- check$objective; calls <- 0L; status <- "iteration_limit"; sweeps <- 0L
     if (check$converged) status <- "converged"
     else for (s in seq_len(problem$control$max.sweeps)) {
+        if (!is.null(problem$counter)) problem$counter$sweeps <- problem$counter$sweeps+1
         previous <- state
         failure <- NULL
         for (j in seq_along(state$components)) {
@@ -436,7 +486,7 @@ predict.projection.trend.filtering.fit <- function(object, newdata = NULL,
     eta <- offset + object$intercept + rowSums(terms)
     ans <- switch(type, terms = terms, link = eta,
         response = if (object$family == "binomial") stats::plogis(eta) else eta)
-    if (!object$converged && !allow.unconverged) ans[] <- NA_real_
+    if (!.ptf.eligible(object) && !allow.unconverged) ans[] <- NA_real_
     attr(ans, "outside.range") <- outside
     if (type == "terms") { attr(ans, "intercept") <- object$intercept; attr(ans, "offset") <- offset }
     ans

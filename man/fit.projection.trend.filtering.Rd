@@ -10,7 +10,7 @@ fit.projection.trend.filtering(
   lambda,
   family = c("gaussian", "binomial"),
   directions = NULL,
-  direction.search = c("learned", "fixed"),
+  direction.search = c("learned", "fixed", "gn", "pls"),
   nterms = NULL,
   weights = NULL,
   offset = NULL,
@@ -38,7 +38,11 @@ Entries for dropped constant columns must be zero. In learned mode these
 are additional candidates; in fixed mode these are the fitted directions.}
 
 \item{direction.search}{\code{"fixed"} fits supplied directions (coordinate
-directions when omitted); \code{"learned"} selects and refines directions.}
+directions when omitted); \code{"learned"} selects and refines directions
+with pattern search. \code{"gn"} uses multistart damped Gauss--Newton
+proposals; \code{"pls"} uses one covariance start per component with the
+same Gauss--Newton refinement. The latter two modes construct their
+own starts and do not accept supplied directions.}
 
 \item{nterms}{Number of supplied directions in fixed mode; maximum number
 of components in learned mode. Defaults to the supplied row count, all
@@ -55,7 +59,8 @@ scale; default \code{0.001}. Positive ridge stabilizes component decomposition.}
 \item{preprocessing}{\code{"scale"} centers and scales each nonconstant column;
 \code{"isotropic"} centers and uses a common scale, preserving rotations and
 distance ratios; \code{"none"} leaves retained columns unchanged. All
-transformations use training weights only.}
+transformations use training weights only. The default is \code{"isotropic"}
+for \code{"gn"} and \code{"pls"}, and \code{"scale"} otherwise.}
 
 \item{seed}{Integer random seed. Local randomness leaves the caller's RNG
 state unchanged.}
@@ -66,7 +71,12 @@ state unchanged.}
 Search controls are \code{starts=2}, \code{sparse.directions=8},
 \code{dense.directions=8}, \code{refinement.passes=2}, \code{refinement.proposals=16},
 \code{steps=c(0.25,0.1,0.04,0.01)}, and \code{improvement.tolerance=1e-9}.
-Zero refinement passes select from a fixed candidate bank.}
+Zero refinement passes select from a fixed candidate bank.
+The \code{"gn"} and \code{"pls"} modes instead use \code{gn.max.steps=8} accepted
+proposals and \code{gn.max.fits=40} native fits per start, with
+\code{gn.shared.fits=400} shared fits for previously selected components.
+\code{stream.key=character()} can identify a dataset or representation;
+local start streams also depend on the seed and component number.}
 
 \item{backend}{Univariate solver: \code{"auto"}, \code{"dense"}, or \code{"banded"}.}
 
@@ -81,6 +91,12 @@ component fits, saved \code{preprocessing}, \code{checks}, \code{converged}, \co
 \code{checks$converged} reports joint numerical optimality; \code{converged} also
 excludes terminal search failures. Search termination is recorded
 separately in \code{search.status}. Ordinary predictions are NA for failed fits.
+Gauss--Newton modes additionally return \code{numerical.certified},
+\code{cv.eligible}, \code{counters}, \code{curve.diagnostics}, and \code{search.banks}.
+An interrupted search may preserve a numerical certificate while being
+ineligible for CV. Requested and effective component counts can differ.
+In \code{counters}, \code{candidate.fits} counts returned attempts, while
+\code{completed.candidate.fits} counts eligible, certified results.
 }
 \description{
 Fit a sum of piecewise-quadratic curves on fixed or learned linear
@@ -103,9 +119,30 @@ select a constant model.
 Fixed-direction fitting is convex. Backfitting updates a curve with the
 other components supplied as an offset and checks joint stationarity,
 dual feasibility, complementarity and the original objective after each
-sweep. Learned directions use greedy additions and derivative-free
+sweep. The \code{"learned"} mode uses greedy additions and derivative-free
 tangent proposals, followed by joint refitting. The search is nonconvex;
 its recorded stopping status is not a global optimality certificate.
+Gauss--Newton modes use one-sided derivatives of the falling-factorial
+curve, solve in the tangent space of the unit direction, and accept only
+certified joint-objective improvements. Binomial curvature is floored
+at \code{1e-6} without changing the likelihood score. All curve fits use the
+original responses and offsets, including for binomial outcomes.
+Use \code{preprocessing="isotropic"} to preserve the geometry of supplied
+score coordinates. PCA and variance-threshold tuning are not performed
+automatically by this function.
+In \code{"gn"} mode the ordered starts are coordinate axes, weighted ridge,
+weighted covariance, sliced inverse regression, and twice as many random
+directions as retained coordinates. Sign-equivalent duplicates retain
+their first origin. SIR uses two outcome classes for the first Bernoulli
+component with unit trial weights; otherwise it slices the centered
+working response by weight mass, keeping exact response ties together.
+Both supervised seeds and fitted curves eliminate a weighted intercept.
+A start must obtain a completed joint certificate before it can be
+selected. A per-start limit can retain that certificate; exhaustion of
+the candidate or shared allowance makes the candidate ineligible.
+With q retained coordinates and requested K components, the default
+native-fit caps are \code{40*K*(3*q+3)+400} for \code{"gn"} and \code{40*K+400}
+for \code{"pls"}. An intercept-only fit makes no native curve-fitting calls.
 Directions with fewer than four distinct projections are ineligible.
 Exact ties are retained. Distinct projected locations that collapse
 during floating-point normalization produce an explicit failed fit;

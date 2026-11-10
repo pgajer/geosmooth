@@ -6,7 +6,7 @@
     lambda.selection = c("fixed", "cv"), foldid = NULL,
     control = list(), warn = TRUE, backend = c("auto", "dense", "banded"),
     family = "binomial", call = NULL,
-    cv.penalty.scale = c("training_mass", "none")) {
+    cv.penalty.scale = c("training_mass", "none"), before.fit = NULL) {
     gaussian <- identical(family, "gaussian")
     lambda.selection <- match.arg(lambda.selection)
     cv.penalty.scale <- match.arg(cv.penalty.scale)
@@ -116,6 +116,8 @@
     }
     # Fit stronger penalties first for warm starts, but preserve caller order.
     ord <- order(lambda, decreasing = TRUE)
+    # Reserve fitting allowance after geometry validation, at solver entry.
+    if (!is.null(before.fit)) before.fit()
     fits <- if (backend == "dense") {
         native <- if (gaussian) gaussian_tf_native else logistic_tf_native
         native(A, ridge.factor, as.numeric(y), as.numeric(weights),
