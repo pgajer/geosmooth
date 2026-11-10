@@ -126,6 +126,7 @@
         observations = n, distinct.projections = length(knots)))
     geometry.closed <- TRUE
     fits <- .ptf.native.call(observer, before.fit, list(backend = backend,
+        call.type = "univariate", columns = p,
         observations = n, distinct.projections = length(knots)), {
     if (backend == "dense") {
         native <- if (gaussian) gaussian_tf_native else logistic_tf_native

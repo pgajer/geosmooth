@@ -22,6 +22,7 @@
     o <- new.env(parent = emptyenv())
     o$sink <- sink; o$metadata <- metadata; o$sequence <- 0L
     o$stack <- list(); o$native <- 0L; o$diagnostic.seconds <- 0
+    o$serialization.seconds <- 0
     o$last.snapshot <- NULL
     o
 }
@@ -41,8 +42,13 @@
     if (is.null(o)) return(invisible(NULL))
     .ptf.observer.guard({
         started <- .ptf.observer.clock()
+        previous <- o$serialization.seconds
         o$sink(c(list(schema = 1L, metadata = o$metadata), record))
-        o$diagnostic.seconds <- o$diagnostic.seconds + .ptf.observer.clock()-started
+        elapsed <- .ptf.observer.clock()-started
+        o$diagnostic.seconds <- o$diagnostic.seconds + elapsed
+        # Count the union of sink spans, including any nested serialization once.
+        o$serialization.seconds <- o$serialization.seconds + max(0,
+            elapsed-(o$serialization.seconds-previous))
     })
     invisible(NULL)
 }
@@ -55,6 +61,7 @@
         parent <- if (length(o$stack)) tail(o$stack, 1L)[[1L]]$id else NA_integer_
         frame <- list(id = id, parent = parent, kind = kind,
             start = .ptf.observer.clock(), diagnostic.start = o$diagnostic.seconds,
+            serialization.start = o$serialization.seconds,
             child.elapsed = 0, child.diagnostic = 0, native.start = o$native)
         .ptf.observe.emit(o, list(id = id, parent = parent, kind = kind,
                                 event = "begin", data = data))
@@ -72,6 +79,7 @@
         elapsed <- .ptf.observer.clock()-f$start
         diagnostic <- o$diagnostic.seconds-f$diagnostic.start
         timing <- list(inclusive.elapsed = elapsed, diagnostic.elapsed = diagnostic,
+            serialization.elapsed = o$serialization.seconds-f$serialization.start,
             exclusive.fitting.elapsed = max(0, elapsed-f$child.elapsed-
                 (diagnostic-f$child.diagnostic)))
         .ptf.observe.emit(o, list(id = id, parent = f$parent, kind = f$kind,

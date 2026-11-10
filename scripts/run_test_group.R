@@ -40,7 +40,9 @@ group.files <- list(
                         "test-projection-trend-filtering-cv.R",
                         "test-projection-trend-filtering-gn-numerics.R",
                         "test-projection-trend-filtering-gn-contracts.R",
-                        "test-projection-trend-filtering-observer.R"),
+                        "test-projection-trend-filtering-observer.R",
+                        "test-projection-trend-filtering-joint.R",
+                        "test-projection-trend-filtering-depth.R"),
     "ps-lps" = "test-ps-lps.R",
     od = grep("^test-state-density-od", all.files, value = TRUE),
     graph = grep(

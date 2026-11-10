@@ -38,6 +38,11 @@ test_that("optional observation preserves Gaussian and binomial joint fitting", 
         observed <- geosmooth:::.ptf.backfit(p, initial)
         expect_identical(observed, plain); expect_true(observed$converged)
         expect_length(p$observer$stack,0)
+        expect_gte(p$observer$serialization.seconds, 0)
+        expect_lte(p$observer$serialization.seconds, p$observer$diagnostic.seconds+1e-12)
+        expect_true(all(vapply(Filter(function(e) e$event == "end", events),
+            function(e) is.finite(e$timing$serialization.elapsed) &&
+                e$timing$serialization.elapsed >= 0, logical(1))))
         native <- Filter(function(e) e$kind == "native" && e$event == "end",events)
         expect_equal(length(native),p$observer$native)
         expect_true(all(vapply(native,function(e)e$native.entries==1,logical(1))))

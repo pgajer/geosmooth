@@ -1,6 +1,9 @@
 # Evaluated-trial Gauss--Newton refinement with optional practical stopping.
 .ptf.gn.visit <- function(problem, state, term, limit, start, pass, addition,
-                           evaluate, record, improves) {
+                           evaluate, record, improves, accepted.limit = Inf) {
+    .ptf.scalar(accepted.limit, "accepted.limit", positive = TRUE, infinite = TRUE)
+    if (is.finite(accepted.limit) && accepted.limit != floor(accepted.limit))
+        stop("accepted.limit must be an integer or Inf.", call. = FALSE)
     o <- problem$observer
     visit.id <- .ptf.observe.begin(o, "visit", list(start = start, pass = pass,
         addition = addition, term = term, limit = limit))
@@ -36,7 +39,7 @@
                 if (used >= limit) break
                 proposal <- .ptf.retract(u, delta, fraction)
                 generated <- generated+1L
-                # Match the archived skip: duplicates consume no evaluated-trial slot.
+                # Duplicate proposals consume no evaluated-trial slot.
                 if (.ptf.duplicate(proposal, state$directions[-term, , drop = FALSE])) next
                 used <- used+1L
                 before <- state$checks$objective; streak.before <- rule$streak
@@ -85,6 +88,9 @@
             if (improved || used >= limit) break
         }
         if (rule$stopped) { stopping <- "practical_gain_stop"; break }
+        if (accepted >= accepted.limit && used < limit) {
+            stopping <- "accepted_depth_stop"; break
+        }
         if (!improved) { stopping <- if (used >= limit) "proposal_limit" else "rejected"; break }
     }
     id <- length(problem$counter$visits)+1L
@@ -94,6 +100,10 @@
         proposal.limit.reached = used >= limit, unused.slots = limit-used,
         null.loss = rule$scale, epsilon = rule$epsilon, streak = rule$streak)
     problem$counter$events[[id]] <- if (length(events)) do.call(rbind, events) else data.frame()
+    if (is.finite(accepted.limit)) {
+        problem$counter$visits[[id]]$accepted.limit <- accepted.limit
+        problem$counter$visits[[id]]$depth.reached <- accepted >= accepted.limit
+    }
     .ptf.observe.end(o, visit.id, list(status = stopping, evaluated = used,
         generated = generated, accepted = accepted, proposal.limit.reached = used >= limit,
         unused.slots = limit-used, streak = rule$streak))

@@ -37,6 +37,11 @@
 #' @param control Named list. `max.sweeps=200`, `tolerance=1e-7`,
 #'   `gap.tolerance=1e-8`, and `objective.tolerance=1e-10` govern joint fitting.
 #'   `inner=list()` passes controls to the univariate solver.
+#'   `joint.solver="backfit"` retains alternating component updates;
+#'   `joint.solver="dense"` attempts a simultaneous dense solve when there
+#'   are exactly two components, with guarded fallback to backfitting.
+#'   `joint.max.workspace.bytes=1024^3` bounds the estimated dense workspace.
+#'   The joint certificate and objective safeguard apply to both solvers.
 #'   Search controls are `starts=2`, `sparse.directions=8`,
 #'   `dense.directions=8`, `refinement.passes=2`, `refinement.proposals=16`,
 #'   `steps=c(0.25,0.1,0.04,0.01)`, and `improvement.tolerance=1e-9`.
@@ -196,7 +201,8 @@ fit.projection.trend.filtering <- function(
         refinement.passes = 2L, refinement.proposals = 16L,
         steps = c(.25, .1, .04, .01), improvement.tolerance = 1e-9,
         gn.max.steps = 8L, gn.max.fits = 40L, gn.shared.fits = 400L,
-        stream.key = character())
+        stream.key = character(), joint.solver = "backfit",
+        joint.max.workspace.bytes = 1024^3)
     if (!is.list(control) || (length(control) && (is.null(names(control)) ||
         any(!names(control) %in% names(defaults)) || anyDuplicated(names(control)))))
         stop("Unknown or unnamed control fields.", call. = FALSE)
@@ -212,6 +218,10 @@ fit.projection.trend.filtering <- function(
     if (!is.list(out$inner)) stop("inner must be a list.", call. = FALSE)
     if (!is.character(out$stream.key) || anyNA(out$stream.key))
         stop("stream.key must be a nonmissing character vector.", call. = FALSE)
+    if (!is.character(out$joint.solver) || length(out$joint.solver) != 1L ||
+        is.na(out$joint.solver) || !out$joint.solver %in% c("backfit", "dense"))
+        stop("joint.solver must be backfit or dense.", call. = FALSE)
+    .ptf.scalar(out$joint.max.workspace.bytes, "joint.max.workspace.bytes", positive = TRUE)
     # Validate even when an intercept-only fit never calls the native solver.
     allowed <- c("tolerance", "gap.tolerance", "max.iterations", "max.workspace.bytes")
     if (length(out$inner) && (is.null(names(out$inner)) ||
@@ -408,7 +418,8 @@ fit.projection.trend.filtering <- function(
 
 .ptf.backfit <- function(problem, state) {
     .ptf.observed(problem$observer, "joint", list(checks = state$checks),
-        .ptf.backfit.core(problem, state), function(value)
+        if (identical(problem$control$joint.solver, "dense") && length(state$components) == 2L)
+            .ptf.backfit.dense(problem, state) else .ptf.backfit.core(problem, state), function(value)
             list(status = value$status, certified = value$converged,
                  checks = value$checks, completed.sweeps = value$sweeps,
                  attempted.updates = value$solver.calls))

@@ -68,6 +68,11 @@ state unchanged.}
 \item{control}{Named list. \code{max.sweeps=200}, \code{tolerance=1e-7},
 \code{gap.tolerance=1e-8}, and \code{objective.tolerance=1e-10} govern joint fitting.
 \code{inner=list()} passes controls to the univariate solver.
+\code{joint.solver="backfit"} retains alternating component updates;
+\code{joint.solver="dense"} attempts a simultaneous dense solve when there
+are exactly two components, with guarded fallback to backfitting.
+\code{joint.max.workspace.bytes=1024^3} bounds the estimated dense workspace.
+The joint certificate and objective safeguard apply to both solvers.
 Search controls are \code{starts=2}, \code{sparse.directions=8},
 \code{dense.directions=8}, \code{refinement.passes=2}, \code{refinement.proposals=16},
 \code{steps=c(0.25,0.1,0.04,0.01)}, and \code{improvement.tolerance=1e-9}.
