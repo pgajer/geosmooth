@@ -1,0 +1,2 @@
+# Preserve the source bytes used to identify stored vignette results.
+vignettes/pca-pls-chart-comparison.Rmd text eol=lf

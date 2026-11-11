@@ -1,5 +1,6 @@
 ^\.git$
 ^\.gitignore$
+^\.gitattributes$
 ^\.Rproj\.user$
 ^\.claude$
 ^\.github$
