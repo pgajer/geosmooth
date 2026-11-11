@@ -3,11 +3,10 @@
 This directory holds maintained technical notes, method specifications, and
 reproducible package-development tools.
 
-Standalone scientific documents and report bundles were relocated to sibling
-manuscript workspaces on September 12, 2026. See
-[Document locations](../DOCUMENT_LOCATIONS.md) for the current owners. The
-descriptions below apply to package-facing guidance and reusable development
-tools, not to a second copy of those scientific sources or private audit records.
+Standalone geosmooth scientific documents and reports live in the sibling
+`geosmooth_manuscripts` workspace. Quadform-geodesic studies live in
+`dgraphs_manuscripts/reports/quadform_geodesics`. The descriptions below apply
+to package-facing guidance and reusable development tools.
 
 For the strategic scaffold that connects `geosmooth` methods to downstream
 biological and multi-omics applications, start with the canonical

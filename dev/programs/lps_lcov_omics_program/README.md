@@ -24,7 +24,7 @@ The companion foundation notes address three topics:
 - **Chart nerve substrate:** the connection between local charts, chart overlaps
   and the chart-nerve substrate.
 
-These standalone scientific sources are maintained in the external manuscript
-workspace described in [Document locations](../../../DOCUMENT_LOCATIONS.md).
+These standalone scientific sources are maintained in the sibling
+`geosmooth_manuscripts` workspace.
 They are not package build inputs. The topic descriptions above remain here to
 explain their relationship to the package methods.

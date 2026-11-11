@@ -6,4 +6,4 @@ references. Standalone scientific notes and tutorials now live in the sibling
 
 Reports and their experiment assets belong with their manuscript study.
 Agent prompts, handoffs, audits, and execution records belong in private project
-storage, not here. See [Document locations](../../DOCUMENT_LOCATIONS.md).
+storage, not here.
