@@ -1,4 +1,4 @@
-# Auditor-authored tests replayed by implementer; only loading paths adapted.
+# Check component-centering invariance under permutations and response masks.
 pkgload::load_all('.',quiet=TRUE)
 library(testthat)
 

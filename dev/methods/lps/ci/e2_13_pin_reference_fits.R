@@ -9,8 +9,7 @@
 # fits with the default ridge.shrinkage.target = "zero" reproduce these
 # values EXACTLY (17-significant-digit round trip, which is lossless for
 # doubles), pinning that the default path is bit-for-bit unchanged -- the
-# pin that protects Tier-0 and E1.9 (S G4 resolution,
-# dev/methods/lps/audit_contracts/lps_g4_ridge_resolution_2026-06-12.md).
+# pin that protects Tier-0 and E1.9 backward compatibility (2026-06-12).
 #
 # DISCIPLINE: run this script ONLY on a tree whose R/lps.R predates the
 # E2.13 source change. The generating commit is recorded inside the output.

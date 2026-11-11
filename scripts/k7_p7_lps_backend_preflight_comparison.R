@@ -1,16 +1,21 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 `%||%` <- function(a, b) {
     if (is.null(a) || length(a) == 0L || all(is.na(a))) b else a
 }
 
 root <- paste(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf",
+    geosmooth_dev_path("trend_filtering", "development", "slpl_tf"),
     "experiments/p7_prospective_synthetic_suite",
     sep = "/"
 )
 out.dir <- file.path(
-    "/Users/pgajer/current_projects/geosmooth/split_handoffs",
+    geosmooth_dev_path("output"),
     "k7_p7_lps_backend_preflight_comparison_2026-06-04"
 )
 dir.create(file.path(out.dir, "tables"), recursive = TRUE, showWarnings = FALSE)

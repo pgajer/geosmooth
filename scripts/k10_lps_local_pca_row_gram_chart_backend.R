@@ -1,10 +1,15 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 if (!requireNamespace("pkgload", quietly = TRUE)) {
     stop("Package 'pkgload' is required.", call. = FALSE)
 }
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 pkgload::load_all(project.dir, quiet = TRUE)
 
 timestamp <- function() {
@@ -12,8 +17,7 @@ timestamp <- function() {
 }
 
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k10_lps_local_pca_row_gram_chart_backend_2026-06-04"
 )
 dir.create(out.dir, recursive = TRUE, showWarnings = FALSE)
@@ -106,8 +110,7 @@ profile.comparison <- if (file.exists(profile.comparison.path)) {
 }
 
 handoff.path <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k10_lps_local_pca_row_gram_chart_backend_handoff_2026-06-04.md"
 )
 
@@ -180,7 +183,7 @@ handoff <- c(
     "",
     "## Validation",
     "",
-    "- `R CMD INSTALL --preclean /Users/pgajer/current_projects/geosmooth`: passed.",
+    "- `R CMD INSTALL --preclean .`: passed.",
     "- Focused `test-ge7-lps-api.R`: passed.",
     "- Focused `test-ge1-r-smoothers.R`: passed.",
     "- Focused `test-ge4-ssrhe-hessian-energy.R`: passed.",

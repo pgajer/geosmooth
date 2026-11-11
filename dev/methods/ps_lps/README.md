@@ -10,10 +10,10 @@ Research lineage: [provenance.md](provenance.md).
 - `patches/`: unmerged prototype patches that are useful for future package
   work but are not part of the current source tree.
 - `reports/`: rendered analysis reports.
-- `runs/`: run directories, manifests, and launch records.
+- `runs/`: reusable run specifications; generated records belong outside the checkout.
 - `results/`: durable result tables or serialized outputs.
 - `specs/`: method specifications and scientific design plans.
-- `status/`: progress notes and operational status.
+- `status/`: concise method-development summaries.
 
-Agent-only audits, handoffs, prompts, work orders, and intermediate review
-products belong under `~/.codex/private/geosmooth/`, not in this repository.
+Keep operational run records outside the package checkout. Retain reproducible
+methods, validation tools and scientific summaries here.

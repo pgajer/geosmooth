@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 ## K5.1: targeted diagnostic for strict candidate-CV warning rows from K5.
 ##
 ## This script does not change package behavior. It decomposes the exact-plane
@@ -7,10 +12,9 @@
 ## parity with the native tie-complete neighbor probe, and records weighted
 ## local design conditioning.
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k5_lps_native_validation_2026-06-04"
 )
 table.dir <- file.path(out.dir, "tables")

@@ -2,8 +2,7 @@
 
 This directory holds package-facing pointers and implementation slices for
 cross-method program roadmaps. Canonical strategic roadmaps whose scope extends
-beyond the package should live in the exploratory program layer, usually under
-`~/current_projects/trend_filtering/programs/`.
+beyond the package belong in the external `trend_filtering` research repository.
 
 Use this directory for durable package-facing pages that answer questions such
 as:
@@ -19,9 +18,9 @@ Program pointer pages are different from:
 
 - `dev/project_briefs/`: repository-level briefs or package-phase summaries;
 - `dev/methods/<method>/specs/`: method-specific scientific or implementation
-  specifications;
-- `~/.codex/private/geosmooth/`: agent-only audits, handoffs, prompts, work
-  orders, and intermediate review products.
+  specifications.
+
+Operational records are stored outside the package checkout.
 
 The current flagship pointer is:
 

@@ -1,4 +1,4 @@
-# Auditor-authored tests replayed by implementer; only loading paths adapted.
+# Check that a flat two-observation score path cannot select a smoothing time.
 pkgload::load_all('.',quiet=TRUE)
 library(testthat)
 test_that('scorewise acceptable errors cannot tune a structurally flat two-observation path', {

@@ -59,9 +59,17 @@ test-validation:
 test-migration:
 	Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/migration")'
 
-build: clean
+.PHONY: check-public-content test-public-content
+check-public-content:
+	@python3 tools/check-public-content.py
+
+test-public-content:
+	@python3 tools/tests/test-public-content.py
+
+build: check-public-content clean
 	$(MAKE) document
 	R CMD build .
+	python3 tools/check-public-content.py --archive "$(TARBALL)"
 
 check: build
 	PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R_TIDYCMD="$(TIDY_BIN)" R CMD check $(TARBALL) --as-cran
@@ -77,9 +85,10 @@ install: build
 test-neighbors:
 	Rscript scripts/validate_neighbor_probability.R
 
-website:
+website: check-public-content
 	Rscript scripts/build_website.R
 	python3 scripts/check_website.py
+	python3 tools/check-public-content.py --tree docs
 
 .PHONY: update-api check-docs previews readme-figure
 update-api:

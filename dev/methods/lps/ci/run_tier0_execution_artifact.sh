@@ -2,14 +2,13 @@
 # =============================================================================
 # Tier-0 execution-artifact harness  (option-2 execution leg)
 #
-# Produces a self-contained, tamper-evident bundle that lets an INDEPENDENT
-# auditor verify whether the LPS Tier-0 correctness battery passes against a
-# CLEAN, COMMITTED tree -- without trusting the implementer's console output.
+# Produces a self-contained, tamper-evident bundle for independent verification
+# that the LPS Tier-0 correctness battery passes against a
+# CLEAN, COMMITTED tree -- without trusting interactive console output.
 #
-# Independence rule: run this by an executor (or CI) distinct from the
-# implementer's interactive session. The auditor reviews the BUNDLE, never a
-# bare "all dots passed" message. See:
-#   dev/methods/lps/audit_contracts/tier0/lps_tier0_execution_artifact_contract_2026-06-10.md
+# Run in an execution environment (or CI) separate from interactive development.
+# Independently review the complete bundle, including source identity, test
+# coverage and numerical diagnostics, before accepting the result.
 #
 # Usage:   bash dev/methods/lps/ci/run_tier0_execution_artifact.sh [REPO_ROOT]
 # Env:     LPS_NATIVE_BACKEND  native backend token fit.lps accepts
@@ -21,8 +20,8 @@
 #          EXECUTOR            free-text executor id recorded in the manifest
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
-# still produce its artifact). Gate acceptance is decided by the auditor / the
-# CI "enforce" step from the manifest, not by this script's exit code.
+# still produce its artifact). Gate acceptance is determined from the manifest
+# by independent review or the CI "enforce" step, not by this script's exit code.
 # =============================================================================
 set -uo pipefail
 
@@ -150,11 +149,11 @@ PROBE_RC=$?
 # --- 7) Bundle checksums (tamper-evidence over the whole bundle) --------------
 ( cd "$OUT" && SHA $(ls | grep -v '^BUNDLE_CHECKSUMS.txt$') > BUNDLE_CHECKSUMS.txt 2>/dev/null ) || true
 
-# --- 8) Preliminary readiness (the AUDITOR makes the final call) --------------
+# --- 8) Preliminary readiness (independent review is still required) --------------
 echo "[tier0-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[tier0-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
 if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && $CLEAN; then
-  echo "[tier0-artifact] PRELIMINARY: green (auditor must still verify headroom, coverage, parity)"
+  echo "[tier0-artifact] PRELIMINARY: green (independent review must still verify headroom, coverage, parity)"
 else
   echo "[tier0-artifact] PRELIMINARY: NOT green"
 fi

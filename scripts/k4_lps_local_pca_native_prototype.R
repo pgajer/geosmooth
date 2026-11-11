@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 ## K4: native local-PCA LPS backend prototype benchmark.
 ##
 ## This script compares the existing R local-PCA LPS path against the explicit
@@ -10,15 +15,14 @@ suppressPackageStartupMessages({
     library(geosmooth)
 })
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 asset.dir <- paste0(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf/",
+    paste0(geosmooth_dev_path("trend_filtering", "development", "slpl_tf"), "/"),
     "experiments/p7_prospective_synthetic_suite/validation/",
     "k38_valencia_linf_geometries_20260604/embeddings"
 )
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k4_lps_local_pca_native_prototype_2026-06-04"
 )
 dir.create(out.dir, recursive = TRUE, showWarnings = FALSE)
@@ -173,8 +177,7 @@ html <- c(
 writeLines(html, html.path)
 
 handoff.path <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k4_lps_local_pca_native_prototype_handoff_2026-06-04.md"
 )
 build.time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z",
@@ -208,7 +211,7 @@ writeLines(c(
     "",
     "## Validation",
     "",
-    "- `R CMD INSTALL --preclean /Users/pgajer/current_projects/geosmooth`: passed.",
+    "- `R CMD INSTALL --preclean .`: passed.",
     "- Focused `test-ge7-lps-api.R`: passed.",
     "- Full `tests/testthat` run: passed with the existing expected gflow-parity skips.",
     "- `git diff --check`: passed.",

@@ -82,10 +82,7 @@ def main() -> int:
 
     run_dir = pathlib.Path(args.run_dir).resolve()
     task_manifest = run_dir / "task_manifest.csv"
-    worker = pathlib.Path(
-        "/Users/pgajer/current_projects/geosmooth/scripts/"
-        "run_lps_local_auto_first_batch_task.R"
-    )
+    worker = pathlib.Path(__file__).resolve().with_name("run_lps_local_auto_first_batch_task.R")
     launcher_log = run_dir / "logs" / "python_launcher.log"
     launcher_log.parent.mkdir(parents=True, exist_ok=True)
 

@@ -95,19 +95,23 @@ Use `make test-logistic-tf`, `make check`, `make update-api`, and
 thread. Targeted tests reused the verified optimized backend; the full check
 uses `-O2 -g0` and sequential compilation.
 
-The default installed dgraphs lacks an intrinsic-distance header required by
-an existing geosmooth module. The full build therefore uses the previously
-validated private dgraphs library through `R_LIBS` as well as `R_LIBS_USER`;
-setting only the latter leaves the default library first. The relevant header
-was verified identical to authoritative local dgraphs source. Both initial
-dependency-related build failures are preserved. This is an environment
-correction, not a change to package dependencies or fitting algorithms. For
-future runs, prepend the private dependency library through `R_LIBS` and retain
-the ordinary user library so optional documentation tools remain visible.
+At the time of this validation, the default installed dgraphs lacked an
+intrinsic-distance header required by an existing geosmooth module. The full
+build therefore used a previously validated development installation through
+`R_LIBS` as well as `R_LIBS_USER`; setting only the latter left the default
+library first. The relevant header was verified identical to authoritative
+local dgraphs source. Both initial dependency-related build failures are
+preserved. This was an environment correction, not a change to package
+dependencies or fitting algorithms. Reproduction requires the dependency
+versions declared in `DESCRIPTION` and access to the optional documentation
+tools. The historical development-library workaround is not a substitute for
+final release checks with published dependencies.
 
-Private scripts, logs, built vignette, source hashes and baseline comparison
-are retained under
-`/Users/pgajer/.codex/private/geosmooth/assessment-shape-20261106/`.
+The maintainer retains the original scripts, logs, built vignette, source
+hashes and baseline comparison outside the public repository. Public checks
+are in [the assessment tests](../../../tests/testthat/test-logistic-trend-filtering-assessment.R);
+the [vignette source](../../../vignettes/logistic-trend-filtering.Rmd) contains
+the synthetic examples.
 The package tarball was compared against 228 current source, help, test and
 vignette files (DESCRIPTION compared as normalized DCF fields). The grouped
 guide and API appendix audit passed, including its negative fixtures.

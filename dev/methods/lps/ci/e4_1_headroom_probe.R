@@ -1,8 +1,8 @@
 # =============================================================================
 # E4.1 headroom/determinism probe (execution-artifact addendum)
 #
-# Recomputes the Part A gate's realized quantities so the auditor can see the
-# margins, not just a pass/fail line:
+# Recomputes the Part A gate's realized quantities to report numerical
+# margins alongside the pass/fail result:
 #   - max |S_analytic - S_probe| over the two gate fixtures (the implemented
 #     analytic extraction vs the independent column-by-column public-API
 #     probe, the E0.2 protocol), with headroom vs the 1e-10 gate tolerance;

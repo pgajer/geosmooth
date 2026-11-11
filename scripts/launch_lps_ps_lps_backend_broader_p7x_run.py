@@ -90,14 +90,8 @@ def main() -> int:
 
     run_dir = pathlib.Path(args.run_dir).resolve()
     task_manifest = run_dir / "task_manifest.csv"
-    worker = pathlib.Path(
-        "/Users/pgajer/current_projects/geosmooth/scripts/"
-        "run_lps_ps_lps_backend_broader_p7x_task.R"
-    )
-    merge = pathlib.Path(
-        "/Users/pgajer/current_projects/geosmooth/scripts/"
-        "merge_lps_ps_lps_backend_broader_p7x_run.R"
-    )
+    worker = pathlib.Path(__file__).resolve().with_name("run_lps_ps_lps_backend_broader_p7x_task.R")
+    merge = pathlib.Path(__file__).resolve().with_name("merge_lps_ps_lps_backend_broader_p7x_run.R")
     launcher_log = run_dir / "logs" / "python_launcher.log"
     launcher_log.parent.mkdir(parents=True, exist_ok=True)
 

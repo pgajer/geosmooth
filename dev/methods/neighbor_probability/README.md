@@ -31,7 +31,7 @@ selection, not independent performance. Use grouped outer folds for assessment.
 The make test-neighbors target compiles optimized source once (debug = FALSE),
 loads the local dgraphs source without rebuilding it, generates the two help
 topics and registration, and runs the focused tests. It uses one compute thread.
-The agreed ceiling for this task is four threads and 10 GiB aggregate.
+The original validation allocation was four threads and 10 GiB aggregate.
 No AGP fits or actual sPTB outcomes are used.
 
 The [Python fixture generator](../../../scripts/neighbor_python_oracle.py)
@@ -42,10 +42,12 @@ Python implementation and does not import the study driver.
 The source SHA-256, extracted function names and NumPy version are embedded in
 [the committed synthetic fixtures](../../../tests/testthat/fixtures/neighbor-python.json).
 
-Regenerate the fixtures with:
+To regenerate the fixtures, set `NEIGHBOR_STUDY_REFERENCE` to the original
+study's `compare.py`. Its identity is recorded in the committed fixtures; this
+external study script is not distributed with the package. Then run:
 
     python3 scripts/neighbor_python_oracle.py \
-      /Users/pgajer/current_projects/vaginal_microbiome/projects/anatomy_of_vaginal_microbiome/reports/enrollment_nearest_cases/compare.py \
+      "${NEIGHBOR_STUDY_REFERENCE:?Set the path to the original compare.py}" \
       tests/testthat/fixtures/neighbor-python.json
     make test-neighbors
     Rscript scripts/audit_api_guide.R --check
@@ -84,10 +86,9 @@ topics pass their focused documentation checks. The existing roxygen version
 also rewrites the usage line of compare.synthetic.dataset.Rd when all docs
 are regenerated; that unrelated generated drift is excluded from this change.
 
-The full package test suite and CRAN submission checks are outside this
-targeted feature validation. Reports must not describe this as a full-package
-CRAN pass. Build logs and structured test summaries remain under
-tmp/neighbor-validation, outside Git.
+This targeted feature validation does not establish a full-package CRAN pass.
+Build logs and structured test summaries are retained separately from the public
+package sources.
 
 ## ANN extension
 

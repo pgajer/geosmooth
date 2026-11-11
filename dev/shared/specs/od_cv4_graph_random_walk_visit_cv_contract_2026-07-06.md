@@ -1,6 +1,6 @@
 # OD-CV4 Graph Random-Walk Visit-CV Contract
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od_cv4_graph_random_walk_visit_cv_contract_2026-07-06.md`
+Source: `dev/shared/specs/od_cv4_graph_random_walk_visit_cv_contract_2026-07-06.md`
 
 ## Purpose
 

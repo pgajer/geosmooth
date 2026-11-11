@@ -1,6 +1,6 @@
 # OD-CV2 Chart-Dimension Grid and Density Visit-CV Contract
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od_cv2_chart_dim_grid_density_visit_cv_contract_2026-07-06.md`
+Source: `dev/shared/specs/od_cv2_chart_dim_grid_density_visit_cv_contract_2026-07-06.md`
 
 ## Purpose
 

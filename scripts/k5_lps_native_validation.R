@@ -1,19 +1,23 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 ## K5: broader validation for the explicit native local-PCA LPS backend.
 ##
 ## This phase does not change package defaults.  It stress-tests
 ## backend = "cpp.local.pca" against the R reference implementation across
 ## adversarial, curved, high-dimensional, and VALENCIA-derived cases.
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 
 suppressPackageStartupMessages({
     pkgload::load_all(project.dir, quiet = TRUE)
 })
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k5_lps_native_validation_2026-06-04"
 )
 table.dir <- file.path(out.dir, "tables")
@@ -24,7 +28,7 @@ dir.create(fig.dir, recursive = TRUE, showWarnings = FALSE)
 strict.cv.abs.tol <- 1e-7
 
 valencia.asset.dir <- paste0(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf/",
+    paste0(geosmooth_dev_path("trend_filtering", "development", "slpl_tf"), "/"),
     "experiments/p7_prospective_synthetic_suite/validation/",
     "k38_valencia_linf_geometries_20260604/embeddings"
 )
@@ -524,8 +528,7 @@ html <- c(
 writeLines(html, html.path)
 
 handoff.path <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k5_lps_native_validation_handoff_2026-06-04.md"
 )
 build.time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z",

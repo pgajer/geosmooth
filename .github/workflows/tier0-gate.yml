@@ -2,7 +2,7 @@ name: tier0-gate
 
 # Independent execution leg for the LPS Tier-0 correctness battery.
 # Runs the harness on a clean checkout, enforces the clean-tree + green gate
-# from the manifest, and uploads the execution artifact for the auditor.
+# from the manifest, and uploads the execution artifact for independent review.
 "on":
   workflow_dispatch:
   pull_request:

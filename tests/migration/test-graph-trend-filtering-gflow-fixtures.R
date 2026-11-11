@@ -1,7 +1,10 @@
 load_ssrhe_all_labeled_validation_definitions <- function() {
-    runner <- paste0(
-        "/Users/pgajer/current_projects/trend_filtering/development/",
-        "ssrhe_hessian_energy/ssrhe_all_labeled_comparator_validation.R"
+    runner <- Sys.getenv(
+        "GEOSMOOTH_SSRHE_VALIDATION",
+        file.path(Sys.getenv("TREND_FILTERING_SOURCE",
+                            file.path(dirname(.geosmooth.test.package.root()), "trend_filtering")),
+                  "development", "ssrhe_hessian_energy",
+                  "ssrhe_all_labeled_comparator_validation.R")
     )
     testthat::skip_if_not(
         file.exists(runner),

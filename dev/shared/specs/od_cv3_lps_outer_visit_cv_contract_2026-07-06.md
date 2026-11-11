@@ -1,6 +1,6 @@
 # OD-CV3 LPS-Family Outer Visit-CV Contract
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od_cv3_lps_outer_visit_cv_contract_2026-07-06.md`
+Source: `dev/shared/specs/od_cv3_lps_outer_visit_cv_contract_2026-07-06.md`
 
 ## Purpose
 

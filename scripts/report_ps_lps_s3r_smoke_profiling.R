@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 parse.args <- function(args) {
     out <- list()
     for (arg in args) {
@@ -206,7 +211,7 @@ make.dataset_runtime_plot <- function(summary.df, path) {
 args <- parse.args(commandArgs(trailingOnly = TRUE))
 run.dir <- normalizePath(
     args$run_dir %||%
-        "/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001",
+        geosmooth_dev_path("output", "ps_lps_s3r_light_20260607_001"),
     mustWork = TRUE
 )
 tables.dir <- file.path(run.dir, "tables")
@@ -519,12 +524,7 @@ html <- c(
     sprintf("<li><code>%s</code></li>", html.escape(file.path(tables.dir, "s3r_smoke_runtime_tail_top25.csv"))),
     sprintf("<li><code>%s</code></li>", html.escape(file.path(tables.dir, "s3r_smoke_phase_timing_summary.csv"))),
     "</ul>",
-    "<p>Relevant audit context:</p>",
-    "<ul>",
-    "<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/p7x_s3r_audit_2026-06-07.md</code></li>",
-    "<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/p7x_s3r_audit_response_2026-06-07.md</code></li>",
-    "<li><code>/Users/pgajer/current_projects/geosmooth/split_handoffs/ps_lps_s3r_light_20260607_001/STOPPED_PROFILING_ONLY_2026-06-07.md</code></li>",
-    "</ul>",
+    "<p>The maintainer retains the original study review, its resolution, and the stopped-run record dated 2026-06-07 outside the public repository. This run remains profiling evidence only; it does not establish paired support-search performance.</p>",
     "</body></html>"
 )
 

@@ -12,12 +12,12 @@ tools, not to a second copy of those scientific sources or private audit records
 For the strategic scaffold that connects `geosmooth` methods to downstream
 biological and multi-omics applications, start with the canonical
 `trend_filtering` roadmap:
-`~/current_projects/trend_filtering/programs/lps_lcov_omics_program/README.md`.
+the LPS / LCov / Omics program in the external `trend_filtering` research repository.
 The local [LPS / LCov / Omics Program](programs/lps_lcov_omics_program/README.md)
 page is the package-facing pointer and implementation slice.
 
 Deep exploratory history for many `geosmooth` methods lives in
-`~/current_projects/trend_filtering`. That repository is the research sandbox
+the external `trend_filtering` research repository. That repository is the research sandbox
 for multidimensional trend-filtering and local-smoothing ideas; this `dev/`
 tree is the curated package-development layer. In short:
 
@@ -27,10 +27,8 @@ tree is the curated package-development layer. In short:
   documentation, curated audit evidence, and selected lineage/provenance
   pointers back to the research sandbox.
 
-The top-level `trend_filtering` research dashboard is generated at
-`~/current_projects/trend_filtering/dashboard/index.html`. Use it for the
-program-level map of strategic roadmaps, literature reviews, theory notes,
-method-development histories, and package bridges.
+The external research repository covers program-level roadmaps, literature
+reviews, theory notes, method-development histories and package connections.
 
 - `notes/`: durable explanations, design notes, and tutorials.
 - `methods/`: method-specific public development material such as specs,
@@ -45,13 +43,10 @@ method-development histories, and package bridges.
   package phases.
 - `shared/`: cross-method registries, DGPs, fixtures, benchmark specs, and
   dataset manifests.
-- Agent-only audits, handoffs, prompts, work orders, and intermediate review
-  products belong under `~/.codex/private/geosmooth/`, not in this repository.
 
-New development artifacts should be placed directly under this layout when they
-are appropriate for the public repository. Private agent coordination material
-should stay in the private tree, with a README recording its origin and possible
-future disposition.
+Keep maintained methods, reproducible validation tools and scientific summaries
+in this layout. Store operational records outside the checkout. Historical
+study scripts support [configurable input and output locations](../scripts/development_paths.md).
 
 ## Dashboard
 

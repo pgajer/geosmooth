@@ -1,12 +1,12 @@
 # =============================================================================
 # E1.10 STUDIES -- nested CV optimism (a) and grouped CV under cluster
-# dependence (b).  Contract sB/E1.10 (STUDY typing per sA1); plan sE1.10.
+# dependence (b).  Studies under experimental plan sE1.10.
 #
 # PREDECLARED DECISION RULES (frozen before any acceptance run; post-hoc
 # changes invalidate the study):
 #
 #   Study (a), generator dgp.g3a: n_train = 800, n_test = 4000, R = 40,
-#   sigma = 0.10 (predeclared by the implementer; the spec pins G3a but not
+#   sigma = 0.10 (predeclared here; the spec pins G3a but not
 #   sigma for E1.10).  Routine grids (below).  Statistic per replicate:
 #   rel_x = |rmse_x - rmse_test| / rmse_test for x in {selected-min, nested},
 #   where rmse_test is the fresh-sample error of the deployed full-train
@@ -50,8 +50,8 @@
 #   --mode=acceptance  consumes the audited registry generators dgp.g3a /
 #                      dgp.g5 ONLY; refuses to run unless both resolve in
 #                      the geosmooth namespace AND LPS_E110_ACCEPT=1 is set
-#                      (the orchestrator's confirmation that the DGP audit
-#                      is clear).  No G3a/G5 logic is hand-rolled here.
+#                      (confirmation that DGP-library validation has passed).
+#                      No G3a/G5 logic is hand-rolled here.
 #
 # Usage:
 #   Rscript dev/methods/lps/ci/e1_10_nested_grouped_cv.R [--mode=smoke|acceptance]
@@ -171,7 +171,7 @@ e110.smoke.generators <- function() {
 if (identical(MODE, "acceptance")) {
     if (!identical(Sys.getenv("LPS_E110_ACCEPT"), "1")) {
         stop("Acceptance mode is gated: set LPS_E110_ACCEPT=1 only after ",
-             "the orchestrator confirms the DGP-library audit accepted ",
+             "DGP-library validation has accepted ",
              "G3a and G5.", call. = FALSE)
     }
     GEN <- e110.registry.generators()

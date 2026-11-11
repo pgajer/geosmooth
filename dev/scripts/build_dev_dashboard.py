@@ -192,7 +192,7 @@ def read_markdown_entry(path: Path, root: Path) -> dict[str, str]:
         "title": extract_markdown_title(path, text),
         "summary": extract_markdown_summary(text),
         "path": path.as_posix(),
-        "absolute_path": path.resolve().as_posix(),
+        "source_path": path.relative_to(DEV_ROOT.parent).as_posix(),
         "rel": rel.as_posix(),
         "folder": rel.parent.as_posix() if rel.parent.as_posix() != "." else "",
         "href": href_to(html_path),
@@ -214,7 +214,7 @@ def read_tex_entry(path: Path, root: Path) -> dict[str, str]:
         "title": extract_tex_title(path, text),
         "summary": extract_tex_summary(text),
         "path": path.as_posix(),
-        "absolute_path": path.resolve().as_posix(),
+        "source_path": path.relative_to(DEV_ROOT.parent).as_posix(),
         "rel": rel.as_posix(),
         "folder": rel.parent.as_posix() if rel.parent.as_posix() != "." else "",
         "href": href_to(pdf_path if has_pdf else path),
@@ -369,7 +369,7 @@ def build_source_tree(entries: list[dict[str, str]], empty_message: str) -> str:
                     entry["summary"],
                     entry["rel"],
                     entry.get("kind", ""),
-                    entry["absolute_path"],
+                    entry["source_path"],
                 ]
             ).lower()
             view_href = entry.get("view_href", "")
@@ -408,8 +408,8 @@ def build_source_tree(entries: list[dict[str, str]], empty_message: str) -> str:
             parts.append("</div>")
             parts.append('<div class="path-row">')
             parts.append(
-                f'<code>{html.escape(entry["absolute_path"])}</code>'
-                f'<button type="button" class="copy-path" data-path="{html.escape(entry["absolute_path"], quote=True)}">Copy path</button>'
+                f'<code>{html.escape(entry["source_path"])}</code>'
+                f'<button type="button" class="copy-path" data-path="{html.escape(entry["source_path"], quote=True)}">Copy path</button>'
             )
             parts.append("</div>")
             parts.append("</li>")
@@ -496,10 +496,6 @@ def build_section(
 
 
 def build_program_direction() -> str:
-    project_root = DEV_ROOT.parent.parent
-    roadmap_readme = project_root / "trend_filtering" / "programs" / "lps_lcov_omics_program" / "README.md"
-    roadmap_pdf = project_root / "trend_filtering" / "programs" / "lps_lcov_omics_program" / "lps_lcov_omics_program_plan.pdf"
-    roadmap_source = project_root / "trend_filtering" / "programs" / "lps_lcov_omics_program" / "lps_lcov_omics_program_plan.tex"
     package_pointer = PROGRAMS_ROOT / "lps_lcov_omics_program" / "README.md"
     package_pointer_html = markdown_html_path(package_pointer)
     return f"""
@@ -519,10 +515,7 @@ def build_program_direction() -> str:
           foundation notes, and provenance pointers.
         </p>
         <div class="program-actions">
-          <a href="{html.escape(href_to(roadmap_readme), quote=True)}">Canonical README</a>
-          <a href="{html.escape(href_to(roadmap_pdf), quote=True)}">Current PDF</a>
-          <a href="{html.escape(href_to(roadmap_source), quote=True)}">LaTeX source</a>
-          <a href="{html.escape(href_to(package_pointer_html), quote=True)}">geosmooth slice</a>
+          <a href="{html.escape(href_to(package_pointer_html), quote=True)}">Methods and foundations</a>
         </div>
       </div>
       <div class="program-compass">
@@ -773,7 +766,7 @@ def build_markdown_page(
     dashboard_href = href_to(DASHBOARD_DIR / "index.html", start=output_path.parent)
     source_href = href_to(markdown_path, start=output_path.parent)
     page_title = entry["title"]
-    absolute_path = markdown_path.resolve().as_posix()
+    source_path = markdown_path.relative_to(DEV_ROOT.parent).as_posix()
     relative_path = markdown_path.relative_to(DEV_ROOT).as_posix()
     return f"""<!doctype html>
 <!-- {GENERATED_COMMENT} -->
@@ -797,7 +790,7 @@ def build_markdown_page(
       <p class="note-relpath">{html.escape(relative_path)}</p>
       <div class="source-box">
         <span>Source file</span>
-        <code>{html.escape(absolute_path)}</code>
+        <code>{html.escape(source_path)}</code>
       </div>
       <p class="generated-small">Generated {html.escape(generated_at)} from canonical Markdown. Do not edit this HTML by hand.</p>
     </section>

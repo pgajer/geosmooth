@@ -1,8 +1,8 @@
 # Logistic trend-filtering assessment
 
-User request: implement a global permutation test of a constant binary
-probability, accompanied by predictive improvement. Use a separate assessment
-function; the fitting API and native objective remain unchanged.
+This assessment tests a constant binary probability using a global permutation
+test and separately measures predictive improvement. It uses a separate
+assessment function; the fitting API and native objective remain unchanged.
 
 Scope: independent binary, unit-weight observations, with no covariates or
 offset. Reject unsupported inputs. The caller must establish independence and
@@ -32,14 +32,12 @@ outcome isolation; loss reconstruction; candidate diagnostics; existing dense/
 banded regression tests. Synthetic null/signal examples illustrate the two
 outputs without claiming broad power or coverage. Use fixed seeds and record
 actual results. Integrate help, grouped guides, test target and a short vignette
-example. Full package checks after targeted checks. Preserve unrelated untracked
-banded_backend_report.html.
+example. Full package checks follow targeted checks.
 
-No substantial competing numerical jobs were present at allocation check.
-Keep numerical work sequential with one thread and the prior 1 GiB allocation.
-No native source changes are planned. Use the previously checked optimized
-installed backend for targeted tests, then a current-source package check.
-Status: implementation and validation complete; changes remain local.
+Validation used sequential numerical work with one thread and a 1 GiB memory
+allocation. Targeted tests used the previously checked optimized installed
+backend, followed by a current-source package check. No native source changed.
+Implementation and validation are complete.
 
 Real-data integration check after package checks: MASS::Pima.tr only (200
 women), binary Yes outcome and glucose predictor, no covariates/offset/weights,
@@ -117,20 +115,24 @@ source/help/test/vignette files before building. Packaged inputs were then
 checked against the working tree in both directions, excluding the intentional
 tests/migration omission. No incomplete-snapshot result was accepted.
 
-Private evidence: /Users/pgajer/.codex/private/geosmooth/assessment-20261105/.
-It contains targeted test logs, full-check.log, the checked source tarball and
-installation under source/geosmooth.Rcheck, the built vignette/figure, synthetic
-analysis objects, validate-pima.R, Pima result/score/permutation files, and
-session information. Numerical work used one thread with the local optimized
-backend; full builds used the previously validated private dgraphs library,
+The maintainer retains the original validation bundle outside the public
+repository: targeted and full-check logs, the checked source tarball and
+installation, the built vignette/figure, synthetic analysis objects, the Pima
+validation script and result/score/permutation files, and session information.
+Public regression checks are in
+[the assessment tests](../../../tests/testthat/test-logistic-trend-filtering-assessment.R);
+run them with the fitting regressions using `make test-logistic-tf`. The
+[logistic trend-filtering vignette](../../../vignettes/logistic-trend-filtering.Rmd)
+contains the synthetic examples. Numerical work used one thread with the local
+optimized backend; full builds used the previously validated private dgraphs library,
 sequential Makevars and -O2 -g0. This was correctness validation, not a runtime
 benchmark. No native source was changed, and no bootstrap confidence band,
 Bayesian posterior or adjusted/grouped permutation test is claimed.
 
 ## Probability-curve summaries and optional tests (2026-11-06)
 
-Authorized extension: retain the likelihood test and predictive assessment,
-add absolute-deviation and total-variation summaries, and optionally test those
+The extension retains the likelihood test and predictive assessment, adds
+absolute-deviation and total-variation summaries, and optionally tests those
 summaries through the existing complete refit-and-permute procedure.
 
 Conventions: absolute deviation averages over observations, preserving tied
@@ -151,13 +153,12 @@ conditional-null enumeration for each statistic and the Holm family. Update
 help, grouped guide, vignette and NEWS. Run targeted tests followed by a full
 package check. This is implementation validation, not a general power study.
 
-Resource check found no competing numerical workloads. Use one compute thread
-and the earlier 1 GiB validation allocation. Reuse the verified optimized
-backend for targeted tests (source and DLL hashes matched the projection-fix
-record), followed by an optimized package build. Evidence directory:
-`/Users/pgajer/.codex/private/geosmooth/assessment-shape-20261106/`.
-Status: implementation and validation complete. The
-focused group passed 342 expectations and the full package suite passed 14,031
+Validation used one compute thread and a 1 GiB memory allocation, with no
+competing numerical workloads. Targeted tests reused the verified optimized
+backend (source and DLL hashes matched the projection-fix record), followed by
+an optimized package build. The maintainer retains the original validation
+bundle outside the public repository. Implementation and validation are
+complete. The focused group passed 342 expectations and the full package suite passed 14,031
 expectations (one intentional tarball/source-runner skip). Full `make check`
 had no errors or warnings and one environment note about V8 being hidden by
 the overridden user-library path. Restoring that path and rerunning the

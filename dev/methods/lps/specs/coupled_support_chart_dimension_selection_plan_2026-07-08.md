@@ -1,8 +1,5 @@
 # Coupled Support-Size x Chart-Dimension Selection Plan
 
-Source path:
-`~/current_projects/geosmooth/dev/methods/lps/specs/coupled_support_chart_dimension_selection_plan_2026-07-08.md`
-
 ## Purpose
 
 This is a good time to start a coupled support-size and chart-dimension
@@ -47,12 +44,11 @@ The PCA-coordinate reuse optimization currently covers numeric chart-dimension
 grids for fixed support sizes in OD-level visit CV paths.  The relevant assets
 are:
 
-- implementation: `~/current_projects/geosmooth/R/state_density.R`;
-- tests: `~/current_projects/geosmooth/tests/testthat/test-state-density-odcv3-lps-outer-visit-cv.R`;
-- implementation handoff:
-  `~/current_projects/geosmooth/dev/methods/ps_lps/handoffs/phase/ps_lps_pca_coordinate_reuse_optimization_handoff_2026-07-08.md`;
-- audit:
-  `~/current_projects/geosmooth/dev/methods/ps_lps/audits/pca_coordinate_reuse/ps_lps_pca_coordinate_reuse_audit_2026-07-08.md`.
+- [implementation](../../../../R/state_density.R);
+- [regression tests](../../../../tests/testthat/test-state-density-odcv3-lps-outer-visit-cv.R).
+
+The original implementation and independent review records are not distributed
+with the package; the links above point to the maintained source and tests.
 
 The important implementation rule is:
 
@@ -496,10 +492,14 @@ same held-out metric.  The comparison arms should include:
 - full Cartesian `(k,d)` reference on every example or calibrated subset where
   it is computationally feasible.
 
-The report should follow:
-
-- `/Users/pgajer/.codex/notes/agent_instructions/reports/html_report_style_guide.md`;
-- `/Users/pgajer/.codex/notes/agent_instructions/reports/report_figure_table_qc.md`.
+The report should explain the tested methods, datasets, comparison groups and
+conditions before interpreting results. Define metrics, units, inclusion rules
+and success criteria; distinguish measured results from interpretation and
+unresolved questions. Figures and tables should have readable labels and
+captions, show paired uncertainty where supported, and disclose failures or
+incomplete comparisons. Preserve the commands, inputs and original results
+needed for reproduction, and inspect the rendered report for clipped or
+unreadable content.
 
 Figures should include:
 
@@ -532,8 +532,8 @@ Before this direction can be used routinely, the implementation should satisfy:
 7. Strategy comparisons use matched outer folds or known-truth targets; they do
    not use each arm's optimized inner CV score as the primary evidence of
    superiority.
-8. No default method behavior changes until an auditor accepts the focused
-   comparison report.
+8. No default method behavior changes until independent review of the focused
+   comparison report confirms that the acceptance criteria are met.
 
 ## Risks And Design Constraints
 

@@ -1,4 +1,4 @@
-# Auditor-authored scan; loading/output paths adapted and final no-selection assertion added.
+# Scan weakly connected chains for unresolved heat-score tuning paths.
 pkgload::load_all('.',quiet=TRUE)
 args <- commandArgs(TRUE)
 set.seed(6172026)

@@ -13,7 +13,7 @@
 .geosmooth.load.gflow.reference <- function() {
     source.path <- Sys.getenv(
         "GEOSMOOTH_GFLOW_SOURCE",
-        "/Users/pgajer/current_projects/gflow"
+        file.path(dirname(.geosmooth.test.package.root()), "gflow")
     )
     if (dir.exists(source.path) &&
         file.exists(file.path(source.path, "DESCRIPTION")) &&

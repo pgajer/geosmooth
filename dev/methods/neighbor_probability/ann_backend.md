@@ -67,11 +67,11 @@ All three estimators evaluate k = 3:20 on seasonal allergies and IBD, with sum
 and maximum normalization, brute force, exact ANN and eps = 0.1/0.5. Each cell
 is timed three times in randomized backend order. Prediction times include
 tree construction; normalization and ID hashing are measured separately.
-No full-cohort predictions, tuning or AGP model comparison is authorized here.
+This pilot does not evaluate full-cohort predictions, tuning or AGP model comparisons.
 
-The run uses one compute thread, within the previously agreed four-thread and
-10 GiB ceilings. Two one-thread AGP geometry workers and a separate vignette
-build were active at admission. Native compilation occurs once before timing,
+The run used one compute thread within a four-thread, 10 GiB allocation. Two
+one-thread AGP geometry workers and a separate vignette build were active on
+the shared host. Native compilation occurred once before timing,
 using `pkgbuild::compile_dll(debug = FALSE)`; the local dgraphs dependency is
 loaded without recompilation. The private run manifest records source hashes,
 input hashes, query IDs, session details and the resource allocation. Individual
@@ -131,17 +131,15 @@ exact/approximate predictions, serialization and both help examples. The API
 guide audit passed. These are targeted feature checks, not a full package or
 CRAN check.
 
-Local evidence is retained in
-[the run manifest](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/plan.json),
-[raw timings](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/timings.tsv),
-[error summaries](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/errors.tsv), and
-[the resource log](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-ann-agp-20261105/run.log).
+The aggregate results above summarize the original timing and error tables.
+Run metadata record source and input identities; reproduction requires the
+original cohort inputs and the scripts described here.
 `scripts/summarize_neighbor_agp_ann.py OUTPUT` regenerates the aggregate table
 without reading individual labels or predictions. Full AGP fits remain unrun.
 
 ## Max-normalized surface geometry: decision before AGP estimation
 
-The user has requested intrinsic geometry for the max-normalized analysis.
+The proposed max-normalized analysis uses intrinsic geometry.
 The local dgraphs API `linf.simplex.distances()` implements shortest
 Euclidean-length paths on the nonnegative surface `max(x) = 1`, permitting
 intermediate faces. Its graph constructors `create.single.iknn.graph()` and

@@ -28,7 +28,7 @@ OUT_FILES=(e1_10_a_optimism_cases.csv e1_10_a_optimism_verdict.csv \
            e1_10_b_grouped_cases.csv e1_10_b_grouped_verdict.csv \
            e1_10_run_metadata.txt)
 
-# Source + output checksums (the auditor recomputes these independently).
+# Source + output checksums (recompute these independently during verification).
 SHA "${SRC_FILES[@]}" > "$OUT/source_checksums.txt"
 ( cd "$OUT" && SHA "${OUT_FILES[@]}" >> source_checksums.txt )
 

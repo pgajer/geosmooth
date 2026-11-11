@@ -35,16 +35,19 @@ nonmanifold, and microbiome-style state spaces.
 
 ## Package promotion in `geosmooth`
 
-The early LPS/PS-LPS orientation brief has been restored here:
+The Tier 0--4 validation agenda developed from the early LPS/PS-LPS design work
+and independent pre-submission review. The maintainer retains rendered copies
+of those original design and review records outside the public repository.
 
-- `~/current_projects/geosmooth/dev/notes/cross_method/lps_ps_lps_project_brief_09-06-2026.md`
+The maintained public validation sources are:
 
-The independent pre-submission audit that turned the early LPS/PS-LPS work into
-the Tier 0--4 validation agenda is:
+- [LPS experimental plan](specs/lps_experimental_plan_2026-06-09.tex), including
+  the scientific questions, fixtures and acceptance criteria;
+- [validation scripts](ci/), with fixed configurations, provenance checks and
+  numerical diagnostics;
+- [package tests](../../../tests/testthat/), containing the executable
+  correctness and regression checks.
 
-- `~/current_projects/geosmooth/dev/notes/cross_method/lps_ps_lps_jasa_style_audit_2026-06-09.md`
-
-The current LPS validation spine is:
-
-- `~/current_projects/geosmooth/dev/methods/lps/specs/lps_experimental_plan_2026-06-09.tex`
-- `~/current_projects/geosmooth/dev/methods/lps/audit_contracts/tiers1to4/lps_tiers1to4_contract_2026-06-11.md`
+The upstream paths above identify historical research assets in the maintainer's
+separate `trend_filtering` checkout; they are not package files or public download
+links. Reproducing those upstream studies requires their original inputs.

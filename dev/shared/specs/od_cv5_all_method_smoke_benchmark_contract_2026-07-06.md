@@ -1,6 +1,6 @@
 # OD-CV5 All-Method Smoke Benchmark Contract
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od_cv5_all_method_smoke_benchmark_contract_2026-07-06.md`
+Source: `dev/shared/specs/od_cv5_all_method_smoke_benchmark_contract_2026-07-06.md`
 
 ## Purpose
 

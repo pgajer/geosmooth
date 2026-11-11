@@ -4,16 +4,16 @@
 #
 # Reuses the Tier-0 execution-artifact pattern
 # (dev/methods/lps/ci/run_tier0_execution_artifact.sh): produces a self-contained,
-# tamper-evident bundle that lets an INDEPENDENT auditor verify whether the
+# tamper-evident bundle for independent verification that the
 # E1.9 GATEs -- and the Tier-0 battery they must not regress -- pass against
-# a CLEAN, COMMITTED tree, without trusting the implementer's console output.
+# a CLEAN, COMMITTED tree, without trusting interactive console output.
 #
 # Usage:   bash dev/methods/lps/ci/run_e1_9_execution_artifact.sh [REPO_ROOT]
 # Env:     EXECUTOR  free-text executor id recorded in the manifest
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
-# still produce its artifact). Gate acceptance is decided by the auditor from
-# the manifest, not by this script's exit code.
+# still produce its artifact). Gate acceptance requires independent review of
+# the manifest and cannot be inferred from this script's exit code.
 # =============================================================================
 set -uo pipefail
 
@@ -125,11 +125,11 @@ PROBE_RC=$?
 # --- 7) Bundle checksums (tamper-evidence over the whole bundle) --------------
 ( cd "$OUT" && SHA $(ls | grep -v '^BUNDLE_CHECKSUMS.txt$') > BUNDLE_CHECKSUMS.txt 2>/dev/null ) || true
 
-# --- 8) Preliminary readiness (the AUDITOR makes the final call) --------------
+# --- 8) Preliminary readiness (independent review is still required) --------------
 echo "[e1.9-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[e1.9-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
 if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && $CLEAN; then
-  echo "[e1.9-artifact] PRELIMINARY: green (auditor must still verify realized quantities, coverage)"
+  echo "[e1.9-artifact] PRELIMINARY: green (independent review must still verify realized quantities, coverage)"
 else
   echo "[e1.9-artifact] PRELIMINARY: NOT green"
 fi

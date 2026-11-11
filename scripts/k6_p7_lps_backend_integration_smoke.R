@@ -1,8 +1,13 @@
 #!/usr/bin/env Rscript
 
-repo <- "/Users/pgajer/current_projects/geosmooth"
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
+repo <- geosmooth_dev_path("repo")
 p7.scripts <- paste(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf",
+    geosmooth_dev_path("trend_filtering", "development", "slpl_tf"),
     "experiments/p7_prospective_synthetic_suite/scripts",
     sep = "/"
 )

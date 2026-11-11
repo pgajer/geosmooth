@@ -47,6 +47,8 @@ test_that("unsupported held-out records remain visible in coverage", {
 })
 test_that("graph parallelism reproduces serial predictions", {
     skip_on_os("windows")
+    skip_if(identical(Sys.getenv("GEOSMOOTH_TEST_CORES"), "1"),
+        "The parallelism comparison requires two worker processes")
     studies <- list(one=list(vertex=rep(c(1,3),6), y=1:12, group=letters[1:12]))
     ops <- list(a=field_operator(), b=field_operator())
     a <- compare.masked.graph.fields(ops, studies, workers=1,

@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
 ## Freeze auditable first-batch assets for comparing LPS
@@ -13,8 +18,7 @@ script.path <- if (length(file.arg)) {
 }
 repo <- normalizePath(file.path(dirname(script.path), ".."), mustWork = TRUE)
 out.dir <- file.path(
-  repo,
-  "split_handoffs",
+  geosmooth_dev_path("output"),
   "lps_local_auto_nonmanifold_first_batch_2026-06-05"
 )
 asset.dir <- file.path(out.dir, "assets")
@@ -35,7 +39,7 @@ load_linf <- function() {
     if (!requireNamespace("pkgload", quietly = TRUE)) {
       stop("pkgload is required to load linf from source.", call. = FALSE)
     }
-    pkgload::load_all("/Users/pgajer/current_projects/linf", quiet = TRUE)
+    pkgload::load_all(geosmooth_dev_path("linf"), quiet = TRUE)
   }
 }
 
@@ -199,11 +203,11 @@ make_asset <- function(batch.id, dataset.id, geometry.family, X, labels,
 }
 
 source_paths <- list(
-  valencia_tx = "/Users/pgajer/current_projects/valencia/tx.13k.rds",
-  valencia_cst = "/Users/pgajer/current_projects/valencia/cst.tx.13k.rds",
-  linf_depth2 = "/Users/pgajer/current_projects/linf/data/valencia13k_dcst_depth2_merged.rda",
-  linf_depth3 = "/Users/pgajer/current_projects/linf/data/valencia13k_dcst_depth3_merged.rda",
-  linf_hypercube_1k = "/Users/pgajer/current_projects/linf/data/valencia_linf_hypercube_1k.rda"
+  valencia_tx = geosmooth_dev_path("valencia", "tx.13k.rds"),
+  valencia_cst = geosmooth_dev_path("valencia", "cst.tx.13k.rds"),
+  linf_depth2 = geosmooth_dev_path("linf", "data/valencia13k_dcst_depth2_merged.rda"),
+  linf_depth3 = geosmooth_dev_path("linf", "data/valencia13k_dcst_depth3_merged.rda"),
+  linf_hypercube_1k = geosmooth_dev_path("linf", "data/valencia_linf_hypercube_1k.rda")
 )
 missing <- names(source_paths)[!file.exists(unlist(source_paths))]
 if (length(missing)) {

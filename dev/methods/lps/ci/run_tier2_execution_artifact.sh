@@ -3,18 +3,17 @@
 # Tier-2 execution-artifact harness (binary path & numerical hygiene)
 #
 # Reuses the Tier-0 execution-artifact pattern
-# (dev/methods/lps/ci/run_tier0_execution_artifact.sh; contract
-# dev/methods/lps/audit_contracts/tier0/lps_tier0_execution_artifact_contract_2026-06-10.md):
-# produces a self-contained, tamper-evident bundle that lets an INDEPENDENT
-# auditor verify the Tier-2 gates -- and that the Tier-0 battery still passes
+# (dev/methods/lps/ci/run_tier0_execution_artifact.sh):
+# produces a self-contained, tamper-evident bundle for independent verification
+# of the Tier-2 gates -- and that the Tier-0 battery still passes
 # after the Tier-2 source changes -- against a CLEAN, COMMITTED tree.
 #
 # Usage:   bash dev/methods/lps/ci/run_tier2_execution_artifact.sh [REPO_ROOT]
 # Env:     EXECUTOR  free-text executor id recorded in the manifest
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
-# still produce its artifact). Gate acceptance is decided by the auditor, not
-# by this script's exit code.
+# still produce its artifact). Gate acceptance requires independent review and
+# cannot be inferred from this script's exit code.
 # =============================================================================
 set -uo pipefail
 
@@ -135,11 +134,11 @@ git status --porcelain > "$OUT/git_status_post_study.txt" 2>/dev/null
 # --- 7) Bundle checksums (tamper-evidence over the whole bundle) --------------
 ( cd "$OUT" && SHA $(ls | grep -v '^BUNDLE_CHECKSUMS.txt$') > BUNDLE_CHECKSUMS.txt 2>/dev/null ) || true
 
-# --- 8) Preliminary readiness (the AUDITOR makes the final call) --------------
+# --- 8) Preliminary readiness (independent review is still required) --------------
 echo "[tier2-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[tier2-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
 if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && $CLEAN; then
-  echo "[tier2-artifact] PRELIMINARY: green (auditor must still verify coverage and realized quantities)"
+  echo "[tier2-artifact] PRELIMINARY: green (independent review must still verify coverage and realized quantities)"
 else
   echo "[tier2-artifact] PRELIMINARY: NOT green"
 fi

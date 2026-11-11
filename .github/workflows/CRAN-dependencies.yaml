@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Check public repository content
+        run: python tools/check-public-content.py
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: release
@@ -22,3 +27,5 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
       - uses: r-lib/actions/check-r-package@v2
+      - name: Check generated source archive content
+        run: python tools/check-public-content.py --archive-dir check

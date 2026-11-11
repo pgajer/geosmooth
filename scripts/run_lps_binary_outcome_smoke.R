@@ -1,12 +1,16 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 suppressPackageStartupMessages({
-    pkgload::load_all("/Users/pgajer/current_projects/geosmooth", quiet = TRUE)
+    pkgload::load_all(geosmooth_dev_path("repo"), quiet = TRUE)
 })
 
 out.dir <- file.path(
-    "/Users/pgajer/current_projects/geosmooth",
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "lps_binary_outcome_smoke_2026-06-07"
 )
 fig.dir <- file.path(out.dir, "figures")

@@ -112,13 +112,13 @@ statistics and exceedance changes, observed curves and heldout predictions.
 
 Evidence is private because it includes individual-level AGP and reference
 observations. The reproducible public fixtures are in
-`tests/testthat/test-logistic-trend-filtering.R` and
-`tests/testthat/test-logistic-trend-filtering-banded.R`. Private root-cause
-artifacts, optimized installation, replay records and reference comparisons are
-under `/Users/pgajer/.codex/private/geosmooth/projection-fix-20261105/`.
-The corrected pilot bundle is under
-`/Users/pgajer/.codex/private/gut_microbiome/agp_trend_pilot_20261105_projection_fix/`;
-the original bundle remains unchanged beside it.
+[the fitter tests](../../../tests/testthat/test-logistic-trend-filtering.R) and
+[the banded-backend tests](../../../tests/testthat/test-logistic-trend-filtering-banded.R).
+Run them with `make test-logistic-tf`. The maintainer retains the root-cause
+artifacts, optimized installation, replay records, reference comparisons and
+corrected pilot bundle outside the public repository. The original bundle is
+preserved separately and unchanged. Replaying the individual-level cases
+requires access to those original inputs.
 
 ## Limits of the correction
 
@@ -158,7 +158,7 @@ do not leave any permutation statistic unavailable; they are not counted as
 recovered or accepted fits. The original 47 missing-statistic failures and
 these remaining candidate-level limits are distinct.
 
-The corrected 13-page report and its source, aggregate tables, original/corrected
-comparison, failure classification and reproduction instructions are in
-`/Users/pgajer/current_projects/gut_microbiome/reports/agp_trend_filtering_pilot_2026-11-05_corrected/`.
-The original report and evidence remain preserved separately.
+The maintainer retains the corrected 13-page report and its source, aggregate
+tables, original/corrected comparison, failure classification and reproduction
+instructions with the AGP pilot records. These are not distributed with the
+package. The original report and evidence remain preserved separately.

@@ -1,10 +1,15 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 if (!requireNamespace("pkgload", quietly = TRUE)) {
     stop("Package 'pkgload' is required.", call. = FALSE)
 }
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 pkgload::load_all(project.dir, quiet = TRUE)
 
 `%||%` <- function(a, b) {
@@ -16,13 +21,12 @@ timestamp <- function() {
 }
 
 root <- paste(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf",
+    geosmooth_dev_path("trend_filtering", "development", "slpl_tf"),
     "experiments/p7_prospective_synthetic_suite",
     sep = "/"
 )
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k9_lps_local_pca_native_phase_profile_2026-06-04"
 )
 table.dir <- file.path(out.dir, "tables")
@@ -521,8 +525,7 @@ handoff <- c(
 writeLines(
     handoff,
     file.path(
-        project.dir,
-        "split_handoffs",
+        geosmooth_dev_path("output"),
         "k9_lps_local_pca_native_phase_profile_handoff_2026-06-04.md"
     )
 )

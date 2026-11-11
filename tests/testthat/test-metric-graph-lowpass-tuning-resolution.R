@@ -66,7 +66,7 @@ test_that("the observed residual dimension identifies flat disconnected paths", 
     expect_true(all(is.finite(refit(fixed,y)$fitted.values)))
 })
 
-test_that("the auditor's nine-vertex weak-chain example cannot choose a time", {
+test_that("the nine-vertex weak-chain example cannot choose a time", {
     set.seed(6172026)
     for (i in seq_len(72)) {
         n <- sample(4:9,1); w <- runif(n-1,.5,2)

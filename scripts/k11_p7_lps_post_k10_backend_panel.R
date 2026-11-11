@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 ## K11: post-K10 P7/LPS backend panel validation.
 ##
 ## This script compares the current local-PCA LPS R-reference path
@@ -12,7 +17,7 @@ if (!requireNamespace("pkgload", quietly = TRUE)) {
     stop("Package 'pkgload' is required.", call. = FALSE)
 }
 
-project.dir <- "/Users/pgajer/current_projects/geosmooth"
+project.dir <- geosmooth_dev_path("repo")
 pkgload::load_all(project.dir, quiet = TRUE)
 
 `%||%` <- function(a, b) {
@@ -54,13 +59,12 @@ rmse <- function(x, y) {
 }
 
 root <- paste(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf",
+    geosmooth_dev_path("trend_filtering", "development", "slpl_tf"),
     "experiments/p7_prospective_synthetic_suite",
     sep = "/"
 )
 out.dir <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k11_p7_lps_post_k10_backend_panel_2026-06-04"
 )
 table.dir <- file.path(out.dir, "tables")
@@ -516,8 +520,7 @@ html <- paste0(
 writeLines(html, html.path)
 
 handoff.path <- file.path(
-    project.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "k11_p7_lps_post_k10_backend_panel_handoff_2026-06-04.md"
 )
 handoff <- c(
@@ -592,8 +595,8 @@ handoff <- c(
     "",
     "```sh",
     "Rscript scripts/k11_p7_lps_post_k10_backend_panel.R",
-    "Rscript -e 'pkgload::load_all(\"/Users/pgajer/current_projects/geosmooth\", quiet=TRUE); testthat::test_file(\"/Users/pgajer/current_projects/geosmooth/tests/testthat/test-ge7-lps-api.R\", reporter=\"summary\")'",
-    "Rscript -e 'pkgload::load_all(\"/Users/pgajer/current_projects/geosmooth\", quiet=TRUE); testthat::test_file(\"/Users/pgajer/current_projects/geosmooth/tests/testthat/test-ge1-r-smoothers.R\", reporter=\"summary\")'",
+    "Rscript -e 'pkgload::load_all(\".\", quiet=TRUE); testthat::test_file(\"tests/testthat/test-ge7-lps-api.R\", reporter=\"summary\")'",
+    "Rscript -e 'pkgload::load_all(\".\", quiet=TRUE); testthat::test_file(\"tests/testthat/test-ge1-r-smoothers.R\", reporter=\"summary\")'",
     "git diff --check",
     "```"
 )

@@ -1,23 +1,22 @@
 # =============================================================================
 # E4.1 Part B — ACCEPTANCE invocation (ratified configuration, pinned)
 #
-# Ratification: orchestrator 2026-06-12
-# (dev/methods/lps/audit_contracts/tiers1to4/
-# e4_1_k_ratification_orchestrator_2026-06-12.md):
+# Acceptance configuration fixed on 2026-06-12:
 #   K = 20, kernel tricube, DGP = frozen audited row G3a-R1-smooth-s010-n1200
 #   (curvature R = 1, geometry seed 1, sigma = 0.1 KNOWN), n = 1200, R = 500,
 #   conditional-on-design coverage, drift-guarded fast path (guards at
-#   replicate 1, every 25th, and the last; fit.every.replicate available to
-#   the auditor). GATE: interior average coverage in [0.93, 0.97] (known
-#   sigma) / [0.92, 0.98] (plug-in). STUDY: boundary and top-curvature-decile
+#   replicate 1, every 25th, and the last; fit.every.replicate enables
+#   independent reproduction without the fast path). GATE: interior average
+#   coverage in [0.93, 0.97] (known sigma) / [0.92, 0.98] (plug-in).
+#   STUDY: boundary and top-curvature-decile
 #   strata reported separately, never averaged into the interior headline.
 #   The manifest records K, kernel, design seed, realized interior mean and
 #   max bias/se, both coverages, and the strata.
 #
 # This driver pins the ratified arguments so the acceptance configuration is
 # code under version control, not an operator's command line. The only
-# accepted overrides are out.dir and fit.every.replicate (the auditor's
-# no-shortcut reproduction); anything else errors.
+# accepted overrides are out.dir and fit.every.replicate (full per-replicate
+# reproduction); anything else errors.
 #
 # Usage: Rscript dev/methods/lps/ci/e4_1_acceptance_run.R [out.dir=...] [fit.every.replicate=TRUE]
 # =============================================================================

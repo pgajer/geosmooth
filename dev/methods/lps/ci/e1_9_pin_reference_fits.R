@@ -9,9 +9,9 @@
 #
 # PURPOSE: executed once at the last pre-change commit, this freezes the
 # "current behavior" that the E1.9 b = 1 backward-compatibility GATE pins
-# (contract lps_tiers1to4_contract_2026-06-11.md, sB/E1.9, tau_alg = 1e-10).
-# An auditor can re-derive every pinned value by checking out the recorded
-# commit and re-running:
+# (experimental plan sE1.9, tau_alg = 1e-10).
+# Re-derive each pinned value independently by checking out the recorded commit
+# and re-running:
 #
 #     Rscript dev/methods/lps/ci/e1_9_pin_reference_fits.R
 #

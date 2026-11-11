@@ -1,6 +1,6 @@
 # OD-CV0 Visit-Level Selection Contract
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od_cv0_visit_cv_selection_contract_2026-07-06.md`
+Source: `dev/shared/specs/od_cv0_visit_cv_selection_contract_2026-07-06.md`
 
 ## Purpose
 

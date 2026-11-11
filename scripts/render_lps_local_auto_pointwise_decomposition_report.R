@@ -1,15 +1,18 @@
 #!/usr/bin/env Rscript
 
-repo.dir <- normalizePath("/Users/pgajer/current_projects/geosmooth", mustWork = TRUE)
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
+repo.dir <- normalizePath(geosmooth_dev_path("repo"), mustWork = TRUE)
 freeze.dir <- file.path(
-  repo.dir,
-  "split_handoffs",
+  geosmooth_dev_path("output"),
   "lps_local_auto_nonmanifold_first_batch_2026-06-05"
 )
 run.dir <- file.path(freeze.dir, "runs", "lps_local_auto_fb_20260605_001")
 report.dir <- file.path(
-  repo.dir,
-  "split_handoffs",
+  geosmooth_dev_path("output"),
   "lps_local_auto_pointwise_decomposition_2026-06-05"
 )
 fig.dir <- file.path(report.dir, "figures")

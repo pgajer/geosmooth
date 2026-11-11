@@ -13,10 +13,10 @@
 # WIRING ONLY (`dgp.source = "inline-smoke"`); a verdict row carrying an
 # inline-smoke source is never acceptance evidence.
 #
-# UNPINNED KNOBS (e4_1_spec_questions_implementer_2026-06-11.md §4): the spec
-# fixes singleton grids, chart.dim = 2, degree 1, n, sigma, R — but not the
-# support size K, the kernel, or G3a's curvature radius. They are parameters
-# here, recorded in every artifact; the orchestrator pins them for acceptance.
+# STUDY PARAMETERS: the spec fixes singleton grids, chart.dim = 2, degree 1,
+# n, sigma, R — but not the support size K, the kernel, or G3a's curvature
+# radius. They are parameters here, recorded in every artifact; the acceptance
+# configuration is fixed in dev/methods/lps/ci/e4_1_acceptance_run.R.
 #
 # POWER CALCULATION (spec §sec:tol, Monte-Carlo convention): per-point
 # coverage across R independent replicates is Bernoulli-mean distributed with

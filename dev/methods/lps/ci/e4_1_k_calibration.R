@@ -1,13 +1,13 @@
 # =============================================================================
 # E4.1 — support-size (K) calibration on the audited G3a (Part B, Item 4a)
 #
-# Orchestrator resolution 2026-06-12 (Item 4a): before the acceptance run,
+# Calibration protocol dated 2026-06-12 (Item 4a): before the acceptance run,
 # report the realized interior bias-to-se ratio as a function of K on the
 # frozen, audit-accepted row G3a-R1-smooth-s010-n1200, and propose the largest
 # K whose interior bias/se is small enough that bias cannot move coverage out
 # of the gate band (target interior bias/se <~ 0.3). Kernel pinned: tricube.
-# The proposed K is RATIFIED BY THE ORCHESTRATOR before the acceptance run;
-# this script produces the table, not the decision.
+# The proposed K must be reviewed and fixed before the acceptance run;
+# this script produces the table, not the acceptance configuration.
 #
 # The calibration is DETERMINISTIC — no Monte Carlo:
 #   bias_i = E[yhat_i] - f(x_i) = (S f)_i - f_i   (S is y-free at the fixed
@@ -151,7 +151,7 @@ run.e4.1.k.calibration <- function(
                 format(proposal$largest.K.mean.ratio)),
         sprintf("largest K with expected interior coverage >= 0.945: %s",
                 format(proposal$largest.K.expected.coverage.0945)),
-        "status: PROPOSAL ONLY - the acceptance K awaits orchestrator ratification",
+        "status: PROPOSAL ONLY - review and fix the acceptance K before the acceptance run",
         paste0("out.dir: ", out.dir)
     ), file.path(out.dir, "e4_1_k_calibration_summary.txt"))
     cat(readLines(file.path(out.dir, "e4_1_k_calibration_summary.txt")),

@@ -1,4 +1,9 @@
 #!/usr/bin/env Rscript
+
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
 # Frozen dense/banded comparison; run after one optimized native compilation.
 args <- commandArgs(TRUE)
 if (!length(args) %in% 2:3) stop('Usage: Rscript scripts/validate_logistic_trend_filtering_banded.R REFERENCE_ROOT NEW_OUTPUT_DIR [CURRENT_SOURCE_INSTALL_LIBRARY]')
@@ -9,7 +14,7 @@ Sys.setenv(OMP_NUM_THREADS=1,OPENBLAS_NUM_THREADS=1,MKL_NUM_THREADS=1,VECLIB_MAX
 if (length(args)==3L) {
     library(geosmooth,lib.loc=args[3]); mode <- 'installed_optimized_current_source'
 } else {
-    pkgload::load_all('/Users/pgajer/current_projects/dgraphs',recompile=FALSE,quiet=TRUE)
+    pkgload::load_all(geosmooth_dev_path("dgraphs"),recompile=FALSE,quiet=TRUE)
     pkgload::load_all('.',recompile=FALSE,quiet=TRUE); mode <- 'source_optimized'
 }
 hash <- function(p) digest::digest(file=p,algo='sha256')

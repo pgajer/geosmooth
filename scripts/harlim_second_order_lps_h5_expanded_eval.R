@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
 if (!requireNamespace("pkgload", quietly = TRUE)) {
     stop("Package 'pkgload' is required for this script.", call. = FALSE)
 }
@@ -8,8 +13,7 @@ pkgload::load_all(".", quiet = TRUE)
 
 date.tag <- "2026-06-04"
 out.root <- file.path(
-    getwd(),
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "harlim_second_order_lps_h5_expanded_eval_2026-06-04"
 )
 table.dir <- file.path(out.root, "tables")
@@ -18,7 +22,7 @@ dir.create(table.dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig.dir, recursive = TRUE, showWarnings = FALSE)
 
 p7.root <- file.path(
-    "/Users/pgajer/current_projects/trend_filtering/development/slpl_tf",
+    geosmooth_dev_path("trend_filtering", "development", "slpl_tf"),
     "experiments/p7_prospective_synthetic_suite"
 )
 geometry.registry.path <- file.path(

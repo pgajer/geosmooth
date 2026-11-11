@@ -4,10 +4,9 @@
 # confirmatory test of the train-size-bias explanation of the Study (b)
 # rho=0.6 absolute FAIL.
 #
-# Origin: orchestrator adjudication + work order
-#   dev/methods/lps/audit_contracts/lps_e1_10_bprime_adjudication_workorder_2026-06-14.md
-# Additive and NON-BLOCKING: it does NOT alter the ratified Study (b)
-# (dev/methods/lps/ci/e1_10_nested_grouped_cv.R, which stays byte-frozen) and does NOT
+# Follow-up protocol dated 2026-06-14.
+# Additive and NON-BLOCKING: it does NOT alter the Study (b) protocol or
+# numerical implementation (dev/methods/lps/ci/e1_10_nested_grouped_cv.R) and does NOT
 # change package source. LOCO is the existing exported utility
 # lps.grouped.foldid(cluster.id, v = n_clusters) fed to lps.nested.cv(); the
 # relative criterion is a verdict computation. dgp.g5 is consumed from the
@@ -31,7 +30,7 @@
 #   At rho = 0.6 (gated; rho = 0.3 reported-only):
 #   * PRIMARY (relative-improvement, folding-scheme correctness):
 #       mean(gap) > 0.10  AND  mean(rel.groupedA) <= (1 - f) * mean(rel.random),
-#       with f = 0.50 (orchestrator-ratified; observed closure in Study (b)
+#       with f = 0.50 (prespecified; observed closure in Study (b)
 #       was 0.68). SE guard on mean(gap) and mean(rel.groupedA). Expected PASS.
 #       Reported: closure = 1 - mean(rel.groupedA)/mean(rel.random).
 #   * CONFIRMATORY (LOCO absolute): mean(rel.loco) < 0.10, SE guard on
@@ -158,7 +157,7 @@ bprime.smoke.g5 <- function() {
 if (identical(MODE, "acceptance")) {
     if (!identical(Sys.getenv("LPS_E110_ACCEPT"), "1")) {
         stop("Acceptance mode is gated: set LPS_E110_ACCEPT=1 only after the ",
-             "orchestrator confirms the DGP-library audit accepted G5.",
+             "DGP-library validation has accepted G5.",
              call. = FALSE)
     }
     GEN <- bprime.registry.g5()
@@ -166,7 +165,7 @@ if (identical(MODE, "acceptance")) {
     GEN <- bprime.smoke.g5()
 }
 
-# ---- helpers (self-contained; Study (b) script stays byte-frozen) ------------
+# ---- helpers (self-contained; Study (b) numerical protocol stays frozen) -----
 rmse <- function(pred, obs) {
     ok <- is.finite(pred) & is.finite(obs)
     if (!any(ok)) return(NA_real_)

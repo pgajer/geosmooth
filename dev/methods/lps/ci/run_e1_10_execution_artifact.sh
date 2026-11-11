@@ -3,7 +3,7 @@
 # E1.10 execution-artifact harness (nested + grouped CV, Part A)
 #
 # Reuses the Tier-0/E1.9 execution-artifact pattern: a self-contained,
-# tamper-evident bundle letting an INDEPENDENT auditor verify the E1.10
+# tamper-evident bundle for independent verification of the E1.10
 # Part A GATEs -- and the E1.9 + Tier-0 batteries they must not regress --
 # against a CLEAN, COMMITTED tree.
 #
@@ -11,7 +11,8 @@
 # Env:     EXECUTOR  free-text executor id recorded in the manifest
 #
 # Exit status is ALWAYS 0 when a bundle was written. Gate acceptance is
-# decided by the auditor from the manifest, not by this script's exit code.
+# determined by independent review of the manifest, not by this script's
+# exit code.
 # =============================================================================
 set -uo pipefail
 
@@ -131,11 +132,11 @@ PROBE_RC=$?
 # --- 7) Bundle checksums ----------------------------------------------------------
 ( cd "$OUT" && SHA $(ls | grep -v '^BUNDLE_CHECKSUMS.txt$') > BUNDLE_CHECKSUMS.txt 2>/dev/null ) || true
 
-# --- 8) Preliminary readiness (the AUDITOR makes the final call) -------------------
+# --- 8) Preliminary readiness (independent review is still required) -------------------
 echo "[e1.10-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[e1.10-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
 if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && $CLEAN; then
-  echo "[e1.10-artifact] PRELIMINARY: green (auditor must still verify realized quantities, coverage)"
+  echo "[e1.10-artifact] PRELIMINARY: green (independent review must still verify realized quantities, coverage)"
 else
   echo "[e1.10-artifact] PRELIMINARY: NOT green"
 fi

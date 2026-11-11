@@ -9,6 +9,7 @@
 ^tmp$
 ^validation$
 ^scripts$
+^tools$
 ^tests/migration$
 ^geosmooth\.Rproj$
 ^Makefile$

@@ -1,17 +1,17 @@
 # =============================================================================
 # E4.1 — binding to the AUDITED Amendment-1 G3a generator
 #
-# The DGP library lives on branch `codex/geosmooth-dgp-library`, audit-accepted
-# at commit 58f5ab93b433b73d60c291fc6daebd53644054e8 ("Add DGP-library re-audit
-# verdict (accepted; all 10 tags)"; the library source last changed in its
-# parent 9a62f72). This worktree's branch does not contain the library, so the
-# binding loads `R/dgp_library.R` from git AT THE PINNED COMMIT (recording the
+# The validated DGP library is pinned at commit
+# 58f5ab93b433b73d60c291fc6daebd53644054e8 (all 10 generator tags accepted;
+# the library source last changed in its parent 9a62f72). To reproduce that
+# exact version regardless of the current checkout, the binding loads
+# `R/dgp_library.R` from git AT THE PINNED COMMIT (recording the
 # commit and the file's git blob id), materializes the frozen registry row, and
 # verifies the materialized object's content SHA-256 against the frozen
 # registry (`inst/dgp_registry/dgp_registry.csv` at the same commit) before
 # anything consumes it. A checksum mismatch is a hard stop.
 #
-# E4.1's pinned row (orchestrator resolution 2026-06-12, Item 4b):
+# E4.1's pinned row (protocol dated 2026-06-12, Item 4b):
 #   G3a-R1-smooth-s010-n1200  = dgp.materialize("G3a",
 #       list(n = 1200L, R = 1, truth = "smooth", sigma = 0.10, seed = 1L))
 #   frozen sha256 b5a2e07699378e74eecbeeef5fb2b1108e3701a43601c4623babb81a9d204614

@@ -228,8 +228,8 @@ raw <code>/usr/bin/time -l</code> logs are preserved.</p>
 <p>All 20 fits passed the same KKT gates and all predictions were
 finite. These are measured synthetic examples, not actual AGP analyses
 or worst-case runtime guarantees. Concurrent AGP embedding workers were
-present. The user authorized up to three threads and 6 GiB for this
-task; each worker used one thread.</p>
+present. The combined benchmark allocation was three threads and 6 GiB;
+each worker used one thread.</p>
 <h2 id="preserved-failures-and-tests">Preserved failures and tests</h2>
 <p>The initial tied-data stress test correctly returned iteration-limit
 failures at weak penalties. Admission-timing changes improved one fit
@@ -246,25 +246,21 @@ exact and near ties, off-grid prediction, CV isolation, separation,
 iteration failure, automatic backend selection and workspace
 guarding.</p>
 <h2 id="evidence-and-reproduction">Evidence and reproduction</h2>
+<p>The maintainer retains the dense/banded comparison tables and
+summary, input/source/DLL hash manifest, adjusted-fit comparisons,
+scaling runs, and original failure records outside the public
+repository. The frozen individual-level reference observations are not
+distributed with the package. Reproducing those reference comparisons
+requires access to their original inputs; the public synthetic
+regression tests do not replace that evidence.</p>
+<p>Public reproduction tools and method documentation:</p>
 <ul>
 <li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/comparison.csv">Dense/banded
-comparison table</a></li>
+href="../../../scripts/validate_logistic_trend_filtering_banded.R">Dense/banded
+reference validator</a></li>
 <li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/summary.json">Comparison
-summary</a></li>
-<li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/hashes.csv">Input/source/DLL
-hashes</a></li>
-<li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/adjusted-verified/comparison.csv">Adjusted
-comparison</a></li>
-<li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/scaling-verified">Scaling
-runs</a></li>
-<li><a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105">Development
-and failure evidence</a></li>
+href="../../../tests/testthat/test-logistic-trend-filtering-banded.R">Banded-backend
+regression tests</a></li>
 <li><a href="sparse_backend_plan.md">Implementation plan</a></li>
 </ul>
 <p>Compile optimized once from the package root, or install the current
@@ -285,16 +281,23 @@ documentation. Examples and package tests are excluded by that fast
 target; the 93 focused assertions and numerical reference checks were
 run separately against the final optimized isolated installation. API
 coverage checks pass for 68 exports and 100 S3 registrations. The full
-source/input/DLL hash manifest was rechecked: all 187 entries match. <a
-href="/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/qa-verified">Final
-QA logs</a> preserve those checks and the final build/install
-evidence.</p>
+source/input/DLL hash manifest was rechecked: all 187 entries match. The
+maintainer retains the final QA logs and build/install evidence with the
+original validation bundle.</p>
 <p>The benchmark host was an Apple M4 Max with 64 GiB physical RAM; each
 benchmark used one numerical thread, within this task’s
 three-thread/6-GiB allocation. Windows checks, the entire existing test
 suite and new clinical AGP analyses are outside these completed
 comparisons. Gaussian minimax guarantees are not asserted for this
 model.</p>
+<h2 id="agp-permutation-failure-correction">AGP permutation failure
+correction</h2>
+<p>The November 5 AGP pilot exposed ill-conditioned normal-equation
+projections and roundoff-stalled quadratic initialization. The corrected
+implementation uses scaled banded QR for projection and compensated
+dense objective sums, preserving the objective and convergence gates.
+See <a href="projection_failure_report.md">root causes, regression
+fixtures and validation</a>.</p>
 
 </body>
 </html>

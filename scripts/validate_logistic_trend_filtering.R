@@ -1,4 +1,9 @@
 #!/usr/bin/env Rscript
+
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
 # Read-only comparison with frozen, private clinical solver evidence.
 # Run after one optimized compilation. No Python or glmgen runtime is needed:
 # the original and stricter corrected-glmgen outputs remain independent fixtures.
@@ -15,7 +20,7 @@ if (length(args) == 3L) {
     library(geosmooth, lib.loc = args[3])
     load.mode <- "installed_optimized_current_source"
 } else {
-    pkgload::load_all("/Users/pgajer/current_projects/dgraphs", recompile = FALSE, quiet = TRUE)
+    pkgload::load_all(geosmooth_dev_path("dgraphs"), recompile = FALSE, quiet = TRUE)
     pkgload::load_all(package, recompile = FALSE, quiet = TRUE)
     load.mode <- "source_optimized"
 }

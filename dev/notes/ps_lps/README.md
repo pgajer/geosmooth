@@ -8,5 +8,5 @@ variants of local polynomial smoothing.
 - `implementation/`: implementation notes and backend details.
 - `testing/`: test strategy and validation design notes.
 
-Agent-only prompts, handoffs, audits, work orders, and intermediate review
-products belong under `~/.codex/private/geosmooth/`, not in repository notes.
+Keep operational records outside the checkout; these notes describe the methods
+and their validation.

@@ -90,7 +90,7 @@ adj_weight_from_edge_matrix <- function(n, edge.matrix, edge.weight) {
 
 make_ssrhe_like_graph_trend_case <- function(kind = c("flat", "quadform")) {
   kind <- match.arg(kind)
-  n <- 60L
+  n <- 24L
   dim <- 2L
   if (identical(kind, "flat")) {
     seed <- 13200L

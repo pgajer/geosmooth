@@ -1,15 +1,18 @@
 #!/usr/bin/env Rscript
 
-repo.dir <- normalizePath("/Users/pgajer/current_projects/geosmooth",
+# Resolve optional research inputs and keep generated results outside the package.
+.dev.script <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
+source(file.path(if (!is.na(.dev.script)) dirname(.dev.script) else "scripts",
+                 "development_paths.R"))
+
+repo.dir <- normalizePath(geosmooth_dev_path("repo"),
                           mustWork = TRUE)
 run.dir <- file.path(
-    repo.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "lps_ps_lps_backend_p7x_20260606_001"
 )
 out.dir <- file.path(
-    repo.dir,
-    "split_handoffs",
+    geosmooth_dev_path("output"),
     "ps_lps_monomial_backend_profile_2026-06-07"
 )
 table.dir <- file.path(out.dir, "tables")

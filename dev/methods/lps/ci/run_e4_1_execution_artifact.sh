@@ -3,9 +3,9 @@
 # E4.1 execution-artifact harness (Tier 4 — pointwise variance & bands)
 #
 # Reuses the Tier-0 execution-artifact pattern: produces a self-contained,
-# tamper-evident bundle that lets an INDEPENDENT auditor verify the E4.1
-# Part A gate against a CLEAN, COMMITTED tree, without trusting the
-# implementer's console output. The bundle additionally carries:
+# tamper-evident bundle for independent verification of the E4.1
+# Part A gate against a CLEAN, COMMITTED tree, without trusting
+# interactive console output. The bundle additionally carries:
 #   - the E4.1 headroom/determinism probe (realized margins vs the 1e-10
 #     gate tolerance, analytic-vs-probe S agreement, bitwise determinism);
 #   - a Part B coverage-harness SMOKE run (dgp.source = "inline-smoke") —
@@ -28,11 +28,11 @@
 #                          interior coverages, and the boundary/top-curvature
 #                          strata.
 #          E4_ACCEPT_FIT_EVERY  "TRUE" forces full per-replicate fits in the
-#                          acceptance leg (auditor's no-shortcut reproduction)
+#                          acceptance leg (full per-replicate reproduction)
 #
 # Exit status is ALWAYS 0 when a bundle was written (a failing battery must
-# still produce its artifact). Gate acceptance is decided by the auditor from
-# the manifest, not by this script's exit code.
+# still produce its artifact). Gate acceptance requires independent review of
+# the manifest and cannot be inferred from this script's exit code.
 # =============================================================================
 set -uo pipefail
 
@@ -196,11 +196,11 @@ fi
 # --- 8) Bundle checksums ----------------------------------------------------------
 ( cd "$OUT" && SHA $(find . -type f | sed 's|^\./||' | grep -v '^BUNDLE_CHECKSUMS.txt$' | sort) > BUNDLE_CHECKSUMS.txt 2>/dev/null ) || true
 
-# --- 9) Preliminary readiness (the AUDITOR makes the final call) -------------------
+# --- 9) Preliminary readiness (independent review is still required) -------------------
 echo "[e4.1-artifact] wrote bundle: $OUT"
 $CLEAN || echo "[e4.1-artifact] WARNING: tree not clean/committed -> artifact INVALID for gate acceptance"
 if [ "$TESTTHAT_RC" -eq 0 ] && [ "$PROBE_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$ACCEPT_RC" -eq 0 ] && $CLEAN; then
-  echo "[e4.1-artifact] PRELIMINARY: green (auditor must still verify headroom, coverage, provenance)"
+  echo "[e4.1-artifact] PRELIMINARY: green (independent review must still verify headroom, coverage, provenance)"
 else
   echo "[e4.1-artifact] PRELIMINARY: NOT green"
 fi

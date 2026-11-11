@@ -157,6 +157,6 @@ cat(sprintf(
     nrow(e01), all(e01$pass), max(e01$realized_err), min(e01$headroom_ratio),
     e02$pass, e02$identity_residual, e02$df_residual, det_max, parity$status))
 
-# Non-zero exit if any probed property is out of tolerance (auditor still rules)
+# Non-zero exit if any probed property is out of tolerance; review all diagnostics.
 ok <- all(e01$pass) && isTRUE(e02$pass) && det_max < 1e-12
 quit(status = if (ok) 0L else 1L)

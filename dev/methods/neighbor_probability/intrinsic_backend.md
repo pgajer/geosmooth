@@ -101,10 +101,9 @@ ranking or prediction helpers. This oracle also checks available people/cases,
 radii, stopping ranks and tied boundaries. The streaming backend does not use
 the reference matrix.
 
-The allocation remains at most four compute threads and 10 GiB for this task;
-each numerical process uses one thread. The two previously active AGP geometry
-workers remain undisturbed. Native code is compiled optimized before timing;
-workers do not compile. The run records source and input fingerprints, dgraphs'
+The timing study used at most four compute threads and 10 GiB, with one thread
+per numerical process. Two AGP geometry workers were active on the shared host.
+Native code was compiled optimized before timing; workers did not compile. The run records source and input fingerprints, dgraphs'
 header fingerprint, query identities, session information and resource usage.
 Individual outcomes and predictions stay outside Git.
 
@@ -140,11 +139,9 @@ The final 1,971 source checks and 495 intrinsic checks against a temporary
 installed package passed, as did the executable help examples and API guide
 audit. No full AGP predictions, tuning or state-specific fits were run.
 
-Local evidence:
-[manifest](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-intrinsic-agp-20261105-final/plan.json),
-[timings](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-intrinsic-agp-20261105-final/timings.tsv),
-[reference comparisons](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-intrinsic-agp-20261105-final/checks.json),
-and [resource log](/Users/pgajer/current_projects/geosmooth-neighbor-estimators/tmp/neighbor-intrinsic-agp-20261105-final/run.log).
+The run manifest records source and input identities; raw timing tables and
+reference comparisons support the aggregate results above. Reproduction
+requires the original cohort inputs and the commands below.
 
 ## Reproduction and evidence
 

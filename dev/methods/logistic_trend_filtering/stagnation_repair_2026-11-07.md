@@ -3,9 +3,10 @@
 The 17 unresolved binary candidates from the practical-validation study now
 converge under the original tolerances and iteration ceiling. Both backends
 also pass all 364 surrounding candidate fits and agree with the saved certified
-reference fits. The research record, raw reruns, diagnostic controls and LaTeX
-report are maintained in
-`/Users/pgajer/current_projects/trend_filtering/development/logistic_tf_stagnation/`.
+reference fits. The companion logistic trend-filtering stagnation study in the
+external `trend_filtering` research repository retains the original fits, raw
+reruns and diagnostic controls separately. The numerical changes and regression
+coverage are described below.
 
 - Banded: project inactive-knot duals and choose admission signs using the same
   centered gradients as the convergence check. This removes spurious knot

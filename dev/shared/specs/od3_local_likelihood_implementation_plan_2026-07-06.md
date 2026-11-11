@@ -1,6 +1,6 @@
 # OD3 Local-Likelihood Implementation Plan
 
-Source: `/Users/pgajer/current_projects/geosmooth/dev/shared/specs/od3_local_likelihood_implementation_plan_2026-07-06.md`
+Source: `dev/shared/specs/od3_local_likelihood_implementation_plan_2026-07-06.md`
 
 ## Purpose
 
@@ -392,13 +392,13 @@ Required smoke outputs:
   claim;
 - visual or tabular comparison of raw fitted fields in one 1D example.
 
-### OD3-LL7: Audit Handoff
+### OD3-LL7: Validation Summary
 
-After implementation and tests, generate an auditor handoff under
-`split_handoffs/` following
-`/Users/pgajer/.codex/notes/workflows/agent_handoff_requirements.md`.
+After implementation and tests, prepare a reproducible validation summary for
+independent review. Record the tested source version, inputs, commands, results,
+known limitations and evidence for each admission criterion below.
 
-The handoff must explicitly state:
+The summary must explicitly state:
 
 - whether local likelihood is admitted into broad OD benchmarking;
 - fallback rates in the smoke tests;
@@ -422,7 +422,8 @@ following are true:
 5. Fallback-dominated fits are surfaced with a warning or diagnostic flag.
 6. The method does not silently produce `NA`, `NaN`, `Inf`, or negative raw
    density values.
-7. The implementation has an auditor handoff and audit response.
+7. The validation evidence has received independent review, with findings and
+   their resolution recorded.
 
 ## Deferred Extensions
 

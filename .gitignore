@@ -99,3 +99,6 @@ tmp/
 
 # Generated package website
 /docs/
+
+# Stored results required to build the PCA/PLS vignette
+!/inst/extdata/vignette-results/pca-pls-comparison.rds

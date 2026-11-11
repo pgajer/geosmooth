@@ -118,8 +118,8 @@ hashes, sessions and raw `/usr/bin/time -l` logs are preserved.
 
 All 20 fits passed the same KKT gates and all predictions were finite. These
 are measured synthetic examples, not actual AGP analyses or worst-case runtime
-guarantees. Concurrent AGP embedding workers were present. The user authorized
-up to three threads and 6 GiB for this task; each worker used one thread.
+guarantees. Concurrent AGP embedding workers were present. The combined
+benchmark allocation was three threads and 6 GiB; each worker used one thread.
 
 ## Preserved failures and tests
 
@@ -139,12 +139,17 @@ selection and workspace guarding.
 
 ## Evidence and reproduction
 
-- [Dense/banded comparison table](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/comparison.csv)
-- [Comparison summary](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/summary.json)
-- [Input/source/DLL hashes](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/reference-verified/hashes.csv)
-- [Adjusted comparison](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/adjusted-verified/comparison.csv)
-- [Scaling runs](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/scaling-verified)
-- [Development and failure evidence](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105)
+The maintainer retains the dense/banded comparison tables and summary,
+input/source/DLL hash manifest, adjusted-fit comparisons, scaling runs, and
+original failure records outside the public repository. The frozen
+individual-level reference observations are not distributed with the package.
+Reproducing those reference comparisons requires access to their original
+inputs; the public synthetic regression tests do not replace that evidence.
+
+Public reproduction tools and method documentation:
+
+- [Dense/banded reference validator](../../../scripts/validate_logistic_trend_filtering_banded.R)
+- [Banded-backend regression tests](../../../tests/testthat/test-logistic-trend-filtering-banded.R)
 - [Implementation plan](sparse_backend_plan.md)
 
 Compile optimized once from the package root, or install the current source in
@@ -164,8 +169,8 @@ excluded by that fast target; the 93 focused assertions and numerical reference
 checks were run separately against the final optimized isolated installation.
 API coverage checks pass for 68 exports and 100 S3 registrations. The full
 source/input/DLL hash manifest was rechecked: all 187 entries match.
-[Final QA logs](/Users/pgajer/.codex/private/geosmooth/logistic-trend-filtering/banded-20261105/qa-verified)
-preserve those checks and the final build/install evidence.
+The maintainer retains the final QA logs and build/install evidence with the
+original validation bundle.
 
 The benchmark host was an Apple M4 Max with 64 GiB physical RAM; each benchmark
 used one numerical thread, within this task's three-thread/6-GiB allocation.

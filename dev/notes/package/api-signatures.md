@@ -12,7 +12,7 @@ Defaults are unevaluated source expressions. The guide is checked for exactly on
 
 ### apply.metric.graph.lowpass.path
 
-9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L622).
+9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L620).
 
 ```r
 apply.metric.graph.lowpass.path(basis, y, eta.grid, filter.type = c("heat_kernel", "tikhonov", "cubic_spline", "gaussian",
@@ -40,7 +40,7 @@ assess.logistic.trend.filtering(object, permutations = 999L, inner.folds = 5L, o
 
 ### bootstrap.malps
 
-11 arguments. Source: [R/malps.R](../../../R/malps.R#L954).
+11 arguments. Source: [R/malps.R](../../../R/malps.R#L959).
 
 ```r
 bootstrap.malps(object, B = 200L, weight.type = c("bayesian", "multinomial"), y = NULL, probs = NULL,
@@ -75,19 +75,19 @@ cv.masked.graph.field(operator, vertex, y, group, lambdas = 10^seq(-6, 2, length
 
 ### cv.projection.trend.filtering
 
-18 arguments. Source: [R/projection_trend_filtering_cv.R](../../../R/projection_trend_filtering_cv.R#L41).
+18 arguments. Source: [R/projection_trend_filtering_cv.R](../../../R/projection_trend_filtering_cv.R#L49).
 
 ```r
 cv.projection.trend.filtering(X, y, foldid, lambda.grid, nterms.grid = c(0L, 1L, 2L), curve.ridge.grid = 0.001,
     family = c("gaussian", "binomial"), directions = NULL, direction.search = c("learned",
-        "fixed"), weights = NULL, offset = NULL, groups = NULL, preprocessing = c("scale",
+        "fixed", "gn", "pls"), weights = NULL, offset = NULL, groups = NULL, preprocessing = c("scale",
         "isotropic", "none"), seed = 1L, control = list(), backend = c("auto", "dense", "banded"),
     keep.fits = FALSE, warn = TRUE)
 ```
 
 ### fit.chart.kernel
 
-23 arguments. Source: [R/chart_kernel.R](../../../R/chart_kernel.R#L86).
+23 arguments. Source: [R/chart_kernel.R](../../../R/chart_kernel.R#L87).
 
 ```r
 fit.chart.kernel(X, y, X.eval = NULL, support.size = min(15L, nrow(X)), kernel = c("gaussian", "tricube",
@@ -101,7 +101,7 @@ fit.chart.kernel(X, y, X.eval = NULL, support.size = min(15L, nrow(X)), kernel =
 
 ### fit.density
 
-8 arguments. Source: [R/state_density.R](../../../R/state_density.R#L35).
+8 arguments. Source: [R/state_density.R](../../../R/state_density.R#L37).
 
 ```r
 fit.density(X, weights = NULL, method = c("empirical", "graph_random_walk"), graph = NULL, graph.control = list(),
@@ -153,7 +153,7 @@ fit.local.likelihood(X, y, X.eval = NULL, likelihood.family = c("density", "bern
 
 ### fit.logistic.trend.filtering
 
-14 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L101).
+14 arguments. Source: [R/logistic_trend_filtering.R](../../../R/logistic_trend_filtering.R#L103).
 
 ```r
 fit.logistic.trend.filtering(x, y, lambda, weights = NULL, covariates = NULL, offset = NULL, nuisance.ridge = 0,
@@ -177,7 +177,7 @@ fit.lpl.tf(X = NULL, y, operator = NULL, adj.list = NULL, weight.list = NULL, gr
 
 ### fit.lps
 
-31 arguments. Source: [R/lps.R](../../../R/lps.R#L234).
+31 arguments. Source: [R/lps.R](../../../R/lps.R#L235).
 
 ```r
 fit.lps(X, y, foldid = NULL, support.grid = c(10L, 15L, 20L), degree.grid = 0:2, kernel.grid = c("gaussian",
@@ -196,7 +196,7 @@ fit.lps(X, y, foldid = NULL, support.grid = c(10L, 15L, 20L), degree.grid = 0:2,
 
 ### fit.malps
 
-41 arguments. Source: [R/malps.R](../../../R/malps.R#L192).
+41 arguments. Source: [R/malps.R](../../../R/malps.R#L197).
 
 ```r
 fit.malps(X, y, graph = NULL, adj.list = NULL, weight.list = NULL, graph.stage = "final",
@@ -224,7 +224,7 @@ fit.masked.graph.field(operator, vertex, y, lambda, weights = NULL)
 
 ### fit.metric.graph.lowpass
 
-28 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L1016).
+28 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L1018).
 
 ```r
 fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse.length.power", "exp.length",
@@ -242,7 +242,7 @@ fit.metric.graph.lowpass(adj.list, weight.list, y, conductance.rule = c("inverse
 
 ### fit.neighbor.probability
 
-14 arguments. Source: [R/neighbor_probability.R](../../../R/neighbor_probability.R#L118).
+14 arguments. Source: [R/neighbor_probability.R](../../../R/neighbor_probability.R#L121).
 
 ```r
 fit.neighbor.probability(X = NULL, y, method = c("knn", "case_raw", "case_corrected"), k = NULL, k.grid = NULL,
@@ -253,18 +253,18 @@ fit.neighbor.probability(X = NULL, y, method = c("knn", "case_raw", "case_correc
 
 ### fit.projection.trend.filtering
 
-15 arguments. Source: [R/projection_trend_filtering.R](../../../R/projection_trend_filtering.R#L82).
+15 arguments. Source: [R/projection_trend_filtering.R](../../../R/projection_trend_filtering.R#L124).
 
 ```r
 fit.projection.trend.filtering(X, y, lambda, family = c("gaussian", "binomial"), directions = NULL, direction.search = c("learned",
-    "fixed"), nterms = NULL, weights = NULL, offset = NULL, curve.ridge = 0.001, preprocessing = c("scale",
-    "isotropic", "none"), seed = 1L, control = list(), backend = c("auto", "dense", "banded"),
-    warn = TRUE)
+    "fixed", "gn", "pls"), nterms = NULL, weights = NULL, offset = NULL, curve.ridge = 0.001,
+    preprocessing = c("scale", "isotropic", "none"), seed = 1L, control = list(), backend = c("auto",
+        "dense", "banded"), warn = TRUE)
 ```
 
 ### fit.ps.lps
 
-37 arguments. Source: [R/ps_lps.R](../../../R/ps_lps.R#L140).
+37 arguments. Source: [R/ps_lps.R](../../../R/ps_lps.R#L141).
 
 ```r
 fit.ps.lps(X, y, foldid = NULL, support.size = NULL, degree = 2L, kernel = "gaussian", chart.dim = NULL,
@@ -300,7 +300,7 @@ fit.pttf.trend.filtering(geometry = NULL, operator = NULL, X = NULL, y, derivati
 
 ### fit.slpl.tf
 
-24 arguments. Source: [R/slpl_tf.R](../../../R/slpl_tf.R#L221).
+24 arguments. Source: [R/slpl_tf.R](../../../R/slpl_tf.R#L222).
 
 ```r
 fit.slpl.tf(X = NULL, y, operator = NULL, lambda1 = NULL, lambda2 = 0, lambda1.grid = NULL,
@@ -312,7 +312,7 @@ fit.slpl.tf(X = NULL, y, operator = NULL, lambda1 = NULL, lambda2 = 0, lambda1.g
 
 ### fit.ssrhe.hessian.l1.regression
 
-47 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2740).
+47 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L2746).
 
 ```r
 fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL, lambda.selection = c("cv", "fixed"),
@@ -332,7 +332,7 @@ fit.ssrhe.hessian.l1.regression(X, y, k = NULL, tangent.dim, lambda.grid = NULL,
 
 ### fit.ssrhe.hessian.regression
 
-34 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L1178).
+34 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L1182).
 
 ```r
 fit.ssrhe.hessian.regression(X, y, k = NULL, tangent.dim, lambda1, lambda2 = 0, weights = NULL, nn.index = NULL,
@@ -348,7 +348,7 @@ fit.ssrhe.hessian.regression(X, y, k = NULL, tangent.dim, lambda1, lambda2 = 0, 
 
 ### fit.subject.od
 
-13 arguments. Source: [R/state_density.R](../../../R/state_density.R#L397).
+13 arguments. Source: [R/state_density.R](../../../R/state_density.R#L403).
 
 ```r
 fit.subject.od(X, subject.index, method = c("empirical", "graph_random_walk", "lps_count", "ps_lps_count",
@@ -404,7 +404,7 @@ lpl.tf.operator(X, adj.list = NULL, weight.list = NULL, graph = NULL, graph.stag
 
 ### lps.backend.diagnostics
 
-1 arguments. Source: [R/lps.R](../../../R/lps.R#L803).
+1 arguments. Source: [R/lps.R](../../../R/lps.R#L804).
 
 ```r
 lps.backend.diagnostics(object)
@@ -438,7 +438,7 @@ lps.pointwise.band(object, sigma = NULL, level = 0.95, check.tol = 1e-10, varian
 
 ### malps.gcv
 
-7 arguments. Source: [R/malps.R](../../../R/malps.R#L825).
+7 arguments. Source: [R/malps.R](../../../R/malps.R#L830).
 
 ```r
 malps.gcv(object, y = NULL, smoother.matrix = NULL, include.loocv = TRUE, max.n = 1000L, allow.robust = FALSE,
@@ -463,7 +463,7 @@ materialize.synthetic.instance(instance.id, validate = TRUE)
 
 ### metric.graph.heat.eta.grid
 
-6 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L333).
+6 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L331).
 
 ```r
 metric.graph.heat.eta.grid(basis, rule = c("spectral_guarded", "w1_inverse_spectrum"), n.initial = 40L, include.zero = FALSE,
@@ -472,7 +472,7 @@ metric.graph.heat.eta.grid(basis, rule = c("spectral_guarded", "w1_inverse_spect
 
 ### metric.graph.heat.extend.lower
 
-9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L444).
+9 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L442).
 
 ```r
 metric.graph.heat.extend.lower(basis, eta.grid, endpoint.status = c("active", "inactive", "unresolved"), expansion.factor = 3,
@@ -482,7 +482,7 @@ metric.graph.heat.extend.lower(basis, eta.grid, endpoint.status = c("active", "i
 
 ### metric.graph.lowpass.basis
 
-19 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L176).
+19 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L174).
 
 ```r
 metric.graph.lowpass.basis(adj.list, weight.list, conductance.rule = c("inverse.length.power", "exp.length",
@@ -497,7 +497,7 @@ metric.graph.lowpass.basis(adj.list, weight.list, conductance.rule = c("inverse.
 
 ### metric.graph.lowpass.operator
 
-13 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L67).
+13 arguments. Source: [R/metric_graph_lowpass.R](../../../R/metric_graph_lowpass.R#L65).
 
 ```r
 metric.graph.lowpass.operator(adj.list, weight.list, conductance.rule = c("inverse.length.power", "exp.length",
@@ -510,7 +510,7 @@ metric.graph.lowpass.operator(adj.list, weight.list, conductance.rule = c("inver
 
 ### normalize.density
 
-2 arguments. Source: [R/state_density.R](../../../R/state_density.R#L176).
+2 arguments. Source: [R/state_density.R](../../../R/state_density.R#L178).
 
 ```r
 normalize.density(x, ...)
@@ -573,7 +573,7 @@ select.masked.graph.field(comparison, study)
 
 ### slpl.tf.operator
 
-28 arguments. Source: [R/slpl_tf.R](../../../R/slpl_tf.R#L23).
+28 arguments. Source: [R/slpl_tf.R](../../../R/slpl_tf.R#L24).
 
 ```r
 slpl.tf.operator(X, adj.list = NULL, weight.list = NULL, graph = NULL, graph.stage = "final", anchor.index = NULL,
@@ -598,7 +598,7 @@ smoother.matrix(object, ...)
 
 ### ssrhe.hessian.operator
 
-27 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L168).
+27 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L169).
 
 ```r
 ssrhe.hessian.operator(X, k = NULL, tangent.dim, nn.index = NULL, neighborhood.type = c("knn", "adaptive.radius",
@@ -613,7 +613,7 @@ ssrhe.hessian.operator(X, k = NULL, tangent.dim, nn.index = NULL, neighborhood.t
 
 ### ssrhe.support.grid
 
-5 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L553).
+5 arguments. Source: [R/ssrhe_hessian_energy.R](../../../R/ssrhe_hessian_energy.R#L554).
 
 ```r
 ssrhe.support.grid(n, tangent.dim, derivative.order = 2L, support.buffer = 2L, max.candidates = 8L)
@@ -759,7 +759,7 @@ synthetic.truth.polynomial(coefficients, evaluation.coordinates = "latent")
 
 ### transported.graph.hessian.operator
 
-52 arguments. Source: [R/transported_graph_hessian.R](../../../R/transported_graph_hessian.R#L213).
+52 arguments. Source: [R/transported_graph_hessian.R](../../../R/transported_graph_hessian.R#L226).
 
 ```r
 transported.graph.hessian.operator(adj.list, weight.list = NULL, transport.order = 2L, transport.rule = c("exact.coordinate",

@@ -8,13 +8,13 @@ Strategic context: [LPS / LCov / Omics Program](../../programs/lps_lcov_omics_pr
 Research lineage: [provenance.md](provenance.md).
 
 - `reports/`: rendered analysis reports.
-- `runs/`: run directories, manifests, and launch records.
+- `runs/`: reusable run specifications; generated records belong outside the checkout.
 - `results/`: durable result tables or serialized outputs.
 - `specs/`: method specifications and scientific design plans.
-- `status/`: progress notes and operational status.
+- `status/`: concise method-development summaries.
 
-Agent-only audits, handoffs, prompts, work orders, and intermediate review
-products belong under `~/.codex/private/geosmooth/`, not in this repository.
+Keep operational run records outside the package checkout. Retain reproducible
+methods, validation tools and scientific summaries here.
 
 Keep only method-wide indexes or temporary unclassified files at the immediate
 subdirectory root.
