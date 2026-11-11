@@ -1,5 +1,5 @@
 version <- read.dcf("DESCRIPTION")[1L, "Version"]
-tarball <- paste0("geosmooth_", version, ".tar.gz")
+tarball <- file.path("build", paste0("geosmooth_", version, ".tar.gz"))
 if (!file.exists(tarball)) stop("Run make build first.")
 staging <- tempfile("geosmooth-previews-")
 dir.create(staging)

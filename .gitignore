@@ -102,3 +102,6 @@ tmp/
 
 # Stored results required to build the PCA/PLS vignette
 !/inst/extdata/vignette-results/pca-pls-comparison.rds
+
+# Local package archives and R CMD check output
+/build/

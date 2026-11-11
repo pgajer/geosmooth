@@ -2,7 +2,8 @@
 
 VERSION := $(shell grep "^Version:" DESCRIPTION | sed 's/Version: //')
 PKGNAME := geosmooth
-TARBALL := $(PKGNAME)_$(VERSION).tar.gz
+BUILD_DIR := build
+TARBALL := $(BUILD_DIR)/$(PKGNAME)_$(VERSION).tar.gz
 HOMEBREW_BIN := /opt/homebrew/bin
 GCC_BIN := /opt/homebrew/opt/gcc/bin
 TIDY_BIN := $(shell if [ -x "$(HOMEBREW_BIN)/tidy" ]; then echo "$(HOMEBREW_BIN)/tidy"; elif command -v tidy >/dev/null 2>&1; then command -v tidy; else echo "$(HOMEBREW_BIN)/tidy"; fi)
@@ -11,8 +12,8 @@ clean:
 	find src -name "*.o" -delete
 	find src -name "*.so" -delete
 	rm -f src/*.dll
-	rm -rf $(PKGNAME).Rcheck
-	rm -f $(TARBALL)
+	rm -rf "$(BUILD_DIR)" $(PKGNAME).Rcheck
+	rm -f $(PKGNAME)_*.tar.gz
 	rm -rf .claude
 
 attrs:
@@ -68,17 +69,18 @@ test-public-content:
 
 build: check-public-content clean
 	$(MAKE) document
-	R CMD build .
+	mkdir -p "$(BUILD_DIR)"
+	cd "$(BUILD_DIR)" && R CMD build "$(CURDIR)"
 	python3 tools/check-public-content.py --archive "$(TARBALL)"
 
 check: build
-	PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R_TIDYCMD="$(TIDY_BIN)" R CMD check $(TARBALL) --as-cran
+	cd "$(BUILD_DIR)" && PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R_TIDYCMD="$(TIDY_BIN)" R CMD check "$(notdir $(TARBALL))" --as-cran
 
 check-fast: build
-	PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R_TIDYCMD="$(TIDY_BIN)" R CMD check $(TARBALL) --as-cran --no-examples --no-tests --no-manual
+	cd "$(BUILD_DIR)" && PATH="$(GCC_BIN):$(HOMEBREW_BIN):$$PATH" R_TIDYCMD="$(TIDY_BIN)" R CMD check "$(notdir $(TARBALL))" --as-cran --no-examples --no-tests --no-manual
 
 install: build
-	R CMD INSTALL $(TARBALL)
+	R CMD INSTALL "$(TARBALL)"
 
 .PHONY: website
 .PHONY: test-neighbors

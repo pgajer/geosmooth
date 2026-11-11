@@ -1,5 +1,5 @@
 args <- commandArgs(trailingOnly = TRUE)
-library.path <- if (length(args)) args[1L] else "geosmooth.Rcheck"
+library.path <- if (length(args)) args[1L] else file.path("build", "geosmooth.Rcheck")
 if (!dir.exists(file.path(library.path, "geosmooth")))
     stop("Run make check first, or supply a library containing the checked package.")
 library.path <- normalizePath(library.path)
