@@ -1,25 +1,29 @@
-## Resubmission
+## Update to geosmooth 0.2.1
 
-This resubmission of geosmooth 0.2.0 addresses the reported 14-minute Windows
-check time, above the 10-minute limit.
+This updates the published geosmooth 0.2.0. It corrects the constant-covariate
+validation failure identified in the CRAN notification of 2026-11-11:
+exactly constant columns are rejected before weighted centering, independently
+of BLAS rounding. It also declares the stats::predict() and utils::tail()
+imports used by trend-filtering helpers.
 
-The PCA/PLS vignette uses precomputed results with complete reproduction code.
-All five repetitions for each of five examples, 200 result rows and five
-illustration datasets are preserved and match the original computation.
-Geometry examples and probability slices still execute during vignette builds.
+The update includes projection-pursuit trend filtering for Gaussian and
+binomial responses, with fixed or learned projections and cross-validation,
+and refreshed function documentation and vignettes. The PCA/PLS comparison
+uses stored results with their complete reproduction script; all 200 result
+rows and five illustration datasets match the previous computation.
 
-Tests use smaller synthetic examples and shared recipe, component and instance
-setup. All 846 legacy parity cases, fixed regression fixtures and numerical
-tolerances are retained. No numerical implementation or exported interface
-changed for this resubmission.
+## Test environment
 
-## Checks of the revised archive
+macOS ARM64, R-devel (2026-06-24 r90190), released CRAN dependencies,
+clean user Makevars and one numerical thread:
+0 errors, 0 warnings, 1 NOTE.
 
-- macOS arm64, R-devel (2026-06-24 r90190), CRAN-only dependencies and one thread:
-  0 errors, 0 warnings, 0 notes; full check elapsed 244.92 seconds.
-- Win-builder R-devel (2026-11-07 r90850), Windows x86_64:
-  0 errors, 0 warnings, 0 notes; check time 503 seconds (8 minutes 23 seconds).
-- Win-builder R-release 4.6.2 (2026-10-29 ucrt), Windows x86_64:
-  0 errors, 0 warnings, 0 notes; check time 488 seconds (8 minutes 8 seconds).
+The freshly built source tarball was checked with R CMD check --as-cran.
+All 9,810 assertions passed, with two expected skips for a source-only runner
+and the two-process comparison under the single-core check setting.
+Examples, vignette rebuilding, compiled-code checks and PDF/HTML manuals passed.
 
-Both Windows checks include tests, vignette rebuilding and the manual.
+## Note
+
+"Days since last update: 1". This update addresses the CRAN correction request
+of 2026-11-11, which asks for correction before 2026-12-02.

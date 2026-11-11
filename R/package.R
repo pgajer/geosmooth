@@ -61,7 +61,8 @@
 #'
 #' @useDynLib geosmooth, .registration = TRUE
 #' @importFrom Rcpp evalCpp
-#' @importFrom utils head modifyList
+#' @importFrom stats predict
+#' @importFrom utils head modifyList tail
 "_PACKAGE"
 
 .geosmooth.ge0.status <- function() {

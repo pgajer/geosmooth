@@ -1,3 +1,15 @@
+# geosmooth 0.2.1
+
+* Declare the `stats::predict()` and `utils::tail()` imports used by
+  trend-filtering helpers.
+* Add `fit.projection.trend.filtering()` and
+  `cv.projection.trend.filtering()` for sums of order-2 trend-filtered curves
+  on fixed or learned projections, with Gaussian and binomial responses.
+* Refresh function documentation and vignettes. Include the stored PCA/PLS
+  comparison results and their reproduction script.
+* Reject exactly constant covariate columns before weighted centering in
+  Gaussian and logistic trend filtering, independently of BLAS rounding.
+
 # geosmooth 0.2.0
 
 ## Documentation and checks
