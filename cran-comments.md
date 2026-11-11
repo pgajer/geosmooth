@@ -11,19 +11,36 @@ binomial responses, with fixed or learned projections and cross-validation,
 and refreshed function documentation and vignettes. The PCA/PLS comparison
 uses stored results with their complete reproduction script; all 200 result
 rows and five illustration datasets match the previous computation.
+Its source is preserved with LF line endings across Git checkouts so that
+Windows builds retain the exact stored-result checksum.
 
-## Test environment
+## Test environments
 
-macOS ARM64, R-devel (2026-06-24 r90190), released CRAN dependencies,
-clean user Makevars and one numerical thread:
-0 errors, 0 warnings, 1 NOTE.
+GitHub Actions checks of the final package source:
 
-The freshly built source tarball was checked with R CMD check --as-cran.
-All 10,149 assertions passed, with two expected skips for a source-only runner
-and the two-process comparison under the single-core check setting.
-Examples, vignette rebuilding, compiled-code checks and PDF/HTML manuals passed.
+- Linux x86-64, R-devel (2026-11-10 r90874): 0 errors, 0 warnings, 0 notes.
+- Linux x86-64, R 4.6.2 (2026-10-29): 0 errors, 0 warnings, 0 notes.
+- Linux x86-64, R 4.5.3 (2026-03-11): 0 errors, 0 warnings, 0 notes.
+- macOS Intel, R 4.6.2 (2026-10-29): 0 errors, 0 warnings, 0 notes.
+- Windows x86-64 UCRT, R 4.6.2 (2026-10-29): 0 errors, 0 warnings, 0 notes.
+
+These CI checks built and checked source tarballs with --as-cran --no-manual.
+They included examples, tests and vignette rebuilding; CRAN incoming queries
+were disabled in CI. Linux and macOS passed 10,150 assertions, with one
+source-only skip. Windows passed 10,149 assertions, with the additional
+expected skip of the Unix-only parallelism comparison.
+
+The exact upload archive also passed a full local R CMD check --as-cran on
+macOS ARM64, R-devel (2026-06-24 r90190), with released CRAN dependencies,
+clean user Makevars and one numerical thread: 0 errors, 0 warnings, 1 NOTE.
+It passed 10,149 assertions, with two expected skips for the source-only runner
+and the two-process comparison under the single-core setting. Compiled-code
+checks, examples, rebuilt vignettes and PDF/HTML manuals passed.
+
+The CRAN-only dependency gate passed. No reverse dependencies were listed in
+the CRAN source index on 2026-11-11.
 
 ## Note
 
-"Days since last update: 1". This update addresses the CRAN correction request
-of 2026-11-11, which asks for correction before 2026-12-02.
+The local NOTE is "Days since last update: 1". This update addresses the CRAN
+correction request of 2026-11-11, which asks for correction before 2026-12-02.
