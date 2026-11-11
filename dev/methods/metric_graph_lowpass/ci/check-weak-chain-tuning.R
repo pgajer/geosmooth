@@ -1,6 +1,8 @@
 # Scan weakly connected chains for unresolved heat-score tuning paths.
-pkgload::load_all('.',quiet=TRUE)
+library(geosmooth)
 args <- commandArgs(TRUE)
+if (length(args) != 1L || !nzchar(args[1L]))
+    stop('Supply an output TSV path outside the package checkout.')
 set.seed(6172026)
 rows <- list()
 for (i in seq_len(80)) {

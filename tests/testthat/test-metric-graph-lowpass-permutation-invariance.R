@@ -1,7 +1,4 @@
-# Check component-centering invariance under permutations and response masks.
-pkgload::load_all('.',quiet=TRUE)
-library(testthat)
-
+# Response-mask, permutation and extreme-scale invariance checks.
 test_that('component centering survives node permutations and mixed response masks', {
     set.seed(6172026)
     W <- matrix(0,9,9)

@@ -1,9 +1,6 @@
-# Replayed audit test; only its package-loading path is adapted.
-pkgload::load_all('.', quiet=TRUE)
-library(testthat)
-set.seed(9172026)
-
+# Independent dense heat-penalty reference and public policy checks.
 test_that('independent dense heat-penalty equations reproduce ordinary accepted paths', {
+    set.seed(9172026)
     for (case in seq_len(30L)) {
         n <- sample(4:10,1)
         W <- matrix(0,n,n)

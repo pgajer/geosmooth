@@ -9,3 +9,8 @@ The maintained [verified-heat implementation](../../../R/metric_graph_verified_h
 [regression tests](../../../tests/testthat/test-metric-graph-lowpass-tuning-resolution.R)
 and [worked guide](../../../vignettes/verified-heat-fallback.Rmd) define the
 current behavior. Run `make test-graph` for the graph test group.
+
+The test suite also includes independent dense-reference comparisons,
+permutation and response-mask invariance, extreme-scale checks, and the frozen
+weak-chain tolerance-boundary fixture. The broader deterministic
+[weak-chain scan](ci/README.md) is available as a separate developer tool.

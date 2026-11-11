@@ -1,8 +1,6 @@
-# Check that a flat two-observation score path cannot select a smoothing time.
-pkgload::load_all('.',quiet=TRUE)
-library(testthat)
+# Frozen weak-chain regression: a flat score path must not be tuned.
 test_that('scorewise acceptable errors cannot tune a structurally flat two-observation path', {
-    x <- readRDS('validation/exp039-v7/tolerance-boundary-input.rds')
+    x <- readRDS(testthat::test_path('..', 'fixtures', 'metric-graph-heat-tolerance-boundary.rds'))
     b <- metric.graph.lowpass.basis(x$adj,x$weights,weight.type='conductance',spectrum='full',
                                   numerical.policy='verified.fallback')
     p <- apply.metric.graph.lowpass.path(b,x$y,x$grid)

@@ -19,7 +19,7 @@ clean user Makevars and one numerical thread:
 0 errors, 0 warnings, 1 NOTE.
 
 The freshly built source tarball was checked with R CMD check --as-cran.
-All 9,810 assertions passed, with two expected skips for a source-only runner
+All 10,149 assertions passed, with two expected skips for a source-only runner
 and the two-process comparison under the single-core check setting.
 Examples, vignette rebuilding, compiled-code checks and PDF/HTML manuals passed.
 

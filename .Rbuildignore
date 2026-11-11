@@ -7,7 +7,6 @@
 ^dev$
 ^manuscripts($|/)
 ^tmp$
-^validation$
 ^scripts$
 ^tools$
 ^tests/migration$

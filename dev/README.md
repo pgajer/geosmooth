@@ -75,7 +75,7 @@ be edited by hand.
 | R roxygen comments | `man/*.Rd`, `NAMESPACE` | `make document` |
 | Rcpp interfaces | R/native export wrappers | `make attrs` (included in document) |
 | `vignettes/*.Rmd` | Installed HTML vignettes | `make build` |
-| Built tarball's `inst/doc/*.html` | Both `validation/vignettes/` and `validation/api-guide/` preview aliases | `make previews` |
+| Built tarball's `inst/doc/*.html` | `build/previews/` | `make previews` |
 | `inst/doc-tools/first-fit.R` | README figure and guide example | `make readme-figure`; vignette executes the same recipe |
 | `inst/doc-tools/graph-workflow.R` | Graph guide workflow | Vignette build and workflow test |
 | `_pkgdown.yml`, README, Rd, vignettes | `docs/` website | `make website` |

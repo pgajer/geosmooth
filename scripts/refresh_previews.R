@@ -7,9 +7,8 @@ tryCatch({
     names <- paste0(c("function-guide", "synthetic-datasets"), ".html")
     files <- file.path("geosmooth", "inst", "doc", names)
     utils::untar(tarball, files = files, exdir = staging)
-    for (destination in c("validation/vignettes", "validation/api-guide")) {
-        dir.create(destination, recursive = TRUE, showWarnings = FALSE)
-        stopifnot(all(file.copy(file.path(staging, files), destination, overwrite = TRUE)))
-    }
+    destination <- file.path("build", "previews")
+    dir.create(destination, recursive = TRUE, showWarnings = FALSE)
+    stopifnot(all(file.copy(file.path(staging, files), destination, overwrite = TRUE)))
 }, finally = unlink(staging, recursive = TRUE))
-cat("Refreshed both preview aliases from the built package vignettes.\n")
+cat("Refreshed build/previews from the built package vignettes.\n")
