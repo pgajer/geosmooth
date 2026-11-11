@@ -2,6 +2,12 @@
 
 ## Trend filtering and graph methods
 
+* Gaussian and logistic trend filtering now reject a covariate column that
+  is exactly constant, and they check this before the column is centered.
+  The check no longer depends on rounding in the linear algebra library, so
+  a constant column cannot be mistaken for a varying one. Covariates with
+  small but nonzero variation are still accepted.
+
 * Stabilize verified graph-heat GCV on weakly connected graphs by evaluating
   the observed Schur complement as a residual-factor crossproduct. This avoids
   cancellation between nearly equal blocks while preserving the model,

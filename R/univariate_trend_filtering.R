@@ -60,6 +60,11 @@
     if (!is.matrix(covariates) || !is.numeric(covariates) ||
         nrow(covariates) != n || any(!is.finite(covariates)))
         stop("covariates must be a finite numeric matrix with length(x) rows.", call. = FALSE)
+    # Check the supplied values: rounded weighted means can give an exactly
+    # constant column a positive residual scale on some BLAS implementations.
+    if (any(vapply(seq_len(ncol(covariates)), function(j)
+        all(covariates[, j] == covariates[1L, j]), logical(1))))
+        stop("covariates must not contain constant columns.", call. = FALSE)
     knots <- sort(unique(x))
     if (length(knots) < 4L || !is.finite(diff(range(x))))
         stop("x needs at least four distinct values and a finite range.", call. = FALSE)
