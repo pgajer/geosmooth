@@ -9,14 +9,45 @@ smoothing, model-averaged local polynomial smoothing, two forms of local
 polynomial lifting trend filtering, one-dimensional Gaussian and logistic
 trend filtering, graph low-pass filtering, and Hessian-energy regression.
 
-![Noisy observations along a sine curve; the solid blue fitted response follows the dashed orange synthetic truth.](man/figures/first-fit.png)
+![Order-2 logistic trend filtering recovers a localized probability peak from binary observations, with permutation distributions and p-values for likelihood improvement, mean absolute departure and total variation, plus nested cross-validation of prediction.](man/figures/binary-showcase.png)
 
-In the figure, the points are noisy observations, the solid line is a local
-polynomial fit whose settings were selected by cross-validation, and the
-dashed line is the true curve, which is known here because the data are
-simulated. The
-[first-fit guide](https://pgajer.github.io/geosmooth/articles/function-guide.html#a-first-regression-fit)
-gives the code, the selected settings, and an explanation of the tuning score.
+**From binary observations to an adaptive probability curve.** Order-2 logistic
+trend filtering fits a piecewise-quadratic logit with adaptive knots. In this
+simulated example, the estimated probabilities can be compared with known truth
+and ordinary linear logistic regression. A permutation test repeats penalty
+selection to assess departure from constant probability; separate nested
+cross-validation compares prediction with a constant-probability baseline.
+Mean absolute departure quantifies the average probability difference from
+the sample event rate; total variation measures the accumulated rises and falls
+along the curve. Both have their own permutation tests. The figure reports
+individual p-values and Holm-adjusted p-values across all three tests,
+alongside a check of numerical convergence. These assessments do not provide
+confidence bands or test specifically for nonlinearity.
+
+For fitted probabilities $\hat p(x_i)$ and sample event rate
+$\bar y = n^{-1}\sum_{i=1}^n y_i$, the **mean absolute departure** is
+
+$$
+\delta_0 = \frac{1}{n}\sum_{i=1}^n
+\left|\hat p(x_i)-\bar y\right|.
+$$
+
+It averages over observations, including repeated predictor values; multiplying
+by 100 expresses it in percentage points. The **total variation** is
+
+$$
+\delta_1 = \sum_{j=2}^{K}
+\left|\hat p(s_j)-\hat p(s_{j-1})\right|,
+$$
+
+where $s_1<\cdots<s_K$ includes the endpoints of the observed predictor range,
+knots and interior turning points of the fitted curve. It accumulates absolute
+rises and falls on the probability scale and can exceed one.
+
+The [logistic trend-filtering guide](https://pgajer.github.io/geosmooth/articles/logistic-trend-filtering.html)
+explains the method, diagnostics and validation, with synthetic and real binary
+outcomes. The [figure recipe](https://github.com/pgajer/geosmooth/blob/main/inst/doc-tools/binary-showcase.R) reproduces this
+160-observation example using 99 permutations (p-value resolution 0.01).
 
 ## Where to start
 
