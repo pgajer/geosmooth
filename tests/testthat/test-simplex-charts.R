@@ -38,7 +38,7 @@ test_that("R package reproduces the independent synthetic Python predictions", {
             key <- paste(scenario,method,d,ridge,sep="/")
             predictions[[key]] <- fit$fitted.values
             references[[key]] <- expected$prediction
-            fallbacks[[key]] <- fit$diagnostics$fallback.count
+            fallbacks[key] <- list(fit$diagnostics$fallback.count)
             gradients[[key]] <- all(fit$diagnostics$per.eval$gradient < 1e-7)
         }
     }
