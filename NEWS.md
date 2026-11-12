@@ -1,5 +1,7 @@
 # geosmooth 0.2.1
 
+* Reduce package-check runtime by sharing test setup and grouping reference
+  comparisons, retaining all reference cases and numerical tolerances.
 * Declare the `stats::predict()` and `utils::tail()` imports used by
   trend-filtering helpers.
 * Add `fit.projection.trend.filtering()` and
