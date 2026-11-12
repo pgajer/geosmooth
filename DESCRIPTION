@@ -88,4 +88,7 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/testthat/start-first: synthetic-registry, ps-lps,
+    state-density-odcv3-lps-outer-visit-cv, synthetic-legacy-ssrhe,
+    coupled-kd-selection-csd4, graph-trend-filtering, simplex-charts
 Config/roxygen2/version: 8.0.0

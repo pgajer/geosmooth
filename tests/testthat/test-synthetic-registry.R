@@ -81,11 +81,16 @@ test_that("frozen instances replay their checksums and registry keys are complet
   expect_setequal(
     instances$recipe.id,
     synthetic.registry.ids()[grepl("^G", synthetic.registry.ids())])
-  # All instances use the same runtime; capture it once per RNG policy for
-  # these assertions. Each materialization still performs its own verification.
+  # All instances use the same runtime. Capture its identity once per RNG
+  # policy; each materialization still verifies its own content and provenance.
   policies <- unique(instances$rng.policy)
   current.by.policy <- setNames(lapply(
     policies, geosmooth:::.synthetic.environment.fingerprint), policies)
+  testthat::local_mocked_bindings(
+    .synthetic.environment.fingerprint = function(rng.policy = "legacy") {
+      current.by.policy[[rng.policy]]
+    },
+    .package = "geosmooth")
   required.scope <- c(
     "r.version", "platform", "architecture", "compiler",
     "os.name", "os.release", "os.version", "os.machine", "endianness",
